@@ -1,0 +1,9 @@
+Final deploy fix applied:
+- .npmrc set to public npm registry
+- package-lock.json internal registry references replaced with registry.npmjs.org
+- package.json engines relaxed to Node 20 only
+- netlify.toml NPM_VERSION pin removed
+
+On Netlify:
+1. Set NPM_CONFIG_REGISTRY = https://registry.npmjs.org/
+2. Clear cache and redeploy
