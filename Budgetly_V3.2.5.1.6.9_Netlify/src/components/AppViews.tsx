@@ -1385,13 +1385,21 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   }, [data.transactions])
 
   return (
-    <div className="card mobileSectionCard dataPageCard txPageCard">
-      <div className="row between">
+    <div className="card mobileSectionCard dataPageCard txPageCard txFullLayout">
+      <div className="row between txPageHeader">
         <div>
           <h2>Transactions</h2>
           <div className="muted">Add today’s transaction by default, or backdate it if needed. Use Month to view older records.</div>
         </div>
       </div>
+
+      <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
+        <div className="txPanelHeader row between">
+          <div>
+            <h3 id="tx-add-title">Add Transaction</h3>
+            <div className="muted">Capture income and expenses quickly with structured inputs.</div>
+          </div>
+        </div>
 
       <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
         <div className="field txField txDateField">
@@ -1448,6 +1456,15 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           <Plus size={16} /> Add
         </button>
       </div>
+      </section>
+
+      <section className="txPanel txManagePanel" aria-labelledby="tx-manage-title">
+        <div className="txPanelHeader row between">
+          <div>
+            <h3 id="tx-manage-title">Manage Transactions</h3>
+            <div className="muted">Search, filter, review, and save transaction updates.</div>
+          </div>
+        </div>
 
       <div className="row between txToolbarRow" style={{ marginTop: 14, alignItems: 'flex-end', gap: 12 }}>
         <div className="row gap txToolbarFields">
@@ -1557,6 +1574,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           Update Transactions
         </button>
       </div>
+      </section>
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}

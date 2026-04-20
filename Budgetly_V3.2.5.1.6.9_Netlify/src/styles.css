@@ -4351,6 +4351,47 @@ body.light .dataScrollBox thead th,
   min-width:0;
 }
 
+.txFullLayout{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  height:calc(100vh - 120px);
+  min-height:calc(100vh - 120px);
+  max-height:calc(100vh - 120px);
+}
+
+.txPageHeader,
+.txPanel,
+.txPanelHeader,
+.txToolbarRow,
+.txStickyFooter{
+  flex:0 0 auto;
+}
+
+.txPanel{
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+  padding:14px;
+}
+
+.txAddPanel{
+  overflow:hidden;
+}
+
+.txManagePanel{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.txPanelHeader h3{
+  margin:0;
+  font-size:1rem;
+}
+
 .txPageCard{
   overflow:hidden;
 }
@@ -4378,7 +4419,8 @@ body.light .txPageScrollable::-webkit-scrollbar-thumb,
   background:rgba(51,65,85,.22);
 }
 
-.txPageCard .transactionsScrollBox{
+.txPageCard .transactionsScrollBox,
+.txPageCard .dataMobileList{
   flex:1 1 auto;
   height:100%;
   min-height:0;
@@ -4404,11 +4446,16 @@ body.light .txStickyFooter,
 }
 
 @media (max-width: 960px){
+  .txFullLayout{
+    height:calc(100vh - 88px);
+    min-height:calc(100vh - 88px);
+    max-height:calc(100vh - 88px);
+  }
   .txPageCard{
-    overflow:visible;
+    overflow:hidden;
   }
   .txPageScrollable{
-    overflow:visible;
+    overflow:hidden;
     padding-right:0;
   }
   .txStickyFooter{
@@ -4809,6 +4856,32 @@ body.light .txSearchPrefix{
   }
 }
 
+
+@media (max-width: 960px){
+  .txFullLayout{
+    height:calc(100vh - 88px) !important;
+    min-height:calc(100vh - 88px) !important;
+    max-height:calc(100vh - 88px) !important;
+    overflow:hidden;
+    gap:10px;
+  }
+  .txPanel{
+    padding:12px;
+  }
+}
+
+@media (max-width: 640px){
+  .txPanelHeader .muted{
+    font-size:12px;
+  }
+  .txPanel{
+    border-radius:14px;
+    padding:10px;
+  }
+  .txStickyFooter .btn{
+    width:100%;
+  }
+}
 /* v2.10.30 light-mode polish for auth + advice */
 body.light .authWrap::before{
   opacity: .16;
