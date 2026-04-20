@@ -1338,6 +1338,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
   const useCompactDashboard = !isPhone && isCompactLaptop
+  const forceCompactManageToolbar = !isPhone && isCompactLaptop
   const today = new Date().toISOString().slice(0, 10)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
@@ -1464,17 +1465,17 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-      <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12 }}>
-        <div className="row gap txToolbarFields">
-          <div className="field txField txSearchField">
-            <div className="input-icon txSearchInput">
+      <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
+        <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
+          <div className="field txField txSearchField" style={forceCompactManageToolbar ? { gridColumn: 'auto', maxWidth: 320 } : undefined}>
+            <div className="input-icon txSearchInput" style={forceCompactManageToolbar ? { maxWidth: 320 } : undefined}>
               <Search size={16} />
               <span className="txSearchPrefix">Search</span>
               <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" aria-label="Search transactions" />
             </div>
           </div>
 
-          <div className="field txField txFilterField">
+          <div className="field txField txFilterField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Filter</label>
             <div className="filterChips" role="tablist" aria-label="Transaction filter">
               <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
@@ -1483,7 +1484,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             </div>
           </div>
 
-          <div className="field txField">
+          <div className="field txField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Month</label>
             <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {months.map((month) => (
@@ -1495,7 +1496,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-        <div className="muted">{filteredTx.length} item(s)</div>
+        <div className="muted" style={forceCompactManageToolbar ? { whiteSpace: 'nowrap', marginLeft: 'auto' } : undefined}>{filteredTx.length} item(s)</div>
       </div>
 
       <div className="txPageScrollable">
