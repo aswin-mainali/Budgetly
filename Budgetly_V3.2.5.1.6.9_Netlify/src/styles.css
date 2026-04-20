@@ -282,6 +282,7 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   }
 
 
+@media (max-width: 820px){
   body:not(.mobile-app) .dashboardCompactView .dashboardKpiCompact{
     grid-template-columns:1fr;
   }
@@ -4842,6 +4843,17 @@ body.light .txSearchPrefix{
     gap:8px;
   }
 }
+}
+
+@media (max-height: 820px){
+  .txAddPanel{
+    padding-top:10px;
+    padding-bottom:10px;
+  }
+  .txAddRow{
+    gap:8px;
+  }
+}
 @media (max-width: 1500px){
   .txAddRow{
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -4936,6 +4948,14 @@ body.light .txSearchPrefix{
 
   .txPageCard{
     overflow:hidden;
+    height:auto !important;
+    max-height:none !important;
+    min-height:calc(100dvh - 88px);
+    overflow:visible;
+  }
+
+  .txPageCard{
+    overflow:visible;
   }
 
   .txAddPanel{
@@ -5033,6 +5053,12 @@ body.light .txSearchPrefix{
     height:100%;
     padding-bottom:8px;
     overflow:hidden;
+    min-height:360px;
+    padding-top:8px;
+  }
+
+  .txManagePanel .txPageScrollable{
+    min-height:240px;
   }
 
   .txManagePanel .transactionsScrollBox,
@@ -5055,6 +5081,12 @@ body.light .txSearchPrefix{
     z-index:auto;
     min-width:190px;
     box-shadow:none;
+    min-height:240px;
+  }
+
+  .txStickyFooter{
+    position:static;
+    margin-top:6px;
   }
 }
 
