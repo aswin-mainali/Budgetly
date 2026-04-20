@@ -5079,7 +5079,7 @@ body.light .txSearchPrefix{
 @media (min-width: 961px) {
     .txPageCard {
         height:calc(100vh - 120px)!important;
-        min-height: calc(100vh - 12px)!important;
+        min-height: calc(98vh - 12px)!important;
         max-height: calc(100vh - 120px)!important;
         overflow: hidden!important;
     }
