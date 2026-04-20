@@ -4972,6 +4972,11 @@ body.light .txSearchPrefix{
     gap:8px;
   }
 
+  .txToolbarFields .txSearchField{
+    grid-column:auto !important;
+    max-width:320px;
+  }
+
   .txManagePanel .txSearchInput,
   .txManagePanel .txField select,
   .txManagePanel .filterChips,
@@ -4980,7 +4985,7 @@ body.light .txSearchPrefix{
   }
 
   .txManagePanel .txSearchInput{
-    max-width:420px;
+    max-width:320px;
   }
 
   .txManagePanel .txField label{
