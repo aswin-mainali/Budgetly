@@ -1464,7 +1464,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-      <div className="row between txToolbarRow" style={{ marginTop: 14, alignItems: 'flex-end', gap: 12 }}>
+      <div className="row between txToolbarRow" style={{ marginTop: 8, alignItems: 'flex-end', gap: 12 }}>
         <div className="row gap txToolbarFields">
           <div className="field txField txSearchField">
             <div className="input-icon txSearchInput">
