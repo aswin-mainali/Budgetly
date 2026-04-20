@@ -4163,7 +4163,7 @@ body.theme-light .row select {
 .dataPageCard{
   display:flex;
   flex-direction:column;
-  min-height:calc(100vh - 120px);
+  min-height:calc(100dvh - 120px);
 }
 
 .dataMobileList{
@@ -4355,9 +4355,9 @@ body.light .dataScrollBox thead th,
   display:flex;
   flex-direction:column;
   gap:10px;
-  height:calc(100vh - 120px);
-  min-height:calc(100vh - 120px);
-  max-height:calc(100vh - 120px);
+  height:calc(100dvh - 120px);
+  min-height:calc(100dvh - 120px);
+  max-height:calc(100dvh - 120px);
 }
 
 .txPageHeader,
@@ -4412,6 +4412,7 @@ body.light .dataScrollBox thead th,
   flex-direction:column;
   overflow:hidden;
   padding-right:0;
+  padding-bottom:6px;
 }
 
 .txPageScrollable::-webkit-scrollbar{
@@ -4456,9 +4457,9 @@ body.light .txStickyFooter,
 
 @media (max-width: 960px){
   .txFullLayout{
-    height:calc(100vh - 88px);
-    min-height:calc(100vh - 88px);
-    max-height:calc(100vh - 88px);
+    height:calc(100dvh - 88px);
+    min-height:calc(100dvh - 88px);
+    max-height:calc(100dvh - 88px);
   }
   .txPageCard{
     overflow:hidden;
@@ -4800,17 +4801,38 @@ body.light .txTypeBadge.expense{color:#991b1b;}
 body.light .txSearchPrefix{
   color:#64748b;
 }
-@media (max-width: 1200px){
+@media (max-width: 1400px){
   .txToolbarFields{
-    grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(140px, .75fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .txToolbarFields .txSearchField{
+    grid-column: 1 / -1;
   }
 }
-@media (max-width: 960px){
+
+@media (max-width: 1200px){
   .txToolbarFields{
     grid-template-columns: 1fr;
   }
+  .txToolbarRow{
+    align-items:stretch !important;
+  }
+  .txToolbarRow > .muted{
+    width:100%;
+    text-align:right;
+  }
 }
-@media (max-width: 1280px){
+
+@media (max-height: 820px){
+  .txAddPanel{
+    padding-top:10px;
+    padding-bottom:10px;
+  }
+  .txAddRow{
+    gap:8px;
+  }
+}
+@media (max-width: 1500px){
   .txAddRow{
     grid-template-columns:repeat(4,minmax(0,1fr));
   }
@@ -4868,9 +4890,9 @@ body.light .txSearchPrefix{
 
 @media (max-width: 960px){
   .txFullLayout{
-    height:calc(100vh - 88px) !important;
-    min-height:calc(100vh - 88px) !important;
-    max-height:calc(100vh - 88px) !important;
+    height:calc(100dvh - 88px) !important;
+    min-height:calc(100dvh - 88px) !important;
+    max-height:calc(100dvh - 88px) !important;
     overflow:hidden;
     gap:10px;
   }
