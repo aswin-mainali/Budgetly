@@ -44,7 +44,7 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   width:280px;
   border-right:1px solid var(--border);
   background: linear-gradient(180deg, rgba(8,22,44,.98), rgba(8,22,44,.90));
-  padding:14px;
+  padding:12px;
   position:sticky;
   top:0;
   height:100vh;
@@ -208,7 +208,7 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 .grid{
   display:grid;
   grid-template-columns: 1fr;
-  gap:14px;
+  gap:10px;
 }
 
 .dashboardRightCol{
@@ -4354,7 +4354,7 @@ body.light .dataScrollBox thead th,
 .txFullLayout{
   display:flex;
   flex-direction:column;
-  gap:14px;
+  gap:10px;
   height:calc(100vh - 120px);
   min-height:calc(100vh - 120px);
   max-height:calc(100vh - 120px);
@@ -4372,11 +4372,20 @@ body.light .dataScrollBox thead th,
   border:1px solid var(--border);
   border-radius:18px;
   background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
-  padding:14px;
+  padding:12px;
 }
 
 .txAddPanel{
   overflow:hidden;
+}
+
+.txManagePanel{
+  padding-top:10px;
+  padding-bottom:10px;
+}
+
+.txManagePanel .dataPageFooter{
+  margin-top:8px;
 }
 
 .txManagePanel{
@@ -4433,7 +4442,7 @@ body.light .txPageScrollable::-webkit-scrollbar-thumb,
   position:sticky;
   bottom:0;
   z-index:30;
-  padding-top:12px;
+  padding-top:8px;
   padding-bottom:2px;
   background:#08122b;
   box-shadow:0 -1px 0 rgba(255,255,255,.06);
@@ -4866,7 +4875,7 @@ body.light .txSearchPrefix{
     gap:10px;
   }
   .txPanel{
-    padding:12px;
+    padding:10px;
   }
 }
 
