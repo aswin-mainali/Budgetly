@@ -4253,39 +4253,31 @@ body.theme-light .row select {
 
 @media (max-width: 1360px){
   .recurringScrollBox .dataStickyTable{
-    min-width:1180px;
+    min-width:1060px;
   }
 
   .recurringScrollBox .dataStickyTable th:first-child,
   .recurringScrollBox .dataStickyTable td:first-child{
-    min-width:220px;
-    width:220px;
+    min-width:210px;
+    width:210px;
   }
 
-  .recurringScrollBox .dataStickyTable th:nth-child(7),
-  .recurringScrollBox .dataStickyTable td:nth-child(7){
-    min-width:200px;
-    width:200px;
+  .recurringScrollBox .dataStickyTable th:nth-child(2),
+  .recurringScrollBox .dataStickyTable td:nth-child(2){
+    min-width:100px;
+    width:100px;
   }
 
-  .recurringScrollBox .dataStickyTable td:nth-child(7) .input{
-    min-width:180px;
-  }
-}
-
-@media (max-width: 980px){
-  .recurringScrollBox{
-    overflow-x:auto;
+  .recurringScrollBox .dataStickyTable th:nth-child(3),
+  .recurringScrollBox .dataStickyTable td:nth-child(3){
+    min-width:130px;
+    width:130px;
   }
 
-  .recurringScrollBox .dataStickyTable{
-    min-width:1100px;
-  }
-
-  .recurringScrollBox .dataStickyTable th:first-child,
-  .recurringScrollBox .dataStickyTable td:first-child{
-    min-width:200px;
-    width:200px;
+  .recurringScrollBox .dataStickyTable th:nth-child(5),
+  .recurringScrollBox .dataStickyTable td:nth-child(5){
+    min-width:116px;
+    width:116px;
   }
 
   .recurringScrollBox .dataStickyTable th:nth-child(7),
@@ -4296,6 +4288,58 @@ body.theme-light .row select {
 
   .recurringScrollBox .dataStickyTable td:nth-child(7) .input{
     min-width:160px;
+  }
+
+  .recurringScrollBox .dataStickyTable td:nth-child(2) .select,
+  .recurringScrollBox .dataStickyTable td:nth-child(3) .select,
+  .recurringScrollBox .dataStickyTable td:nth-child(5) .select{
+    font-size:14px;
+    padding-left:10px;
+    padding-right:24px;
+  }
+}
+
+@media (max-width: 980px){
+  .recurringScrollBox{
+    overflow-x:auto;
+  }
+
+  .recurringScrollBox .dataStickyTable{
+    min-width:960px;
+  }
+
+  .recurringScrollBox .dataStickyTable th:first-child,
+  .recurringScrollBox .dataStickyTable td:first-child{
+    min-width:180px;
+    width:180px;
+  }
+
+  .recurringScrollBox .dataStickyTable th:nth-child(2),
+  .recurringScrollBox .dataStickyTable td:nth-child(2){
+    min-width:92px;
+    width:92px;
+  }
+
+  .recurringScrollBox .dataStickyTable th:nth-child(3),
+  .recurringScrollBox .dataStickyTable td:nth-child(3){
+    min-width:118px;
+    width:118px;
+  }
+
+  .recurringScrollBox .dataStickyTable th:nth-child(5),
+  .recurringScrollBox .dataStickyTable td:nth-child(5){
+    min-width:108px;
+    width:108px;
+  }
+
+  .recurringScrollBox .dataStickyTable th:nth-child(7),
+  .recurringScrollBox .dataStickyTable td:nth-child(7){
+    min-width:164px;
+    width:164px;
+  }
+
+  .recurringScrollBox .dataStickyTable td:nth-child(7) .input{
+    min-width:146px;
   }
 }
 
