@@ -4918,14 +4918,14 @@ body.light .txSearchPrefix{
 /* v3.2.5.1.6.10 robust fallback for smaller desktop heights/widths */
 @media (max-width: 1366px), (max-height: 860px){
   .txFullLayout{
-    height:auto !important;
-    max-height:none !important;
-    min-height:calc(100dvh - 88px);
-    overflow:visible;
+    height:calc(100dvh - 88px) !important;
+    max-height:calc(100dvh - 88px) !important;
+    min-height:calc(100dvh - 88px) !important;
+    overflow:hidden;
   }
 
   .txPageCard{
-    overflow:visible;
+    overflow:hidden;
   }
 
   .txAddPanel{
@@ -5008,24 +5008,32 @@ body.light .txSearchPrefix{
   }
 
   .txManagePanel{
-    min-height:420px;
+    flex:1 1 auto;
+    min-height:clamp(360px, 48vh, 620px);
     padding-top:8px;
+    padding-bottom:8px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
   }
 
   .txManagePanel .txPageScrollable{
-    min-height:300px;
+    flex:1 1 auto;
+    min-height:0;
+    padding-bottom:8px;
   }
 
   .txManagePanel .transactionsScrollBox,
   .txManagePanel .dataMobileList{
-    min-height:300px;
+    min-height:0;
+    height:100%;
   }
 
   .txStickyFooter{
     position:sticky;
     bottom:0;
     margin-top:6px;
-    z-index:35;
+    z-index:40;
   }
 }
 
