@@ -4933,19 +4933,21 @@ body.light .txSearchPrefix{
   }
 
   .txAddRow{
-    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
   }
 
   .txAddRow .txDateField,
   .txAddRow .txTypeField,
   .txAddRow .txAmountField,
-  .txAddRow .txCategoryField{
+  .txAddRow .txCategoryField,
+  .txAddRow .txNoteField,
+  .txAddRow .txAddButton{
     grid-column:span 1 !important;
   }
 
-  .txAddRow .txNoteField,
   .txAddRow .txAddButton{
-    grid-column:1 / -1 !important;
+    min-height:44px;
+    align-self:end;
   }
 
   .txToolbarFields{
@@ -4961,7 +4963,7 @@ body.light .txSearchPrefix{
   }
 
   .txPageScrollable{
-    min-height:280px;
+    min-height:240px;
   }
 
   .txStickyFooter{
