@@ -5085,6 +5085,22 @@ body.light .txSearchPrefix{
     }
 }
 
+
+@media (min-width: 961px) and (max-height: 930px) {
+    .txPageCard {
+        height: calc(100vh - 120px) !important;
+        min-height: calc(100vh - 120px) !important;
+        max-height: calc(100vh - 120px) !important;
+        overflow: hidden !important;
+    }
+
+    .txUpdateButton {
+        position: static !important;
+        right: auto;
+        bottom: auto;
+    }
+}
+
 /* v2.10.30 light-mode polish for auth + advice */
 body.light .authWrap::before{
   opacity: .16;
