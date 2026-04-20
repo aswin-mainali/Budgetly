@@ -5049,12 +5049,12 @@ body.light .txSearchPrefix{
   }
 
   .txUpdateButton{
-    position:fixed !important;
-    right:18px;
-    bottom:18px;
-    z-index:120;
+    position:static !important;
+    right:auto;
+    bottom:auto;
+    z-index:auto;
     min-width:190px;
-    box-shadow:0 14px 28px rgba(0,0,0,.25);
+    box-shadow:none;
   }
 }
 
