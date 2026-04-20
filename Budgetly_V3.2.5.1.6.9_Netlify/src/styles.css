@@ -5078,9 +5078,9 @@ body.light .txSearchPrefix{
 
 @media (min-width: 961px) {
     .txPageCard {
-        height:calc(100vh - 120px)!important;
+        height:calc(98vh - 120px)!important;
         min-height: calc(98vh - 12px)!important;
-        max-height: calc(100vh - 120px)!important;
+        max-height: calc(98vh - 120px)!important;
         overflow: hidden!important;
     }
 }
@@ -6213,9 +6213,9 @@ body.light .goalsPage .recurringSummaryRow,
 /* v3.2.5.1 robust desktop scroll regions for Transactions + Goals */
 @media (min-width: 961px){
   .txPageCard{
-    height: calc(100vh - 120px) !important;
-    min-height: calc(100vh - 12px) !important;
-    max-height: calc(100vh - 120px) !important;
+    height: calc(98vh - 120px) !important;
+    min-height: calc(98vh - 12px) !important;
+    max-height: calc(98vh - 120px) !important;
     overflow: hidden !important;
   }
 
