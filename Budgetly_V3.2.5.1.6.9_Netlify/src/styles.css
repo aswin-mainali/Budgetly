@@ -5094,10 +5094,38 @@ body.light .txSearchPrefix{
         overflow: hidden !important;
     }
 
+    .txManagePanel {
+        display: grid !important;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        min-height: 0 !important;
+    }
+
+    .txManagePanel .txPageScrollable {
+        min-height: 0 !important;
+        overflow: hidden;
+    }
+
+    .txManagePanel .transactionsScrollBox,
+    .txManagePanel .dataMobileList {
+        min-height: 0 !important;
+        height: 100% !important;
+    }
+
+    .txStickyFooter {
+        position: sticky !important;
+        bottom: 0;
+        z-index: 45;
+        padding-bottom: 8px;
+        margin-top: 6px;
+    }
+
     .txUpdateButton {
         position: static !important;
         right: auto;
         bottom: auto;
+        width: auto;
+        max-width: 100%;
+        min-width: clamp(170px, 20vw, 240px);
     }
 }
 
