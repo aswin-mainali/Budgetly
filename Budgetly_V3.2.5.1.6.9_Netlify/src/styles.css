@@ -5019,20 +5019,21 @@ body.light .txSearchPrefix{
 
   .txManagePanel{
     flex:1 1 auto;
-    min-height:56dvh !important;
-    max-height:56dvh !important;
+    min-height:0 !important;
+    max-height:none !important;
     padding-top:8px;
     padding-bottom:8px;
-    display:grid;
-    grid-template-rows:auto auto minmax(0,1fr) auto;
+    display:flex;
+    flex-direction:column;
     overflow:hidden;
   }
 
   .txManagePanel .txPageScrollable{
+    flex:1 1 auto;
     min-height:0;
-    height:100%;
+    height:auto;
     padding-bottom:8px;
-    overflow:hidden;
+    overflow:auto;
   }
 
   .txManagePanel .transactionsScrollBox,
@@ -5046,6 +5047,7 @@ body.light .txSearchPrefix{
     bottom:0;
     margin-top:6px;
     z-index:40;
+    padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));
   }
 
   .txUpdateButton{
@@ -5053,7 +5055,9 @@ body.light .txSearchPrefix{
     right:auto;
     bottom:auto;
     z-index:auto;
-    min-width:190px;
+    min-width:0;
+    width:clamp(170px, 28vw, 240px);
+    max-width:100%;
     box-shadow:none;
   }
 }
@@ -5073,6 +5077,16 @@ body.light .txSearchPrefix{
     width:100%;
     text-align:right;
     padding-bottom:0;
+  }
+}
+
+@media (min-width: 961px) and (max-width: 1100px){
+  .txStickyFooter{
+    padding-top:6px;
+  }
+
+  .txUpdateButton{
+    width:100%;
   }
 }
 
