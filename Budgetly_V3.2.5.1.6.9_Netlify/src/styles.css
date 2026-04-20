@@ -271,7 +271,17 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   }
 }
 
+
 @media (max-width: 820px){
+  .txUpdateButton{
+    position:static !important;
+    right:auto;
+    bottom:auto;
+    min-width:0;
+    box-shadow:none;
+  }
+
+
   body:not(.mobile-app) .dashboardCompactView .dashboardKpiCompact{
     grid-template-columns:1fr;
   }
@@ -4918,14 +4928,14 @@ body.light .txSearchPrefix{
 /* v3.2.5.1.6.10 robust fallback for smaller desktop heights/widths */
 @media (max-width: 1366px), (max-height: 860px){
   .txFullLayout{
-    height:auto !important;
-    max-height:none !important;
-    min-height:calc(100dvh - 88px);
-    overflow:visible;
+    height:calc(100dvh - 88px) !important;
+    max-height:calc(100dvh - 88px) !important;
+    min-height:calc(100dvh - 88px) !important;
+    overflow:hidden;
   }
 
   .txPageCard{
-    overflow:visible;
+    overflow:hidden;
   }
 
   .txAddPanel{
@@ -5008,22 +5018,47 @@ body.light .txSearchPrefix{
   }
 
   .txManagePanel{
-    min-height:360px;
+    flex:1 1 auto;
+    min-height:0 !important;
+    max-height:none !important;
     padding-top:8px;
+    padding-bottom:8px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
   }
 
   .txManagePanel .txPageScrollable{
-    min-height:240px;
+    flex:1 1 auto;
+    min-height:0;
+    height:auto;
+    padding-bottom:8px;
+    overflow:auto;
   }
 
   .txManagePanel .transactionsScrollBox,
   .txManagePanel .dataMobileList{
-    min-height:240px;
+    min-height:0;
+    height:100%;
   }
 
   .txStickyFooter{
-    position:static;
+    position:sticky;
+    bottom:0;
     margin-top:6px;
+    z-index:40;
+    padding-bottom:calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .txUpdateButton{
+    position:static !important;
+    right:auto;
+    bottom:auto;
+    z-index:auto;
+    min-width:0;
+    width:clamp(170px, 28vw, 240px);
+    max-width:100%;
+    box-shadow:none;
   }
 }
 
@@ -5044,6 +5079,29 @@ body.light .txSearchPrefix{
     padding-bottom:0;
   }
 }
+
+@media (min-width: 961px) and (max-width: 1100px){
+  .txStickyFooter{
+    padding-top:6px;
+  }
+
+  .txUpdateButton{
+    width:100%;
+  }
+}
+
+@media (min-width: 961px) {
+    .txPageCard {
+        height:calc(98vh - 120px)!important;
+        min-height: calc(98vh - 12px)!important;
+        max-height: calc(98vh - 120px)!important;
+        overflow: hidden!important;
+    }
+}
+
+
+
+
 /* v2.10.30 light-mode polish for auth + advice */
 body.light .authWrap::before{
   opacity: .16;
@@ -6172,9 +6230,9 @@ body.light .goalsPage .recurringSummaryRow,
 /* v3.2.5.1 robust desktop scroll regions for Transactions + Goals */
 @media (min-width: 961px){
   .txPageCard{
-    height: calc(100vh - 120px) !important;
-    min-height: calc(100vh - 120px) !important;
-    max-height: calc(100vh - 120px) !important;
+    height: calc(98vh - 120px) !important;
+    min-height: calc(98vh - 12px) !important;
+    max-height: calc(98vh - 120px) !important;
     overflow: hidden !important;
   }
 
