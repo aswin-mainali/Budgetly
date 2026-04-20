@@ -271,6 +271,17 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   }
 }
 
+
+@media (max-width: 820px){
+  .txUpdateButton{
+    position:static !important;
+    right:auto;
+    bottom:auto;
+    min-width:0;
+    box-shadow:none;
+  }
+
+
 @media (max-width: 820px){
   body:not(.mobile-app) .dashboardCompactView .dashboardKpiCompact{
     grid-template-columns:1fr;
@@ -4832,6 +4843,17 @@ body.light .txSearchPrefix{
     gap:8px;
   }
 }
+}
+
+@media (max-height: 820px){
+  .txAddPanel{
+    padding-top:10px;
+    padding-bottom:10px;
+  }
+  .txAddRow{
+    gap:8px;
+  }
+}
 @media (max-width: 1500px){
   .txAddRow{
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -4918,6 +4940,14 @@ body.light .txSearchPrefix{
 /* v3.2.5.1.6.10 robust fallback for smaller desktop heights/widths */
 @media (max-width: 1366px), (max-height: 860px){
   .txFullLayout{
+    height:calc(100dvh - 88px) !important;
+    max-height:calc(100dvh - 88px) !important;
+    min-height:calc(100dvh - 88px) !important;
+    overflow:hidden;
+  }
+
+  .txPageCard{
+    overflow:hidden;
     height:auto !important;
     max-height:none !important;
     min-height:calc(100dvh - 88px);
@@ -5008,6 +5038,21 @@ body.light .txSearchPrefix{
   }
 
   .txManagePanel{
+    flex:1 1 auto;
+    min-height:56dvh !important;
+    max-height:56dvh !important;
+    padding-top:8px;
+    padding-bottom:8px;
+    display:grid;
+    grid-template-rows:auto auto minmax(0,1fr) auto;
+    overflow:hidden;
+  }
+
+  .txManagePanel .txPageScrollable{
+    min-height:0;
+    height:100%;
+    padding-bottom:8px;
+    overflow:hidden;
     min-height:360px;
     padding-top:8px;
   }
@@ -5018,6 +5063,24 @@ body.light .txSearchPrefix{
 
   .txManagePanel .transactionsScrollBox,
   .txManagePanel .dataMobileList{
+    min-height:0;
+    height:100%;
+  }
+
+  .txStickyFooter{
+    position:sticky;
+    bottom:0;
+    margin-top:6px;
+    z-index:40;
+  }
+
+  .txUpdateButton{
+    position:static !important;
+    right:auto;
+    bottom:auto;
+    z-index:auto;
+    min-width:190px;
+    box-shadow:none;
     min-height:240px;
   }
 
@@ -5044,6 +5107,60 @@ body.light .txSearchPrefix{
     padding-bottom:0;
   }
 }
+
+@media (min-width: 961px) {
+    .txPageCard {
+        height:calc(98vh - 120px)!important;
+        min-height: calc(98vh - 12px)!important;
+        max-height: calc(98vh - 120px)!important;
+        overflow: hidden!important;
+    }
+}
+
+
+@media (min-width: 961px) and (max-height: 930px) {
+    .txPageCard {
+        height: calc(100vh - 120px) !important;
+        min-height: calc(100vh - 120px) !important;
+        max-height: calc(100vh - 120px) !important;
+        overflow: hidden !important;
+    }
+
+    .txManagePanel {
+        display: grid !important;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        min-height: 0 !important;
+    }
+
+    .txManagePanel .txPageScrollable {
+        min-height: 0 !important;
+        overflow: hidden;
+    }
+
+    .txManagePanel .transactionsScrollBox,
+    .txManagePanel .dataMobileList {
+        min-height: 0 !important;
+        height: 100% !important;
+    }
+
+    .txStickyFooter {
+        position: sticky !important;
+        bottom: 0;
+        z-index: 45;
+        padding-bottom: 8px;
+        margin-top: 6px;
+    }
+
+    .txUpdateButton {
+        position: static !important;
+        right: auto;
+        bottom: auto;
+        width: auto;
+        max-width: 100%;
+        min-width: clamp(170px, 20vw, 240px);
+    }
+}
+
 /* v2.10.30 light-mode polish for auth + advice */
 body.light .authWrap::before{
   opacity: .16;
@@ -6172,9 +6289,9 @@ body.light .goalsPage .recurringSummaryRow,
 /* v3.2.5.1 robust desktop scroll regions for Transactions + Goals */
 @media (min-width: 961px){
   .txPageCard{
-    height: calc(100vh - 120px) !important;
-    min-height: calc(100vh - 120px) !important;
-    max-height: calc(100vh - 120px) !important;
+    height: calc(98vh - 120px) !important;
+    min-height: calc(98vh - 12px) !important;
+    max-height: calc(98vh - 120px) !important;
     overflow: hidden !important;
   }
 

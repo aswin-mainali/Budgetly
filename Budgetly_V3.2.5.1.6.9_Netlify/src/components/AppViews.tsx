@@ -1569,7 +1569,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
       <div className="row between dataPageFooter txStickyFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
+        <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
           Update Transactions
         </button>
       </div>
