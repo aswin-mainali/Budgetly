@@ -1397,7 +1397,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         <div className="txPanelHeader row between">
           <div>
             <h3 id="tx-add-title">Add Transaction</h3>
-            <div className="muted">Capture income and expenses quickly with structured inputs.</div>
           </div>
         </div>
 
@@ -1462,7 +1461,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         <div className="txPanelHeader row between">
           <div>
             <h3 id="tx-manage-title">Manage Transactions</h3>
-            <div className="muted">Search, filter, review, and save transaction updates.</div>
           </div>
         </div>
 
