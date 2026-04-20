@@ -4913,6 +4913,61 @@ body.light .txSearchPrefix{
     width:100%;
   }
 }
+
+
+/* v3.2.5.1.6.10 robust fallback for smaller desktop heights/widths */
+@media (max-width: 1366px), (max-height: 860px){
+  .txFullLayout{
+    height:auto !important;
+    max-height:none !important;
+    min-height:calc(100dvh - 88px);
+    overflow:visible;
+  }
+
+  .txPageCard{
+    overflow:visible;
+  }
+
+  .txAddPanel{
+    overflow:visible;
+  }
+
+  .txAddRow{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+
+  .txAddRow .txDateField,
+  .txAddRow .txTypeField,
+  .txAddRow .txAmountField,
+  .txAddRow .txCategoryField{
+    grid-column:span 1 !important;
+  }
+
+  .txAddRow .txNoteField,
+  .txAddRow .txAddButton{
+    grid-column:1 / -1 !important;
+  }
+
+  .txToolbarFields{
+    grid-template-columns:1fr !important;
+  }
+
+  .txToolbarRow{
+    align-items:stretch !important;
+  }
+
+  .txManagePanel{
+    min-height:440px;
+  }
+
+  .txPageScrollable{
+    min-height:280px;
+  }
+
+  .txStickyFooter{
+    position:static;
+  }
+}
 /* v2.10.30 light-mode polish for auth + advice */
 body.light .authWrap::before{
   opacity: .16;
