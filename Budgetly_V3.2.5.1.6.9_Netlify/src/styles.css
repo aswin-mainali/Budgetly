@@ -4968,12 +4968,34 @@ body.light .txSearchPrefix{
   }
 
   .txToolbarFields{
-    grid-template-columns:1fr !important;
+    grid-template-columns:minmax(220px,1.6fr) minmax(170px,.8fr) minmax(180px,.9fr) !important;
+    gap:8px;
+  }
+
+  .txManagePanel .txSearchInput,
+  .txManagePanel .txField select,
+  .txManagePanel .filterChips,
+  .txManagePanel .filterChip{
+    min-height:40px;
+  }
+
+  .txManagePanel .txField label{
+    min-height:18px;
+    font-size:13px;
   }
 
   .txToolbarRow{
-    align-items:stretch !important;
+    align-items:flex-end !important;
     margin-top:2px;
+    flex-wrap:nowrap;
+    gap:8px !important;
+  }
+
+  .txToolbarRow > .muted{
+    width:auto;
+    white-space:nowrap;
+    margin-left:auto;
+    padding-bottom:4px;
   }
 
   .txManagePanel{
@@ -4982,12 +5004,12 @@ body.light .txSearchPrefix{
   }
 
   .txManagePanel .txPageScrollable{
-    min-height:180px;
+    min-height:240px;
   }
 
   .txManagePanel .transactionsScrollBox,
   .txManagePanel .dataMobileList{
-    min-height:180px;
+    min-height:240px;
   }
 
   .txStickyFooter{
@@ -4996,6 +5018,23 @@ body.light .txSearchPrefix{
   }
 }
 
+
+@media (max-width: 1180px){
+  .txToolbarFields{
+    grid-template-columns:1fr !important;
+  }
+
+  .txToolbarRow{
+    align-items:stretch !important;
+    flex-wrap:wrap;
+  }
+
+  .txToolbarRow > .muted{
+    width:100%;
+    text-align:right;
+    padding-bottom:0;
+  }
+}
 /* v2.10.30 light-mode polish for auth + advice */
 body.light .authWrap::before{
   opacity: .16;
