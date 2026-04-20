@@ -1338,6 +1338,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
   const useCompactDashboard = !isPhone && isCompactLaptop
+  const forceCompactManageToolbar = !isPhone && isCompactLaptop
   const today = new Date().toISOString().slice(0, 10)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
@@ -1385,13 +1386,20 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   }, [data.transactions])
 
   return (
-    <div className="card mobileSectionCard dataPageCard txPageCard">
-      <div className="row between">
+    <div className="card mobileSectionCard dataPageCard txPageCard txFullLayout">
+      <div className="row between txPageHeader">
         <div>
           <h2>Transactions</h2>
           <div className="muted">Add today’s transaction by default, or backdate it if needed. Use Month to view older records.</div>
         </div>
       </div>
+
+      <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
+        <div className="txPanelHeader row between">
+          <div>
+            <h3 id="tx-add-title">Add Transaction</h3>
+          </div>
+        </div>
 
       <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
         <div className="field txField txDateField">
@@ -1448,18 +1456,26 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           <Plus size={16} /> Add
         </button>
       </div>
+      </section>
 
-      <div className="row between txToolbarRow" style={{ marginTop: 14, alignItems: 'flex-end', gap: 12 }}>
-        <div className="row gap txToolbarFields">
-          <div className="field txField txSearchField">
-            <div className="input-icon txSearchInput">
+      <section className="txPanel txManagePanel" aria-labelledby="tx-manage-title">
+        <div className="txPanelHeader row between">
+          <div>
+            <h3 id="tx-manage-title">Manage Transactions</h3>
+          </div>
+        </div>
+
+      <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
+        <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
+          <div className="field txField txSearchField" style={forceCompactManageToolbar ? { gridColumn: 'auto', maxWidth: 320 } : undefined}>
+            <div className="input-icon txSearchInput" style={forceCompactManageToolbar ? { maxWidth: 320 } : undefined}>
               <Search size={16} />
               <span className="txSearchPrefix">Search</span>
               <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" aria-label="Search transactions" />
             </div>
           </div>
 
-          <div className="field txField txFilterField">
+          <div className="field txField txFilterField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Filter</label>
             <div className="filterChips" role="tablist" aria-label="Transaction filter">
               <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
@@ -1468,7 +1484,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             </div>
           </div>
 
-          <div className="field txField">
+          <div className="field txField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Month</label>
             <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {months.map((month) => (
@@ -1480,12 +1496,12 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-        <div className="muted">{filteredTx.length} item(s)</div>
+        <div className="muted" style={forceCompactManageToolbar ? { whiteSpace: 'nowrap', marginLeft: 'auto' } : undefined}>{filteredTx.length} item(s)</div>
       </div>
 
       <div className="txPageScrollable">
       {isPhone ? (
-        <div className="mobileList dataMobileList" style={{ marginTop: 12 }}>
+        <div className="mobileList dataMobileList" style={{ marginTop: 8 }}>
           {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
             const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
             return (
@@ -1509,7 +1525,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           })}
         </div>
       ) : (
-        <div className="dataScrollBox transactionsScrollBox" style={{ marginTop: 12 }}>
+        <div className="dataScrollBox transactionsScrollBox" style={{ marginTop: 8 }}>
           <table className="table dataStickyTable">
               <thead>
                 <tr>
@@ -1553,10 +1569,11 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
       <div className="row between dataPageFooter txStickyFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
+        <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
           Update Transactions
         </button>
       </div>
+      </section>
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}
