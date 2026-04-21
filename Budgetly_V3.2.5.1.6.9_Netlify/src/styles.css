@@ -6824,14 +6824,14 @@ body.light .categoriesListHeader,
 .goalsGalleryPage{gap:10px}
 .goalsHeroHeader,.goalsGalleryHeader{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .goalsHeroAddBtn{border-radius:10px;padding:9px 14px}
-.goalsHeroCard{display:grid;grid-template-columns:1.08fr 1fr 290px;border:1px solid var(--line);border-radius:12px;background:#f9fbff;overflow:hidden}
+.goalsHeroCard{display:grid;grid-template-columns:1.08fr 1fr 260px;border:1px solid var(--line);border-radius:12px;background:#f9fbff;overflow:hidden}
 .goalsHeroText{padding:18px 18px}
 .goalsHeroText h3{margin:4px 0 8px;font-size:16px;line-height:1.45;max-width:230px;font-weight:800}
 .goalsHeroText p{margin:0;color:#4e5f7f;max-width:220px;font-size:14px;line-height:1.45}
 .goalsHeroStar{color:#b6c5de;font-size:13px}
 .goalsHeroMountain{display:flex;align-items:flex-end;justify-content:center;min-height:140px;padding-top:8px}
 .goalsHeroMountain img{display:block;width:100%;max-width:420px;height:auto;object-fit:contain}
-.goalsHeroStats{border-left:1px solid #e5ebf3;padding:10px 12px;display:grid;gap:7px;align-content:center;background:#fcfdff}
+.goalsHeroStats{border-left:1px solid #e5ebf3;padding:10px 8px 10px 6px;display:grid;gap:7px;align-content:center;background:#fcfdff}
 .goalsHeroStatItem{display:flex;gap:10px;align-items:center;padding:3px 0;color:#4f6388}
 .goalsHeroStatItem strong{display:block;color:#192544;font-size:17px;line-height:1.15}
 .goalsHeroStatItem span{font-size:12px;color:#667799}
@@ -6843,6 +6843,11 @@ body.light .categoriesListHeader,
 .goalsSortRow{display:flex;align-items:center;gap:8px}
 .goalsSortSelect{border-radius:10px;min-width:170px;height:36px}
 .goalsGalleryHeader{margin-top:-2px}
+.goalsSortControls{gap:10px}
+.goalsViewToggleGroup{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.goalsViewToggle{width:34px;height:32px;border:none;border-right:1px solid var(--line);border-radius:0;background:transparent}
+.goalsViewToggle:last-child{border-right:none}
+.goalsViewToggle.active{color:#23ab83;background:#ecf9f4}
 .goalsCarouselShell{display:flex;align-items:center;gap:12px}
 .goalsNavBtn{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
 .goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
@@ -6852,6 +6857,9 @@ body.light .categoriesListHeader,
 .goalCarouselTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .goalCarouselTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
 .goalCarouselTitleRow .muted{font-size:12px}
+.goalHeaderActions{position:relative}
+.goalMenuPanel{position:absolute;right:40px;top:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px;z-index:3;min-width:120px;box-shadow:0 10px 20px rgba(15,23,42,.12)}
+.goalMenuPanel .btn{width:100%;justify-content:flex-start;gap:8px;padding:7px 10px}
 .goalGaugeRow{display:flex;gap:14px;align-items:center}
 .goalGauge{position:relative;width:78px;height:78px;flex:0 0 78px}
 .goalGauge svg{width:78px;height:78px;transform:rotate(-90deg)}
@@ -6864,6 +6872,11 @@ body.light .categoriesListHeader,
 .goalLinearProgress{height:6px;border-radius:999px;background:#e7eaf1;overflow:hidden}
 .goalLinearProgress>div{height:100%;border-radius:999px;background:linear-gradient(90deg,#1cb78a,#2f80ed)}
 .goalStatusStrip{display:flex;align-items:center;gap:8px;font-size:12px;border-radius:10px;background:#edf7ef;color:#3e6f55;padding:9px 10px}
+.goalInlineEditor{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:4px}
+.goalInlineEditor small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.goalInlineEditor .input,.goalInlineEditor .select{height:34px}
+.goalInlineEditor textarea.input{height:auto}
+.goalInlineEditorActions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
 .goalsCarouselDots{display:flex;justify-content:center;gap:8px}
 .goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
 .goalsDot.active{width:10px;height:10px;background:#1db180}

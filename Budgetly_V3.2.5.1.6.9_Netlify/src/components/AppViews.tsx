@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, Grid2x2, List } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1877,10 +1877,12 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, deleteGoal, helpers, data } = budget
+  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved'>('nearest')
   const [activeIndex, setActiveIndex] = useState(0)
+  const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
@@ -1975,13 +1977,17 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
 
       <div className="goalsGalleryHeader">
         <h3>My Goals</h3>
-        <div className="goalsSortRow">
+        <div className="goalsSortRow goalsSortControls">
           <span className="muted">Sort by:</span>
           <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved')}>
             <option value="nearest">Nearest target</option>
             <option value="progress">Highest progress</option>
             <option value="saved">Most saved</option>
           </select>
+          <div className="goalsViewToggleGroup">
+            <button className="icon goalsViewToggle active" title="Grid view"><Grid2x2 size={14} /></button>
+            <button className="icon goalsViewToggle" title="List view"><List size={14} /></button>
+          </div>
         </div>
       </div>
 
@@ -2007,9 +2013,14 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
                     </div>
                   </div>
                   <div className="row goalHeaderActions">
-                    <button className="icon" title="More options">
+                    <button className="icon" title="More options" onClick={() => setMenuGoalId((current) => current === goal.id ? null : goal.id)}>
                       <MoreHorizontal size={16} />
                     </button>
+                    {menuGoalId === goal.id ? (
+                      <div className="goalMenuPanel">
+                        <button className="btn" onClick={() => { setEditingGoalId(goal.id); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
+                      </div>
+                    ) : null}
                     <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
                       <Trash2 size={16} />
                     </button>
@@ -2042,6 +2053,40 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
                   <TrendingUp size={14} />
                   {progress >= 70 ? 'You’re on track to reach your goal!' : 'Keep going! Small steps lead to big results.'}
                 </div>
+                {editingGoalId === goal.id ? (
+                  <div className="goalInlineEditor">
+                    <div>
+                      <small>Name</small>
+                      <input className="input" value={goal.name} onChange={(event) => updateGoalField(goal.id, 'name', event.target.value)} />
+                    </div>
+                    <div>
+                      <small>Emoji</small>
+                      <select className="select" value={goal.emoji || '🎯'} onChange={(event) => updateGoalField(goal.id, 'emoji', event.target.value)}>
+                        {CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <small>Target amount</small>
+                      <input className="input" inputMode="decimal" value={goal.target_amount} onChange={(event) => updateGoalField(goal.id, 'target_amount', event.target.value)} />
+                    </div>
+                    <div>
+                      <small>Saved so far</small>
+                      <input className="input" inputMode="decimal" value={goal.current_amount} onChange={(event) => updateGoalField(goal.id, 'current_amount', event.target.value)} />
+                    </div>
+                    <div>
+                      <small>Target date</small>
+                      <input className="input" type="date" value={goal.target_date ?? ''} onChange={(event) => updateGoalField(goal.id, 'target_date', event.target.value)} />
+                    </div>
+                    <div>
+                      <small>Note</small>
+                      <textarea className="input" rows={2} value={goal.note ?? ''} onChange={(event) => updateGoalField(goal.id, 'note', event.target.value)} />
+                    </div>
+                    <div className="goalInlineEditorActions">
+                      <button className="btn" onClick={() => setEditingGoalId(null)}>Close</button>
+                      <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Save Goal</button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             )
           })}
