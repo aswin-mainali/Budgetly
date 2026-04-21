@@ -1607,6 +1607,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'budget-high' | 'budget-low'>('name-asc')
   const [draftName, setDraftName] = useState('')
   const [draftBudget, setDraftBudget] = useState('')
+  const [draftError, setDraftError] = useState('')
   const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
   const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
@@ -1636,13 +1637,15 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const createCategoryWithDraft = () => {
     const name = draftName.trim()
-    if (!name) {
-      addCategory()
+    const budget = draftBudget.trim()
+    if (!name || !budget) {
+      setDraftError('Please enter both category name and monthly amount before adding.')
       return
     }
+    setDraftError('')
     setPendingDraft({
       name,
-      budget: draftBudget.trim(),
+      budget,
     })
     addCategory()
     setDraftName('')
@@ -1698,7 +1701,10 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
             <input
               className="input"
               value={draftName}
-              onChange={(event) => setDraftName(event.target.value)}
+              onChange={(event) => {
+                setDraftName(event.target.value)
+                if (draftError) setDraftError('')
+              }}
               placeholder="Enter category name"
             />
             <div className="categoriesComposerBudgetRow">
@@ -1706,13 +1712,17 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                 className="input"
                 inputMode="decimal"
                 value={draftBudget}
-                onChange={(event) => setDraftBudget(event.target.value)}
+                onChange={(event) => {
+                  setDraftBudget(event.target.value)
+                  if (draftError) setDraftError('')
+                }}
                 placeholder={`${data.currency} Enter monthly budget`}
               />
               <button className="btn primary" onClick={createCategoryWithDraft}>
                 <Plus size={16} /> Add
               </button>
             </div>
+            {draftError ? <div className="categoriesComposerError">{draftError}</div> : null}
           </div>
 
           <div className="categoriesSuggestions">

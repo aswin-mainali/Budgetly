@@ -6597,6 +6597,11 @@ body.light .bugUploadBox{background:#f8fbff}
   gap:10px;
 }
 
+.categoriesComposerError{
+  color:#f87171;
+  font-size:12px;
+}
+
 .categoriesSuggestions{display:flex; flex-direction:column; gap:8px}
 .categoriesSuggestionsTitle{font-weight:600}
 .categoriesSuggestionList{display:flex; flex-wrap:wrap; gap:8px}
