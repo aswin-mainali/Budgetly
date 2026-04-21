@@ -2152,7 +2152,20 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
   const trendHigh = trendRates.length ? Math.max(...trendRates) : null
   const trendLow = trendRates.length ? Math.min(...trendRates) : null
   const trendChange = trendRates.length > 1 ? ((trendRates[trendRates.length - 1] - trendRates[0]) / trendRates[0]) * 100 : null
-  const recentPairs = [`${fromCurrency} → ${toCurrency}`, `${fromCurrency} → NPR`, 'USD → CAD']
+  const recentPairs = useMemo(
+    () => [
+      { from: fromCurrency, to: toCurrency },
+      { from: 'USD', to: 'CAD' },
+      { from: 'CAD', to: 'USD' },
+      { from: 'EUR', to: 'USD' },
+      { from: 'USD', to: 'NPR' },
+    ].filter((pair, index, all) =>
+      currencyMap[pair.from] &&
+      currencyMap[pair.to] &&
+      all.findIndex((item) => item.from === pair.from && item.to === pair.to) === index
+    ),
+    [fromCurrency, toCurrency, currencyMap],
+  )
 
   return (
     <div className="converterPage">
@@ -2270,19 +2283,30 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
               <TrendingUp size={14} />
               {chartLoading ? 'Loading chart…' : chartPoints.length > 0 ? `${chartPoints.length} data points loaded` : 'No chart data available'}
             </div>
-            <button className="btn ghost">More details</button>
           </div>
         </div>
       </div>
 
-      <div className="converterRecentPairs">
-        <span className="converterRecentLabel">Recent pairs</span>
-        {recentPairs.map((pair, index) => (
-          <button key={pair} className="converterPairChip">
-            {pair} {index === 0 ? (convertedAmount == null ? '—' : convertedAmount.toFixed(4)) : ''}
-          </button>
-        ))}
-        <button className="converterPairChip"><PlusIcon size={14} /> Add pair</button>
+      <div className="converterRecentBox">
+        <div className="converterRecentLabel">Recent pairs</div>
+        <div className="converterRecentPairs">
+          {recentPairs.map((pair) => {
+            const isActive = pair.from === fromCurrency && pair.to === toCurrency
+            return (
+              <button
+                key={`${pair.from}-${pair.to}`}
+                className={`converterPairChip ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  setFromCurrency(pair.from)
+                  setToCurrency(pair.to)
+                }}
+              >
+                {pair.from} → {pair.to}
+              </button>
+            )
+          })}
+          <button className="converterPairChip"><PlusIcon size={14} /> Add pair</button>
+        </div>
       </div>
     </div>
   )
