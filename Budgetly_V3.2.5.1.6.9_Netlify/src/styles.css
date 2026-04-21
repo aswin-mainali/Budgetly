@@ -6681,8 +6681,8 @@ body.light .categoriesListHeader,
 }
 
 .categoriesListItem{
-  display:flex;
-  justify-content:space-between;
+  display:grid;
+  grid-template-columns:56px minmax(120px, 1fr) 120px 98px;
   align-items:center;
   gap:10px;
   border:1px solid var(--border);
@@ -6691,12 +6691,17 @@ body.light .categoriesListHeader,
   background:rgba(255,255,255,.03);
 }
 
-.categoriesListMain{display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 0}
-.categoriesListFields{min-width:0; display:flex; flex-direction:column; gap:4px; flex:1 1 auto}
-.categoriesListFields .input{width:100%; min-width:0}
-.categoriesListActions{display:flex; align-items:center; gap:10px; flex:0 0 auto}
+.categoriesRowEmoji{
+  width:100%;
+  min-width:0;
+}
+
+.categoriesListNameCell .input,
+.categoriesListBudgetCell .input{width:100%; min-width:0}
+
+.categoriesListActions{display:flex; align-items:center; justify-content:center; gap:10px; flex:0 0 auto}
 .categoriesBudgetInput{width:120px}
-.categoriesListMain .emojiChip:disabled{
+.categoriesRowEmoji:disabled{
   opacity:.65;
   cursor:not-allowed;
 }
@@ -6715,9 +6720,14 @@ body.light .categoriesListHeader,
     gap:8px;
   }
 
-  .categoriesListMain .emojiChip{
+  .categoriesRowEmoji{
     padding:6px 8px;
     min-width:40px;
+  }
+
+  .categoriesListItem{
+    grid-template-columns:48px minmax(120px, 1fr) 72px 88px;
+    gap:8px;
   }
 
   .categoriesBudgetInput{
@@ -6739,7 +6749,8 @@ body.light .categoriesListHeader,
   .categoriesManage{padding:12px}
   .categoriesToolbarRow{grid-template-columns:1fr}
   .categoriesListHeader{display:none}
-  .categoriesListItem{flex-direction:column; align-items:stretch}
+  .categoriesListItem{grid-template-columns:1fr; align-items:stretch}
   .categoriesListActions{justify-content:space-between}
+  .categoriesRowEmoji{max-width:72px}
   .categoriesBudgetInput{width:100%}
 }

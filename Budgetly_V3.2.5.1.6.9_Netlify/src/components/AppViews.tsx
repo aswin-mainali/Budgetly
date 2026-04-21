@@ -1771,21 +1771,19 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               const isEditing = !!editingCategoryIds[category.id]
               return (
                 <article key={category.id} className="categoriesListItem">
-                  <div className="categoriesListMain">
-                    <button className="emojiChip" onClick={() => setPickerFor(category.id)} title="Choose emoji" disabled={!isEditing}>
-                      <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
-                    </button>
-                    <div className="categoriesListFields">
-                      <input
-                        className="input"
-                        value={category.name}
-                        onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)}
-                        disabled={!isEditing}
-                      />
-                    </div>
+                  <button className="emojiChip categoriesRowEmoji" onClick={() => setPickerFor(category.id)} title="Choose emoji" disabled={!isEditing}>
+                    <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
+                  </button>
+                  <div className="categoriesListNameCell">
+                    <input
+                      className="input"
+                      value={category.name}
+                      onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)}
+                      disabled={!isEditing}
+                    />
                   </div>
 
-                  <div className="categoriesListActions">
+                  <div className="categoriesListBudgetCell">
                     <input
                       className="input categoriesBudgetInput"
                       inputMode="decimal"
@@ -1793,6 +1791,8 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                       onChange={(event) => updateCategoryField(category.id, 'budget_monthly', event.target.value)}
                       disabled={!isEditing}
                     />
+                  </div>
+                  <div className="categoriesListActions">
                     <button
                       className={`icon ${isEditing ? 'primary' : ''}`}
                       onClick={() => toggleCategoryEditing(category.id)}
