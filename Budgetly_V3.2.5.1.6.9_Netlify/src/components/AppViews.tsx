@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, Pencil } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -2123,6 +2123,11 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const isCompactLaptop = useIsCompactLaptop()
   const useCompactDashboard = !isPhone && isCompactLaptop
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState<'all' | RecurringKind>('all')
+  const [frequencyFilter, setFrequencyFilter] = useState<'all' | RecurrenceType>('all')
+  const [sortMode, setSortMode] = useState<'name' | 'amount_desc' | 'amount_asc' | 'due_soon'>('name')
   const pendingDeleteRecurring = useMemo(() => sortedRecurring.find((item) => item.id === pendingDeleteId) ?? null, [sortedRecurring, pendingDeleteId])
 
   const confirmDeleteRecurring = async () => {
@@ -2141,6 +2146,39 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     { value: 'income', label: 'Income' },
   ]
 
+  const recurrenceLabel = (value: RecurrenceType) => (value === 'biweekly' ? 'Bi-weekly' : value === 'weekly' ? 'Weekly' : 'Monthly')
+
+  const visibleRecurring = useMemo(() => {
+    const filtered = sortedRecurring.filter((item) => {
+      const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
+      if (typeFilter !== 'all' && item.kind !== typeFilter) return false
+      if (frequencyFilter !== 'all' && recurrenceType !== frequencyFilter) return false
+      if (!searchQuery.trim()) return true
+      const categoryName = categories.find((category) => category.id === item.category_id)?.name ?? ''
+      const haystack = `${item.name} ${item.note ?? ''} ${categoryName}`.toLowerCase()
+      return haystack.includes(searchQuery.trim().toLowerCase())
+    })
+
+    const dueValue = (item: typeof filtered[number]) => {
+      const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
+      if (recurrenceType === 'monthly') return Number(item.day_of_month ?? 31)
+      return 0
+    }
+
+    return [...filtered].sort((left, right) => {
+      if (sortMode === 'amount_desc') return Number(right.amount ?? 0) - Number(left.amount ?? 0)
+      if (sortMode === 'amount_asc') return Number(left.amount ?? 0) - Number(right.amount ?? 0)
+      if (sortMode === 'due_soon') return dueValue(left) - dueValue(right) || left.name.localeCompare(right.name)
+      return left.name.localeCompare(right.name)
+    })
+  }, [categories, frequencyFilter, searchQuery, sortMode, sortedRecurring, typeFilter])
+
+  const scheduledThisMonth = useMemo(() => visibleRecurring.reduce((sum, item) => {
+    const frequency = item.recurrence_type === 'weekly' ? 4 : item.recurrence_type === 'biweekly' ? 2 : 1
+    const signedAmount = Number(item.amount ?? 0) * frequency
+    return sum + ((item.kind === 'income' ? 1 : -1) * signedAmount)
+  }, 0), [visibleRecurring])
+
   return (
     <div className="card mobileSectionCard dataPageCard">
       <div className="row between">
@@ -2155,7 +2193,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
 
       {isPhone ? (
         <div className="mobileList dataMobileList" style={{ marginTop: 12 }}>
-          {sortedRecurring.length === 0 ? <div className="muted mobileEmptyCard">No recurring items yet.</div> : sortedRecurring.map((item) => {
+          {visibleRecurring.length === 0 ? <div className="muted mobileEmptyCard">No recurring items yet.</div> : visibleRecurring.map((item) => {
             const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
             return (
               <div key={item.id} className="mobileInfoCard recurringMobileCard">
@@ -2180,6 +2218,42 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
           })}
         </div>
       ) : (
+        <>
+        <div className="recurringHeroStrip">
+          <div className="recurringHeroCard">
+            <div className="recurringHeroLabel">Active</div>
+            <strong>{visibleRecurring.length}</strong>
+            <small>Recurring items</small>
+          </div>
+          <div className="recurringHeroCard">
+            <div className="recurringHeroLabel">{helpers.fmtMoney(scheduledThisMonth, data.currency)}</div>
+            <strong>Scheduled</strong>
+            <small>This month</small>
+          </div>
+          <button className="btn primary recurringHeroAction" onClick={() => addRecurring()}>
+            <Plus size={16} /> Add Recurring
+          </button>
+        </div>
+        <div className="recurringToolbar">
+          <label className="search recurringSearch">
+            <Search size={14} />
+            <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search by name or note..." />
+          </label>
+          <select className="select recurringFilterSelect" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as 'all' | RecurringKind)}>
+            <option value="all">All types</option>
+            {recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <select className="select recurringFilterSelect" value={frequencyFilter} onChange={(event) => setFrequencyFilter(event.target.value as 'all' | RecurrenceType)}>
+            <option value="all">All frequencies</option>
+            {recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <select className="select recurringFilterSelect" value={sortMode} onChange={(event) => setSortMode(event.target.value as 'name' | 'amount_desc' | 'amount_asc' | 'due_soon')}>
+            <option value="name">Sort: Name</option>
+            <option value="amount_desc">Sort: Amount high-low</option>
+            <option value="amount_asc">Sort: Amount low-high</option>
+            <option value="due_soon">Sort: Due soon</option>
+          </select>
+        </div>
         <div className="dataScrollBox recurringScrollBox" style={{ marginTop: 12 }}>
           <table className="table dataStickyTable">
               <thead>
@@ -2195,49 +2269,54 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                 </tr>
               </thead>
               <tbody>
-                {sortedRecurring.map((item) => {
+                {visibleRecurring.map((item) => {
                   const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
+                  const category = categories.find((entry) => entry.id === item.category_id)
+                  const isEditing = editingId === item.id
                   return (
                     <tr key={item.id}>
                       <td>
-                        <input className="input" value={item.name} onChange={(event) => updateRecurringField(item.id, 'name', event.target.value)} placeholder="Bill name" />
+                        {isEditing ? <input className="input" value={item.name} onChange={(event) => updateRecurringField(item.id, 'name', event.target.value)} placeholder="Bill name" /> : <div className="recurringReadCell">{item.name || 'Untitled recurring item'}</div>}
                       </td>
                       <td>
-                        <select className="select" value={item.kind} onChange={(event) => updateRecurringField(item.id, 'kind', event.target.value)}>
+                        {isEditing ? <select className="select" value={item.kind} onChange={(event) => updateRecurringField(item.id, 'kind', event.target.value)}>
                           {recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
+                        </select> : <span className={`recurringTypePill ${item.kind === 'income' ? 'income' : 'expense'}`}>{item.kind === 'income' ? 'Income' : 'Expense'}</span>}
                       </td>
                       <td>
-                        <select className="select" value={item.category_id ?? ''} onChange={(event) => updateRecurringField(item.id, 'category_id', event.target.value)}>
+                        {isEditing ? <select className="select" value={item.category_id ?? ''} onChange={(event) => updateRecurringField(item.id, 'category_id', event.target.value)}>
                           <option value="">None</option>
                           {categories.map((category) => <option key={category.id} value={category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}
-                        </select>
+                        </select> : <div className="recurringReadCell">{category ? `${category.emoji ?? '🏷️'} ${category.name}` : 'None'}</div>}
                       </td>
                       <td>
-                        <input className="input" inputMode="decimal" value={String(item.amount ?? '')} onChange={(event) => updateRecurringField(item.id, 'amount', event.target.value)} placeholder="0.00" />
+                        {isEditing ? <input className="input" inputMode="decimal" value={String(item.amount ?? '')} onChange={(event) => updateRecurringField(item.id, 'amount', event.target.value)} placeholder="0.00" /> : <div className="recurringAmountCell">{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</div>}
                       </td>
                       <td>
-                        <select className="select" value={recurrenceType} onChange={(event) => updateRecurringField(item.id, 'recurrence_type', event.target.value)}>
+                        {isEditing ? <select className="select" value={recurrenceType} onChange={(event) => updateRecurringField(item.id, 'recurrence_type', event.target.value)}>
                           {recurrenceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
+                        </select> : <div className="recurringReadCell">{recurrenceLabel(recurrenceType)}</div>}
                       </td>
                       <td>
-                        {recurrenceType === 'monthly' ? (
+                        {isEditing ? recurrenceType === 'monthly' ? (
                           <input className="input" type="number" min={1} max={31} value={String(item.day_of_month ?? '')} onChange={(event) => updateRecurringField(item.id, 'day_of_month', event.target.value)} />
                         ) : (
                           <input className="input" type="date" value={item.anchor_date ?? ''} onChange={(event) => updateRecurringField(item.id, 'anchor_date', event.target.value)} />
-                        )}
+                        ) : <div className="recurringReadCell">{recurrenceType === 'monthly' ? `Day ${item.day_of_month ?? '-'}` : (item.anchor_date || '-')}</div>}
                       </td>
                       <td>
-                        <input className="input" value={item.note ?? ''} onChange={(event) => updateRecurringField(item.id, 'note', event.target.value)} placeholder="Optional note" />
+                        {isEditing ? <input className="input" value={item.note ?? ''} onChange={(event) => updateRecurringField(item.id, 'note', event.target.value)} placeholder="Optional note" /> : <div className="recurringReadCell muted">{item.note || 'Optional note'}</div>}
                       </td>
                       <td style={{ textAlign: 'right' }}>
+                        <button className="icon" onClick={() => setEditingId((current) => current === item.id ? null : item.id)} title={isEditing ? 'Done editing' : 'Edit'}>
+                          <Pencil size={15} />
+                        </button>
                         <button className="icon danger" onClick={() => setPendingDeleteId(item.id)} title="Delete"><Trash2 size={16} /></button>
                       </td>
                     </tr>
                   )
                 })}
-                {sortedRecurring.length === 0 ? (
+                {visibleRecurring.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="muted" style={{ padding: 18, textAlign: 'center' }}>No recurring items yet.</td>
                   </tr>
@@ -2245,6 +2324,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               </tbody>
           </table>
         </div>
+        </>
       )}
 
       <div className="row between recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
