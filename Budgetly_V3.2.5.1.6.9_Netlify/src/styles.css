@@ -6847,9 +6847,9 @@ body.light .categoriesListHeader,
 .goalsCarouselShell{display:flex;align-items:center;gap:12px}
 .goalsNavBtn{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
 .goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
-.goalsCarouselTrack{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
+.goalsCarouselTrack{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
 .goalsCarouselTrack::-webkit-scrollbar{display:none}
-.goalCarouselCard{position:relative;overflow:hidden;scroll-snap-align:start;flex:0 0 calc((100% - 24px)/3);border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
+.goalCarouselCard{position:relative;overflow:hidden;scroll-snap-align:start;flex:0 0 calc((100% - 30px)/4);border:1px solid #d9dee8;border-radius:14px;padding:14px;background:#ffffff;display:grid;gap:12px;box-shadow:none}
 .goalCarouselTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .goalCarouselTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
 .goalCarouselTitleRow .muted{font-size:12px}
