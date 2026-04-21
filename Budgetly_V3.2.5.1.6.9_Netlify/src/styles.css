@@ -6850,7 +6850,6 @@ body.light .categoriesListHeader,
 .goalsCarouselTrack{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
 .goalsCarouselTrack::-webkit-scrollbar{display:none}
 .goalCarouselCard{scroll-snap-align:start;flex:0 0 calc((100% - 24px)/3);border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
-.goalCarouselCard.editing{flex-basis:calc((100% - 12px)/2)}
 .goalCarouselTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .goalCarouselTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
 .goalCarouselTitleRow .muted{font-size:12px}
@@ -6873,6 +6872,9 @@ body.light .categoriesListHeader,
 .goalInlineEditor small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
 .goalInlineEditor .input,.goalInlineEditor .select{height:34px}
 .goalInlineEditor textarea.input{height:auto}
+.goalQuickAddRow{display:flex;gap:8px}
+.goalQuickAddRow .input{flex:1}
+.goalQuickAddRow .btn{white-space:nowrap}
 .goalInlineEditorActions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
 .goalsCarouselDots{display:flex;justify-content:center;gap:8px}
 .goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
@@ -6880,15 +6882,19 @@ body.light .categoriesListHeader,
 
 @media (max-width: 1200px){
   .goalsHeroCard{grid-template-columns:1fr}
-  .goalsHeroMountain{height:130px}
+  .goalsHeroMountain{height:130px;min-height:130px}
   .goalsHeroStats{border-left:0;border-top:1px solid #e5ebf3;grid-template-columns:repeat(2,minmax(0,1fr))}
   .goalCarouselCard{flex-basis:calc((100% - 12px)/2)}
-  .goalCarouselCard.editing{flex-basis:100%}
 }
 @media (max-width: 760px){
   .goalsHeroHeader,.goalsGalleryHeader{flex-direction:column;align-items:flex-start}
-  .goalsHeroText h3{font-size:28px;max-width:none}
-  .goalsCarouselShell{gap:8px}
-  .goalCarouselCard{flex-basis:100%}
+  .goalsHeroText h3{font-size:16px;max-width:none}
+  .goalsHeroText p{max-width:none}
+  .goalsHeroMountain{min-height:120px;height:auto}
+  .goalsHeroStats{grid-template-columns:1fr}
+  .goalsCarouselShell{gap:8px;align-items:stretch}
+  .goalsCarouselTrack{flex-direction:column;overflow:visible}
+  .goalCarouselCard{flex-basis:auto;width:100%}
+  .goalInlineEditor{grid-template-columns:1fr}
   .goalsNavBtn{display:none}
 }

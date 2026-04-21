@@ -1877,8 +1877,9 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, helpers, data } = budget
+  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, contributeToGoal, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [contributions, setContributions] = useState<Record<string, string>>({})
   const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved'>('nearest')
   const [activeIndex, setActiveIndex] = useState(0)
   const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
@@ -1894,6 +1895,14 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     if (!pendingDeleteId) return
     await deleteGoal(pendingDeleteId)
     setPendingDeleteId(null)
+  }
+
+  const applyContribution = (goalId: string) => {
+    const raw = contributions[goalId] ?? ''
+    const amount = Number(raw)
+    if (!Number.isFinite(amount) || amount <= 0) return
+    contributeToGoal(goalId, amount)
+    setContributions((current) => ({ ...current, [goalId]: '' }))
   }
 
   const displayGoals = useMemo(() => {
@@ -1999,7 +2008,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             const targetDate = goal.target_date ? new Date(`${goal.target_date}T00:00:00`).toLocaleDateString() : 'No date'
             const remaining = Math.max(0, targetAmount - currentAmount)
             return (
-              <div key={goal.id} className={`goalCarouselCard${editingGoalId === goal.id ? ' editing' : ''}`}>
+              <div key={goal.id} className="goalCarouselCard">
                 <div className="goalCarouselTop">
                   <div className="goalCarouselTitleRow">
                     <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
@@ -2076,6 +2085,13 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
                     <div>
                       <small>Note</small>
                       <textarea className="input" rows={2} value={goal.note ?? ''} onChange={(event) => updateGoalField(goal.id, 'note', event.target.value)} />
+                    </div>
+                    <div>
+                      <small>Quick amount</small>
+                      <div className="goalQuickAddRow">
+                        <input className="input" inputMode="decimal" placeholder="0.00" value={contributions[goal.id] ?? ''} onChange={(event) => setContributions((current) => ({ ...current, [goal.id]: event.target.value }))} />
+                        <button className="btn" onClick={() => applyContribution(goal.id)}>+ Add</button>
+                      </div>
                     </div>
                     <div className="goalInlineEditorActions">
                       <button className="btn" onClick={() => setEditingGoalId(null)}>Close</button>
