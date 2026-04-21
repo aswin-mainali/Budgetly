@@ -1877,8 +1877,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, contributeToGoal, deleteGoal, helpers, data } = budget
-  const [contributions, setContributions] = useState<Record<string, string>>({})
+  const { sortedGoals, addGoal, deleteGoal, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved'>('nearest')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -1888,14 +1887,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const totalTarget = sortedGoals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0)
   const totalSaved = sortedGoals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0)
   const averageProgress = sortedGoals.length > 0 && totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0
-
-  const applyContribution = (goalId: string) => {
-    const raw = contributions[goalId] ?? ''
-    const amount = Number(raw)
-    if (!Number.isFinite(amount) || amount <= 0) return
-    contributeToGoal(goalId, amount)
-    setContributions((current) => ({ ...current, [goalId]: '' }))
-  }
 
   const confirmDeleteGoal = async () => {
     if (!pendingDeleteId) return
@@ -1972,10 +1963,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           <p>Keep saving, stay consistent and make it happen.</p>
         </div>
         <div className="goalsHeroMountain" aria-hidden="true">
-          <div className="mountainLayer layerBack" />
-          <div className="mountainLayer layerFront" />
-          <div className="mountainPath" />
-          <div className="mountainFlag" />
+          <img src="/goal-mountain.svg" alt="" />
         </div>
         <div className="goalsHeroStats">
           <div className="goalsHeroStatItem"><PiggyBank size={16} /><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
@@ -2047,10 +2035,8 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
                     <div><small>Target date</small><strong>{targetDate}</strong></div>
                   </div>
                 </div>
-
-                <div className="goalContributionRow goalContributionInline">
-                  <input className="input" inputMode="decimal" value={contributions[goal.id] ?? ''} onChange={(event) => setContributions((current) => ({ ...current, [goal.id]: event.target.value }))} placeholder="0.00" />
-                  <button className="btn" onClick={() => applyContribution(goal.id)}>Add</button>
+                <div className="goalLinearProgress">
+                  <div style={{ width: `${progress}%` }} />
                 </div>
                 <div className="goalStatusStrip">
                   <TrendingUp size={14} />

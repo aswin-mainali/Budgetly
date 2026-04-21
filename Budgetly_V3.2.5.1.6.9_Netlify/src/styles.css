@@ -6826,16 +6826,11 @@ body.light .categoriesListHeader,
 .goalsHeroAddBtn{border-radius:10px;padding:9px 14px}
 .goalsHeroCard{display:grid;grid-template-columns:1.2fr 1fr 270px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,#f8fbff,#f7f8ff 40%,#f8fffc);overflow:hidden}
 .goalsHeroText{padding:26px 22px}
-.goalsHeroText h3{margin:6px 0 8px;font-size:38px;line-height:1.05;max-width:300px}
+.goalsHeroText h3{margin:6px 0 8px;font-size:40px;line-height:1.05;max-width:300px}
 .goalsHeroText p{margin:0;color:var(--muted);max-width:280px;font-size:14px}
 .goalsHeroStar{color:#95a4c7;font-size:12px}
-.goalsHeroMountain{position:relative;min-height:180px;align-self:end}
-.mountainLayer{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:0;height:0}
-.layerBack{border-left:120px solid transparent;border-right:120px solid transparent;border-bottom:145px solid #8fd4d5;opacity:.55}
-.layerFront{border-left:95px solid transparent;border-right:95px solid transparent;border-bottom:128px solid #2ea89c}
-.mountainPath{position:absolute;bottom:8px;left:50%;transform:translateX(-45%);width:28px;height:112px;background:linear-gradient(180deg,#dff2ef,#ffffff);border-radius:20px;rotate:22deg}
-.mountainFlag{position:absolute;left:calc(50% + 50px);bottom:114px;width:3px;height:35px;background:#1ca583}
-.mountainFlag::after{content:'';position:absolute;left:3px;top:1px;width:18px;height:12px;background:#1ca583;border-radius:0 4px 4px 0}
+.goalsHeroMountain{display:flex;align-items:flex-end;justify-content:center;min-height:180px;padding-top:10px}
+.goalsHeroMountain img{display:block;width:100%;max-width:470px;height:auto;object-fit:contain}
 .goalsHeroStats{border-left:1px solid #e5ebf3;padding:16px 14px;display:grid;gap:10px;align-content:center;background:#fcfdff}
 .goalsHeroStatItem{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:10px;background:#f4f7ff;color:#4f6388}
 .goalsHeroStatItem strong{display:block;color:#102041;font-size:17px;line-height:1.1}
@@ -6860,8 +6855,8 @@ body.light .categoriesListHeader,
 .goalGaugeMeta{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
 .goalGaugeMeta small{display:block;font-size:12px;color:#5f7194}
 .goalGaugeMeta strong{font-size:13px;color:#1f2a44}
-.goalContributionInline .input{height:36px}
-.goalContributionInline .btn{height:36px}
+.goalLinearProgress{height:6px;border-radius:999px;background:#e7eaf1;overflow:hidden}
+.goalLinearProgress>div{height:100%;border-radius:999px;background:linear-gradient(90deg,#1cb78a,#2f80ed)}
 .goalStatusStrip{display:flex;align-items:center;gap:8px;font-size:12px;border-radius:10px;background:#edf7ef;color:#3e6f55;padding:9px 10px}
 .goalsCarouselDots{display:flex;justify-content:center;gap:8px}
 .goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
