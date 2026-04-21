@@ -5972,7 +5972,7 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
 /* Utilities (Tools) page: keep page fixed, scroll inside panels like Categories */
 .toolsPageShellFixed{
   height: calc(100vh - 120px);
-  min-height: calc(100vh - 120px);
+  min-height: calc(98vh - 12px);
   max-height: calc(100vh - 120px);
   overflow: hidden;
   display: flex;
