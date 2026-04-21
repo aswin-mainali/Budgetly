@@ -4513,7 +4513,7 @@ body.light .txStickyFooter,
 /* v2.9.6 single-screen data pages */
 .dataPageCard{
   height: calc(100vh - 120px);
-  min-height: calc(100vh - 120px);
+  min-height: calc(98vh - 12px);
   max-height: calc(100vh - 120px);
   overflow: hidden;
 }
@@ -6536,4 +6536,226 @@ body.light .bugUploadBox{background:#f8fbff}
   .bugAuditTableHeader{
     grid-template-columns:minmax(120px,.95fr) minmax(150px,1.15fr) minmax(160px,1.05fr) minmax(160px,1fr) minmax(120px,.85fr);
   }
+}
+
+/* categories page refresh */
+.categoriesPageCard{
+  gap:14px;
+}
+
+.categoriesLayout{
+  display:grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
+  gap:14px;
+  flex:1;
+  min-height:0;
+}
+
+.categoriesComposer,
+.categoriesManage{
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-height:0;
+}
+
+.categoriesSectionHead h2{margin:0 0 4px}
+.categoriesSectionHead p{margin:0}
+
+.categoriesComposerForm{
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  background:rgba(255,255,255,.02);
+}
+
+.categoriesComposerEmojiRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.categoriesIconTile{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.08);
+}
+
+.categoriesComposerBudgetRow{
+  display:grid;
+  grid-template-columns: minmax(140px, 1fr) auto;
+  gap:10px;
+}
+
+.categoriesComposerError{
+  color:#f87171;
+  font-size:12px;
+}
+
+.categoriesSuggestions{display:flex; flex-direction:column; gap:8px}
+.categoriesSuggestionsTitle{font-weight:600}
+.categoriesSuggestionList{display:flex; flex-wrap:wrap; gap:8px}
+
+.categoriesSuggestionChip{
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  border-radius:999px;
+  padding:6px 11px;
+  cursor:pointer;
+}
+
+.categoriesSuggestionChip:hover{background:rgba(255,255,255,.08)}
+
+.categoriesBudgetTotal{
+  margin-top:auto;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:rgba(16,185,129,.08);
+  padding:12px;
+}
+
+.categoriesToolbarRow{
+  display:grid;
+  grid-template-columns: minmax(240px, 1fr) 180px;
+  gap:10px;
+}
+
+.categoriesSearchWrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:0 10px;
+  background:rgba(255,255,255,.03);
+}
+
+.categoriesSearchWrap .input{
+  border:none;
+  box-shadow:none;
+  background:transparent;
+}
+
+.categoriesSortSelect{
+  width:100%;
+}
+
+.categoriesList{
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding-right:4px;
+}
+
+.categoriesListHeader{
+  position:sticky;
+  top:0;
+  z-index:5;
+  display:grid;
+  grid-template-columns:56px minmax(120px, 1fr) 120px 98px;
+  gap:10px;
+  padding:6px 8px;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,18,40,.92);
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+.categoriesListHeaderActions{
+  text-align:center;
+}
+
+body.light .categoriesListHeader,
+.theme-light .categoriesListHeader{
+  background:rgba(248,250,252,.98);
+}
+
+.categoriesListItem{
+  display:grid;
+  grid-template-columns:56px minmax(120px, 1fr) 120px 98px;
+  align-items:center;
+  gap:10px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px;
+  background:rgba(255,255,255,.03);
+}
+
+.categoriesRowEmoji{
+  width:100%;
+  min-width:0;
+}
+
+.categoriesListNameCell .input,
+.categoriesListBudgetCell .input{width:100%; min-width:0}
+
+.categoriesListActions{display:flex; align-items:center; justify-content:center; gap:10px; flex:0 0 auto}
+.categoriesBudgetInput{width:120px}
+.categoriesRowEmoji:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+.categoriesListActions .icon.primary{
+  border-color: rgba(59,130,246,.45);
+  color:#93c5fd;
+}
+
+@media (max-width: 1100px){
+  .categoriesLayout{grid-template-columns: 1fr}
+}
+
+@media (max-width: 1320px){
+  .categoriesListItem{
+    gap:8px;
+  }
+
+  .categoriesRowEmoji{
+    padding:6px 8px;
+    min-width:40px;
+  }
+
+  .categoriesListItem{
+    grid-template-columns:48px minmax(120px, 1fr) 72px 88px;
+    gap:8px;
+  }
+
+  .categoriesBudgetInput{
+    width:72px;
+  }
+
+  .categoriesListActions{
+    gap:8px;
+  }
+
+  .categoriesListHeader{
+    grid-template-columns:48px minmax(120px, 1fr) 72px 88px;
+    gap:8px;
+  }
+}
+
+@media (max-width: 720px){
+  .categoriesComposer,
+  .categoriesManage{padding:12px}
+  .categoriesToolbarRow{grid-template-columns:1fr}
+  .categoriesListHeader{display:none}
+  .categoriesListItem{grid-template-columns:1fr; align-items:stretch}
+  .categoriesListActions{justify-content:space-between}
+  .categoriesRowEmoji{max-width:72px}
+  .categoriesBudgetInput{width:100%}
 }
