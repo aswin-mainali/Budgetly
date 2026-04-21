@@ -1187,12 +1187,6 @@ body.light .converterRecentBox {
   .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
   .converterChartWrap { height: 260px; }
 }
-@media (max-width: 1200px) {
-  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
-}
-@media (max-height: 860px) {
-  .converterChartWrap { height: 250px; }
-}
 
 
 .recurringUpcomingItem{
@@ -6011,14 +6005,9 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
   overflow: hidden;
 }
 
-.toolsPageShellFixed.toolsShellConverter{
-  min-height: calc(100vh - 120px);
-  max-height: calc(100vh - 120px);
-}
-
 .toolsPageBody.toolsPageBodyConverter{
-  overflow: auto;
-  padding-right: 4px;
+  overflow: hidden;
+  padding-right: 0;
 }
 
 

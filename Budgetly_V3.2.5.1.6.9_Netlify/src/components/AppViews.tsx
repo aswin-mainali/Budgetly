@@ -2045,6 +2045,12 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
   const [chartError, setChartError] = useState('')
   const [latestProvider, setLatestProvider] = useState('ExchangeRate-API')
   const [chartProvider, setChartProvider] = useState('Frankfurter')
+  const [savedPairs, setSavedPairs] = useState<Array<{ from: string; to: string }>>([
+    { from: 'USD', to: 'CAD' },
+    { from: 'CAD', to: 'USD' },
+    { from: 'EUR', to: 'USD' },
+    { from: 'USD', to: 'NPR' },
+  ])
 
   useEffect(() => {
     if (toCurrency === fromCurrency) {
@@ -2155,16 +2161,13 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
   const recentPairs = useMemo(
     () => [
       { from: fromCurrency, to: toCurrency },
-      { from: 'USD', to: 'CAD' },
-      { from: 'CAD', to: 'USD' },
-      { from: 'EUR', to: 'USD' },
-      { from: 'USD', to: 'NPR' },
+      ...savedPairs,
     ].filter((pair, index, all) =>
       currencyMap[pair.from] &&
       currencyMap[pair.to] &&
       all.findIndex((item) => item.from === pair.from && item.to === pair.to) === index
     ),
-    [fromCurrency, toCurrency, currencyMap],
+    [fromCurrency, toCurrency, currencyMap, savedPairs],
   )
 
   return (
@@ -2305,7 +2308,16 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
               </button>
             )
           })}
-          <button className="converterPairChip"><PlusIcon size={14} /> Add pair</button>
+          <button
+            className="converterPairChip"
+            onClick={() => {
+              const exists = savedPairs.some((pair) => pair.from === fromCurrency && pair.to === toCurrency)
+              if (exists) return
+              setSavedPairs((current) => [...current, { from: fromCurrency, to: toCurrency }])
+            }}
+          >
+            <PlusIcon size={14} /> Add pair
+          </button>
         </div>
       </div>
     </div>
