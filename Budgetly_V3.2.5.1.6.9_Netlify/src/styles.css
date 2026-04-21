@@ -4513,7 +4513,7 @@ body.light .txStickyFooter,
 /* v2.9.6 single-screen data pages */
 .dataPageCard{
   height: calc(100vh - 120px);
-  min-height: calc(100vh - 120px);
+  min-height: calc(98vh - 12px);
   max-height: calc(100vh - 120px);
   overflow: hidden;
 }
