@@ -1599,7 +1599,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data } = budget
+  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data, helpers } = budget
   const [pickerFor, setPickerFor] = React.useState<string | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [editingCategoryIds, setEditingCategoryIds] = useState<Record<string, boolean>>({})
@@ -1621,6 +1621,10 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   }, [sortedCategories, search])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
+  const totalBudget = useMemo(
+    () => sortedCategories.reduce((sum, category) => sum + Number(category.budget_monthly || 0), 0),
+    [sortedCategories]
+  )
 
   const createCategoryWithDraft = () => {
     const name = draftName.trim()
@@ -1710,6 +1714,10 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                 <button key={item} type="button" className="categoriesSuggestionChip" onClick={() => quickAddSuggestion(item)}>{item}</button>
               ))}
             </div>
+          </div>
+
+          <div className="categoriesBudgetTotal muted">
+            💰 {helpers.fmtMoney(totalBudget, data.currency)} total monthly budget
           </div>
 
         </section>
