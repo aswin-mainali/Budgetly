@@ -1887,6 +1887,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const [pendingNewGoal, setPendingNewGoal] = useState<{ existingIds: Set<string>; draft: GoalDraft } | null>(null)
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
+  const [goalEmojiAuto, setGoalEmojiAuto] = useState(true)
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
@@ -1924,6 +1925,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const openAddGoalModal = () => {
     setGoalDraft({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
+    setGoalEmojiAuto(true)
     setGoalModalMode('add')
   }
 
@@ -1937,6 +1939,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       target_date: goal.target_date ?? '',
       note: goal.note ?? '',
     })
+    setGoalEmojiAuto(false)
     setGoalModalMode('edit')
   }
 
@@ -2147,8 +2150,14 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           <div className="card goalEditorModal" role="dialog" aria-modal="true">
             <h3>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
             <div className="goalEditorGrid">
-              <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => setGoalDraft((current) => ({ ...current, name: event.target.value }))} /></div>
-              <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => setGoalDraft((current) => ({ ...current, emoji: event.target.value }))}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
+              <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
+                const nextName = event.target.value
+                setGoalDraft((current) => ({ ...current, name: nextName, emoji: goalModalMode === 'add' && goalEmojiAuto ? inferGoalEmojiFromName(nextName) : current.emoji }))
+              }} /></div>
+              <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => {
+                setGoalEmojiAuto(false)
+                setGoalDraft((current) => ({ ...current, emoji: event.target.value }))
+              }}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
               <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
               <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
               <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
@@ -2173,6 +2182,22 @@ type GoalDraft = {
   current_amount: string
   target_date: string
   note: string
+}
+
+const inferGoalEmojiFromName = (name: string) => {
+  const value = name.toLowerCase()
+  if (!value.trim()) return '🎯'
+  if (value.includes('car') || value.includes('auto')) return '🚗'
+  if (value.includes('home') || value.includes('house')) return '🏡'
+  if (value.includes('trip') || value.includes('travel') || value.includes('vacation')) return '✈️'
+  if (value.includes('school') || value.includes('education') || value.includes('college')) return '🎓'
+  if (value.includes('wedding') || value.includes('ring')) return '💍'
+  if (value.includes('baby') || value.includes('family')) return '👶'
+  if (value.includes('retire')) return '🏖️'
+  if (value.includes('bike')) return '🚲'
+  if (value.includes('emergency')) return '🧯'
+  if (value.includes('gift') || value.includes('holiday')) return '🎁'
+  return '🎯'
 }
 
 
