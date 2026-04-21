@@ -1877,13 +1877,16 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, contributeToGoal, helpers, data } = budget
+  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, contributeToGoal, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [contributions, setContributions] = useState<Record<string, string>>({})
   const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved'>('nearest')
   const [activeIndex, setActiveIndex] = useState(0)
   const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
+  const [goalModalMode, setGoalModalMode] = useState<'add' | 'edit' | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
+  const [pendingNewGoal, setPendingNewGoal] = useState<{ existingIds: Set<string>; draft: GoalDraft } | null>(null)
+  const [goalDraft, setGoalDraft] = useState<GoalDraft>({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
@@ -1903,6 +1906,63 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     if (!Number.isFinite(amount) || amount <= 0) return
     contributeToGoal(goalId, amount)
     setContributions((current) => ({ ...current, [goalId]: '' }))
+  }
+
+  useEffect(() => {
+    if (!pendingNewGoal) return
+    const createdGoal = sortedGoals.find((goal) => !pendingNewGoal.existingIds.has(goal.id))
+    if (!createdGoal) return
+    updateGoalField(createdGoal.id, 'name', pendingNewGoal.draft.name)
+    updateGoalField(createdGoal.id, 'emoji', pendingNewGoal.draft.emoji)
+    updateGoalField(createdGoal.id, 'target_amount', pendingNewGoal.draft.target_amount)
+    updateGoalField(createdGoal.id, 'current_amount', pendingNewGoal.draft.current_amount)
+    updateGoalField(createdGoal.id, 'target_date', pendingNewGoal.draft.target_date)
+    updateGoalField(createdGoal.id, 'note', pendingNewGoal.draft.note)
+    void saveGoals()
+    setPendingNewGoal(null)
+  }, [pendingNewGoal, sortedGoals, updateGoalField, saveGoals])
+
+  const openAddGoalModal = () => {
+    setGoalDraft({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
+    setGoalModalMode('add')
+  }
+
+  const openEditGoalModal = (goal: typeof sortedGoals[number]) => {
+    setEditingGoalId(goal.id)
+    setGoalDraft({
+      name: goal.name || '',
+      emoji: goal.emoji || '🎯',
+      target_amount: String(goal.target_amount ?? '0'),
+      current_amount: String(goal.current_amount ?? '0'),
+      target_date: goal.target_date ?? '',
+      note: goal.note ?? '',
+    })
+    setGoalModalMode('edit')
+  }
+
+  const closeGoalModal = () => {
+    setGoalModalMode(null)
+    setEditingGoalId(null)
+  }
+
+  const saveGoalModal = async () => {
+    if (goalModalMode === 'add') {
+      const existingIds = new Set(sortedGoals.map((goal) => goal.id))
+      addGoal()
+      setPendingNewGoal({ existingIds, draft: goalDraft })
+      closeGoalModal()
+      return
+    }
+    if (goalModalMode === 'edit' && editingGoalId) {
+      updateGoalField(editingGoalId, 'name', goalDraft.name)
+      updateGoalField(editingGoalId, 'emoji', goalDraft.emoji)
+      updateGoalField(editingGoalId, 'target_amount', goalDraft.target_amount)
+      updateGoalField(editingGoalId, 'current_amount', goalDraft.current_amount)
+      updateGoalField(editingGoalId, 'target_date', goalDraft.target_date)
+      updateGoalField(editingGoalId, 'note', goalDraft.note)
+      await saveGoals()
+      closeGoalModal()
+    }
   }
 
   const displayGoals = useMemo(() => {
@@ -1962,7 +2022,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           <h2>Goals</h2>
           <div className="muted">Stay focused. Achieve more.</div>
         </div>
-        <button className="btn primary goalsHeroAddBtn" onClick={() => addGoal()}>
+        <button className="btn primary goalsHeroAddBtn" onClick={openAddGoalModal}>
           <Plus size={16} /> Add Goal
         </button>
       </div>
@@ -2023,7 +2083,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
                     </button>
                     {menuGoalId === goal.id ? (
                       <div className="goalMenuPanel">
-                        <button className="btn" onClick={() => { setEditingGoalId(goal.id); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
+                        <button className="btn" onClick={() => { openEditGoalModal(goal); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
                       </div>
                     ) : null}
                     <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
@@ -2058,47 +2118,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
                   <TrendingUp size={14} />
                   {progress >= 70 ? 'You’re on track to reach your goal!' : 'Keep going! Small steps lead to big results.'}
                 </div>
-                {editingGoalId === goal.id ? (
-                  <div className="goalInlineEditor">
-                    <div>
-                      <small>Name</small>
-                      <input className="input" value={goal.name} onChange={(event) => updateGoalField(goal.id, 'name', event.target.value)} />
-                    </div>
-                    <div>
-                      <small>Emoji</small>
-                      <select className="select" value={goal.emoji || '🎯'} onChange={(event) => updateGoalField(goal.id, 'emoji', event.target.value)}>
-                        {CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <small>Target amount</small>
-                      <input className="input" inputMode="decimal" value={goal.target_amount} onChange={(event) => updateGoalField(goal.id, 'target_amount', event.target.value)} />
-                    </div>
-                    <div>
-                      <small>Saved so far</small>
-                      <input className="input" inputMode="decimal" value={goal.current_amount} onChange={(event) => updateGoalField(goal.id, 'current_amount', event.target.value)} />
-                    </div>
-                    <div>
-                      <small>Target date</small>
-                      <input className="input" type="date" value={goal.target_date ?? ''} onChange={(event) => updateGoalField(goal.id, 'target_date', event.target.value)} />
-                    </div>
-                    <div>
-                      <small>Note</small>
-                      <textarea className="input" rows={2} value={goal.note ?? ''} onChange={(event) => updateGoalField(goal.id, 'note', event.target.value)} />
-                    </div>
-                    <div>
-                      <small>Quick amount</small>
-                      <div className="goalQuickAddRow">
-                        <input className="input" inputMode="decimal" placeholder="0.00" value={contributions[goal.id] ?? ''} onChange={(event) => setContributions((current) => ({ ...current, [goal.id]: event.target.value }))} />
-                        <button className="btn" onClick={() => applyContribution(goal.id)}>+ Add</button>
-                      </div>
-                    </div>
-                    <div className="goalInlineEditorActions">
-                      <button className="btn" onClick={() => setEditingGoalId(null)}>Close</button>
-                      <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Save Goal</button>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             )
           })}
@@ -2122,8 +2141,38 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         onConfirm={() => void confirmDeleteGoal()}
         onCancel={() => setPendingDeleteId(null)}
       />
+
+      {goalModalMode ? (
+        <div className="deleteConfirmBackdrop" role="presentation">
+          <div className="card goalEditorModal" role="dialog" aria-modal="true">
+            <h3>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
+            <div className="goalEditorGrid">
+              <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => setGoalDraft((current) => ({ ...current, name: event.target.value }))} /></div>
+              <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => setGoalDraft((current) => ({ ...current, emoji: event.target.value }))}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
+              <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
+              <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
+              <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
+              <div><small>Quick amount</small><div className="goalQuickAddRow"><input className="input" inputMode="decimal" placeholder="0.00" value={contributions.__modal ?? ''} onChange={(event) => setContributions((current) => ({ ...current, __modal: event.target.value }))} /><button className="btn" onClick={() => setGoalDraft((current) => ({ ...current, current_amount: String(Number(current.current_amount || 0) + (Number(contributions.__modal || 0) || 0)) }))}>+ Add</button></div></div>
+              <div className="goalEditorFull"><small>Note</small><textarea className="input" rows={3} value={goalDraft.note} onChange={(event) => setGoalDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+            </div>
+            <div className="goalInlineEditorActions">
+              <button className="btn" onClick={closeGoalModal}>Cancel</button>
+              <button className="btn primary" onClick={() => void saveGoalModal()}>Save Goal</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
+}
+
+type GoalDraft = {
+  name: string
+  emoji: string
+  target_amount: string
+  current_amount: string
+  target_date: string
+  note: string
 }
 
 

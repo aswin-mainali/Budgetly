@@ -6876,6 +6876,12 @@ body.light .categoriesListHeader,
 .goalQuickAddRow .input{flex:1}
 .goalQuickAddRow .btn{white-space:nowrap}
 .goalInlineEditorActions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--panel);padding-top:6px}
+.goalEditorModal{width:min(680px,92vw);padding:18px;display:grid;gap:12px}
+.goalEditorModal h3{margin:0}
+.goalEditorGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.goalEditorGrid small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.goalEditorGrid .input,.goalEditorGrid .select{height:36px}
+.goalEditorGrid .goalEditorFull{grid-column:1/-1}
 .goalsCarouselDots{display:flex;justify-content:center;gap:8px}
 .goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
 .goalsDot.active{width:10px;height:10px;background:#1db180}
@@ -6896,5 +6902,6 @@ body.light .categoriesListHeader,
   .goalsCarouselTrack{flex-direction:column;overflow:visible}
   .goalCarouselCard{flex-basis:auto;width:100%}
   .goalInlineEditor{grid-template-columns:1fr;top:74px}
+  .goalEditorGrid{grid-template-columns:1fr}
   .goalsNavBtn{display:none}
 }
