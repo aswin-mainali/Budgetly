@@ -6849,7 +6849,7 @@ body.light .categoriesListHeader,
 .goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
 .goalsCarouselTrack{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
 .goalsCarouselTrack::-webkit-scrollbar{display:none}
-.goalCarouselCard{scroll-snap-align:start;flex:0 0 calc((100% - 24px)/3);border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
+.goalCarouselCard{position:relative;overflow:hidden;scroll-snap-align:start;flex:0 0 calc((100% - 24px)/3);border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
 .goalCarouselTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .goalCarouselTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
 .goalCarouselTitleRow .muted{font-size:12px}
@@ -6868,14 +6868,14 @@ body.light .categoriesListHeader,
 .goalLinearProgress{height:6px;border-radius:999px;background:#e7eaf1;overflow:hidden}
 .goalLinearProgress>div{height:100%;border-radius:999px;background:linear-gradient(90deg,#1cb78a,#2f80ed)}
 .goalStatusStrip{display:flex;align-items:center;gap:8px;font-size:12px;border-radius:10px;background:#edf7ef;color:#3e6f55;padding:9px 10px}
-.goalInlineEditor{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:4px}
+.goalInlineEditor{position:absolute;left:10px;right:10px;top:88px;bottom:10px;z-index:4;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;box-shadow:0 12px 24px rgba(15,23,42,.12)}
 .goalInlineEditor small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
 .goalInlineEditor .input,.goalInlineEditor .select{height:34px}
 .goalInlineEditor textarea.input{height:auto}
 .goalQuickAddRow{display:flex;gap:8px}
 .goalQuickAddRow .input{flex:1}
 .goalQuickAddRow .btn{white-space:nowrap}
-.goalInlineEditorActions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px}
+.goalInlineEditorActions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--panel);padding-top:6px}
 .goalsCarouselDots{display:flex;justify-content:center;gap:8px}
 .goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
 .goalsDot.active{width:10px;height:10px;background:#1db180}
@@ -6895,6 +6895,6 @@ body.light .categoriesListHeader,
   .goalsCarouselShell{gap:8px;align-items:stretch}
   .goalsCarouselTrack{flex-direction:column;overflow:visible}
   .goalCarouselCard{flex-basis:auto;width:100%}
-  .goalInlineEditor{grid-template-columns:1fr}
+  .goalInlineEditor{grid-template-columns:1fr;top:74px}
   .goalsNavBtn{display:none}
 }
