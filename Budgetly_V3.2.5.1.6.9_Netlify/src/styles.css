@@ -1072,35 +1072,47 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
 }
 
 
+.converterPage { display: grid; gap: 12px; margin-top: -4px; }
+.converterHeader h2 { margin-bottom: 2px; font-size: 36px; }
+.converterSubhead { color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.converterLiveDot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block; }
 .converterGrid { align-items: stretch; }
+.converterGrid.grid.cols2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .converterCard { min-height: 100%; }
-.converterOverline {
+.converterLeftCard { display: grid; gap: 10px; }
+.converterSendRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.converterMainAmount { font-size: clamp(30px, 4vw, 46px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.converterReceiveAmount { color: #16a34a; }
+.converterCurrencySelect { min-width: 220px; }
+.converterQuickButtons { display: flex; gap: 8px; flex-wrap: wrap; }
+.converterQuickButton {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px;
   font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  opacity: .72;
-  margin-bottom: 8px;
+  background: rgba(255,255,255,.04);
+  color: var(--text);
 }
-.converterHeadline {
-  font-size: clamp(34px, 4vw, 52px);
-  font-weight: 800;
-  line-height: 1.1;
-  margin-bottom: 8px;
-}
-.converterFields {
+.converterSwapRow { display: flex; justify-content: center; margin: 2px 0; }
+.converterSwapButton {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(22,163,74,.1);
+  color: #16a34a;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  place-items: center;
 }
-.converterSwapRow {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-top: 16px;
-}
+.converterRateBox { border-radius: 14px; border: 1px solid rgba(22,163,74,.25); background: rgba(22,163,74,.12); padding: 12px 14px; margin-top: 4px; }
+.converterRateHeadline { color: #16a34a; font-weight: 800; font-size: 22px; }
+.converterRateSub { color: var(--muted); margin-top: 4px; }
+.converterInfoGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.converterInfoCard { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.03); }
+.converterInfoCard small { display: block; color: var(--muted); margin-bottom: 4px; }
+.converterInfoCard strong { font-size: 16px; }
 .converterChartCard { overflow: hidden; }
+.converterChartWrap { height: 320px; }
 .converterRangeButtons {
   display: flex;
   flex-wrap: wrap;
@@ -1147,9 +1159,52 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
   color: inherit;
   text-decoration: underline;
 }
+.converterChartFooter { display: flex; align-items: center; margin-top: 10px; }
+.converterRecentBox {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255,255,255,.04);
+  display: grid;
+  gap: 10px;
+}
+.converterRecentPairs { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.converterRecentLabel { font-weight: 700; color: var(--muted); }
+.converterPairChip { border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--text); border-radius: 10px; padding: 9px 14px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.converterPairChip.active {
+  border-color: rgba(22,163,74,.45);
+  background: rgba(22,163,74,.15);
+}
+body.light .converterRecentBox {
+  background: #ffffff;
+  border-color: rgba(148,163,184,.32);
+}
 @media (max-width: 900px) {
-  .converterFields { grid-template-columns: 1fr; }
   .converterRangeButtons { justify-content: flex-start; }
+  .converterSendRow { flex-direction: column; align-items: flex-start; }
+  .converterCurrencySelect { width: 100%; min-width: 0; }
+  .converterInfoGrid { grid-template-columns: 1fr; }
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+  .converterChartWrap { height: 260px; }
+}
+@media (max-width: 1200px) {
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+  .converterSendRow { flex-direction: column; align-items: flex-start; }
+  .converterCurrencySelect { width: 100%; min-width: 0; }
+  .converterChartWrap { height: 270px; }
+}
+@media (max-height: 900px) {
+  .toolsPageShellFixed.toolsShellConverter{
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .toolsPageBody.toolsPageBodyConverter{
+    overflow: visible;
+  }
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+  .converterChartWrap { height: 220px; }
 }
 
 
@@ -5955,7 +6010,7 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
 /* Utilities (Tools) page: keep page fixed, scroll inside panels like Categories */
 .toolsPageShellFixed{
   height: calc(100vh - 120px);
-  min-height: calc(100vh - 120px);
+  min-height: calc(98vh - 12px);
   max-height: calc(100vh - 120px);
   overflow: hidden;
   display: flex;
@@ -5967,6 +6022,11 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+.toolsPageBody.toolsPageBodyConverter{
+  overflow: hidden;
+  padding-right: 0;
 }
 
 

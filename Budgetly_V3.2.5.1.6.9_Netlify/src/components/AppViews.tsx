@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -2045,6 +2045,12 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
   const [chartError, setChartError] = useState('')
   const [latestProvider, setLatestProvider] = useState('ExchangeRate-API')
   const [chartProvider, setChartProvider] = useState('Frankfurter')
+  const [savedPairs, setSavedPairs] = useState<Array<{ from: string; to: string }>>([
+    { from: 'USD', to: 'CAD' },
+    { from: 'CAD', to: 'USD' },
+    { from: 'EUR', to: 'USD' },
+    { from: 'USD', to: 'NPR' },
+  ])
 
   useEffect(() => {
     if (toCurrency === fromCurrency) {
@@ -2144,98 +2150,174 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
     [currencyMap],
   )
 
-  const fromLabel = currencyMap[fromCurrency] ?? fromCurrency
-  const toLabel = currencyMap[toCurrency] ?? toCurrency
   const latestDateLabel = latestDate ? new Date(latestDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''
-  const headlineAmount = convertedAmount == null ? '—' : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(convertedAmount)
-  const chartStroke = theme === 'dark' ? '#f87171' : '#dc2626'
-  const chartFill = theme === 'dark' ? 'rgba(248, 113, 113, 0.22)' : 'rgba(220, 38, 38, 0.15)'
+  const headlineAmount = convertedAmount == null ? '—' : new Intl.NumberFormat(undefined, { maximumFractionDigits: 4 }).format(convertedAmount)
+  const chartStroke = '#16a34a'
+  const chartFill = 'rgba(22, 163, 74, 0.12)'
+  const trendRates = chartPoints.map((point) => point.rate)
+  const trendHigh = trendRates.length ? Math.max(...trendRates) : null
+  const trendLow = trendRates.length ? Math.min(...trendRates) : null
+  const trendChange = trendRates.length > 1 ? ((trendRates[trendRates.length - 1] - trendRates[0]) / trendRates[0]) * 100 : null
+  const recentPairs = useMemo(
+    () => [
+      { from: fromCurrency, to: toCurrency },
+      ...savedPairs,
+    ].filter((pair, index, all) =>
+      currencyMap[pair.from] &&
+      currencyMap[pair.to] &&
+      all.findIndex((item) => item.from === pair.from && item.to === pair.to) === index
+    ),
+    [fromCurrency, toCurrency, currencyMap, savedPairs],
+  )
 
   return (
-    <div className="grid cols2 converterGrid">
-      <div className="card converterCard">
-        <div className="converterOverline">Live exchange conversion</div>
-        <div className="converterHeadline">
-          {loading ? 'Loading…' : `${headlineAmount} ${toLabel}`}
-        </div>
-        <div className="muted" style={{ marginBottom: 18 }}>
-          {safeAmount} {fromLabel} · {latestDateLabel ? `Rates date: ${latestDateLabel}` : 'Latest working day'}
-        </div>
-
-        <div className="converterFields">
-          <label>
-            <small>Amount</small>
-            <input className="input" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" />
-          </label>
-          <label>
-            <small>From</small>
-            <select className="select" value={fromCurrency} onChange={(event) => setFromCurrency(event.target.value)}>
-              {currencyOptions.map(([code, label]) => (
-                <option key={code} value={code}>{code} — {label}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <small>Converted</small>
-            <input className="input" value={convertedAmount == null ? '' : convertedAmount.toFixed(2)} readOnly />
-          </label>
-          <label>
-            <small>To</small>
-            <select className="select" value={toCurrency} onChange={(event) => setToCurrency(event.target.value)}>
-              {currencyOptions.filter(([code]) => code !== fromCurrency).map(([code, label]) => (
-                <option key={code} value={code}>{code} — {label}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="converterSwapRow">
-          <button className="btn" onClick={() => { setFromCurrency(toCurrency); setToCurrency(fromCurrency) }}>
-            Swap currencies
-          </button>
-          <span className="pill">
-            1 {fromCurrency} = {latestRate == null ? '—' : latestRate.toFixed(4)} {toCurrency}
-          </span>
-        </div>
-
-        {error ? <div className="converterError">{error}</div> : null}
-        <div className="converterAttribution">Latest rates by <a href="https://www.exchangerate-api.com" target="_blank" rel="noreferrer">{latestProvider}</a>; trend data by <a href="https://frankfurter.dev" target="_blank" rel="noreferrer">{chartProvider}</a></div>
+    <div className="converterPage">
+      <div className="converterHeader">
+        <h2>Currency Converter</h2>
+        <div className="converterSubhead">Live exchange rates and trends <span className="converterLiveDot" /> Live rate</div>
       </div>
 
-      <div className="card converterCard converterChartCard">
-        <div className="row between" style={{ alignItems: 'center', gap: 12, marginBottom: 10 }}>
-          <div>
-            <div className="h1" style={{ marginBottom: 4 }}>Rate trend</div>
-            <small>{fromCurrency} to {toCurrency}</small>
+      <div className="grid cols2 converterGrid">
+        <div className="card converterCard converterLeftCard">
+          <div className="converterSendRow">
+            <div className="converterMainAmount">{safeAmount.toFixed(2)}</div>
+            <label className="converterCurrencySelect">
+              <select className="select" value={fromCurrency} onChange={(event) => setFromCurrency(event.target.value)}>
+                {currencyOptions.map(([code, label]) => (
+                  <option key={code} value={code}>{code} — {label}</option>
+                ))}
+              </select>
+            </label>
           </div>
-          <div className="converterRangeButtons">
-            {CONVERTER_RANGES.map((item) => (
-              <button key={item.key} className={`rangeChip ${rangeKey === item.key ? 'active' : ''}`} onClick={() => setRangeKey(item.key)}>
-                {item.label}
+
+          <div className="converterQuickButtons">
+            {['1', '10', '100', '1,000'].map((chip) => (
+              <button key={chip} type="button" className="converterQuickButton" onClick={() => setAmount(chip.replace(',', ''))}>
+                {chip}
               </button>
             ))}
           </div>
+
+          <div className="converterSwapRow">
+            <button className="converterSwapButton" onClick={() => { setFromCurrency(toCurrency); setToCurrency(fromCurrency) }} aria-label="Swap currencies">
+              <ArrowUpDown size={18} />
+            </button>
+          </div>
+
+          <div className="converterSendRow">
+            <div className="converterMainAmount converterReceiveAmount">{loading ? 'Loading…' : headlineAmount}</div>
+            <label className="converterCurrencySelect">
+              <select className="select" value={toCurrency} onChange={(event) => setToCurrency(event.target.value)}>
+                {currencyOptions.filter(([code]) => code !== fromCurrency).map(([code, label]) => (
+                  <option key={code} value={code}>{code} — {label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label style={{ marginTop: 10 }}>
+            <small>Amount</small>
+            <input className="input" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" />
+          </label>
+
+          <div className="converterRateBox">
+            <div className="converterRateHeadline">1 {fromCurrency} = {latestRate == null ? '—' : latestRate.toFixed(4)} {toCurrency}</div>
+            <div className="converterRateSub">1 {toCurrency} = {latestRate == null ? '—' : (1 / latestRate).toFixed(4)} {fromCurrency}</div>
+          </div>
+
+          <div className="converterInfoGrid">
+            <div className="converterInfoCard">
+              <small>24h change</small>
+              <strong>{trendChange == null ? '—' : `${trendChange >= 0 ? '+' : ''}${trendChange.toFixed(2)}%`}</strong>
+            </div>
+            <div className="converterInfoCard">
+              <small>30d range</small>
+              <strong>{trendLow == null || trendHigh == null ? '—' : `${trendLow.toFixed(4)} – ${trendHigh.toFixed(4)}`}</strong>
+            </div>
+            <div className="converterInfoCard">
+              <small>Source</small>
+              <strong>{latestProvider}</strong>
+            </div>
+          </div>
+
+          {error ? <div className="converterError">{error}</div> : null}
+          <div className="converterAttribution">Trend data by <a href="https://frankfurter.dev" target="_blank" rel="noreferrer">{chartProvider}</a>{latestDateLabel ? ` · Rates date: ${latestDateLabel}` : ''}</div>
         </div>
+        <div className="card converterCard converterChartCard">
+          <div className="row between" style={{ alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div>
+              <div className="h1" style={{ marginBottom: 4 }}>Rate trend</div>
+              <small>{fromCurrency} to {toCurrency}</small>
+            </div>
+            <div className="converterRangeButtons">
+              {CONVERTER_RANGES.map((item) => (
+                <button key={item.key} className={`rangeChip ${rangeKey === item.key ? 'active' : ''}`} onClick={() => setRangeKey(item.key)}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {chartError ? <div className="converterChartNote">{chartError}</div> : null}
+          <div className="converterInfoGrid converterTrendStats">
+            <div className="converterInfoCard"><small>30d high</small><strong>{trendHigh == null ? '—' : trendHigh.toFixed(4)}</strong></div>
+            <div className="converterInfoCard"><small>30d low</small><strong>{trendLow == null ? '—' : trendLow.toFixed(4)}</strong></div>
+            <div className="converterInfoCard"><small>30d change</small><strong>{trendChange == null ? '—' : `${trendChange >= 0 ? '+' : ''}${trendChange.toFixed(2)}%`}</strong></div>
+          </div>
 
-        <div style={{ height: 320 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartPoints}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={32} tickFormatter={(value: string) => {
-                const date = new Date(`${value}T00:00:00`)
-                return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-              }} />
-              <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
-              <Tooltip formatter={(value: number) => Number(value).toFixed(4)} labelFormatter={(value: string) => new Date(`${value}T00:00:00`).toLocaleDateString()} />
-              <Area type="monotone" dataKey="rate" stroke={chartStroke} fill={chartFill} strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
+          {chartError ? <div className="converterChartNote">{chartError}</div> : null}
+
+          <div className="converterChartWrap">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartPoints}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={32} tickFormatter={(value: string) => {
+                  const date = new Date(`${value}T00:00:00`)
+                  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                }} />
+                <YAxis tick={{ fontSize: 11 }} domain={['auto', 'auto']} />
+                <Tooltip formatter={(value: number) => Number(value).toFixed(4)} labelFormatter={(value: string) => new Date(`${value}T00:00:00`).toLocaleDateString()} />
+                <Area type="monotone" dataKey="rate" stroke={chartStroke} fill={chartFill} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="converterChartFooter">
+            <div className="muted row" style={{ gap: 6, alignItems: 'center' }}>
+              <TrendingUp size={14} />
+              {chartLoading ? 'Loading chart…' : chartPoints.length > 0 ? `${chartPoints.length} data points loaded` : 'No chart data available'}
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div className="muted" style={{ marginTop: 10 }}>
-          {chartLoading ? 'Loading chart…' : chartPoints.length > 0 ? `${chartPoints.length} data points loaded.` : 'No chart data available for this pair yet.'}
+      <div className="converterRecentBox">
+        <div className="converterRecentLabel">Recent pairs</div>
+        <div className="converterRecentPairs">
+          {recentPairs.map((pair) => {
+            const isActive = pair.from === fromCurrency && pair.to === toCurrency
+            return (
+              <button
+                key={`${pair.from}-${pair.to}`}
+                className={`converterPairChip ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  setFromCurrency(pair.from)
+                  setToCurrency(pair.to)
+                }}
+              >
+                {pair.from} → {pair.to}
+              </button>
+            )
+          })}
+          <button
+            className="converterPairChip"
+            onClick={() => {
+              const exists = savedPairs.some((pair) => pair.from === fromCurrency && pair.to === toCurrency)
+              if (exists) return
+              setSavedPairs((current) => [...current, { from: fromCurrency, to: toCurrency }])
+            }}
+          >
+            <PlusIcon size={14} /> Add pair
+          </button>
         </div>
       </div>
     </div>
