@@ -1187,6 +1187,25 @@ body.light .converterRecentBox {
   .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
   .converterChartWrap { height: 260px; }
 }
+@media (max-width: 1200px) {
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+  .converterSendRow { flex-direction: column; align-items: flex-start; }
+  .converterCurrencySelect { width: 100%; min-width: 0; }
+  .converterChartWrap { height: 270px; }
+}
+@media (max-height: 900px) {
+  .toolsPageShellFixed.toolsShellConverter{
+    height: auto;
+    min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .toolsPageBody.toolsPageBodyConverter{
+    overflow: visible;
+  }
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+  .converterChartWrap { height: 220px; }
+}
 
 
 .recurringUpcomingItem{
