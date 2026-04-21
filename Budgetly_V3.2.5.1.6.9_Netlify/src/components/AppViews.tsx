@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1599,9 +1599,10 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data, helpers } = budget
+  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data } = budget
   const [pickerFor, setPickerFor] = React.useState<string | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [editingCategoryIds, setEditingCategoryIds] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
   const [draftName, setDraftName] = useState('')
   const [draftBudget, setDraftBudget] = useState('')
@@ -1610,32 +1611,14 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
 
-  const categoryStats = useMemo(() => {
-    const tx = Array.isArray(data.transactions) ? data.transactions : []
-    const map = new Map<string, { txCount: number; spend: number }>()
-    for (const item of tx) {
-      if (!item.category_id || item.type !== 'expense') continue
-      const current = map.get(item.category_id) ?? { txCount: 0, spend: 0 }
-      map.set(item.category_id, { txCount: current.txCount + 1, spend: current.spend + Number(item.amount || 0) })
-    }
-    return map
-  }, [data.transactions])
-
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase()
     if (!query) return sortedCategories
     return sortedCategories.filter((category) => {
-      const usage = categoryStats.get(category.id)
       return category.name.toLowerCase().includes(query)
         || (category.emoji ?? '').includes(query)
-        || String(Math.round(usage?.spend ?? 0)).includes(query)
     })
-  }, [sortedCategories, search, categoryStats])
-
-  const totalBudget = useMemo(
-    () => sortedCategories.reduce((sum, category) => sum + Number(category.budget_monthly || 0), 0),
-    [sortedCategories]
-  )
+  }, [sortedCategories, search])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
 
@@ -1682,6 +1665,10 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     setPendingDeleteId(null)
   }
 
+  const toggleCategoryEditing = (categoryId: string) => {
+    setEditingCategoryIds((current) => ({ ...current, [categoryId]: !current[categoryId] }))
+  }
+
   return (
     <div className="card mobileSectionCard dataPageCard categoriesPageCard">
       <div className="categoriesLayout">
@@ -1725,9 +1712,6 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
             </div>
           </div>
 
-          <div className="categoriesBudgetTotal muted">
-            💰 {helpers.fmtMoney(totalBudget, data.currency)} total monthly budget
-          </div>
         </section>
 
         <section className="categoriesManage card">
@@ -1749,17 +1733,20 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="categoriesList">
             {filteredCategories.length === 0 ? <div className="muted mobileEmptyCard">No matching categories.</div> : filteredCategories.map((category: Category) => {
-              const usage = categoryStats.get(category.id)
+              const isEditing = !!editingCategoryIds[category.id]
               return (
                 <article key={category.id} className="categoriesListItem">
                   <div className="categoriesListMain">
-                    <button className="emojiChip" onClick={() => setPickerFor(category.id)} title="Choose emoji">
+                    <button className="emojiChip" onClick={() => setPickerFor(category.id)} title="Choose emoji" disabled={!isEditing}>
                       <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
-                      <span className="emojiChipLabel">Pick</span>
                     </button>
                     <div className="categoriesListFields">
-                      <input className="input" value={category.name} onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)} />
-                      <small className="muted">Used in {usage?.txCount ?? 0} transactions</small>
+                      <input
+                        className="input"
+                        value={category.name}
+                        onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)}
+                        disabled={!isEditing}
+                      />
                     </div>
                   </div>
 
@@ -1769,8 +1756,15 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                       inputMode="decimal"
                       value={String(category.budget_monthly ?? 0)}
                       onChange={(event) => updateCategoryField(category.id, 'budget_monthly', event.target.value)}
+                      disabled={!isEditing}
                     />
-                    <div className="categoriesListSpent">{helpers.fmtMoney(usage?.spend ?? 0, data.currency)}</div>
+                    <button
+                      className={`icon ${isEditing ? 'primary' : ''}`}
+                      onClick={() => toggleCategoryEditing(category.id)}
+                      title={isEditing ? 'Stop editing' : 'Edit'}
+                    >
+                      <Pencil size={16} />
+                    </button>
                     <button className="icon danger" onClick={() => setPendingDeleteId(category.id)} title="Delete">
                       <Trash2 size={16} />
                     </button>

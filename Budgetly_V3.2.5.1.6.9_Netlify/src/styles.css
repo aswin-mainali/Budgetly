@@ -6612,14 +6612,6 @@ body.light .bugUploadBox{background:#f8fbff}
 
 .categoriesSuggestionChip:hover{background:rgba(255,255,255,.08)}
 
-.categoriesBudgetTotal{
-  margin-top:auto;
-  padding:12px;
-  border:1px solid var(--border);
-  border-radius:14px;
-  background:rgba(16,185,129,.08);
-}
-
 .categoriesSearchWrap{
   display:flex;
   align-items:center;
@@ -6659,7 +6651,15 @@ body.light .bugUploadBox{background:#f8fbff}
 .categoriesListFields{min-width:0; display:flex; flex-direction:column; gap:4px; flex:1}
 .categoriesListActions{display:flex; align-items:center; gap:10px}
 .categoriesBudgetInput{width:120px}
-.categoriesListSpent{font-weight:700; min-width:118px; text-align:right}
+.categoriesListMain .emojiChip:disabled{
+  opacity:.65;
+  cursor:not-allowed;
+}
+
+.categoriesListActions .icon.primary{
+  border-color: rgba(59,130,246,.45);
+  color:#93c5fd;
+}
 
 @media (max-width: 1100px){
   .categoriesLayout{grid-template-columns: 1fr}
@@ -6671,5 +6671,4 @@ body.light .bugUploadBox{background:#f8fbff}
   .categoriesListItem{flex-direction:column; align-items:stretch}
   .categoriesListActions{justify-content:space-between}
   .categoriesBudgetInput{width:100%}
-  .categoriesListSpent{text-align:left; min-width:0}
 }
