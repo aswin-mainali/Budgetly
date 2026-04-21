@@ -1077,6 +1077,7 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
 .converterSubhead { color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .converterLiveDot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block; }
 .converterGrid { align-items: stretch; }
+.converterGrid.grid.cols2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .converterCard { min-height: 100%; }
 .converterLeftCard { display: grid; gap: 10px; }
 .converterPanelLabel { color: var(--muted); font-size: 13px; font-weight: 700; }
@@ -5984,6 +5985,19 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Converter should feel full-page and never be clipped. */
+.toolsPageShellFixed.toolsShellConverter{
+  height: auto;
+  min-height: calc(100vh - 120px);
+  max-height: none;
+  overflow: visible;
+}
+
+.toolsPageBody.toolsPageBodyConverter{
+  overflow: auto;
+  padding-right: 4px;
 }
 
 
