@@ -6612,18 +6612,6 @@ body.light .bugUploadBox{background:#f8fbff}
 
 .categoriesSuggestionChip:hover{background:rgba(255,255,255,.08)}
 
-.categoriesSummaryStrip{
-  margin-top:auto;
-  border:1px solid var(--border);
-  border-radius:14px;
-  background:rgba(255,255,255,.03);
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:6px;
-  color:var(--muted);
-}
-
 .categoriesSearchWrap{
   display:flex;
   align-items:center;

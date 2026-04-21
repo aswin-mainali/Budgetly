@@ -1599,7 +1599,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data, helpers } = budget
+  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data } = budget
   const [pickerFor, setPickerFor] = React.useState<string | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [editingCategoryIds, setEditingCategoryIds] = useState<Record<string, boolean>>({})
@@ -1621,18 +1621,6 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   }, [sortedCategories, search])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
-  const categorySummary = useMemo(() => {
-    const totalBudget = sortedCategories.reduce((sum, category) => sum + Number(category.budget_monthly || 0), 0)
-    const highestCategory = sortedCategories.reduce<Category | null>((highest, category) => {
-      if (!highest) return category
-      return Number(category.budget_monthly || 0) > Number(highest.budget_monthly || 0) ? category : highest
-    }, null)
-    return {
-      totalBudget,
-      count: sortedCategories.length,
-      highestName: highestCategory?.name?.trim() || '—',
-    }
-  }, [sortedCategories])
 
   const createCategoryWithDraft = () => {
     const name = draftName.trim()
@@ -1722,12 +1710,6 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                 <button key={item} type="button" className="categoriesSuggestionChip" onClick={() => quickAddSuggestion(item)}>{item}</button>
               ))}
             </div>
-          </div>
-
-          <div className="categoriesSummaryStrip">
-            <div>{categorySummary.count} categories created</div>
-            <div>{helpers.fmtMoney(categorySummary.totalBudget, data.currency)} total monthly budget</div>
-            <div>Highest: {categorySummary.highestName}</div>
           </div>
 
         </section>
