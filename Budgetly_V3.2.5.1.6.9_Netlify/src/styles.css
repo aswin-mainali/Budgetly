@@ -6843,17 +6843,14 @@ body.light .categoriesListHeader,
 .goalsSortRow{display:flex;align-items:center;gap:8px}
 .goalsSortSelect{border-radius:10px;min-width:170px;height:36px}
 .goalsGalleryHeader{margin-top:-2px}
-.goalsSortControls{gap:10px}
-.goalsViewToggleGroup{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.goalsViewToggle{width:34px;height:32px;border:none;border-right:1px solid var(--line);border-radius:0;background:transparent}
-.goalsViewToggle:last-child{border-right:none}
-.goalsViewToggle.active{color:#23ab83;background:#ecf9f4}
+.goalsSortControls{gap:10px;flex-wrap:nowrap;white-space:nowrap}
 .goalsCarouselShell{display:flex;align-items:center;gap:12px}
 .goalsNavBtn{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
 .goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
-.goalsCarouselTrack{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 24px)/3);gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1}
+.goalsCarouselTrack{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
 .goalsCarouselTrack::-webkit-scrollbar{display:none}
-.goalCarouselCard{scroll-snap-align:start;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
+.goalCarouselCard{scroll-snap-align:start;flex:0 0 calc((100% - 24px)/3);border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
+.goalCarouselCard.editing{flex-basis:calc((100% - 12px)/2)}
 .goalCarouselTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .goalCarouselTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
 .goalCarouselTitleRow .muted{font-size:12px}
@@ -6885,12 +6882,13 @@ body.light .categoriesListHeader,
   .goalsHeroCard{grid-template-columns:1fr}
   .goalsHeroMountain{height:130px}
   .goalsHeroStats{border-left:0;border-top:1px solid #e5ebf3;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .goalsCarouselTrack{grid-auto-columns:calc((100% - 12px)/2)}
+  .goalCarouselCard{flex-basis:calc((100% - 12px)/2)}
+  .goalCarouselCard.editing{flex-basis:100%}
 }
 @media (max-width: 760px){
   .goalsHeroHeader,.goalsGalleryHeader{flex-direction:column;align-items:flex-start}
   .goalsHeroText h3{font-size:28px;max-width:none}
   .goalsCarouselShell{gap:8px}
-  .goalsCarouselTrack{grid-auto-columns:100%}
+  .goalCarouselCard{flex-basis:100%}
   .goalsNavBtn{display:none}
 }

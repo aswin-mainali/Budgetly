@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, Grid2x2, List } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1984,10 +1984,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             <option value="progress">Highest progress</option>
             <option value="saved">Most saved</option>
           </select>
-          <div className="goalsViewToggleGroup">
-            <button className="icon goalsViewToggle active" title="Grid view"><Grid2x2 size={14} /></button>
-            <button className="icon goalsViewToggle" title="List view"><List size={14} /></button>
-          </div>
         </div>
       </div>
 
@@ -2003,7 +1999,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             const targetDate = goal.target_date ? new Date(`${goal.target_date}T00:00:00`).toLocaleDateString() : 'No date'
             const remaining = Math.max(0, targetAmount - currentAmount)
             return (
-              <div key={goal.id} className="goalCarouselCard">
+              <div key={goal.id} className={`goalCarouselCard${editingGoalId === goal.id ? ' editing' : ''}`}>
                 <div className="goalCarouselTop">
                   <div className="goalCarouselTitleRow">
                     <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
