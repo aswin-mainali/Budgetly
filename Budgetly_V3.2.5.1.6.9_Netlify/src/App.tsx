@@ -295,7 +295,7 @@ export default function App() {
         {view === 'recurring' && admin.visibleFeatures.recurring ? <RecurringView budget={budget} /> : null}
         {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} /> : null}
         {view === 'tools' ? (
-          <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
+          <div className="toolsPageShell toolsPageShellFixed">
             <div className="card settingsTopCard settingsTopCardFull toolsTopTabsOnly">
               <div className="settingsTopTabs toolsTopTabs" role="tablist" aria-label="Tools sections">
                 <button className={`settingsNavBtn settingsTopNavBtn ${toolsSection === 'goals' ? 'active' : ''}`} onClick={() => setToolsSection('goals')}>Goals</button>
@@ -303,7 +303,7 @@ export default function App() {
                 <button className={`settingsNavBtn settingsTopNavBtn ${toolsSection === 'converter' ? 'active' : ''}`} onClick={() => setToolsSection('converter')}>Currency Converter</button>
               </div>
             </div>
-            <div className={`toolsPageBody ${toolsSection === 'converter' ? 'toolsPageBodyConverter' : ''}`}>
+            <div className="toolsPageBody">
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}
