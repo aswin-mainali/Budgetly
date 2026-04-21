@@ -2163,7 +2163,6 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
 
       <div className="grid cols2 converterGrid">
         <div className="card converterCard converterLeftCard">
-          <div className="converterPanelLabel">You send</div>
           <div className="converterSendRow">
             <div className="converterMainAmount">{safeAmount.toFixed(2)}</div>
             <label className="converterCurrencySelect">
@@ -2189,7 +2188,6 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
             </button>
           </div>
 
-          <div className="converterPanelLabel">You receive</div>
           <div className="converterSendRow">
             <div className="converterMainAmount converterReceiveAmount">{loading ? 'Loading…' : headlineAmount}</div>
             <label className="converterCurrencySelect">

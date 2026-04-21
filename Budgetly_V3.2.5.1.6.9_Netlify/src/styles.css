@@ -1072,16 +1072,16 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
 }
 
 
-.converterPage { display: grid; gap: 16px; }
-.converterHeader h2 { margin-bottom: 4px; font-size: 40px; }
+.converterPage { display: grid; gap: 12px; margin-top: -4px; }
+.converterHeader h2 { margin-bottom: 2px; font-size: 36px; }
 .converterSubhead { color: var(--muted); display: flex; align-items: center; gap: 8px; }
 .converterLiveDot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block; }
 .converterGrid { align-items: stretch; }
+.converterGrid.grid.cols2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .converterCard { min-height: 100%; }
 .converterLeftCard { display: grid; gap: 10px; }
-.converterPanelLabel { color: var(--muted); font-size: 13px; font-weight: 700; }
 .converterSendRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.converterMainAmount { font-size: clamp(36px, 5vw, 56px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
+.converterMainAmount { font-size: clamp(30px, 4vw, 46px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
 .converterReceiveAmount { color: #16a34a; }
 .converterCurrencySelect { min-width: 220px; }
 .converterQuickButtons { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1105,7 +1105,7 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
   place-items: center;
 }
 .converterRateBox { border-radius: 14px; border: 1px solid rgba(22,163,74,.25); background: rgba(22,163,74,.12); padding: 12px 14px; margin-top: 4px; }
-.converterRateHeadline { color: #16a34a; font-weight: 800; font-size: 28px; }
+.converterRateHeadline { color: #16a34a; font-weight: 800; font-size: 22px; }
 .converterRateSub { color: var(--muted); margin-top: 4px; }
 .converterInfoGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .converterInfoCard { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.03); }
