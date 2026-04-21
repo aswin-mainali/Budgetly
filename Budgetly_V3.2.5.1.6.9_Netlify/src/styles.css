@@ -4293,12 +4293,9 @@ body.theme-light .row select {
   .recurringScrollBox .dataStickyTable td:nth-child(2) .select,
   .recurringScrollBox .dataStickyTable td:nth-child(3) .select,
   .recurringScrollBox .dataStickyTable td:nth-child(5) .select{
-    font-size:0;
-    padding-left:8px;
-    padding-right:22px;
-    text-indent:-9999px;
-    white-space:nowrap;
-    overflow:hidden;
+    font-size:14px;
+    padding-left:10px;
+    padding-right:24px;
   }
 }
 
@@ -4343,17 +4340,6 @@ body.theme-light .row select {
 
   .recurringScrollBox .dataStickyTable td:nth-child(7) .input{
     min-width:146px;
-  }
-
-  .recurringScrollBox .dataStickyTable td:nth-child(2) .select,
-  .recurringScrollBox .dataStickyTable td:nth-child(3) .select,
-  .recurringScrollBox .dataStickyTable td:nth-child(5) .select{
-    font-size:0;
-    padding-left:8px;
-    padding-right:22px;
-    text-indent:-9999px;
-    white-space:nowrap;
-    overflow:hidden;
   }
 }
 
