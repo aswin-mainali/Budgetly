@@ -6654,6 +6654,32 @@ body.light .bugUploadBox{background:#f8fbff}
   padding-right:4px;
 }
 
+.categoriesListHeader{
+  position:sticky;
+  top:0;
+  z-index:5;
+  display:grid;
+  grid-template-columns:56px minmax(120px, 1fr) 120px 98px;
+  gap:10px;
+  padding:6px 8px;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,18,40,.92);
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+.categoriesListHeaderActions{
+  text-align:center;
+}
+
+body.light .categoriesListHeader,
+.theme-light .categoriesListHeader{
+  background:rgba(248,250,252,.98);
+}
+
 .categoriesListItem{
   display:flex;
   justify-content:space-between;
@@ -6691,14 +6717,19 @@ body.light .bugUploadBox{background:#f8fbff}
 
   .categoriesListMain .emojiChip{
     padding:6px 8px;
-    min-width:44px;
+    min-width:40px;
   }
 
   .categoriesBudgetInput{
-    width:92px;
+    width:82px;
   }
 
   .categoriesListActions{
+    gap:8px;
+  }
+
+  .categoriesListHeader{
+    grid-template-columns:48px minmax(120px, 1fr) 82px 88px;
     gap:8px;
   }
 }
@@ -6707,6 +6738,7 @@ body.light .bugUploadBox{background:#f8fbff}
   .categoriesComposer,
   .categoriesManage{padding:12px}
   .categoriesToolbarRow{grid-template-columns:1fr}
+  .categoriesListHeader{display:none}
   .categoriesListItem{flex-direction:column; align-items:stretch}
   .categoriesListActions{justify-content:space-between}
   .categoriesBudgetInput{width:100%}

@@ -1761,6 +1761,12 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
 
           <div className="categoriesList">
+            <div className="categoriesListHeader">
+              <span>Emoji</span>
+              <span>Name</span>
+              <span>Budget</span>
+              <span className="categoriesListHeaderActions">Actions</span>
+            </div>
             {filteredAndSortedCategories.length === 0 ? <div className="muted mobileEmptyCard">No matching categories.</div> : filteredAndSortedCategories.map((category: Category) => {
               const isEditing = !!editingCategoryIds[category.id]
               return (
