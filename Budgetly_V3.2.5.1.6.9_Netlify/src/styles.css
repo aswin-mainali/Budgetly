@@ -6721,7 +6721,7 @@ body.light .categoriesListHeader,
   }
 
   .categoriesBudgetInput{
-    width:82px;
+    width:72px;
   }
 
   .categoriesListActions{
@@ -6729,7 +6729,7 @@ body.light .categoriesListHeader,
   }
 
   .categoriesListHeader{
-    grid-template-columns:48px minmax(120px, 1fr) 82px 88px;
+    grid-template-columns:48px minmax(120px, 1fr) 72px 88px;
     gap:8px;
   }
 }
