@@ -1112,6 +1112,7 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
 .converterInfoCard small { display: block; color: var(--muted); margin-bottom: 4px; }
 .converterInfoCard strong { font-size: 16px; }
 .converterChartCard { overflow: hidden; }
+.converterChartWrap { height: 320px; }
 .converterRangeButtons {
   display: flex;
   flex-wrap: wrap;
@@ -1163,7 +1164,7 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 12px;
-  background: rgba(255,255,255,.03);
+  background: rgba(255,255,255,.04);
   display: grid;
   gap: 10px;
 }
@@ -1174,11 +1175,23 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
   border-color: rgba(22,163,74,.45);
   background: rgba(22,163,74,.15);
 }
+body.light .converterRecentBox {
+  background: #ffffff;
+  border-color: rgba(148,163,184,.32);
+}
 @media (max-width: 900px) {
   .converterRangeButtons { justify-content: flex-start; }
   .converterSendRow { flex-direction: column; align-items: flex-start; }
   .converterCurrencySelect { width: 100%; min-width: 0; }
   .converterInfoGrid { grid-template-columns: 1fr; }
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+  .converterChartWrap { height: 260px; }
+}
+@media (max-width: 1200px) {
+  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
+}
+@media (max-height: 860px) {
+  .converterChartWrap { height: 250px; }
 }
 
 
@@ -5996,6 +6009,16 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+.toolsPageShellFixed.toolsShellConverter{
+  min-height: calc(100vh - 120px);
+  max-height: calc(100vh - 120px);
+}
+
+.toolsPageBody.toolsPageBodyConverter{
+  overflow: auto;
+  padding-right: 4px;
 }
 
 

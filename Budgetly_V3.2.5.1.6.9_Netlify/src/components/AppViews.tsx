@@ -2263,7 +2263,7 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
 
           {chartError ? <div className="converterChartNote">{chartError}</div> : null}
 
-          <div style={{ height: 320 }}>
+          <div className="converterChartWrap">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartPoints}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
