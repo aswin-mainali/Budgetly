@@ -1599,14 +1599,82 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty } = budget
-  const isPhone = useIsPhone()
-  const isCompactLaptop = useIsCompactLaptop()
-  const useCompactDashboard = !isPhone && isCompactLaptop
+  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data, helpers } = budget
   const [pickerFor, setPickerFor] = React.useState<string | null>(null)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [draftName, setDraftName] = useState('')
+  const [draftBudget, setDraftBudget] = useState('')
+  const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
+  const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
+
+  const categoryStats = useMemo(() => {
+    const tx = Array.isArray(data.transactions) ? data.transactions : []
+    const map = new Map<string, { txCount: number; spend: number }>()
+    for (const item of tx) {
+      if (!item.category_id || item.type !== 'expense') continue
+      const current = map.get(item.category_id) ?? { txCount: 0, spend: 0 }
+      map.set(item.category_id, { txCount: current.txCount + 1, spend: current.spend + Number(item.amount || 0) })
+    }
+    return map
+  }, [data.transactions])
+
+  const filteredCategories = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    if (!query) return sortedCategories
+    return sortedCategories.filter((category) => {
+      const usage = categoryStats.get(category.id)
+      return category.name.toLowerCase().includes(query)
+        || (category.emoji ?? '').includes(query)
+        || String(Math.round(usage?.spend ?? 0)).includes(query)
+    })
+  }, [sortedCategories, search, categoryStats])
+
+  const totalBudget = useMemo(
+    () => sortedCategories.reduce((sum, category) => sum + Number(category.budget_monthly || 0), 0),
+    [sortedCategories]
+  )
+
+  const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
+
+  const createCategoryWithDraft = () => {
+    const name = draftName.trim()
+    if (!name) {
+      addCategory()
+      return
+    }
+    setPendingDraft({
+      name,
+      budget: draftBudget.trim(),
+    })
+    addCategory()
+    setDraftName('')
+    setDraftBudget('')
+  }
+
+  useEffect(() => {
+    if (!pendingDraft) {
+      previousCategoryIds.current = sortedCategories.map((category) => category.id)
+      return
+    }
+    const before = new Set(previousCategoryIds.current)
+    const createdCategory = sortedCategories.find((category) => !before.has(category.id))
+    if (!createdCategory) {
+      previousCategoryIds.current = sortedCategories.map((category) => category.id)
+      return
+    }
+
+    updateCategoryField(createdCategory.id, 'name', pendingDraft.name)
+    if (pendingDraft.budget) updateCategoryField(createdCategory.id, 'budget_monthly', pendingDraft.budget)
+    setPendingDraft(null)
+    previousCategoryIds.current = sortedCategories.map((category) => category.id)
+  }, [sortedCategories, pendingDraft, updateCategoryField])
+
+  const quickAddSuggestion = (name: string) => {
+    setDraftName(name)
+  }
 
   const confirmDeleteCategory = async () => {
     if (!pendingDeleteId) return
@@ -1615,85 +1683,104 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   }
 
   return (
-    <div className="card mobileSectionCard dataPageCard">
-      <div className="row between">
-        <div>
-          <h2>Categories</h2>
-          <div className="muted">Budgets are monthly. Pick an emoji to make each category easier to spot.</div>
-        </div>
-        <button className="btn primary" onClick={() => addCategory()}>
-          <Plus size={16} /> Add
-        </button>
-      </div>
+    <div className="card mobileSectionCard dataPageCard categoriesPageCard">
+      <div className="categoriesLayout">
+        <section className="categoriesComposer card">
+          <div className="categoriesSectionHead">
+            <h2>Add Category</h2>
+            <p className="muted">Create categories with budgets to keep monthly spending in control.</p>
+          </div>
 
-      {isPhone ? (
-        <div className="mobileList dataMobileList" style={{ marginTop: 12 }}>
-          {sortedCategories.length === 0 ? <div className="muted mobileEmptyCard">No categories yet.</div> : sortedCategories.map((category: Category) => (
-            <div key={category.id} className="mobileInfoCard">
-              <div className="row between" style={{ alignItems: 'center', gap: 10 }}>
-                <button className="emojiChip" onClick={() => setPickerFor(category.id)} title="Choose emoji">
-                  <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
-                  <span className="emojiChipLabel">Emoji</span>
-                </button>
-                <button className="icon danger" onClick={() => setPendingDeleteId(category.id)} title="Delete"><Trash2 size={16} /></button>
-              </div>
-              <div className="goalFields compact" style={{ marginTop: 12 }}>
-                <div>
-                  <small>Name</small>
-                  <input className="input" value={category.name} onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)} />
-                </div>
-                <div>
-                  <small>Monthly budget</small>
-                  <input className="input" inputMode="decimal" value={String(category.budget_monthly ?? 0)} onChange={(event) => updateCategoryField(category.id, 'budget_monthly', event.target.value)} />
-                </div>
-              </div>
+          <div className="categoriesComposerForm">
+            <div className="categoriesComposerEmojiRow">
+              <span className="categoriesIconTile">🏷️</span>
+              <span className="muted">New category</span>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="dataScrollBox categoriesScrollBox" style={{ marginTop: 12 }}>
-          <table className="table dataStickyTable">
-              <thead>
-                <tr>
-                  <th style={{ width: 110 }}>Emoji</th>
-                  <th>Name</th>
-                  <th style={{ width: 180 }}>Monthly Budget</th>
-                  <th style={{ width: 70 }} />
-                </tr>
-              </thead>
-              <tbody>
-                {sortedCategories.map((category: Category) => (
-                  <tr key={category.id}>
-                    <td>
-                      <button className="emojiChip" onClick={() => setPickerFor(category.id)} title="Choose emoji">
-                        <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
-                        <span className="emojiChipLabel">Pick</span>
-                      </button>
-                    </td>
-                    <td>
+            <input
+              className="input"
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              placeholder="Enter category name"
+            />
+            <div className="categoriesComposerBudgetRow">
+              <input
+                className="input"
+                inputMode="decimal"
+                value={draftBudget}
+                onChange={(event) => setDraftBudget(event.target.value)}
+                placeholder={`${data.currency} Enter monthly budget`}
+              />
+              <button className="btn primary" onClick={createCategoryWithDraft}>
+                <Plus size={16} /> Add
+              </button>
+            </div>
+          </div>
+
+          <div className="categoriesSuggestions">
+            <div className="categoriesSuggestionsTitle">Suggestions</div>
+            <div className="categoriesSuggestionList">
+              {suggestions.map((item) => (
+                <button key={item} type="button" className="categoriesSuggestionChip" onClick={() => quickAddSuggestion(item)}>{item}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="categoriesBudgetTotal muted">
+            💰 {helpers.fmtMoney(totalBudget, data.currency)} total monthly budget
+          </div>
+        </section>
+
+        <section className="categoriesManage card">
+          <div className="categoriesSectionHead">
+            <h2>Manage Categories</h2>
+            <p className="muted">Search and fine-tune budgets, names, and icons.</p>
+          </div>
+
+          <div className="categoriesSearchWrap">
+            <Search size={16} />
+            <input
+              className="input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search categories..."
+              aria-label="Search categories"
+            />
+          </div>
+
+          <div className="categoriesList">
+            {filteredCategories.length === 0 ? <div className="muted mobileEmptyCard">No matching categories.</div> : filteredCategories.map((category: Category) => {
+              const usage = categoryStats.get(category.id)
+              return (
+                <article key={category.id} className="categoriesListItem">
+                  <div className="categoriesListMain">
+                    <button className="emojiChip" onClick={() => setPickerFor(category.id)} title="Choose emoji">
+                      <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
+                      <span className="emojiChipLabel">Pick</span>
+                    </button>
+                    <div className="categoriesListFields">
                       <input className="input" value={category.name} onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)} />
-                    </td>
-                    <td>
-                      <input className="input" inputMode="decimal" value={String(category.budget_monthly ?? 0)} onChange={(event) => updateCategoryField(category.id, 'budget_monthly', event.target.value)} />
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className="icon danger" onClick={() => setPendingDeleteId(category.id)} title="Delete">
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {sortedCategories.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="muted" style={{ padding: 18, textAlign: 'center' }}>
-                      No categories yet.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-          </table>
-        </div>
-      )}
+                      <small className="muted">Used in {usage?.txCount ?? 0} transactions</small>
+                    </div>
+                  </div>
+
+                  <div className="categoriesListActions">
+                    <input
+                      className="input categoriesBudgetInput"
+                      inputMode="decimal"
+                      value={String(category.budget_monthly ?? 0)}
+                      onChange={(event) => updateCategoryField(category.id, 'budget_monthly', event.target.value)}
+                    />
+                    <div className="categoriesListSpent">{helpers.fmtMoney(usage?.spend ?? 0, data.currency)}</div>
+                    <button className="icon danger" onClick={() => setPendingDeleteId(category.id)} title="Delete">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+      </div>
 
       <div className="row between dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{categoryDirty ? 'You have unsaved category changes.' : 'All category changes are saved.'}</div>
@@ -1747,6 +1834,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     </div>
   )
 }
+
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
