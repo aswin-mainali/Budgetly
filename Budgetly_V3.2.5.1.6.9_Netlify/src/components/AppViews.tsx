@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, CircleDollarSign, PiggyBank, Target, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1966,10 +1966,10 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           <img src="/goal-mountain.svg" alt="" />
         </div>
         <div className="goalsHeroStats">
-          <div className="goalsHeroStatItem"><PiggyBank size={16} /><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
-          <div className="goalsHeroStatItem"><CircleDollarSign size={16} /><div><strong>{helpers.fmtMoney(totalTarget, data.currency)}</strong><span>Total target</span></div></div>
-          <div className="goalsHeroStatItem"><Target size={16} /><div><strong>{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div></div>
-          <div className="goalsHeroStatItem"><TrendingUp size={16} /><div><strong>{displayGoals.length}</strong><span>Active goals</span></div></div>
+          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon green">🐷</span><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
+          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon amber">🪙</span><div><strong>{helpers.fmtMoney(totalTarget, data.currency)}</strong><span>Total target</span></div></div>
+          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon blue">◔</span><div><strong>{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div></div>
+          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon purple">◬</span><div><strong>{displayGoals.length}</strong><span>Active goals</span></div></div>
         </div>
       </div>
 

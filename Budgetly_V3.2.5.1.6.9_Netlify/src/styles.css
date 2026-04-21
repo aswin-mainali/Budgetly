@@ -6821,22 +6821,28 @@ body.light .categoriesListHeader,
 }
 
 /* goals gallery redesign */
-.goalsGalleryPage{gap:18px}
+.goalsGalleryPage{gap:10px}
 .goalsHeroHeader,.goalsGalleryHeader{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .goalsHeroAddBtn{border-radius:10px;padding:9px 14px}
-.goalsHeroCard{display:grid;grid-template-columns:1.2fr 1fr 270px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,#f8fbff,#f7f8ff 40%,#f8fffc);overflow:hidden}
-.goalsHeroText{padding:26px 22px}
-.goalsHeroText h3{margin:6px 0 8px;font-size:40px;line-height:1.05;max-width:300px}
-.goalsHeroText p{margin:0;color:var(--muted);max-width:280px;font-size:14px}
-.goalsHeroStar{color:#95a4c7;font-size:12px}
-.goalsHeroMountain{display:flex;align-items:flex-end;justify-content:center;min-height:180px;padding-top:10px}
-.goalsHeroMountain img{display:block;width:100%;max-width:470px;height:auto;object-fit:contain}
-.goalsHeroStats{border-left:1px solid #e5ebf3;padding:16px 14px;display:grid;gap:10px;align-content:center;background:#fcfdff}
-.goalsHeroStatItem{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:10px;background:#f4f7ff;color:#4f6388}
-.goalsHeroStatItem strong{display:block;color:#102041;font-size:17px;line-height:1.1}
-.goalsHeroStatItem span{font-size:12px;color:var(--muted)}
+.goalsHeroCard{display:grid;grid-template-columns:1.08fr 1fr 290px;border:1px solid var(--line);border-radius:12px;background:#f9fbff;overflow:hidden}
+.goalsHeroText{padding:18px 18px}
+.goalsHeroText h3{margin:4px 0 8px;font-size:16px;line-height:1.45;max-width:230px;font-weight:800}
+.goalsHeroText p{margin:0;color:#4e5f7f;max-width:220px;font-size:14px;line-height:1.45}
+.goalsHeroStar{color:#b6c5de;font-size:13px}
+.goalsHeroMountain{display:flex;align-items:flex-end;justify-content:center;min-height:140px;padding-top:8px}
+.goalsHeroMountain img{display:block;width:100%;max-width:420px;height:auto;object-fit:contain}
+.goalsHeroStats{border-left:1px solid #e5ebf3;padding:10px 12px;display:grid;gap:7px;align-content:center;background:#fcfdff}
+.goalsHeroStatItem{display:flex;gap:10px;align-items:center;padding:3px 0;color:#4f6388}
+.goalsHeroStatItem strong{display:block;color:#192544;font-size:17px;line-height:1.15}
+.goalsHeroStatItem span{font-size:12px;color:#667799}
+.goalsHeroStatIcon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;font-size:16px;line-height:1}
+.goalsHeroStatIcon.green{background:#e7f8f0;color:#1f9f75}
+.goalsHeroStatIcon.amber{background:#fff4e8;color:#d99337}
+.goalsHeroStatIcon.blue{background:#ebf3ff;color:#3b82f6}
+.goalsHeroStatIcon.purple{background:#f1ebff;color:#7d4bc6}
 .goalsSortRow{display:flex;align-items:center;gap:8px}
 .goalsSortSelect{border-radius:10px;min-width:170px;height:36px}
+.goalsGalleryHeader{margin-top:-2px}
 .goalsCarouselShell{display:flex;align-items:center;gap:12px}
 .goalsNavBtn{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
 .goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
@@ -6864,7 +6870,7 @@ body.light .categoriesListHeader,
 
 @media (max-width: 1200px){
   .goalsHeroCard{grid-template-columns:1fr}
-  .goalsHeroMountain{height:140px}
+  .goalsHeroMountain{height:130px}
   .goalsHeroStats{border-left:0;border-top:1px solid #e5ebf3;grid-template-columns:repeat(2,minmax(0,1fr))}
   .goalsCarouselTrack{grid-auto-columns:calc((100% - 12px)/2)}
 }
