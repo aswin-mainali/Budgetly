@@ -6620,6 +6620,12 @@ body.light .bugUploadBox{background:#f8fbff}
   padding:12px;
 }
 
+.categoriesToolbarRow{
+  display:grid;
+  grid-template-columns: minmax(240px, 1fr) 180px;
+  gap:10px;
+}
+
 .categoriesSearchWrap{
   display:flex;
   align-items:center;
@@ -6634,6 +6640,10 @@ body.light .bugUploadBox{background:#f8fbff}
   border:none;
   box-shadow:none;
   background:transparent;
+}
+
+.categoriesSortSelect{
+  width:100%;
 }
 
 .categoriesList{
@@ -6676,6 +6686,7 @@ body.light .bugUploadBox{background:#f8fbff}
 @media (max-width: 720px){
   .categoriesComposer,
   .categoriesManage{padding:12px}
+  .categoriesToolbarRow{grid-template-columns:1fr}
   .categoriesListItem{flex-direction:column; align-items:stretch}
   .categoriesListActions{justify-content:space-between}
   .categoriesBudgetInput{width:100%}

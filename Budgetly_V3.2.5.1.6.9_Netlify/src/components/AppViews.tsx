@@ -1604,6 +1604,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [editingCategoryIds, setEditingCategoryIds] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'budget-high' | 'budget-low'>('name-asc')
   const [draftName, setDraftName] = useState('')
   const [draftBudget, setDraftBudget] = useState('')
   const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
@@ -1619,6 +1620,13 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
         || (category.emoji ?? '').includes(query)
     })
   }, [sortedCategories, search])
+  const filteredAndSortedCategories = useMemo(() => {
+    const list = [...filteredCategories]
+    if (sortBy === 'name-asc') return list.sort((a, b) => a.name.localeCompare(b.name))
+    if (sortBy === 'name-desc') return list.sort((a, b) => b.name.localeCompare(a.name))
+    if (sortBy === 'budget-high') return list.sort((a, b) => Number(b.budget_monthly || 0) - Number(a.budget_monthly || 0))
+    return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
+  }, [filteredCategories, sortBy])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
   const totalBudget = useMemo(
@@ -1728,19 +1736,32 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
             <p className="muted">Search and fine-tune budgets, names, and icons.</p>
           </div>
 
-          <div className="categoriesSearchWrap">
-            <Search size={16} />
-            <input
-              className="input"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search categories..."
-              aria-label="Search categories"
-            />
+          <div className="categoriesToolbarRow">
+            <div className="categoriesSearchWrap">
+              <Search size={16} />
+              <input
+                className="input"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search categories..."
+                aria-label="Search categories"
+              />
+            </div>
+            <select
+              className="select categoriesSortSelect"
+              value={sortBy}
+              onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
+              aria-label="Sort categories"
+            >
+              <option value="name-asc">Sort: Name A–Z</option>
+              <option value="name-desc">Sort: Name Z–A</option>
+              <option value="budget-high">Sort: Budget high-low</option>
+              <option value="budget-low">Sort: Budget low-high</option>
+            </select>
           </div>
 
           <div className="categoriesList">
-            {filteredCategories.length === 0 ? <div className="muted mobileEmptyCard">No matching categories.</div> : filteredCategories.map((category: Category) => {
+            {filteredAndSortedCategories.length === 0 ? <div className="muted mobileEmptyCard">No matching categories.</div> : filteredAndSortedCategories.map((category: Category) => {
               const isEditing = !!editingCategoryIds[category.id]
               return (
                 <article key={category.id} className="categoriesListItem">
