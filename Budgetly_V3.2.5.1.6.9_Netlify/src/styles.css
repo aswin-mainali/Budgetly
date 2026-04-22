@@ -6913,20 +6913,22 @@ body.light .categoriesListHeader,
 }
 
 /* keep full goals hero + footer visible on compact layouts */
-@media (max-width: 1500px){
-  .toolsPageBody > .goalsPage.goalsGalleryPage{
-    max-height:none !important;
-    min-height:0 !important;
-    height:auto !important;
-    overflow-y:auto !important;
-    padding-bottom:12px;
-  }
-  .toolsPageBody > .goalsPage.goalsGalleryPage .goalsHeroCard{
-    display:grid !important;
-    opacity:1 !important;
-    visibility:visible !important;
-  }
-  .toolsPageBody > .goalsPage.goalsGalleryPage .goalsUpdateFooter{
-    margin-bottom:6px;
-  }
+.toolsPageBody .goalsPage.goalsGalleryPage{
+  display:flex !important;
+  flex-direction:column !important;
+  max-height:none !important;
+  min-height:0 !important;
+  height:auto !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding-bottom:12px;
+}
+.toolsPageBody .goalsPage.goalsGalleryPage .goalsHeroCard{
+  display:grid !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  min-height:180px;
+}
+.toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
+  margin-bottom:6px;
 }
