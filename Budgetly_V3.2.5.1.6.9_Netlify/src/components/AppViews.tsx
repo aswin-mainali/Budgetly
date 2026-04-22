@@ -1880,13 +1880,14 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, contributeToGoal, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [contributions, setContributions] = useState<Record<string, string>>({})
-  const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved'>('nearest')
+  const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved' | 'oldest'>('nearest')
   const [activeIndex, setActiveIndex] = useState(0)
   const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
   const [goalModalMode, setGoalModalMode] = useState<'add' | 'edit' | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
   const [goalEmojiAuto, setGoalEmojiAuto] = useState(true)
+  const [goalModalError, setGoalModalError] = useState('')
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
@@ -1911,6 +1912,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const openAddGoalModal = () => {
     setGoalDraft({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
     setGoalEmojiAuto(true)
+    setGoalModalError('')
     setGoalModalMode('add')
   }
 
@@ -1925,6 +1927,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       note: goal.note ?? '',
     })
     setGoalEmojiAuto(false)
+    setGoalModalError('')
     setGoalModalMode('edit')
   }
 
@@ -1935,8 +1938,15 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const saveGoalModal = async () => {
     if (goalModalMode === 'add') {
+      const name = goalDraft.name.trim()
+      const targetAmount = Number(goalDraft.target_amount)
+      const targetDate = goalDraft.target_date.trim()
+      if (!name || !targetDate || !Number.isFinite(targetAmount) || targetAmount <= 0) {
+        setGoalModalError('Name, target amount, and target date are required to save a new goal.')
+        return
+      }
       addGoal({
-        name: goalDraft.name,
+        name,
         emoji: goalDraft.emoji,
         target_amount: goalDraft.target_amount,
         current_amount: goalDraft.current_amount,
@@ -1977,13 +1987,18 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       clone.sort((a, b) => Number(b.current_amount || 0) - Number(a.current_amount || 0))
       return clone
     }
+    if (sortKey === 'oldest') {
+      const order = new Map((Array.isArray(data.goals) ? data.goals : []).map((goal, index) => [goal.id, index]))
+      clone.sort((a, b) => (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+      return clone
+    }
     clone.sort((a, b) => {
       const aDate = a.target_date ? new Date(`${a.target_date}T00:00:00`).getTime() : Number.POSITIVE_INFINITY
       const bDate = b.target_date ? new Date(`${b.target_date}T00:00:00`).getTime() : Number.POSITIVE_INFINITY
       return aDate - bDate
     })
     return clone
-  }, [sortedGoals, sortKey])
+  }, [sortedGoals, sortKey, data.goals])
 
   const pages = Math.max(1, Math.ceil(displayGoals.length / 3))
 
@@ -2042,10 +2057,11 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         <h3>My Goals</h3>
         <div className="goalsSortRow goalsSortControls">
           <span className="muted">Sort by:</span>
-          <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved')}>
+          <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved' | 'oldest')}>
             <option value="nearest">Nearest target</option>
             <option value="progress">Highest progress</option>
             <option value="saved">Most saved</option>
+            <option value="oldest">Oldest</option>
           </select>
         </div>
       </div>
@@ -2145,6 +2161,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         <div className="deleteConfirmBackdrop" role="presentation">
           <div className="card goalEditorModal" role="dialog" aria-modal="true">
             <h3>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
+            {goalModalError ? <div className="goalModalError">{goalModalError}</div> : null}
             <div className="goalEditorGrid">
               <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
                 const nextName = event.target.value
