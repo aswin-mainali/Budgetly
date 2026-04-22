@@ -4425,6 +4425,14 @@ body.light .dataScrollBox thead th,
   max-height:calc(100dvh - 120px);
 }
 
+.txMainLayout{
+  display:grid;
+  grid-template-columns:minmax(320px, .9fr) minmax(460px, 1.1fr);
+  gap:14px;
+  flex:1 1 auto;
+  min-height:0;
+}
+
 .txPageHeader,
 .txPanel,
 .txPanelHeader,
@@ -4442,6 +4450,7 @@ body.light .dataScrollBox thead th,
 
 .txAddPanel{
   overflow:hidden;
+  align-self:start;
 }
 
 .txManagePanel{
@@ -4521,6 +4530,9 @@ body.light .txStickyFooter,
 }
 
 @media (max-width: 960px){
+  .txMainLayout{
+    grid-template-columns:1fr;
+  }
   .txFullLayout{
     height:calc(100dvh - 88px);
     min-height:calc(100dvh - 88px);
@@ -4959,6 +4971,9 @@ body.light .txSearchPrefix{
     min-height:calc(100dvh - 88px) !important;
     max-height:calc(100dvh - 88px) !important;
     overflow:hidden;
+    gap:10px;
+  }
+  .txMainLayout{
     gap:10px;
   }
   .txPanel{
