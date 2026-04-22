@@ -40,6 +40,12 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   min-height:100vh;
 }
 
+.container.appWrap{
+  height:100dvh;
+  max-height:100dvh;
+  overflow:hidden;
+}
+
 .sidebar{
   width:280px;
   border-right:1px solid var(--border);
@@ -47,7 +53,8 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   padding:12px;
   position:sticky;
   top:0;
-  height:100vh;
+  height:100dvh;
+  overflow:hidden;
   display:flex;
   flex-direction:column;
   gap:10px;
@@ -175,6 +182,78 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   gap:8px;
 }
 
+@media (max-height: 900px){
+  .sidebar{
+    gap:8px;
+    padding:10px;
+  }
+
+  .brand{
+    padding:8px 10px;
+  }
+
+  .sidebarClock{
+    padding:8px 10px;
+    gap:10px;
+  }
+
+  .clockTime{
+    font-size:34px;
+  }
+
+  .clockDate strong{
+    font-size:24px;
+  }
+
+  .nav{
+    gap:6px;
+  }
+
+  .nav button{
+    padding:9px 10px;
+  }
+
+  .sidebarFooter{
+    gap:6px;
+  }
+
+  .pill{
+    padding:7px 10px;
+  }
+}
+
+@media (max-height: 760px){
+  .clockMeridiem{
+    font-size:12px;
+    padding-bottom:4px;
+  }
+
+  .clockTime{
+    font-size:28px;
+  }
+
+  .clockDate span{
+    font-size:11px;
+  }
+
+  .clockDate strong{
+    font-size:20px;
+  }
+
+  .nav button{
+    padding:8px 9px;
+    border-radius:12px;
+    gap:8px;
+  }
+
+  .sidebarFooter .btn,
+  .sidebarFooter .pill{
+    min-height:36px;
+    padding-top:6px;
+    padding-bottom:6px;
+  }
+}
+
 .pill{
   display:inline-flex;
   align-items:center;
@@ -190,6 +269,9 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 .main{
   flex:1;
   min-width:0;
+  height:100dvh;
+  overflow-y:auto;
+  overflow-x:hidden;
   padding:18px;
 }
 
@@ -805,7 +887,10 @@ body.light .icon:hover{ background: rgba(15,23,42,.08); }
    Responsive (mobile)
 ----------------------------*/
 
-.sidebarContainer{ height: 100%; }
+.sidebarContainer{
+  height:100dvh;
+  flex-shrink:0;
+}
 
 .mobileMenuBtn{
   position: fixed;
