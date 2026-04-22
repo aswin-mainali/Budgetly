@@ -5154,6 +5154,180 @@ body.light .txSearchPrefix{
     }
 }
 
+/* v3.2.5.1.6.11 transactions redesign */
+.txSplitLayout{
+  display:grid;
+  grid-template-columns:minmax(250px,.36fr) minmax(0,.64fr);
+  gap:14px;
+  flex:1 1 auto;
+  min-height:0;
+}
+
+.txAddPanelRedesign{
+  padding:14px;
+}
+
+.txAddFormRedesign{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-top:8px;
+}
+
+.txAddFormRedesign .txField label{
+  min-height:auto;
+  font-size:12px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+.txAddFormRedesign .txField input,
+.txAddFormRedesign .txField select{
+  border-radius:11px;
+}
+
+.txAddFormRedesign .typeToggle{
+  border-radius:12px;
+  padding:3px;
+}
+
+.txAddFormRedesign .typeToggleBtn{
+  min-height:34px;
+  border-radius:10px;
+  font-size:12px;
+}
+
+.txAddButtonRedesign{
+  margin-top:8px;
+  min-height:42px;
+  border-radius:11px;
+  font-weight:700;
+}
+
+.txManagePanelRedesign{
+  padding:14px;
+  gap:10px;
+}
+
+.txManageSearchRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.txSearchInputRedesign{
+  flex:1 1 320px;
+  min-height:42px;
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+}
+
+.txSearchInputRedesign input{
+  background:transparent;
+  border:none;
+  box-shadow:none;
+}
+
+.txManageSearchRow .filterChips{
+  flex:0 0 auto;
+}
+
+.txManageSearchRow .filterChip{
+  min-height:38px;
+  border-radius:10px;
+  padding:0 16px;
+}
+
+.txManageMetaRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:2px;
+}
+
+.txInlineControlGroup{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.txInlineControl{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:38px;
+  padding:0 10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:rgba(255,255,255,.03);
+}
+
+.txInlineControl select{
+  border:none;
+  box-shadow:none;
+  background:transparent;
+  min-height:34px;
+  padding-right:20px;
+}
+
+.txInlineStatic{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:38px;
+  padding:0 11px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  color:var(--muted);
+  font-weight:600;
+}
+
+body.light .txSearchInputRedesign,
+body.light .txInlineControl,
+body.light .txInlineStatic,
+.theme-light .txSearchInputRedesign,
+.theme-light .txInlineControl,
+.theme-light .txInlineStatic{
+  background:#ffffff;
+}
+
+@media (max-width: 1080px){
+  .txSplitLayout{
+    grid-template-columns:1fr;
+  }
+
+  .txAddPanelRedesign{
+    order:1;
+  }
+
+  .txManagePanelRedesign{
+    order:2;
+  }
+}
+
+@media (max-width: 720px){
+  .txManageSearchRow{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .txManageSearchRow .filterChips{
+    width:100%;
+  }
+
+  .txManageMetaRow{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .txManageMetaRow > .muted{
+    text-align:right;
+  }
+}
+
 
 
 
