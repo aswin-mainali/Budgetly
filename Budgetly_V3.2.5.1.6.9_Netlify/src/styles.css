@@ -6911,3 +6911,22 @@ body.light .categoriesListHeader,
   .goalsUpdateFooter{flex-direction:column;align-items:flex-start}
   .goalsNavBtn{display:none}
 }
+
+/* keep full goals hero + footer visible on compact layouts */
+@media (max-width: 1500px){
+  .toolsPageBody > .goalsPage.goalsGalleryPage{
+    max-height:none !important;
+    min-height:0 !important;
+    height:auto !important;
+    overflow-y:auto !important;
+    padding-bottom:12px;
+  }
+  .toolsPageBody > .goalsPage.goalsGalleryPage .goalsHeroCard{
+    display:grid !important;
+    opacity:1 !important;
+    visibility:visible !important;
+  }
+  .toolsPageBody > .goalsPage.goalsGalleryPage .goalsUpdateFooter{
+    margin-bottom:6px;
+  }
+}
