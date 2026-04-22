@@ -4848,23 +4848,22 @@ body.light .dataStickyTable thead th,
     grid-column:span 4 !important;
   }
 
-  .txAddRow .txAmountField{
-    grid-column:span 3 !important;
-  }
+  .txSearchField{grid-column:1 / 3}
+  .txFilterField{grid-column:1 / 3}
+  .txMonthField{grid-column:3 / 4}
+    grid-column:3 / 4;
+    grid-row:2;
 
-  .txAddRow .txNoteField{
-    grid-column:span 7 !important;
+  .txSearchField{grid-column:1 / -1}
+  .txFilterField{grid-column:1 / 2}
+  .txMonthField{grid-column:2 / 3}
+    grid-column:1 / -1;
+  .txSearchField,
+  .txFilterField,
+  .txMonthField,
+  .txItemCount{
+    grid-column:1 / -1;
   }
-
-  .txAddRow .txAddButton{
-    grid-column:span 2 !important;
-    min-height:40px;
-    align-self:end;
-    justify-self:stretch;
-    white-space:nowrap;
-  }
-
-  .txAddRow .txCategoryField select,
   .txAddRow .txAmountField input,
   .txAddRow .txNoteField input{
     min-height:40px;
