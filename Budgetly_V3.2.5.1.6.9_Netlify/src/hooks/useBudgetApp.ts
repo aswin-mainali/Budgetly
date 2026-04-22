@@ -780,9 +780,12 @@ export function useBudgetApp(userId: string | null) {
     [goals],
   )
 
-  const addGoal = () => {
+  const addGoal = (initial?: { name?: string; emoji?: string; target_amount?: string | number; current_amount?: string | number; target_date?: string | null; note?: string }) => {
     if (!userId) return
-    const name = `New Goal ${goals.length + 1}`
+    const fallbackName = `New Goal ${goals.length + 1}`
+    const name = (initial?.name ?? '').trim() || fallbackName
+    const targetAmount = clampMoney(Number(initial?.target_amount ?? 1000))
+    const currentAmount = clampMoney(Number(initial?.current_amount ?? 0))
     persistLocal((current) => ({
       ...current,
       goals: [
@@ -791,11 +794,11 @@ export function useBudgetApp(userId: string | null) {
           id: crypto.randomUUID(),
           user_id: userId,
           name,
-          emoji: inferGoalEmoji(name),
-          target_amount: 1000,
-          current_amount: 0,
-          target_date: null,
-          note: '',
+          emoji: initial?.emoji || inferGoalEmoji(name),
+          target_amount: targetAmount,
+          current_amount: targetAmount > 0 ? Math.min(currentAmount, targetAmount) : currentAmount,
+          target_date: initial?.target_date || null,
+          note: initial?.note ?? '',
         },
       ],
     }))

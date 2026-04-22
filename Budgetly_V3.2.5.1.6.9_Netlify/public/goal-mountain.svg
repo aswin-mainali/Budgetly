@@ -1,0 +1,46 @@
+<svg width="1280" height="700" viewBox="0 0 1280 700" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="262" y1="164" x2="1038" y2="626" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9FD4E2"/>
+      <stop offset="1" stop-color="#8CC6D2"/>
+    </linearGradient>
+    <linearGradient id="ridge" x1="642" y1="140" x2="1024" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9E8ED"/>
+      <stop offset="1" stop-color="#BFD7DE"/>
+    </linearGradient>
+    <linearGradient id="tree" x1="510" y1="460" x2="550" y2="670" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1DB7AD"/>
+      <stop offset="1" stop-color="#168B95"/>
+    </linearGradient>
+    <linearGradient id="bush" x1="220" y1="590" x2="1100" y2="700" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#37B3B6"/>
+      <stop offset="1" stop-color="#228F9D"/>
+    </linearGradient>
+    <linearGradient id="road" x1="751" y1="264" x2="671" y2="694" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EFF5F6"/>
+      <stop offset="1" stop-color="#D9E6E9"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M238 700L645 175L1048 700H238Z" fill="url(#sky)"/>
+  <path d="M640 177L1015 700H1048L645 175L640 177Z" fill="url(#ridge)"/>
+  <path d="M635 176L720 230L684 264L611 218L635 176Z" fill="#B7D9E2" opacity=".7"/>
+  <path d="M514 378C535 325 584 285 650 280L593 358L514 378Z" fill="#7FBCCB" opacity=".45"/>
+  <path d="M739 351C775 349 837 378 866 430L750 425L739 351Z" fill="#A7D1DA" opacity=".5"/>
+
+  <path d="M433 700L604 455L773 700H433Z" fill="#87CAD4"/>
+  <path d="M486 700L579 505L674 700H486Z" fill="url(#tree)"/>
+  <path d="M516 546L551 478L585 546H563L598 619H566L596 675H508L538 619H503L536 546H516Z" fill="#16959C"/>
+
+  <path d="M629 236C593 262 576 286 583 306C593 336 649 345 722 388C774 419 809 459 803 490C796 526 739 540 684 575C650 596 632 621 637 649C640 667 654 683 678 700H769C778 661 770 629 744 603C709 569 633 556 629 519C625 484 700 468 729 431C756 397 739 356 696 326C660 302 624 289 629 236Z" fill="url(#road)"/>
+
+  <path d="M638 178H645V142H638V178Z" fill="#33AA9D"/>
+  <path d="M645 144C670 126 705 138 728 126C724 146 703 162 678 162C665 162 654 158 645 152V144Z" fill="#35C3AF"/>
+
+  <path d="M302 380C318 332 374 330 391 380H421C438 380 452 394 452 410H232C232 394 246 380 263 380H302Z" fill="#C5DCE5"/>
+
+  <path d="M68 700C84 658 132 650 156 681C167 627 241 627 252 681C270 658 307 662 318 689C336 668 365 674 374 700H68Z" fill="url(#bush)"/>
+  <path d="M234 700C257 648 321 646 341 692C357 654 412 656 429 695C452 667 503 673 521 700H234Z" fill="#63C4C0" opacity=".95"/>
+  <path d="M600 700C621 651 693 649 716 692C728 665 773 665 786 692C808 666 857 674 870 700H600Z" fill="#42B8B6"/>
+  <path d="M820 700C840 653 906 653 927 692C944 656 998 659 1012 695C1043 658 1092 670 1104 700H820Z" fill="#2AA5AA"/>
+</svg>
