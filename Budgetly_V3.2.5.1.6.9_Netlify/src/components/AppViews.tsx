@@ -1877,7 +1877,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, contributeToGoal, helpers, data } = budget
+  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, contributeToGoal, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [contributions, setContributions] = useState<Record<string, string>>({})
   const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved'>('nearest')
@@ -1885,7 +1885,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
   const [goalModalMode, setGoalModalMode] = useState<'add' | 'edit' | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
-  const [pendingNewGoal, setPendingNewGoal] = useState<{ existingIds: Set<string>; draft: GoalDraft } | null>(null)
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
   const [goalEmojiAuto, setGoalEmojiAuto] = useState(true)
   const carouselRef = useRef<HTMLDivElement | null>(null)
@@ -1908,20 +1907,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     contributeToGoal(goalId, amount)
     setContributions((current) => ({ ...current, [goalId]: '' }))
   }
-
-  useEffect(() => {
-    if (!pendingNewGoal) return
-    const createdGoal = sortedGoals.find((goal) => !pendingNewGoal.existingIds.has(goal.id))
-    if (!createdGoal) return
-    updateGoalField(createdGoal.id, 'name', pendingNewGoal.draft.name)
-    updateGoalField(createdGoal.id, 'emoji', pendingNewGoal.draft.emoji)
-    updateGoalField(createdGoal.id, 'target_amount', pendingNewGoal.draft.target_amount)
-    updateGoalField(createdGoal.id, 'current_amount', pendingNewGoal.draft.current_amount)
-    updateGoalField(createdGoal.id, 'target_date', pendingNewGoal.draft.target_date)
-    updateGoalField(createdGoal.id, 'note', pendingNewGoal.draft.note)
-    void saveGoals()
-    setPendingNewGoal(null)
-  }, [pendingNewGoal, sortedGoals, updateGoalField, saveGoals])
 
   const openAddGoalModal = () => {
     setGoalDraft({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
@@ -1950,9 +1935,15 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const saveGoalModal = async () => {
     if (goalModalMode === 'add') {
-      const existingIds = new Set(sortedGoals.map((goal) => goal.id))
-      addGoal()
-      setPendingNewGoal({ existingIds, draft: goalDraft })
+      addGoal({
+        name: goalDraft.name,
+        emoji: goalDraft.emoji,
+        target_amount: goalDraft.target_amount,
+        current_amount: goalDraft.current_amount,
+        target_date: goalDraft.target_date || null,
+        note: goalDraft.note,
+      })
+      await saveGoals()
       closeGoalModal()
       return
     }
@@ -2025,9 +2016,12 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           <h2>Goals</h2>
           <div className="muted">Stay focused. Achieve more.</div>
         </div>
-        <button className="btn primary goalsHeroAddBtn" onClick={openAddGoalModal}>
-          <Plus size={16} /> Add Goal
-        </button>
+        <div className="goalsHeroHeaderActions">
+          <button className="btn" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
+          <button className="btn primary goalsHeroAddBtn" onClick={openAddGoalModal}>
+            <Plus size={16} /> Add Goal
+          </button>
+        </div>
       </div>
 
       <div className="goalsHeroCard">
