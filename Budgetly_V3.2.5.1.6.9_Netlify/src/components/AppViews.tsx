@@ -1338,7 +1338,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
   const useCompactDashboard = !isPhone && isCompactLaptop
-  const forceCompactManageToolbar = !isPhone && isCompactLaptop
   const today = new Date().toISOString().slice(0, 10)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
@@ -1440,15 +1439,13 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 placeholder="0.00"
                 value={txDraft.amount}
                 onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
-              />
-            </div>
+      <div className="txManageToolbar" style={{ marginTop: 4 }}>
+          <div className="field txField txSearchField">
+            <div className="input-icon txSearchInput">
+          <div className="field txField txFilterField">
+          <div className="field txField txMonthField">
 
-            <div className="field txField txGrow txNoteField">
-              <label>Note</label>
-              <input placeholder={txDraft.type === 'income' ? 'Salary, freelance, refund…' : 'Groceries, fuel, rent…'} value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
-            </div>
-
-            <button
+        <div className="muted txItemCount">{filteredTx.length} item(s)</div>
               className={`btn primary txAddButton ${txDraft.type}`}
               onClick={() => void addTransaction()}
               disabled={txDraft.type === 'expense' && !txDraft.category_id}

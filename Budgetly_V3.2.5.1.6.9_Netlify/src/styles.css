@@ -4400,20 +4400,8 @@ body.light .dataScrollBox thead th,
 }
 
 
-.txAddRow.incomeMode{
-  grid-template-columns: 160px 220px 210px minmax(260px,1fr) auto;
-}
-.txAddRow.expenseMode{
-  grid-template-columns: 160px 220px 220px 210px minmax(260px,1fr) auto;
-}
 .txCategoryField{
   min-width:220px;
-}
-
-.txToolbarFields{
-  flex-wrap:wrap;
-  flex:1;
-  min-width:0;
 }
 
 .txFullLayout{
@@ -4425,6 +4413,9 @@ body.light .dataScrollBox thead th,
   max-height:calc(100dvh - 120px);
 }
 
+  min-width:0;
+  min-width:0;
+  min-width:0;
 .txMainLayout{
   display:grid;
   grid-template-columns:minmax(320px, .9fr) minmax(460px, 1.1fr);
@@ -4733,279 +4724,113 @@ body.light .dataStickyTable thead th,
   font-weight:800;
 }
 .txTypeBadge.income{
-  background:rgba(34,197,94,.14);
-  border:1px solid rgba(34,197,94,.4);
-  color:#b7ffd5;
-}
-.txTypeBadge.expense{
-  background:rgba(239,68,68,.14);
-  border:1px solid rgba(239,68,68,.36);
-  color:#ffd0d0;
-}
-.txAmountCell.income,
-.mobileAmountRow.income{color:#4ade80;}
-.txAmountCell.expense,
-.mobileAmountRow.expense{color:#f87171;}
-.mobileAmountRow.income,
-.mobileAmountRow.expense,
-.txAmountCell{
-  font-weight:800;
-}
-body.light .typeToggle,
-body.light .filterChip,
-body.light .typeToggleBtn{box-shadow:none;}
-body.light .typeToggleBtn.income.active,
-body.light .filterChip.income.active{color:#166534;}
-body.light .typeToggleBtn.expense.active,
-body.light .filterChip.expense.active{color:#991b1b;}
-body.light .txTypeBadge.income{color:#166534;}
-body.light .txTypeBadge.expense{color:#991b1b;}
-@media (max-width: 640px){
-  .txTypeField,
-  .txFilterField{min-width:100%;}
-  .typeToggleBtn,
-  .filterChip{flex:1 1 auto;}
-}
-
-/* v2.10.29 transaction polish */
-.txAddRow{
-  display:grid;
-  grid-template-columns:minmax(138px,1.1fr) minmax(188px,1.25fr) minmax(190px,1.35fr) minmax(160px,1fr) minmax(240px,1.9fr) minmax(108px,.7fr);
-  gap:12px;
-  align-items:end;
-}
+  grid-template-columns:repeat(12, minmax(0, 1fr));
+  min-height:44px;
 .txAddRow .txDateField,
 .txAddRow .txTypeField,
-.txAddRow .txCategoryField,
-.txAddRow .txAmountField,
-.txAddRow .txNoteField,
+.txAddRow .txCategoryField{
+  grid-column:span 4;
+}
+.txAddRow .txAmountField{
+  grid-column:span 3;
+}
+.txAddRow .txNoteField{
+  grid-column:span 7;
+}
 .txAddRow .txAddButton{
-  grid-column:auto;
-  min-width:0;
-}
-.txToolbarFields{
-  flex:1 1 auto;
-  display:grid;
-  grid-template-columns: minmax(240px, 1.5fr) repeat(2, minmax(160px, .8fr));
-  gap:12px;
-  align-items:end;
-  justify-content:start;
-  min-width:0;
-}
-.txField{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-  min-width:0;
-}
-.txField label{
-  min-height:22px;
-  display:flex;
-  align-items:center;
-  margin:0;
-}
-.txField input,
-.txField select,
-.typeToggle,
-.filterChips,
-.txAddButton{
-  min-height:44px;
-}
-.txField input,
-.txField select,
-.txSearchInput,
-.typeToggle,
-.filterChips,
-.txAddButton{
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  box-sizing:border-box;
-}
-.typeToggle{
-  flex-wrap:nowrap;
-}
-.filterChips{
-  flex-wrap:nowrap;
-}
-.txGrow,
-.txTypeField,
-.txCategoryField,
-.txSearchField,
-.txFilterField{
-  min-width:0;
-}
-.txAddButton{
+  grid-column:span 2;
   justify-self:stretch;
   align-self:end;
   white-space:nowrap;
 }
-.clickableKpi{
-  align-items:flex-start;
-  justify-content:center;
+.txAddRow.incomeMode .txDateField,
+.txAddRow.incomeMode .txTypeField,
+.txAddRow.incomeMode .txAmountField{
+  grid-column:span 4;
 }
-.txCategoryDisabled,
-.txCategoryDisabled:disabled{
-  opacity:1;
-  color:var(--muted);
-  cursor:not-allowed;
-  background:rgba(148,163,184,.10);
+.txAddRow.incomeMode .txNoteField{
+  grid-column:span 8;
+}
+.txAddRow.incomeMode .txAddButton{
+  grid-column:span 4;
 }
 
-.txSearchField{
+  flex-wrap:wrap;
+.txFilterField,
+.txMonthField{
+
+
+.txManageToolbar{
+  display:grid;
+  grid-template-columns:minmax(260px, 1.4fr) minmax(250px, 1fr) minmax(180px, .7fr) auto;
+  gap:12px;
+  align-items:end;
   min-width:0;
 }
-.txSearchInput{
-  display:flex;
-  align-items:center;
-  width:100%;
-  min-height:44px;
-  padding-left:12px;
-  gap:8px;
-  border-radius:16px;
-  min-width:0;
-}
-.txSearchInput input{
-  padding-left:0;
-  min-width:0;
-}
-.txSearchPrefix{
-  font-size:13px;
-  font-weight:700;
-  color:var(--muted);
+.txItemCount{
+  align-self:end;
+  justify-self:end;
   white-space:nowrap;
-}
-body.light .txSearchPrefix{
-  color:#64748b;
-}
+  padding-bottom:10px;
 @media (max-width: 1400px){
-  .txToolbarFields{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .txToolbarFields .txSearchField{
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 1200px){
-  .txToolbarFields{
-    grid-template-columns: 1fr;
-  }
-  .txToolbarRow{
-    align-items:stretch !important;
-  }
-  .txToolbarRow > .muted{
-    width:100%;
-    text-align:right;
-  }
-}
-
-@media (max-height: 820px){
-  .txAddPanel{
-    padding-top:10px;
-    padding-bottom:10px;
-  }
   .txAddRow{
-    gap:8px;
-  }
-}
-@media (max-width: 1500px){
-  .txAddRow{
-    grid-template-columns:repeat(4,minmax(0,1fr));
-  }
-  .txAddRow.expenseMode .txDateField,
-  .txAddRow.expenseMode .txTypeField,
-  .txAddRow.expenseMode .txCategoryField,
-  .txAddRow.expenseMode .txAmountField,
-  .txAddRow.incomeMode .txDateField,
-  .txAddRow.incomeMode .txTypeField,
-  .txAddRow.incomeMode .txAmountField{
-    grid-column:span 2;
-  }
-  .txAddRow.expenseMode .txNoteField,
-  .txAddRow.incomeMode .txNoteField{
+    gap:10px;
+  .txManageToolbar{
+    grid-template-columns:minmax(220px, 1fr) minmax(220px, 1fr) minmax(170px, .8fr);
+    grid-template-areas:
+      "search search month"
+      "filter filter count";
+  .txSearchField{grid-area:search}
+  .txFilterField{grid-area:filter}
+  .txMonthField{grid-area:month}
+  .txItemCount{
+    grid-area:count;
+    justify-self:end;
+@media (max-width: 1180px){
+    grid-template-columns:repeat(6, minmax(0, 1fr));
     grid-column:span 3;
-  }
-  .txAddRow.expenseMode .txAddButton,
-  .txAddRow.incomeMode .txAddButton{
-    grid-column:span 1;
-  }
-}
-@media (max-width: 980px){
-  .txAddRow{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-  .txAddRow .txDateField,
-  .txAddRow .txTypeField,
-  .txAddRow .txAmountField,
-  .txAddRow .txCategoryField{
-    grid-column:span 1;
-  }
-  .txAddRow .txNoteField,
-  .txAddRow .txAddButton{
-    grid-column:1 / -1;
-  }
-}
-@media (max-width: 640px){
-  .txAddRow{
-    grid-template-columns: 1fr;
-  }
-  .txAddRow .txDateField,
-  .txAddRow .txTypeField,
-  .txAddRow .txAmountField,
+    grid-column:span 4;
+    grid-column:span 2;
+
+  .txManageToolbar{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "search search"
+      "filter month"
+      "count count";
+    align-items:start;
+  .txItemCount{
+    justify-self:start;
+    padding-bottom:0;
+    height:calc(100dvh - 88px);
+    min-height:calc(100dvh - 88px);
+    max-height:calc(100dvh - 88px);
+  .txManageToolbar{
+    grid-template-columns:1fr;
+    grid-template-areas:
+      "search"
+      "filter"
+      "month"
+      "count";
+    gap:10px;
+  .txMonthField{
+    max-width:280px;
+  .txItemCount{
+    justify-self:start;
+@media (max-width: 720px){
+    grid-template-columns:1fr;
+    gap:10px;
   .txAddRow .txCategoryField,
+  .txAddRow .txAmountField,
   .txAddRow .txNoteField,
-  .txAddRow .txAddButton{
     grid-column:1 / -1;
-  }
-  .typeToggle,
-  .filterChips{
-    flex-wrap:wrap;
-  }
-}
-
-
-@media (max-width: 960px){
-  .txFullLayout{
-    height:calc(100dvh - 88px) !important;
-    min-height:calc(100dvh - 88px) !important;
-    max-height:calc(100dvh - 88px) !important;
-    overflow:hidden;
-    gap:10px;
-  }
-  .txMainLayout{
-    gap:10px;
-  }
-  .txPanel{
-    padding:10px;
-  }
-}
-
-@media (max-width: 640px){
+  .typeToggle{
   .txPanelHeader .muted{
     font-size:12px;
-  }
   .txPanel{
     border-radius:14px;
     padding:10px;
-  }
   .txStickyFooter .btn{
-    width:100%;
-  }
-}
-
-
-/* v3.2.5.1.6.10 robust fallback for smaller desktop heights/widths */
-@media (max-width: 1366px), (max-height: 860px){
-  .txFullLayout{
-    height:calc(100dvh - 88px) !important;
-    max-height:calc(100dvh - 88px) !important;
-    min-height:calc(100dvh - 88px) !important;
-    overflow:hidden;
-  }
-
-  .txPageCard{
-    overflow:hidden;
   }
 
   .txAddPanel{
