@@ -4787,14 +4787,12 @@ body.light .dataStickyTable thead th,
     grid-area:count;
     justify-self:end;
 @media (max-width: 1180px){
-    grid-template-columns:repeat(6, minmax(0, 1fr));
-    grid-column:span 3;
-    grid-column:span 4;
-    grid-column:span 2;
-
-  .txManageToolbar{
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-    grid-template-areas:
+.txGrow{min-width:0;}
+.txTypeField{min-width:0;}
+.txCategoryField{min-width:0;}
+.txSearchField{min-width:0;}
+.txFilterField{min-width:0;}
+.txMonthField{min-width:0;}
       "search search"
       "filter month"
       "count count";
