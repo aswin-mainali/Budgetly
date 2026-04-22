@@ -4842,30 +4842,54 @@ body.light .dataStickyTable thead th,
     gap:8px;
   }
 
+@media (max-width: 1520px){
+    gap:10px;
+@media (max-width: 1240px){
+  .txAddRow{
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+  }
+  .txAddRow.expenseMode .txDateField,
+  .txAddRow.expenseMode .txTypeField,
+  .txAddRow.expenseMode .txCategoryField,
+  .txAddRow.expenseMode .txAmountField,
+  .txAddRow.incomeMode .txDateField,
+  .txAddRow.incomeMode .txTypeField,
+  .txAddRow.incomeMode .txAmountField{
+    grid-column:span 2;
+  }
+  .txAddRow.expenseMode .txNoteField,
+  .txAddRow.incomeMode .txNoteField{
+    grid-column:span 3;
+  }
+  .txAddRow.expenseMode .txAddButton,
+  .txAddRow.incomeMode .txAddButton{
+    grid-column:span 1;
+  }
+}
+
+@media (max-width: 1024px){
+  .txAddRow{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
   .txAddRow .txDateField,
   .txAddRow .txTypeField,
-  .txAddRow .txCategoryField{
-    grid-column:span 4 !important;
+  .txAddRow .txCategoryField,
+  .txAddRow .txAmountField,
+  .txAddRow .txNoteField,
+  .txAddRow .txAddButton{
+    grid-column:span 1;
   }
+}
 
-  .txSearchField{grid-column:1 / 3}
-  .txFilterField{grid-column:1 / 3}
-  .txMonthField{grid-column:3 / 4}
-    grid-column:3 / 4;
-    grid-row:2;
-
-  .txSearchField{grid-column:1 / -1}
-  .txFilterField{grid-column:1 / 2}
-  .txMonthField{grid-column:2 / 3}
-    grid-column:1 / -1;
-  .txSearchField,
-  .txFilterField,
   .txMonthField,
   .txItemCount{
     grid-column:1 / -1;
   }
-  .txAddRow .txAmountField input,
-  .txAddRow .txNoteField input{
+    max-width:none;
+@media (max-width: 760px){
+  .txSearchPrefix{
+    display:none;
+  }
     min-height:40px;
   }
 
