@@ -6888,6 +6888,9 @@ body.light .categoriesListHeader,
 .goalsDot.active{width:10px;height:10px;background:#1db180}
 .goalsUpdateFooter{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--panel)}
 
+@media (max-width: 1400px){
+  .goalCarouselCard{flex-basis:calc((100% - 12px)/2)}
+}
 @media (max-width: 1200px){
   .goalsHeroCard{grid-template-columns:1fr}
   .goalsHeroMountain{height:130px;min-height:130px}
@@ -6905,5 +6908,6 @@ body.light .categoriesListHeader,
   .goalCarouselCard{flex-basis:auto;width:100%}
   .goalInlineEditor{grid-template-columns:1fr;top:74px}
   .goalEditorGrid{grid-template-columns:1fr}
+  .goalsUpdateFooter{flex-direction:column;align-items:flex-start}
   .goalsNavBtn{display:none}
 }

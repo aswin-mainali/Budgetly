@@ -2154,7 +2154,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         </div>
       ) : null}
 
-      <div className="row between recurringSummaryRow dataPageFooter goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
+      <div className="row between goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
         <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
         <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
       </div>
