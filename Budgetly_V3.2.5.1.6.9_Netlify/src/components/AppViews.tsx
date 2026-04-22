@@ -1889,6 +1889,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [goalModalError, setGoalModalError] = useState('')
   const [modalQuickAmount, setModalQuickAmount] = useState('')
   const isPhone = useIsPhone()
+  const isCompactLaptop = useIsCompactLaptop()
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
@@ -1996,7 +1997,8 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     return clone
   }, [sortedGoals, sortKey, data.goals])
 
-  const pages = Math.max(1, Math.ceil(displayGoals.length / 3))
+  const cardsPerPage = isPhone ? 1 : (isCompactLaptop ? 2 : 3)
+  const pages = Math.max(1, Math.ceil(displayGoals.length / cardsPerPage))
 
   useEffect(() => {
     const maxIndex = Math.max(0, pages - 1)
