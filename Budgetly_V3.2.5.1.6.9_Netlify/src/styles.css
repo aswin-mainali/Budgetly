@@ -6913,23 +6913,25 @@ body.light .categoriesListHeader,
   .goalsNavBtn{display:none}
 }
 
-/* keep full goals hero + footer visible on compact layouts */
-.toolsPageBody .goalsPage.goalsGalleryPage{
-  display:flex !important;
-  flex-direction:column !important;
-  max-height:none !important;
-  min-height:0 !important;
-  height:auto !important;
-  overflow-y:auto !important;
-  overflow-x:hidden !important;
-  padding-bottom:12px;
-}
-.toolsPageBody .goalsPage.goalsGalleryPage .goalsHeroCard{
-  display:grid !important;
-  opacity:1 !important;
-  visibility:visible !important;
-  min-height:252px;
-}
-.toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
-  margin-bottom:6px;
+/* keep full goals hero + footer visible on compact layouts only */
+@media (max-width: 1200px){
+  .toolsPageBody .goalsPage.goalsGalleryPage{
+    display:flex !important;
+    flex-direction:column !important;
+    max-height:none !important;
+    min-height:0 !important;
+    height:auto !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    padding-bottom:12px;
+  }
+  .toolsPageBody .goalsPage.goalsGalleryPage .goalsHeroCard{
+    display:grid !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    min-height:252px;
+  }
+  .toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
+    margin-bottom:6px;
+  }
 }
