@@ -2016,12 +2016,9 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           <h2>Goals</h2>
           <div className="muted">Stay focused. Achieve more.</div>
         </div>
-        <div className="goalsHeroHeaderActions">
-          <button className="btn" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
-          <button className="btn primary goalsHeroAddBtn" onClick={openAddGoalModal}>
-            <Plus size={16} /> Add Goal
-          </button>
-        </div>
+        <button className="btn primary goalsHeroAddBtn" onClick={openAddGoalModal}>
+          <Plus size={16} /> Add Goal
+        </button>
       </div>
 
       <div className="goalsHeroCard">
@@ -2130,6 +2127,11 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         {Array.from({ length: pages }).map((_, index) => (
           <button key={index} className={`goalsDot${activeIndex === index ? ' active' : ''}`} onClick={() => scrollToIndex(index)} aria-label={`View goal page ${index + 1}`} />
         ))}
+      </div>
+
+      <div className="row between recurringSummaryRow dataPageFooter goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
+        <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
+        <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
       </div>
 
       <DeleteConfirmModal
