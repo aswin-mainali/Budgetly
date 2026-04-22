@@ -1336,9 +1336,6 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
 export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, activeMonth, setActiveMonth, sortedRecurring } = budget
   const isPhone = useIsPhone()
-  const today = new Date().toISOString().slice(0, 10)
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
   const pendingDeleteTx = useMemo(() => filteredTx.find((transaction) => transaction.id === pendingDeleteId) ?? null, [filteredTx, pendingDeleteId])
   const activeDuplicateGroup = duplicateGroups[0] ?? null
   const filteredCategoriesForDraft = useMemo(() => {
@@ -1397,14 +1394,11 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             <div>
               <h3 id="tx-add-title">Add New Transaction</h3>
             </div>
-          </div>
-
           <div className={`txAddFormRedesign ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`}>
             <div className="field txField txDateField">
               <label>Date</label>
               <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
             </div>
-
             <div className="field txField txTypeField">
               <label>Type</label>
               <div className="typeToggle" role="tablist" aria-label="Transaction type">
@@ -1412,7 +1406,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
               </div>
             </div>
-
             {txDraft.type === 'expense' ? (
               <div className="field txField txCategoryField">
                 <label>Category</label>
@@ -1429,7 +1422,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 </select>
               </div>
             ) : null}
-
             <div className="field txField txAmountField">
               <label>Amount</label>
               <input
@@ -1439,12 +1431,10 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
               />
             </div>
-
             <div className="field txField txGrow txNoteField">
               <label>Note</label>
               <input placeholder={txDraft.type === 'income' ? 'Salary, freelance, refund…' : 'Groceries, fuel, rent…'} value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
             </div>
-
             <button
               className={`btn primary txAddButton txAddButtonRedesign ${txDraft.type}`}
               onClick={() => void addTransaction()}
@@ -1453,9 +1443,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             >
               <Plus size={16} /> Add Transaction
             </button>
-          </div>
         </section>
-
         <section className="txPanel txManagePanel txManagePanelRedesign" aria-labelledby="tx-manage-title">
           <div className="txPanelHeader row between">
             <div>
@@ -1468,17 +1456,25 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               <Search size={16} />
               <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount..." aria-label="Search transactions" />
             </div>
-            <div className="filterChips" role="tablist" aria-label="Transaction filter">
-              <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
-              <button type="button" className={`filterChip income ${txType === 'income' ? 'active' : ''}`} onClick={() => setTxType('income')}>Income</button>
-              <button type="button" className={`filterChip expense ${txType === 'expense' ? 'active' : ''}`} onClick={() => setTxType('expense')}>Expense</button>
-            </div>
-          </div>
-
           <div className="txManageMetaRow">
             <div className="txInlineControlGroup">
               <label className="txInlineControl">
                 <CalendarDays size={15} />
+                <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+                  {months.map((month) => (
+                    <option key={month} value={month}>
+                      {helpers.monthLabel(month)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span className="txInlineStatic">
+                <ArrowUpDown size={14} />
+                Filters
+              </span>
+            </div>
+            <div className="muted">{filteredTx.length} item(s)</div>
+          <div className="txPageScrollable">
                 <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
                   {months.map((month) => (
                     <option key={month} value={month}>
@@ -1569,6 +1565,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               Update Transactions
             </button>
           </div>
+        </section>
         </section>
       </div>
 
