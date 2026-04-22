@@ -6886,7 +6886,7 @@ body.light .categoriesListHeader,
 .goalsCarouselDots{display:flex;justify-content:center;gap:8px}
 .goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
 .goalsDot.active{width:10px;height:10px;background:#1db180}
-.goalsUpdateFooter{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--panel)}
+.goalsUpdateFooter{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--panel);position:sticky;bottom:6px;z-index:4}
 
 @media (max-width: 1400px){
   .goalCarouselCard{flex-basis:calc((100% - 12px)/2)}
@@ -6931,4 +6931,15 @@ body.light .categoriesListHeader,
 }
 .toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
   margin-bottom:10px;
+}
+
+@media (max-width: 1200px){
+  .toolsPageBody .goalsPage.goalsGalleryPage{
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    max-height:100% !important;
+  }
+  .toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
+    position:static;
+  }
 }
