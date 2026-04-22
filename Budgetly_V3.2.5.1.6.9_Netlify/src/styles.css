@@ -6904,3 +6904,150 @@ body.light .categoriesListHeader,
   .categoriesRowEmoji{max-width:72px}
   .categoriesBudgetInput{width:100%}
 }
+
+/* goals gallery redesign */
+.goalsGalleryPage{gap:10px}
+.goalsGalleryScrollArea{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-gutter:stable;
+  padding-right:4px;
+  padding-bottom:8px;
+}
+.goalsGalleryScrollArea::-webkit-scrollbar{width:8px}
+.goalsGalleryScrollArea::-webkit-scrollbar-thumb{background:rgba(96,165,250,.22);border-radius:999px}
+body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
+.theme-light .goalsGalleryScrollArea::-webkit-scrollbar-thumb{background:rgba(51,65,85,.22)}
+.goalsHeroHeader,.goalsGalleryHeader{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.goalsHeroAddBtn{border-radius:10px;padding:9px 14px}
+.goalsHeroCard{display:grid;grid-template-columns:1.08fr 1fr 286px;border:1px solid var(--line);border-radius:12px;background:#f9fbff;overflow:hidden;min-height:252px;align-items:stretch;margin-bottom:10px}
+.goalsHeroText{padding:18px 18px}
+.goalsHeroText h3{margin:4px 0 8px;font-size:16px;line-height:1.45;max-width:230px;font-weight:900;color:#0f1934}
+.goalsHeroText p{margin:0;color:#394862;max-width:220px;font-size:14px;line-height:1.45;font-weight:700}
+.goalsHeroStar{color:#b6c5de;font-size:13px}
+.goalsHeroMountain{display:flex;align-items:flex-end;justify-content:center;min-height:140px;padding-top:8px}
+.goalsHeroMountain img{display:block;width:100%;max-width:420px;height:auto;object-fit:contain}
+.goalsHeroStats{border-left:1px solid #e5ebf3;padding:12px 10px 12px 10px;display:grid;gap:6px;align-content:center;background:#fcfdff}
+.goalsHeroStatItem{display:flex;gap:10px;align-items:center;padding:3px 0;color:#4f6388}
+.goalsHeroStatItem strong{display:block;color:#192544;font-size:17px;line-height:1.15}
+.goalsHeroStatItem span{font-size:12px;color:#667799;font-weight:700}
+.goalsHeroStatIcon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;font-size:16px;line-height:1}
+.goalsHeroStatIcon.green{background:#e7f8f0;color:#1f9f75}
+.goalsHeroStatIcon.amber{background:#fff4e8;color:#d99337}
+.goalsHeroStatIcon.blue{background:#ebf3ff;color:#3b82f6}
+.goalsHeroStatIcon.purple{background:#f1ebff;color:#7d4bc6}
+.goalsSortRow{display:flex;align-items:center;gap:8px}
+.goalsSortSelect{border-radius:10px;min-width:170px;height:36px}
+.goalsGalleryHeader{margin-top:-2px}
+.goalsSortControls{gap:10px;flex-wrap:nowrap;white-space:nowrap}
+.goalsCarouselShell{display:flex;align-items:center;gap:12px}
+.goalsNavBtn{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
+.goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
+.goalsCarouselTrack{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
+.goalsCarouselTrack::-webkit-scrollbar{display:none}
+.goalCarouselCard{position:relative;overflow:hidden;scroll-snap-align:start;flex:0 0 calc((100% - 24px)/3);border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);display:grid;gap:12px;box-shadow:0 8px 20px rgba(16,24,40,.04)}
+.goalCarouselTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.goalCarouselTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
+.goalCarouselTitleRow .muted{font-size:12px}
+.goalHeaderActions{position:relative}
+.goalMenuPanel{position:absolute;right:40px;top:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px;z-index:3;min-width:120px;box-shadow:0 10px 20px rgba(15,23,42,.12)}
+.goalMenuPanel .btn{width:100%;justify-content:flex-start;gap:8px;padding:7px 10px}
+.goalGaugeRow{display:flex;gap:14px;align-items:center}
+.goalGauge{position:relative;width:78px;height:78px;flex:0 0 78px}
+.goalGauge svg{width:78px;height:78px;transform:rotate(-90deg)}
+.goalGaugeTrack{fill:none;stroke:#e8ebf2;stroke-width:12}
+.goalGaugeValue{fill:none;stroke:#f59e0b;stroke-width:12;stroke-linecap:round}
+.goalGaugeCenter{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;color:#111a33}
+.goalGaugeMeta{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.goalGaugeMeta small{display:block;font-size:12px;color:#5f7194}
+.goalGaugeMeta strong{font-size:13px;color:#1f2a44}
+.goalLinearProgress{height:6px;border-radius:999px;background:#e7eaf1;overflow:hidden}
+.goalLinearProgress>div{height:100%;border-radius:999px;background:linear-gradient(90deg,#1cb78a,#2f80ed)}
+.goalStatusStrip{display:flex;align-items:center;gap:8px;font-size:12px;border-radius:10px;background:#edf7ef;color:#3e6f55;padding:9px 10px}
+.goalInlineEditor{position:absolute;left:10px;right:10px;top:88px;bottom:10px;z-index:4;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;box-shadow:0 12px 24px rgba(15,23,42,.12)}
+.goalInlineEditor small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.goalInlineEditor .input,.goalInlineEditor .select{height:34px}
+.goalInlineEditor textarea.input{height:auto}
+.goalQuickAddRow{display:flex;gap:8px}
+.goalQuickAddRow .input{flex:1}
+.goalQuickAddRow .btn{white-space:nowrap}
+.goalInlineEditorActions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--panel);padding-top:6px}
+.goalEditorModal{width:min(680px,92vw);padding:18px;display:grid;gap:12px}
+.goalEditorModal h3{margin:0}
+.goalModalError{border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#991b1b;border-radius:10px;padding:8px 10px;font-size:13px}
+.goalEditorGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.goalEditorGrid small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.goalEditorGrid .input,.goalEditorGrid .select{height:36px}
+.goalEditorGrid .goalEditorFull{grid-column:1/-1}
+.goalsCarouselDots{display:flex;justify-content:center;gap:8px}
+.goalsDot{width:8px;height:8px;border-radius:999px;border:0;background:#d5d9e2;padding:0}
+.goalsDot.active{width:10px;height:10px;background:#1db180}
+.goalsUpdateFooter{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--panel);position:sticky;bottom:6px;z-index:4}
+
+@media (max-width: 1400px){
+  .goalCarouselCard{flex-basis:calc((100% - 12px)/2)}
+}
+@media (max-width: 1200px){
+  .goalsHeroCard{grid-template-columns:1fr}
+  .goalsHeroCard{min-height:auto}
+  .goalsHeroMountain{height:130px;min-height:130px}
+  .goalsHeroStats{border-left:0;border-top:1px solid #e5ebf3;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .goalCarouselCard{flex-basis:calc((100% - 12px)/2)}
+  .goalsCarouselShell{align-items:stretch}
+  .goalsCarouselTrack{flex-direction:column;overflow:visible}
+  .goalCarouselCard{flex-basis:auto;width:100%}
+  .goalsNavBtn{display:none}
+  .goalsCarouselDots{display:none}
+}
+@media (max-width: 760px){
+  .goalsHeroHeader,.goalsGalleryHeader{flex-direction:column;align-items:flex-start}
+  .goalsHeroText h3{font-size:16px;max-width:none}
+  .goalsHeroText p{max-width:none}
+  .goalsHeroMountain{min-height:120px;height:auto}
+  .goalsHeroStats{grid-template-columns:1fr}
+  .goalsCarouselShell{gap:8px;align-items:stretch}
+  .goalsCarouselTrack{flex-direction:column;overflow:visible}
+  .goalCarouselCard{flex-basis:auto;width:100%}
+  .goalInlineEditor{grid-template-columns:1fr;top:74px}
+  .goalEditorGrid{grid-template-columns:1fr}
+  .goalsUpdateFooter{flex-direction:column;align-items:flex-start}
+  .goalsNavBtn{display:none}
+}
+
+/* keep full goals hero + footer visible without inner-page clipping */
+.toolsPageBody .goalsPage.goalsGalleryPage{
+  display:flex !important;
+  flex-direction:column !important;
+  max-height:100% !important;
+  min-height:0 !important;
+  height:100% !important;
+  overflow:hidden !important;
+  padding-bottom:16px;
+}
+.toolsPageBody .goalsPage.goalsGalleryPage .goalsHeroCard{
+  display:grid !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  min-height:252px;
+}
+.toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
+  margin-bottom:10px;
+}
+
+@media (max-width: 1200px){
+  .toolsPageBody .goalsPage.goalsGalleryPage{
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    max-height:100% !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .toolsPageBody .goalsPage.goalsGalleryPage .goalsGalleryScrollArea{
+    overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
+    position:static;
+  }
+}
