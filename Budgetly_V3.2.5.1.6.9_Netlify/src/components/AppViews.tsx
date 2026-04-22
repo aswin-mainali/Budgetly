@@ -2041,120 +2041,122 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         </button>
       </div>
 
-      <div className="goalsHeroCard">
-        <div className="goalsHeroText">
-          <span className="goalsHeroStar">★</span>
-          <h3>Big goals start with small steps.</h3>
-          <p>Keep saving, stay consistent and make it happen.</p>
+      <div className="goalsGalleryScrollArea">
+        <div className="goalsHeroCard">
+          <div className="goalsHeroText">
+            <span className="goalsHeroStar">★</span>
+            <h3>Big goals start with small steps.</h3>
+            <p>Keep saving, stay consistent and make it happen.</p>
+          </div>
+          <div className="goalsHeroMountain" aria-hidden="true">
+            <img src="/goal-mountain.svg" alt="" />
+          </div>
+          <div className="goalsHeroStats">
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon green">🐷</span><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon amber">🪙</span><div><strong>{helpers.fmtMoney(totalTarget, data.currency)}</strong><span>Total target</span></div></div>
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon blue">◔</span><div><strong>{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div></div>
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon purple">◬</span><div><strong>{displayGoals.length}</strong><span>Active goals</span></div></div>
+          </div>
         </div>
-        <div className="goalsHeroMountain" aria-hidden="true">
-          <img src="/goal-mountain.svg" alt="" />
-        </div>
-        <div className="goalsHeroStats">
-          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon green">🐷</span><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
-          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon amber">🪙</span><div><strong>{helpers.fmtMoney(totalTarget, data.currency)}</strong><span>Total target</span></div></div>
-          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon blue">◔</span><div><strong>{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div></div>
-          <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon purple">◬</span><div><strong>{displayGoals.length}</strong><span>Active goals</span></div></div>
-        </div>
-      </div>
 
-      <div className="goalsGalleryHeader">
-        <h3>My Goals</h3>
-        <div className="goalsSortRow goalsSortControls">
-          <span className="muted">Sort by:</span>
-          <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved' | 'oldest')}>
-            <option value="nearest">Nearest target</option>
-            <option value="progress">Highest progress</option>
-            <option value="saved">Most saved</option>
-            <option value="oldest">Oldest</option>
-          </select>
+        <div className="goalsGalleryHeader">
+          <h3>My Goals</h3>
+          <div className="goalsSortRow goalsSortControls">
+            <span className="muted">Sort by:</span>
+            <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved' | 'oldest')}>
+              <option value="nearest">Nearest target</option>
+              <option value="progress">Highest progress</option>
+              <option value="saved">Most saved</option>
+              <option value="oldest">Oldest</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div className="goalsCarouselShell">
-        {!isPhone ? (
-          <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex - 1)} disabled={activeIndex <= 0} aria-label="Previous goals">
-            <ChevronLeft size={18} />
-          </button>
-        ) : null}
-        <div className="goalsCarouselTrack" ref={carouselRef} onScroll={onCarouselScroll}>
-          {displayGoals.map((goal) => {
-            const targetAmount = Number(goal.target_amount || 0)
-            const currentAmount = Number(goal.current_amount || 0)
-            const progress = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0
-            const targetDate = goal.target_date ? new Date(`${goal.target_date}T00:00:00`).toLocaleDateString() : 'No date'
-            const remaining = Math.max(0, targetAmount - currentAmount)
-            return (
-              <div key={goal.id} className="goalCarouselCard">
-                <div className="goalCarouselTop">
-                  <div className="goalCarouselTitleRow">
-                    <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
-                    <div>
-                      <div className="goalTitle">{goal.name || 'Untitled goal'}</div>
-                      <div className="muted">{helpers.fmtMoney(currentAmount, data.currency)} saved of {helpers.fmtMoney(targetAmount, data.currency)}</div>
+        <div className="goalsCarouselShell">
+          {!isPhone ? (
+            <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex - 1)} disabled={activeIndex <= 0} aria-label="Previous goals">
+              <ChevronLeft size={18} />
+            </button>
+          ) : null}
+          <div className="goalsCarouselTrack" ref={carouselRef} onScroll={onCarouselScroll}>
+            {displayGoals.map((goal) => {
+              const targetAmount = Number(goal.target_amount || 0)
+              const currentAmount = Number(goal.current_amount || 0)
+              const progress = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0
+              const targetDate = goal.target_date ? new Date(`${goal.target_date}T00:00:00`).toLocaleDateString() : 'No date'
+              const remaining = Math.max(0, targetAmount - currentAmount)
+              return (
+                <div key={goal.id} className="goalCarouselCard">
+                  <div className="goalCarouselTop">
+                    <div className="goalCarouselTitleRow">
+                      <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
+                      <div>
+                        <div className="goalTitle">{goal.name || 'Untitled goal'}</div>
+                        <div className="muted">{helpers.fmtMoney(currentAmount, data.currency)} saved of {helpers.fmtMoney(targetAmount, data.currency)}</div>
+                      </div>
+                    </div>
+                    <div className="row goalHeaderActions">
+                      <button className="icon" title="More options" onClick={() => setMenuGoalId((current) => current === goal.id ? null : goal.id)}>
+                        <MoreHorizontal size={16} />
+                      </button>
+                      {menuGoalId === goal.id ? (
+                        <div className="goalMenuPanel">
+                          <button className="btn" onClick={() => { openEditGoalModal(goal); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
+                        </div>
+                      ) : null}
+                      <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
-                  <div className="row goalHeaderActions">
-                    <button className="icon" title="More options" onClick={() => setMenuGoalId((current) => current === goal.id ? null : goal.id)}>
-                      <MoreHorizontal size={16} />
-                    </button>
-                    {menuGoalId === goal.id ? (
-                      <div className="goalMenuPanel">
-                        <button className="btn" onClick={() => { openEditGoalModal(goal); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
-                      </div>
-                    ) : null}
-                    <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
 
-                <div className="goalGaugeRow">
-                  <div className="goalGauge">
-                    <svg viewBox="0 0 120 120">
-                      <circle cx="60" cy="60" r="45" className="goalGaugeTrack" />
-                      <circle
-                        cx="60"
-                        cy="60"
-                        r="45"
-                        className="goalGaugeValue"
-                        style={{ strokeDasharray: `${(progress / 100) * 282.74} 282.74` }}
-                      />
-                    </svg>
-                    <div className="goalGaugeCenter">{progress}%</div>
+                  <div className="goalGaugeRow">
+                    <div className="goalGauge">
+                      <svg viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="45" className="goalGaugeTrack" />
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="45"
+                          className="goalGaugeValue"
+                          style={{ strokeDasharray: `${(progress / 100) * 282.74} 282.74` }}
+                        />
+                      </svg>
+                      <div className="goalGaugeCenter">{progress}%</div>
+                    </div>
+                    <div className="goalGaugeMeta">
+                      <div><small>{helpers.fmtMoney(remaining, data.currency)}</small><strong>remaining</strong></div>
+                      <div><small>Target date</small><strong>{targetDate}</strong></div>
+                    </div>
                   </div>
-                  <div className="goalGaugeMeta">
-                    <div><small>{helpers.fmtMoney(remaining, data.currency)}</small><strong>remaining</strong></div>
-                    <div><small>Target date</small><strong>{targetDate}</strong></div>
+                  <div className="goalLinearProgress">
+                    <div style={{ width: `${progress}%` }} />
+                  </div>
+                  <div className="goalStatusStrip">
+                    <TrendingUp size={14} />
+                    {progress >= 70 ? 'You’re on track to reach your goal!' : 'Keep going! Small steps lead to big results.'}
                   </div>
                 </div>
-                <div className="goalLinearProgress">
-                  <div style={{ width: `${progress}%` }} />
-                </div>
-                <div className="goalStatusStrip">
-                  <TrendingUp size={14} />
-                  {progress >= 70 ? 'You’re on track to reach your goal!' : 'Keep going! Small steps lead to big results.'}
-                </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
+          {!isPhone ? (
+            <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex + 1)} disabled={activeIndex >= pages - 1} aria-label="Next goals">
+              <ChevronRight size={18} />
+            </button>
+          ) : null}
         </div>
+
+        {displayGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>No goals yet. Add one to start tracking progress.</div> : null}
+
         {!isPhone ? (
-          <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex + 1)} disabled={activeIndex >= pages - 1} aria-label="Next goals">
-            <ChevronRight size={18} />
-          </button>
+          <div className="goalsCarouselDots">
+            {Array.from({ length: pages }).map((_, index) => (
+              <button key={index} className={`goalsDot${activeIndex === index ? ' active' : ''}`} onClick={() => scrollToIndex(index)} aria-label={`View goal page ${index + 1}`} />
+            ))}
+          </div>
         ) : null}
       </div>
-
-      {displayGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>No goals yet. Add one to start tracking progress.</div> : null}
-
-      {!isPhone ? (
-        <div className="goalsCarouselDots">
-          {Array.from({ length: pages }).map((_, index) => (
-            <button key={index} className={`goalsDot${activeIndex === index ? ' active' : ''}`} onClick={() => scrollToIndex(index)} aria-label={`View goal page ${index + 1}`} />
-          ))}
-        </div>
-      ) : null}
 
       <div className="row between goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
         <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
