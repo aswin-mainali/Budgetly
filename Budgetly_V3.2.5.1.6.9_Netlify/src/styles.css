@@ -6824,14 +6824,14 @@ body.light .categoriesListHeader,
 .goalsGalleryPage{gap:10px}
 .goalsHeroHeader,.goalsGalleryHeader{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .goalsHeroAddBtn{border-radius:10px;padding:9px 14px}
-.goalsHeroCard{display:grid;grid-template-columns:1.08fr 1fr 300px;border:1px solid var(--line);border-radius:12px;background:#f9fbff;overflow:visible;min-height:230px;align-items:stretch}
+.goalsHeroCard{display:grid;grid-template-columns:1.08fr 1fr 286px;border:1px solid var(--line);border-radius:12px;background:#f9fbff;overflow:hidden;min-height:252px;align-items:stretch;margin-bottom:10px}
 .goalsHeroText{padding:18px 18px}
 .goalsHeroText h3{margin:4px 0 8px;font-size:16px;line-height:1.45;max-width:230px;font-weight:900;color:#0f1934}
 .goalsHeroText p{margin:0;color:#394862;max-width:220px;font-size:14px;line-height:1.45;font-weight:700}
 .goalsHeroStar{color:#b6c5de;font-size:13px}
 .goalsHeroMountain{display:flex;align-items:flex-end;justify-content:center;min-height:140px;padding-top:8px}
 .goalsHeroMountain img{display:block;width:100%;max-width:420px;height:auto;object-fit:contain}
-.goalsHeroStats{border-left:1px solid #e5ebf3;padding:12px 10px 12px 8px;display:grid;gap:8px;align-content:center;background:#fcfdff;position:relative;left:-18px}
+.goalsHeroStats{border-left:1px solid #e5ebf3;padding:12px 10px 12px 10px;display:grid;gap:6px;align-content:center;background:#fcfdff}
 .goalsHeroStatItem{display:flex;gap:10px;align-items:center;padding:3px 0;color:#4f6388}
 .goalsHeroStatItem strong{display:block;color:#192544;font-size:17px;line-height:1.15}
 .goalsHeroStatItem span{font-size:12px;color:#667799;font-weight:700}
@@ -6928,7 +6928,7 @@ body.light .categoriesListHeader,
   display:grid !important;
   opacity:1 !important;
   visibility:visible !important;
-  min-height:180px;
+  min-height:252px;
 }
 .toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
   margin-bottom:6px;
