@@ -556,10 +556,11 @@ const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
 
 const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { previousMonthLabel?: string; previousTotals?: { income: number; expenses: number; balance: number } | null }) => {
   const canvas = document.createElement('canvas')
-  canvas.width = 1240
-  canvas.height = 1754
+  canvas.width = 2480
+  canvas.height = 3508
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas
+  ctx.scale(2, 2)
 
   const colors = {
     page: '#ffffff',
@@ -603,8 +604,9 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   const pageW = canvas.width - M * 2
 
   const text = (value: string, x: number, y: number, opts?: { size?: number; weight?: string; color?: string; align?: CanvasTextAlign }) => {
+    const fontSize = Math.max(12, opts?.size ?? 16)
     ctx.fillStyle = opts?.color ?? colors.text
-    ctx.font = `${opts?.weight ?? '400'} ${opts?.size ?? 16}px Arial`
+    ctx.font = `${opts?.weight ?? '500'} ${fontSize}px Arial`
     ctx.textAlign = opts?.align ?? 'left'
     ctx.fillText(value, x, y)
     ctx.textAlign = 'left'
@@ -646,20 +648,20 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   }
 
   let y = M
-  card(M, M, pageW, canvas.height - (M * 2), 2, '#ffffff', '#cdd5e3')
+  const iconImage = await loadCanvasImage(REPORT_FAVICON_SRC)
 
   const ReportHeader = () => {
     const h = 196
     const x = M + 18
     const w = pageW - 36
-    const iconSize = 46
-    fillRoundedRect(ctx, x, y + 18, iconSize, iconSize, 10, '#0ebc6f')
-    text('B', x + 23, y + 50, { size: 38, weight: '700', color: '#ffffff', align: 'center' })
+    const iconSize = 44
+    if (iconImage) ctx.drawImage(iconImage, x, y + 18, iconSize, iconSize)
+    else fillRoundedRect(ctx, x, y + 18, iconSize, iconSize, 10, '#0ebc6f')
     text(appName, x + 58, y + 47, { size: 46/2, weight: '700', color: colors.navy })
-    text(userEmail || '', x + w - 2, y + 46, { size: 26/2, color: colors.text, align: 'right' })
+    text(userEmail || '', x + w - 2, y + 46, { size: 14, weight: '600', color: colors.text, align: 'right' })
     text(reportTitle, x, y + 115, { size: 78/2, weight: '700', color: colors.navy })
     text(`📅  ${monthRange}`, x, y + 156, { size: 48/2, weight: '700', color: colors.green })
-    text(`Generated on ${generatedAt}`, x, y + 188, { size: 24/2, color: colors.muted })
+    text(`Generated on ${generatedAt}`, x, y + 188, { size: 13, weight: '600', color: colors.muted })
     ReportStatusBadge(x + w - 248, y + 78, statusText)
     y += h + G
   }
@@ -731,14 +733,14 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     const plotY = yTop + 92
     const plotW = w - 76
     const plotH = 206
-    const maxValue = Math.max(1, ...weekRows.map((r) => Math.max(r.income, r.expenses, r.line)))
+    const maxValue = Math.max(1, ...weekRows.map((r) => Math.max(Number(r.income || 0), Number(r.expenses || 0), Number(r.line || 0))))
     ;[0, 0.33, 0.66, 1].forEach((n) => {
       const yy = plotY + plotH - (plotH * n)
       line(plotX, yy, plotX + plotW, yy, colors.grid)
       text(fmtMoney(maxValue * n).replace('.00', ''), plotX - 8, yy + 4, { size: 11, color: '#7384a1', align: 'right' })
     })
     const step = plotW / Math.max(1, weekRows.length)
-    ctx.beginPath()
+    const linePoints: Array<{ x: number; y: number }> = []
     weekRows.forEach((row, idx) => {
       const bx = plotX + idx * step + 18
       const bw = 24
@@ -746,13 +748,29 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
       const eh = (Math.max(0, row.expenses) / maxValue) * (plotH - 16)
       fillRoundedRect(ctx, bx, plotY + plotH - ih, bw, ih, 4, colors.green)
       fillRoundedRect(ctx, bx + bw + 8, plotY + plotH - eh, bw, eh, 4, '#f47257')
-      text(row.label, bx + 18, plotY + plotH + 18, { size: 12, color: '#43577a', align: 'center' })
-      text(`(${idx === 0 ? '1-7' : idx === 1 ? '8-14' : idx === 2 ? '15-21' : '22-30'})`, bx + 18, plotY + plotH + 34, { size: 10, color: '#7b8ba6', align: 'center' })
+      text(row.label, bx + 18, plotY + plotH + 18, { size: 13, weight: '700', color: '#43577a', align: 'center' })
+      text(`(${idx === 0 ? '1-7' : idx === 1 ? '8-14' : idx === 2 ? '15-21' : '22-30'})`, bx + 18, plotY + plotH + 34, { size: 11, color: '#7b8ba6', align: 'center' })
       const lx = bx + bw + 4
-      const ly = plotY + plotH - (Math.max(0, row.line) / maxValue) * (plotH - 16)
-      if (idx === 0) ctx.moveTo(lx, ly); else ctx.lineTo(lx, ly)
+      const netValue = Number.isFinite(row.line) ? Math.max(0, Number(row.line)) : Math.max(0, Number(row.income || 0) - Number(row.expenses || 0))
+      const ly = plotY + plotH - (netValue / maxValue) * (plotH - 16)
+      if (Number.isFinite(ly)) linePoints.push({ x: lx, y: ly })
     })
-    ctx.strokeStyle = colors.blue; ctx.lineWidth = 2; ctx.stroke()
+    if (linePoints.length) {
+      ctx.beginPath()
+      linePoints.forEach((point, index) => {
+        if (index === 0) ctx.moveTo(point.x, point.y)
+        else ctx.lineTo(point.x, point.y)
+      })
+      ctx.strokeStyle = colors.blue
+      ctx.lineWidth = 2.2
+      ctx.stroke()
+      linePoints.forEach((point) => {
+        ctx.beginPath()
+        ctx.arc(point.x, point.y, 3.3, 0, Math.PI * 2)
+        ctx.fillStyle = colors.blue
+        ctx.fill()
+      })
+    }
 
     card(x + 16, yTop + h - 64, w - 32, 48, 10, '#f8fbff', '#d6e0f0')
     const colW = (w - 56) / 3
@@ -869,8 +887,6 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     ReportFooter()
   }
 
-  const awaitLoadIcon = await loadCanvasImage(REPORT_FAVICON_SRC)
-  if (awaitLoadIcon) ctx.drawImage(awaitLoadIcon, M + 36, M + 36, 46, 46)
   ReportPage()
   return canvas
 }
