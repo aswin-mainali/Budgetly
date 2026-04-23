@@ -2905,16 +2905,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [pendingCreateDraft, setPendingCreateDraft] = useState<null | {
-    name: string
-    kind: RecurringKind
-    category_id: string
-    amount: string
-    recurrence_type: RecurrenceType
-    anchor_date: string
-    day_of_month: string
-    note: string
-  }>(null)
   const [draftRecurring, setDraftRecurring] = useState({
     name: '',
     kind: 'expense' as RecurringKind,
@@ -2957,32 +2947,15 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     const nextIds = sortedRecurring.map((item) => item.id)
     const newRecurringId = nextIds.find((id) => !previousIds.includes(id))
 
-    if (newRecurringId && pendingCreateDraft) {
-      updateRecurringField(newRecurringId, 'name', pendingCreateDraft.name.trim())
-      updateRecurringField(newRecurringId, 'kind', pendingCreateDraft.kind)
-      updateRecurringField(newRecurringId, 'category_id', pendingCreateDraft.category_id)
-      updateRecurringField(newRecurringId, 'amount', pendingCreateDraft.amount)
-      updateRecurringField(newRecurringId, 'recurrence_type', pendingCreateDraft.recurrence_type)
-      updateRecurringField(newRecurringId, 'anchor_date', pendingCreateDraft.anchor_date || new Date().toISOString().slice(0, 10))
-      if (pendingCreateDraft.recurrence_type === 'monthly') {
-        updateRecurringField(newRecurringId, 'day_of_month', pendingCreateDraft.day_of_month || '1')
-      }
-      updateRecurringField(newRecurringId, 'note', pendingCreateDraft.note)
-      setPendingCreateDraft(null)
-      setIsCreating(false)
-      setCreateError(null)
+    if (newRecurringId && !isCreating) {
       setSelectedRecurringId(newRecurringId)
       setIsDrawerOpen(true)
-      setTimeout(() => { void saveRecurring() }, 0)
-    } else if (newRecurringId) {
-      setSelectedRecurringId(newRecurringId)
-      setIsDrawerOpen(true)
-    } else if (!selectedRecurringId || !nextIds.includes(selectedRecurringId)) {
+    } else if (!isCreating && (!selectedRecurringId || !nextIds.includes(selectedRecurringId))) {
       setSelectedRecurringId(nextIds[0])
     }
 
     previousRecurringIdsRef.current = nextIds
-  }, [pendingCreateDraft, saveRecurring, selectedRecurringId, sortedRecurring, updateRecurringField])
+  }, [isCreating, selectedRecurringId, sortedRecurring])
 
   const handleAddRecurring = () => {
     setIsCreating(true)
@@ -3070,11 +3043,30 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         return
       }
 
-      setPendingCreateDraft({
-        ...draftRecurring,
-        amount: String(parsedAmount),
+      addRecurring({
+        name: draftRecurring.name.trim(),
+        kind: draftRecurring.kind,
+        category_id: draftRecurring.category_id || null,
+        amount: parsedAmount,
+        recurrence_type: draftRecurring.recurrence_type,
+        anchor_date: draftRecurring.recurrence_type === 'monthly' ? new Date().toISOString().slice(0, 10) : draftRecurring.anchor_date,
+        day_of_month: draftRecurring.recurrence_type === 'monthly' ? Number(draftRecurring.day_of_month || 1) : 1,
+        note: draftRecurring.note,
       })
-      addRecurring()
+      await saveRecurring()
+      setCreateError(null)
+      setSelectedRecurringId(null)
+      setIsDrawerOpen(true)
+      setDraftRecurring({
+        name: '',
+        kind: 'expense',
+        category_id: '',
+        amount: '',
+        recurrence_type: 'monthly',
+        anchor_date: '',
+        day_of_month: '',
+        note: '',
+      })
       return
     }
     await saveRecurring()
