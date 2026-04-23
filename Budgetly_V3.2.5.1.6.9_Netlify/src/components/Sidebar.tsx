@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
@@ -19,18 +19,25 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
+  toolsSection: 'goals' | 'reports' | 'converter'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
   sync: SyncState
   onSignOut: () => void
   email?: string | null
   features: FeatureAccess
 }) {
-  const { collapsed, setCollapsed, view, setView, sync, onSignOut, email, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, features } = props
   const [now, setNow] = useState(() => new Date())
+  const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    if (view === 'tools') setToolsExpanded(true)
+  }, [view])
 
   const clock = useMemo(() => {
     const hour = now.getHours()
@@ -81,6 +88,44 @@ export default function Sidebar(props: {
       <div className="nav">
         {visibleItems.map((item) => {
           const isActive = item.key === 'tools' ? view === 'tools' : view === item.key
+          if (item.key === 'tools') {
+            const hasAnyTool = features.goals || features.reports || features.converter
+            return (
+              <React.Fragment key={item.key}>
+                <button
+                  className={`toolsNavButton ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setView('tools')
+                    setToolsExpanded((current) => (view === 'tools' ? !current : true))
+                  }}
+                  aria-expanded={toolsExpanded}
+                  aria-controls="utilities-submenu"
+                >
+                  {item.icon} <span className="navLabel">{item.label}</span>
+                  <span className="toolsChevron">{toolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
+                </button>
+                {toolsExpanded && !collapsed && hasAnyTool ? (
+                  <div className="toolsSubNav" id="utilities-submenu">
+                    {features.goals ? (
+                      <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals') }}>
+                        <Target size={16} /> <span className="navLabel">Goals</span>
+                      </button>
+                    ) : null}
+                    {features.reports ? (
+                      <button className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports') }}>
+                        <BarChart3 size={16} /> <span className="navLabel">Reports</span>
+                      </button>
+                    ) : null}
+                    {features.converter ? (
+                      <button className={toolsSection === 'converter' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('converter') }}>
+                        <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </React.Fragment>
+            )
+          }
           return (
           <button key={item.key} className={isActive ? 'active' : ''} onClick={() => setView(item.key)}>
             {item.icon} <span className="navLabel">{item.label}</span>
