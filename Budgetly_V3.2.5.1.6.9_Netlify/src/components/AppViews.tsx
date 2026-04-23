@@ -606,9 +606,9 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   const pageW = LOGICAL_WIDTH - M * 2
 
   const text = (value: string, x: number, y: number, opts?: { size?: number; weight?: string; color?: string; align?: CanvasTextAlign }) => {
-    const fontSize = Math.max(12, opts?.size ?? 16)
+    const fontSize = Math.max(13, (opts?.size ?? 16) + 1)
     ctx.fillStyle = opts?.color ?? colors.text
-    ctx.font = `${opts?.weight ?? '500'} ${fontSize}px Arial`
+    ctx.font = `${opts?.weight ?? '600'} ${fontSize}px Inter, Arial, sans-serif`
     ctx.textAlign = opts?.align ?? 'left'
     ctx.fillText(value, x, y)
     ctx.textAlign = 'left'
