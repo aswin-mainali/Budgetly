@@ -7141,9 +7141,9 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringFeedRowRight{display:flex;align-items:center;gap:8px}
 .recurringFeedEmpty,.recurringDrawerPlaceholder{min-height:180px;display:grid;place-items:center;text-align:center}
 .recurringDrawerCard{display:flex;flex-direction:column}
-.recurringDrawerFields{grid-template-columns:1fr 1fr}
-.recurringDrawerFields .recurringFieldFull{grid-column:1/-1}
-.recurringDrawerNote{min-height:90px;resize:vertical}
+.goalFields.compact.recurringDrawerFields{grid-template-columns:1fr 1fr}
+.goalFields.compact.recurringDrawerFields .recurringFieldFull{grid-column:1/-1}
+.recurringDrawerNote{min-height:64px;height:72px;resize:vertical}
 .recurringDrawerActions{margin-top:auto;padding-top:14px}
 
 @media (max-width: 1200px){
@@ -7184,7 +7184,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   .recurringToolbar{grid-template-columns:1fr}
   .recurringFeedDataRow{grid-template-columns:1fr;gap:8px}
   .recurringActionsCol{justify-content:flex-start}
-  .recurringDrawerFields{grid-template-columns:1fr}
+  .goalFields.compact.recurringDrawerFields{grid-template-columns:1fr}
 }
 
 .recurringActionsCol{position:relative}
