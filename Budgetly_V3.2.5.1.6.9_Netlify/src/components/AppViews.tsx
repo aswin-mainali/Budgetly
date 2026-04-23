@@ -738,31 +738,42 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     fillRoundedRect(ctx, x + 126, legendY, 20, 8, 3, '#f47257'); text('Expenses', x + 154, legendY + 8, { size: 12, color: '#43577a' })
     line(x + 256, legendY + 4, x + 280, legendY + 4, colors.blue); text('Net Savings', x + 290, legendY + 8, { size: 12, color: '#43577a' })
 
-    const plotX = x + 52
+    const monthShort = monthRange.split(' ')[0] || 'Apr'
+    const plotX = x + 64
     const plotY = yTop + 92
-    const plotW = w - 76
-    const plotH = 206
-    const maxValue = Math.max(1, ...weekRows.map((r) => Math.max(Number(r.income || 0), Number(r.expenses || 0), Number(r.line || 0))))
-    ;[0, 0.33, 0.66, 1].forEach((n) => {
-      const yy = plotY + plotH - (plotH * n)
+    const plotW = w - 94
+    const plotH = 190
+    const rawMaxValue = Math.max(1, ...weekRows.map((r) => Math.max(Number(r.income || 0), Number(r.expenses || 0), Number(r.line || 0))))
+    const maxValue = Math.max(2000, Math.ceil(rawMaxValue / 2000) * 2000)
+    const yTicks = Array.from({ length: Math.floor(maxValue / 2000) + 1 }, (_, i) => i * 2000)
+    yTicks.forEach((tick) => {
+      const yy = plotY + plotH - ((tick / maxValue) * plotH)
       line(plotX, yy, plotX + plotW, yy, colors.grid)
-      text(fmtMoney(maxValue * n).replace('.00', ''), plotX - 8, yy + 4, { size: 11, color: '#7384a1', align: 'right' })
+      text(fmtMoney(tick).replace('.00', ''), plotX - 10, yy + 4, { size: 11, color: '#7384a1', align: 'right' })
     })
+    line(plotX, plotY, plotX, plotY + plotH, '#c9d6ea')
+    line(plotX, plotY + plotH, plotX + plotW, plotY + plotH, '#c9d6ea')
     const step = plotW / Math.max(1, weekRows.length)
-    const linePoints: Array<{ x: number; y: number }> = []
+    const linePoints: Array<{ x: number; y: number; value: number }> = []
     weekRows.forEach((row, idx) => {
-      const bx = plotX + idx * step + 18
-      const bw = 24
-      const ih = (Math.max(0, row.income) / maxValue) * (plotH - 16)
-      const eh = (Math.max(0, row.expenses) / maxValue) * (plotH - 16)
-      fillRoundedRect(ctx, bx, plotY + plotH - ih, bw, ih, 4, colors.green)
-      fillRoundedRect(ctx, bx + bw + 8, plotY + plotH - eh, bw, eh, 4, '#f47257')
+      const bx = plotX + idx * step + 16
+      const bw = 20
+      const ih = (Math.max(0, row.income) / maxValue) * (plotH - 2)
+      const eh = (Math.max(0, row.expenses) / maxValue) * (plotH - 2)
+      const incomeTop = plotY + plotH - ih
+      const expenseTop = plotY + plotH - eh
+      fillRoundedRect(ctx, bx, incomeTop, bw, ih, 4, colors.green)
+      fillRoundedRect(ctx, bx + bw + 7, expenseTop, bw, eh, 4, '#f47257')
+      if (row.income > 0) text(fmtMoney(row.income).replace('.00', ''), bx + 10, Math.max(plotY + 12, incomeTop - 8), { size: 10, weight: '700', color: '#2a3f62', align: 'center' })
+      if (row.expenses > 0) text(fmtMoney(row.expenses).replace('.00', ''), bx + bw + 17, Math.max(plotY + 12, expenseTop - 8), { size: 10, weight: '700', color: '#2a3f62', align: 'center' })
       text(row.label, bx + 18, plotY + plotH + 18, { size: 13, weight: '700', color: '#43577a', align: 'center' })
-      text(row.subLabel || `(${idx === 0 ? '1-7' : idx === 1 ? '8-14' : idx === 2 ? '15-21' : '22-30'})`, bx + 18, plotY + plotH + 34, { size: 11, color: '#7b8ba6', align: 'center' })
-      const lx = bx + bw + 4
+      const start = idx * 7 + 1
+      const end = Math.min((idx + 1) * 7, 30)
+      text(row.subLabel || `(${monthShort} ${start} - ${monthShort} ${end})`, bx + 18, plotY + plotH + 34, { size: 11, color: '#7b8ba6', align: 'center' })
+      const lx = bx + bw + 3
       const netValue = Number.isFinite(row.line) ? Math.max(0, Number(row.line)) : Math.max(0, Number(row.income || 0) - Number(row.expenses || 0))
-      const ly = plotY + plotH - (netValue / maxValue) * (plotH - 16)
-      if (Number.isFinite(ly)) linePoints.push({ x: lx, y: ly })
+      const ly = plotY + plotH - (netValue / maxValue) * (plotH - 2)
+      if (Number.isFinite(ly)) linePoints.push({ x: lx, y: ly, value: netValue })
     })
     if (linePoints.length) {
       ctx.beginPath()
@@ -778,6 +789,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
         ctx.arc(point.x, point.y, 3.3, 0, Math.PI * 2)
         ctx.fillStyle = colors.blue
         ctx.fill()
+        text(fmtMoney(point.value).replace('.00', ''), point.x, Math.max(plotY + 10, point.y - 8), { size: 10, weight: '700', color: colors.blue, align: 'center' })
       })
     }
 
