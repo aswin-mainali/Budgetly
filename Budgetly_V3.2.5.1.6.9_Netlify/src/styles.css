@@ -173,6 +173,31 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   background: rgba(34,197,94,.12);
 }
 
+.toolsNavButton{
+  justify-content: flex-start;
+}
+
+.toolsChevron{
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toolsSubNav{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin: 0 0 0 14px;
+  padding: 2px 0 2px 12px;
+  border-left: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.toolsSubNav button{
+  padding:8px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
 .sidebar.collapsed .navLabel{display:none}
 
 .sidebarFooter{

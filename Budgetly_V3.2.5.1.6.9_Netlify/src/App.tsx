@@ -275,6 +275,8 @@ export default function App() {
           setCollapsed={setCollapsed}
           view={view}
           setView={handleViewChange}
+          toolsSection={toolsSection}
+          setToolsSection={setToolsSection}
           sync={budget.sync}
           onSignOut={signOut}
           email={email}
@@ -296,13 +298,6 @@ export default function App() {
         {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} /> : null}
         {view === 'tools' ? (
           <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
-            <div className="card settingsTopCard settingsTopCardFull toolsTopTabsOnly">
-              <div className="settingsTopTabs toolsTopTabs" role="tablist" aria-label="Tools sections">
-                <button className={`settingsNavBtn settingsTopNavBtn ${toolsSection === 'goals' ? 'active' : ''}`} onClick={() => setToolsSection('goals')}>Goals</button>
-                <button className={`settingsNavBtn settingsTopNavBtn ${toolsSection === 'reports' ? 'active' : ''}`} onClick={() => setToolsSection('reports')}>Reports</button>
-                <button className={`settingsNavBtn settingsTopNavBtn ${toolsSection === 'converter' ? 'active' : ''}`} onClick={() => setToolsSection('converter')}>Currency Converter</button>
-              </div>
-            </div>
             <div className={`toolsPageBody ${toolsSection === 'converter' ? 'toolsPageBodyConverter' : ''}`}>
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
