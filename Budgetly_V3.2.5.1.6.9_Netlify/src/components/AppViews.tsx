@@ -111,7 +111,7 @@ const formatReportMoney = (currency: string, n: number) => {
 
 
 
-const createReportCanvas = async (options: ReportCanvasOptions) => {
+const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
   const canvas = document.createElement('canvas')
   canvas.width = 1400
   canvas.height = 1980
@@ -550,6 +550,328 @@ const createReportCanvas = async (options: ReportCanvasOptions) => {
   }
 
   text(footerText, canvas.width / 2, canvas.height - 18, { size: 15, color: colors.muted, align: 'center' })
+  return canvas
+}
+
+
+const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { previousMonthLabel?: string; previousTotals?: { income: number; expenses: number; balance: number } | null }) => {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1240
+  canvas.height = 1754
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
+
+  const colors = {
+    page: '#ffffff',
+    navy: '#0f2245',
+    text: '#16284a',
+    muted: '#6b7a95',
+    border: '#d8e1ef',
+    cardBg: '#fbfdff',
+    green: '#1b9b63',
+    greenSoft: '#eaf8f0',
+    red: '#ef4f44',
+    redSoft: '#fff2f1',
+    blue: '#3267e3',
+    blueSoft: '#eef3ff',
+    orange: '#f8a736',
+    pie: ['#ff6b4a', '#f7aa38', '#42b35d', '#7b63c7', '#4292e8', '#9aa5bb'],
+    grid: '#e8eef7',
+  } as const
+
+  const {
+    appName, reportTitle, periodLabel, generatedAt, userEmail, totals, donutRows, comboRows, goalRows = [], recurringRows = [], insights = [],
+    currency, previousMonthLabel, previousTotals,
+  } = options
+
+  const fmtMoney = (n: number, withCents = false) => {
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency, minimumFractionDigits: withCents ? 2 : 0, maximumFractionDigits: withCents ? 2 : 0 }).format(n)
+    } catch {
+      return `${currency}${withCents ? n.toFixed(2) : Math.round(n)}`
+    }
+  }
+  const fmtPct = (n: number) => `${n.toFixed(1)}%`
+  const safeIncome = Math.max(0, Number(totals.income || 0))
+  const safeExpenses = Math.max(0, Number(totals.expenses || 0))
+  const safeNet = Number(totals.balance || 0)
+  const savingsRate = safeIncome > 0 ? (safeNet / safeIncome) * 100 : 0
+  const statusText = safeNet >= 0 ? 'Good Savings Month' : 'Watch Spending Closely'
+
+  const M = 36
+  const G = 18
+  const pageW = canvas.width - M * 2
+
+  const text = (value: string, x: number, y: number, opts?: { size?: number; weight?: string; color?: string; align?: CanvasTextAlign }) => {
+    ctx.fillStyle = opts?.color ?? colors.text
+    ctx.font = `${opts?.weight ?? '400'} ${opts?.size ?? 16}px Arial`
+    ctx.textAlign = opts?.align ?? 'left'
+    ctx.fillText(value, x, y)
+    ctx.textAlign = 'left'
+  }
+  const line = (x1: number, y1: number, x2: number, y2: number, color = colors.border) => {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke()
+  }
+  const card = (x: number, y: number, w: number, h: number, r = 16, fill = colors.cardBg, stroke = colors.border) => {
+    fillRoundedRect(ctx, x, y, w, h, r, fill)
+    strokeRoundedRect(ctx, x, y, w, h, r, stroke, 1)
+  }
+
+  const comparisonText = (current: number, prev?: number | null) => {
+    if (typeof prev !== 'number' || !Number.isFinite(prev) || prev <= 0 || !previousMonthLabel) return null
+    const delta = ((current - prev) / prev) * 100
+    const sign = delta > 0 ? '+' : ''
+    return `vs ${previousMonthLabel} ${sign}${delta.toFixed(1)}%`
+  }
+
+  const categoryRows = (() => {
+    const source = (donutRows?.length ? donutRows : [{ label: 'Other', value: safeExpenses || 1 }]).slice(0, 6)
+    const normalized = source.map((row) => ({ ...row, value: Math.max(0, Number(row.value || 0)) }))
+    const total = normalized.reduce((s, r) => s + r.value, 0) || 1
+    return normalized.map((row, index) => ({
+      ...row,
+      color: colors.pie[index % colors.pie.length],
+      pct: (row.value / total) * 100,
+    }))
+  })()
+
+  const weekRows = (comboRows?.length ? comboRows : [{ label: 'Week 1', income: safeIncome, expenses: safeExpenses, line: Math.max(safeNet, 0) }]).slice(0, 4)
+  const monthRange = periodLabel || ''
+
+  const ReportStatusBadge = (x: number, y: number, label: string) => {
+    card(x, y, 236, 42, 11, '#e8f7ef', '#a8dcc1')
+    fillRoundedRect(ctx, x + 16, y + 12, 18, 18, 9, colors.green)
+    text('✓', x + 25, y + 25, { size: 12, weight: '700', color: '#ffffff', align: 'center' })
+    text(label, x + 46, y + 27, { size: 31/2, weight: '700', color: '#1a8257' })
+  }
+
+  let y = M
+  card(M, M, pageW, canvas.height - (M * 2), 2, '#ffffff', '#cdd5e3')
+
+  const ReportHeader = () => {
+    const h = 196
+    const x = M + 18
+    const w = pageW - 36
+    const iconSize = 46
+    fillRoundedRect(ctx, x, y + 18, iconSize, iconSize, 10, '#0ebc6f')
+    text('B', x + 23, y + 50, { size: 38, weight: '700', color: '#ffffff', align: 'center' })
+    text(appName, x + 58, y + 47, { size: 46/2, weight: '700', color: colors.navy })
+    text(userEmail || '', x + w - 2, y + 46, { size: 26/2, color: colors.text, align: 'right' })
+    text(reportTitle, x, y + 115, { size: 78/2, weight: '700', color: colors.navy })
+    text(`📅  ${monthRange}`, x, y + 156, { size: 48/2, weight: '700', color: colors.green })
+    text(`Generated on ${generatedAt}`, x, y + 188, { size: 24/2, color: colors.muted })
+    ReportStatusBadge(x + w - 248, y + 78, statusText)
+    y += h + G
+  }
+
+  const KpiCard = (x: number, yTop: number, w: number, title: string, value: string, tone: 'green' | 'red' | 'blue', cmp?: string | null) => {
+    const bg = tone === 'green' ? '#f5fcf8' : tone === 'red' ? '#fff7f6' : '#f5f8ff'
+    const br = tone === 'green' ? '#cbe9d9' : tone === 'red' ? '#ffd7d2' : '#cddcff'
+    const accent = tone === 'green' ? colors.green : tone === 'red' ? colors.red : colors.blue
+    card(x, yTop, w, 134, 14, bg, br)
+    fillRoundedRect(ctx, x + 14, yTop + 20, 44, 44, 22, accent)
+    text('•', x + 36, yTop + 47, { size: 40/2, weight: '700', color: '#ffffff', align: 'center' })
+    text(title, x + 72, yTop + 42, { size: 17, color: '#33476b' })
+    text(value, x + 72, yTop + 82, { size: 44/2, weight: '700', color: accent })
+    if (cmp) text(`↗ ${cmp}`, x + 72, yTop + 112, { size: 13, weight: '700', color: accent })
+  }
+
+  const KpiSummaryRow = () => {
+    const cardW = (pageW - 36 - (G * 3)) / 4
+    const startX = M + 18
+    const prevIncome = previousTotals?.income ?? null
+    const prevExpenses = previousTotals?.expenses ?? null
+    const prevNet = previousTotals?.balance ?? null
+    const prevRate = previousTotals && previousTotals.income > 0 ? (previousTotals.balance / previousTotals.income) * 100 : null
+    KpiCard(startX, y, cardW, 'Total Income', fmtMoney(safeIncome), 'green', comparisonText(safeIncome, prevIncome))
+    KpiCard(startX + (cardW + G), y, cardW, 'Total Expenses', fmtMoney(safeExpenses), 'red', comparisonText(safeExpenses, prevExpenses))
+    KpiCard(startX + (cardW + G) * 2, y, cardW, 'Net Savings / Ending Balance', fmtMoney(safeNet), 'green', comparisonText(safeNet, prevNet))
+    KpiCard(startX + (cardW + G) * 3, y, cardW, 'Savings Rate', fmtPct(savingsRate), 'blue', comparisonText(savingsRate, prevRate))
+    y += 134 + G
+  }
+
+  const ExpenseBreakdownCard = (x: number, yTop: number, w: number, h: number) => {
+    card(x, yTop, w, h)
+    text('Expense Breakdown', x + 16, yTop + 34, { size: 22/2, weight: '700', color: colors.navy })
+    const cx = x + 130
+    const cy = yTop + 170
+    const outer = 94
+    const inner = 52
+    const total = categoryRows.reduce((s, r) => s + r.value, 0) || 1
+    let angle = -Math.PI / 2
+    categoryRows.forEach((row) => {
+      const slice = (row.value / total) * Math.PI * 2
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, outer, angle, angle + slice); ctx.closePath(); ctx.fillStyle = row.color; ctx.fill();
+      angle += slice
+    })
+    ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill()
+    text('Total Expenses', cx, cy - 10, { size: 12, color: colors.muted, align: 'center' })
+    text(fmtMoney(safeExpenses), cx, cy + 20, { size: 36/2, weight: '700', color: colors.navy, align: 'center' })
+    categoryRows.forEach((row, index) => {
+      const yy = yTop + 72 + index * 42
+      fillRoundedRect(ctx, x + 248, yy - 10, 10, 10, 5, row.color)
+      text(row.label, x + 268, yy, { size: 12, weight: '700', color: '#26395f' })
+      text(`${Math.round(row.pct)}%`, x + w - 18, yy, { size: 12, weight: '700', color: '#516180', align: 'right' })
+      text(fmtMoney(row.value, true), x + 268, yy + 18, { size: 11, color: '#5f6e88' })
+    })
+    card(x + 16, yTop + h - 56, w - 32, 40, 10, '#f7faff', '#d6e0f0')
+    text('Total Expenses', x + 30, yTop + h - 31, { size: 14, weight: '700', color: '#33476b' })
+    text(fmtMoney(safeExpenses, true), x + w - 28, yTop + h - 31, { size: 15, weight: '700', color: colors.navy, align: 'right' })
+  }
+
+  const IncomeVsExpensesWeeklyCard = (x: number, yTop: number, w: number, h: number) => {
+    card(x, yTop, w, h)
+    text('Income vs Expenses (by Week)', x + 16, yTop + 34, { size: 22/2, weight: '700', color: colors.navy })
+    const legendY = yTop + 56
+    fillRoundedRect(ctx, x + 16, legendY, 20, 8, 3, colors.green); text('Income', x + 44, legendY + 8, { size: 12, color: '#43577a' })
+    fillRoundedRect(ctx, x + 126, legendY, 20, 8, 3, '#f47257'); text('Expenses', x + 154, legendY + 8, { size: 12, color: '#43577a' })
+    line(x + 256, legendY + 4, x + 280, legendY + 4, colors.blue); text('Net Savings', x + 290, legendY + 8, { size: 12, color: '#43577a' })
+
+    const plotX = x + 52
+    const plotY = yTop + 92
+    const plotW = w - 76
+    const plotH = 206
+    const maxValue = Math.max(1, ...weekRows.map((r) => Math.max(r.income, r.expenses, r.line)))
+    ;[0, 0.33, 0.66, 1].forEach((n) => {
+      const yy = plotY + plotH - (plotH * n)
+      line(plotX, yy, plotX + plotW, yy, colors.grid)
+      text(fmtMoney(maxValue * n).replace('.00', ''), plotX - 8, yy + 4, { size: 11, color: '#7384a1', align: 'right' })
+    })
+    const step = plotW / Math.max(1, weekRows.length)
+    ctx.beginPath()
+    weekRows.forEach((row, idx) => {
+      const bx = plotX + idx * step + 18
+      const bw = 24
+      const ih = (Math.max(0, row.income) / maxValue) * (plotH - 16)
+      const eh = (Math.max(0, row.expenses) / maxValue) * (plotH - 16)
+      fillRoundedRect(ctx, bx, plotY + plotH - ih, bw, ih, 4, colors.green)
+      fillRoundedRect(ctx, bx + bw + 8, plotY + plotH - eh, bw, eh, 4, '#f47257')
+      text(row.label, bx + 18, plotY + plotH + 18, { size: 12, color: '#43577a', align: 'center' })
+      text(`(${idx === 0 ? '1-7' : idx === 1 ? '8-14' : idx === 2 ? '15-21' : '22-30'})`, bx + 18, plotY + plotH + 34, { size: 10, color: '#7b8ba6', align: 'center' })
+      const lx = bx + bw + 4
+      const ly = plotY + plotH - (Math.max(0, row.line) / maxValue) * (plotH - 16)
+      if (idx === 0) ctx.moveTo(lx, ly); else ctx.lineTo(lx, ly)
+    })
+    ctx.strokeStyle = colors.blue; ctx.lineWidth = 2; ctx.stroke()
+
+    card(x + 16, yTop + h - 64, w - 32, 48, 10, '#f8fbff', '#d6e0f0')
+    const colW = (w - 56) / 3
+    text('Total Income', x + 28, yTop + h - 42, { size: 12, color: '#5b6c88' }); text(fmtMoney(safeIncome), x + 28, yTop + h - 23, { size: 15, weight: '700', color: colors.green })
+    text('Total Expenses', x + 28 + colW, yTop + h - 42, { size: 12, color: '#5b6c88' }); text(fmtMoney(safeExpenses), x + 28 + colW, yTop + h - 23, { size: 15, weight: '700', color: colors.red })
+    text('Net Savings', x + 28 + (colW * 2), yTop + h - 42, { size: 12, color: '#5b6c88' }); text(fmtMoney(safeNet), x + 28 + (colW * 2), yTop + h - 23, { size: 15, weight: '700', color: colors.blue })
+  }
+
+  const MainChartsRow = () => {
+    const w = (pageW - 54) / 2
+    const h = 470
+    ExpenseBreakdownCard(M + 18, y, w, h)
+    IncomeVsExpensesWeeklyCard(M + 36 + w, y, w, h)
+    y += h + G
+  }
+
+  const GoalsProgressCard = (x: number, yTop: number, w: number, h: number) => {
+    card(x, yTop, w, h, 14, '#f8fdfb', '#d4eadf')
+    text('◉  Goals Progress', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
+    const rows = (goalRows.length ? goalRows : [{ label: 'No goal yet', target: 1, current: 0 }]).slice(0, 2)
+    rows.forEach((goal, idx) => {
+      const gy = yTop + 62 + idx * 92
+      const ratio = goal.target > 0 ? Math.min(1, Math.max(0, goal.current / goal.target)) : 0
+      card(x + 14, gy - 8, w - 28, 82, 10, '#ffffff', '#dce7f4')
+      text(goal.label, x + 24, gy + 14, { size: 12, weight: '700', color: '#24385d' })
+      text(`Save ${fmtMoney(goal.target)}`, x + w - 24, gy + 14, { size: 12, weight: '700', color: idx === 0 ? colors.green : colors.blue, align: 'right' })
+      text(`${fmtMoney(goal.current, true)} of ${fmtMoney(goal.target, true)}`, x + 24, gy + 34, { size: 12, color: '#677893' })
+      fillRoundedRect(ctx, x + 24, gy + 44, w - 96, 10, 5, '#dfe7f5')
+      fillRoundedRect(ctx, x + 24, gy + 44, (w - 96) * ratio, 10, 5, idx === 0 ? colors.green : colors.blue)
+      text(fmtPct(ratio * 100), x + w - 24, gy + 54, { size: 14, weight: '700', color: '#23406b', align: 'right' })
+    })
+  }
+
+  const TopCategoriesCard = (x: number, yTop: number, w: number, h: number) => {
+    card(x, yTop, w, h)
+    text('★  Top Categories', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
+    text('Amount', x + w - 86, yTop + 30, { size: 12, color: '#7384a1' })
+    const rows = categoryRows.slice(0, 6)
+    rows.forEach((row, idx) => {
+      const ry = yTop + 56 + idx * 34
+      line(x + 1, ry + 16, x + w - 1, ry + 16, '#edf1f8')
+      fillRoundedRect(ctx, x + 16, ry - 9, 24, 24, 12, idx < 3 ? '#f9a825' : '#8f9bb3')
+      text(String(idx + 1), x + 28, ry + 8, { size: 12, weight: '700', color: '#ffffff', align: 'center' })
+      text(row.label, x + 54, ry + 8, { size: 12, color: '#24385d' })
+      text(fmtMoney(row.value, true), x + w - 98, ry + 8, { size: 12, weight: '700', color: '#24385d', align: 'right' })
+      text(`${Math.round(row.pct)}%`, x + w - 20, ry + 8, { size: 12, weight: '700', color: row.color, align: 'right' })
+    })
+    text('Total', x + w / 2 - 10, yTop + h - 14, { size: 16, weight: '700', color: '#24385d', align: 'right' })
+    text(fmtMoney(safeExpenses, true), x + w - 16, yTop + h - 14, { size: 16, weight: '700', color: colors.navy, align: 'right' })
+  }
+
+  const SupportingInsightsRow = () => {
+    const w = (pageW - 54) / 2
+    const h = 286
+    GoalsProgressCard(M + 18, y, w, h)
+    TopCategoriesCard(M + 36 + w, y, w, h)
+    y += h + G
+  }
+
+  const RecurringPaymentsCard = (x: number, yTop: number, w: number, h: number) => {
+    card(x, yTop, w, h, 14, '#f7faff', '#d2def2')
+    text('◫  Recurring Payments', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
+    text('Item', x + 18, yTop + 56, { size: 12, color: '#7384a1' })
+    text('Frequency', x + w - 188, yTop + 56, { size: 12, color: '#7384a1' })
+    text('Amount', x + w - 26, yTop + 56, { size: 12, color: '#7384a1', align: 'right' })
+    const rows = recurringRows.slice(0, 3)
+    rows.forEach((row, idx) => {
+      const ry = yTop + 84 + idx * 36
+      line(x + 14, ry + 14, x + w - 14, ry + 14, '#e8eef7')
+      text(row.label.replace(/^[^\w]+\s*/, ''), x + 18, ry + 8, { size: 12, color: '#253a60' })
+      text(row.cadence === 'Bi-weekly' ? 'Every 2 weeks' : row.cadence === 'Monthly' ? 'Every month' : 'Every week', x + w - 156, ry + 8, { size: 12, color: '#4f6284' })
+      text(fmtMoney(row.amount), x + w - 26, ry + 8, { size: 12, weight: '700', color: '#253a60', align: 'right' })
+    })
+    text('View all recurring payments  →', x + 18, yTop + h - 18, { size: 12, weight: '700', color: colors.blue })
+  }
+
+  const KeyInsightsCard = (x: number, yTop: number, w: number, h: number) => {
+    card(x, yTop, w, h, 14, '#f8fdf9', '#d3e8da')
+    text('◔  Key Insights', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
+    const defaultInsights = [
+      `Great job! You saved ${fmtMoney(safeNet)} this month, which is ${fmtPct(savingsRate)} of your income.`,
+      `${categoryRows[0]?.label || 'Top category'} is your top expense at ${Math.round(categoryRows[0]?.pct || 0)}% of total spending.`,
+      `You're on track to achieve your goals. Keep it up!`,
+    ]
+    ;(insights.length ? insights : defaultInsights).slice(0, 3).forEach((item, idx) => {
+      const iy = yTop + 64 + idx * 44
+      fillRoundedRect(ctx, x + 16, iy - 14, 26, 26, 13, idx === 1 ? '#e9efff' : '#e7f7ee')
+      text(idx === 1 ? '↗' : '✓', x + 29, iy + 4, { size: 13, weight: '700', color: idx === 1 ? colors.blue : colors.green, align: 'center' })
+      const short = item.length > 80 ? `${item.slice(0, 78)}...` : item
+      text(short, x + 52, iy + 5, { size: 12, color: '#273b60' })
+    })
+  }
+
+  const BottomInfoRow = () => {
+    const w = (pageW - 54) / 2
+    const h = 218
+    RecurringPaymentsCard(M + 18, y, w, h)
+    KeyInsightsCard(M + 36 + w, y, w, h)
+    y += h + G
+  }
+
+  const ReportFooter = () => {
+    line(M + 18, y + 4, M + pageW - 18, y + 4, '#cfd8e6')
+    text('🔒', M + pageW / 2, y + 28, { size: 14, align: 'center', color: '#7485a2' })
+    text('Budgetly – Finances at your fingertips', M + pageW / 2, y + 52, { size: 14, color: '#7a8ba8', align: 'center' })
+  }
+
+  const ReportPage = () => {
+    ReportHeader()
+    KpiSummaryRow()
+    MainChartsRow()
+    SupportingInsightsRow()
+    BottomInfoRow()
+    ReportFooter()
+  }
+
+  const awaitLoadIcon = await loadCanvasImage(REPORT_FAVICON_SRC)
+  if (awaitLoadIcon) ctx.drawImage(awaitLoadIcon, M + 36, M + 36, 46, 46)
+  ReportPage()
   return canvas
 }
 
@@ -2730,6 +3052,21 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   const monthlyExpenses = monthlyTransactions.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
   const monthlyNet = monthlyIncome - monthlyExpenses
 
+
+  const previousMonth = useMemo(() => {
+    const [year, month] = selectedMonth.split('-').map(Number)
+    const dt = new Date(year, (month || 1) - 2, 1)
+    return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`
+  }, [selectedMonth])
+
+  const previousMonthTotals = useMemo(() => {
+    const previousTransactions = safeTransactions.filter((tx) => tx.date.slice(0, 7) === previousMonth)
+    const income = previousTransactions.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    const expenses = previousTransactions.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    if (!previousTransactions.length) return null
+    return { income, expenses, balance: income - expenses }
+  }, [safeTransactions, previousMonth])
+
   const monthlyByCategory = useMemo(() => {
     const bucket = new Map<string, { name: string; total: number }>()
     for (const tx of monthlyTransactions.filter((tx) => tx.type === 'expense')) {
@@ -2885,7 +3222,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
       monthlyNet >= 0 ? `Your savings rate improved because your ending balance is ${formatCurrency(monthlyNet)}.` : `You overspent this month by ${formatCurrency(Math.abs(monthlyNet))}.`,
       monthlyByCategory[1] ? `${monthlyByCategory[1].name} spending is trending upward - monitor closely.` : 'Add more transactions to unlock deeper insights.',
     ]
-    const canvas = await createReportCanvas({
+    const canvas = await createMonthlyFinancialReportPdf({
       appName: 'Budgetly',
       reportTitle: 'Monthly Financial Report',
       periodLabel: helpers.monthLabel(selectedMonth),
@@ -2927,6 +3264,8 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
       goalRows: monthlyGoals,
       expenseTrendRows,
       recurringRows,
+      previousMonthLabel: helpers.monthLabel(previousMonth),
+      previousTotals: previousMonthTotals,
     })
     exportCanvasPdf(`Budgetly-Monthly-Report-${selectedMonth}.pdf`, canvas)
   }
@@ -2936,7 +3275,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     const totalExpenses = yearTransactions.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
     const yearlyNet = totalIncome - totalExpenses
 
-    const canvas = await createReportCanvas({
+    const canvas = await createLegacyReportCanvas({
       appName: 'Budgetly',
       reportTitle: 'Yearly Financial Report',
       periodLabel: selectedYear,
