@@ -3200,9 +3200,10 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   }, [selectedYear, yearSummary])
 
   const monthlyWeekSeries = useMemo(() => {
+    const monthShort = helpers.monthLabel(selectedMonth).split(' ')[0]
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
-      subLabel: `(${index * 7 + 1}-${Math.min((index + 1) * 7, 30)})`,
+      subLabel: `(${monthShort} ${index * 7 + 1} - ${monthShort} ${Math.min((index + 1) * 7, 30)})`,
       income: 0,
       expenses: 0,
       line: 0,
@@ -3220,7 +3221,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
       bucket.line = Math.max(running, 0)
     }
     return buckets
-  }, [monthlyTransactions])
+  }, [monthlyTransactions, helpers, selectedMonth])
 
   const yearlyQuarterSeries = useMemo(() => {
     const quarterRanges = [
