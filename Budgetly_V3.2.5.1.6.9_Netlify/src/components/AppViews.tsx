@@ -764,8 +764,6 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
       const expenseTop = plotY + plotH - eh
       fillRoundedRect(ctx, bx, incomeTop, bw, ih, 4, colors.green)
       fillRoundedRect(ctx, bx + bw + 7, expenseTop, bw, eh, 4, '#f47257')
-      if (row.income > 0) text(fmtMoney(row.income).replace('.00', ''), bx + 10, Math.max(plotY + 12, incomeTop - 8), { size: 10, weight: '700', color: '#2a3f62', align: 'center' })
-      if (row.expenses > 0) text(fmtMoney(row.expenses).replace('.00', ''), bx + bw + 17, Math.max(plotY + 12, expenseTop - 8), { size: 10, weight: '700', color: '#2a3f62', align: 'center' })
       text(row.label, bx + 18, plotY + plotH + 18, { size: 13, weight: '700', color: '#43577a', align: 'center' })
       const start = idx * 7 + 1
       const end = Math.min((idx + 1) * 7, 30)
@@ -789,7 +787,6 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
         ctx.arc(point.x, point.y, 3.3, 0, Math.PI * 2)
         ctx.fillStyle = colors.blue
         ctx.fill()
-        text(fmtMoney(point.value).replace('.00', ''), point.x, Math.max(plotY + 10, point.y - 8), { size: 10, weight: '700', color: colors.blue, align: 'center' })
       })
     }
 
