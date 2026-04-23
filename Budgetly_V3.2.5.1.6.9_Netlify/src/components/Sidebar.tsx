@@ -36,7 +36,7 @@ export default function Sidebar(props: {
   }, [])
 
   useEffect(() => {
-    if (view === 'tools') setToolsExpanded(true)
+    setToolsExpanded(view === 'tools')
   }, [view])
 
   const clock = useMemo(() => {
