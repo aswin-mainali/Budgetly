@@ -17,7 +17,7 @@ type ReportCanvasOptions = {
   overviewRows: Array<{ label: string; value: string }>
   donutRows: Array<{ label: string; value: number }>
   comboTitle: string
-  comboRows: Array<{ label: string; income: number; expenses: number; line: number }>
+  comboRows: Array<{ label: string; income: number; expenses: number; line: number; subLabel?: string }>
   comboLineLabel: string
   topCategories: Array<{ label: string; value: string }>
   tableTitle: string
@@ -583,7 +583,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   } as const
 
   const {
-    appName, reportTitle, periodLabel, generatedAt, userEmail, totals, donutRows, comboRows, goalRows = [], recurringRows = [], insights = [],
+    appName, reportTitle, periodLabel, generatedAt, userEmail, totals, donutRows, comboRows, comboTitle, goalRows = [], recurringRows = [], insights = [],
     currency, previousMonthLabel, previousTotals,
   } = options
 
@@ -732,7 +732,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
 
   const IncomeVsExpensesWeeklyCard = (x: number, yTop: number, w: number, h: number) => {
     card(x, yTop, w, h)
-    text('Income vs Expenses (by Week)', x + 16, yTop + 34, { size: 22/2, weight: '700', color: colors.navy })
+    text(comboTitle || 'Income vs Expenses (by Week)', x + 16, yTop + 34, { size: 22/2, weight: '700', color: colors.navy })
     const legendY = yTop + 56
     fillRoundedRect(ctx, x + 16, legendY, 20, 8, 3, colors.green); text('Income', x + 44, legendY + 8, { size: 12, color: '#43577a' })
     fillRoundedRect(ctx, x + 126, legendY, 20, 8, 3, '#f47257'); text('Expenses', x + 154, legendY + 8, { size: 12, color: '#43577a' })
@@ -758,7 +758,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
       fillRoundedRect(ctx, bx, plotY + plotH - ih, bw, ih, 4, colors.green)
       fillRoundedRect(ctx, bx + bw + 8, plotY + plotH - eh, bw, eh, 4, '#f47257')
       text(row.label, bx + 18, plotY + plotH + 18, { size: 13, weight: '700', color: '#43577a', align: 'center' })
-      text(`(${idx === 0 ? '1-7' : idx === 1 ? '8-14' : idx === 2 ? '15-21' : '22-30'})`, bx + 18, plotY + plotH + 34, { size: 11, color: '#7b8ba6', align: 'center' })
+      text(row.subLabel || `(${idx === 0 ? '1-7' : idx === 1 ? '8-14' : idx === 2 ? '15-21' : '22-30'})`, bx + 18, plotY + plotH + 34, { size: 11, color: '#7b8ba6', align: 'center' })
       const lx = bx + bw + 4
       const netValue = Number.isFinite(row.line) ? Math.max(0, Number(row.line)) : Math.max(0, Number(row.income || 0) - Number(row.expenses || 0))
       const ly = plotY + plotH - (netValue / maxValue) * (plotH - 16)
@@ -3193,6 +3193,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   const monthlyWeekSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
+      subLabel: `(${index * 7 + 1}-${Math.min((index + 1) * 7, 30)})`,
       income: 0,
       expenses: 0,
       line: 0,
@@ -3211,6 +3212,23 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     }
     return buckets
   }, [monthlyTransactions])
+
+  const yearlyQuarterSeries = useMemo(() => {
+    const quarterRanges = [
+      { label: 'Q1', subLabel: '(Jan-Mar)', start: 0, end: 3 },
+      { label: 'Q2', subLabel: '(Apr-Jun)', start: 3, end: 6 },
+      { label: 'Q3', subLabel: '(Jul-Sep)', start: 6, end: 9 },
+      { label: 'Q4', subLabel: '(Oct-Dec)', start: 9, end: 12 },
+    ]
+    let running = 0
+    return quarterRanges.map((range) => {
+      const slice = monthSeriesForYear.slice(range.start, range.end)
+      const income = slice.reduce((sum, row) => sum + row.income, 0)
+      const expenses = slice.reduce((sum, row) => sum + row.expenses, 0)
+      running += income - expenses
+      return { label: range.label, subLabel: range.subLabel, income, expenses, line: Math.max(running, 0) }
+    })
+  }, [monthSeriesForYear])
 
   const savingsGrowthRows = useMemo(() => {
     let running = 0
@@ -3300,7 +3318,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     const totalExpenses = yearTransactions.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
     const yearlyNet = totalIncome - totalExpenses
 
-    const canvas = await createLegacyReportCanvas({
+    const canvas = await createMonthlyFinancialReportPdf({
       appName: 'Budgetly',
       reportTitle: 'Yearly Financial Report',
       periodLabel: selectedYear,
@@ -3314,8 +3332,8 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
         { label: 'Balance', value: formatCurrency(yearlyNet) },
       ],
       donutRows: yearByCategory.slice(0, 6).map((row) => ({ label: row.name, value: row.total })),
-      comboTitle: 'Income vs. Expenses by Month',
-      comboRows: monthSeriesForYear.map((row) => ({ label: row.label, income: row.income, expenses: row.expenses, line: Math.max(row.net, 0) })),
+      comboTitle: 'Income vs Expenses (by Quarter)',
+      comboRows: yearlyQuarterSeries,
       comboLineLabel: 'Net',
       topCategories: yearByCategory.slice(0, 3).map((row) => ({ label: row.name, value: formatCurrency(row.total) })),
       tableTitle: 'Monthly Summary',
@@ -3334,7 +3352,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
         yearlyNet >= 0 ? `Your annual net balance closed at ${formatCurrency(yearlyNet)}.` : `You closed the year with a negative balance of ${formatCurrency(Math.abs(yearlyNet))}.`,
         'Review the monthly trend chart to spot spending spikes and savings growth.',
       ],
-      expenseTrendRows,
+      goalRows: monthlyGoals,
       recurringRows,
     })
     exportCanvasPdf(`Budgetly-Yearly-Report-${selectedYear}.pdf`, canvas)
