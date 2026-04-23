@@ -7148,3 +7148,38 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 @media (max-width: 1200px){
   .recurringFeedLayout{grid-template-columns:minmax(0,1fr)}
 }
+
+.recurringDesignerLayout{grid-template-columns:minmax(0,1fr) 330px}
+.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px}
+.recurringKpiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.recurringKpiCard{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)}
+.recurringKpiCard strong{display:block;font-size:22px;line-height:1.1;margin:4px 0}
+.recurringKpiIcon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(79,124,255,.15)}
+.recurringToolbar{display:grid;grid-template-columns:minmax(210px,1fr) repeat(3,minmax(130px,160px));gap:8px}
+.recurringSearchInput{position:relative;display:flex;align-items:center}
+.recurringSearchInput svg{position:absolute;left:10px;opacity:.7}
+.recurringSearchInput .input{padding-left:32px}
+.recurringFeedTable{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
+.recurringFeedDataRow{width:100%;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(120px,1fr) minmax(120px,.8fr) 90px minmax(120px,.9fr) 28px;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.recurringFeedDataRow:hover,.recurringFeedDataRow.selected{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.06)}
+.recurringNameCol{display:flex;align-items:center;gap:10px;min-width:0}
+.recurringItemEmoji{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:rgba(79,124,255,.14)}
+.recurringKindPill{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(244,63,94,.12);color:#ff6486}
+.recurringKindPill.income{background:rgba(16,185,129,.16);color:#37d39d}
+.recurringAmountCol.good{color:#35c98d;font-weight:700}
+.recurringFreqPill{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(96,165,250,.16);color:#6ca6ff}
+.recurringDueCol{display:flex;flex-direction:column;gap:2px}
+.recurringActionsCol{display:grid;place-items:center;opacity:.7}
+.recurringFooterText{font-size:12px;padding:4px 2px 0}
+.recurringDesignerDrawer{position:sticky;top:10px;height:fit-content;max-height:calc(100vh - 160px);overflow:auto}
+
+@media (max-width: 1200px){
+  .recurringKpiRow{grid-template-columns:1fr}
+  .recurringToolbar{grid-template-columns:1fr 1fr}
+  .recurringFeedDataRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
+}
+@media (max-width: 860px){
+  .recurringToolbar{grid-template-columns:1fr}
+  .recurringFeedDataRow{grid-template-columns:1fr;gap:8px}
+  .recurringActionsCol{justify-content:flex-start}
+}
