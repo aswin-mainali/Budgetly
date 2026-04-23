@@ -2981,6 +2981,18 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   const yearNetMax = Math.max(...monthSeriesForYear.map((row) => row.net), 0)
   const yearNetMin = Math.min(...monthSeriesForYear.map((row) => row.net), 0)
   const yearNetRange = Math.max(yearNetMax - yearNetMin, 1)
+  const yearlyTrendPoints = monthSeriesForYear.map((row, index) => {
+    const x = monthSeriesForYear.length > 1 ? (index / (monthSeriesForYear.length - 1)) * 100 : 50
+    const normalized = (row.net - yearNetMin) / yearNetRange
+    const y = 46 - (normalized * 32)
+    return {
+      ...row,
+      x,
+      y,
+      hasActivity: row.income > 0 || row.expenses > 0,
+    }
+  })
+  const yearlyTrendPath = yearlyTrendPoints.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
 
   return (
     <div className="card reportsPage">
@@ -3088,15 +3100,16 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
           <div className="reportsTrendBox">
             <div className="reportsPreviewTitle">Yearly net trend</div>
             <div className="reportsTrendChart">
-              {monthSeriesForYear.map((row, index) => {
-                const y = 8 + (((yearNetMax - row.net) / yearNetRange) * 72)
-                return (
-                  <span key={row.label} className="reportsTrendPoint" style={{ left: `${(index / 11) * 100}%`, top: `${y}px` }}>
-                    <i className={row.net > 0 ? 'active' : ''} />
-                    <small>{row.label}</small>
-                  </span>
-                )
-              })}
+              <svg className="reportsTrendSvg" viewBox="0 0 100 56" preserveAspectRatio="none" aria-hidden="true">
+                <line x1="0" y1="46" x2="100" y2="46" className="reportsTrendAxis" />
+                <path d={yearlyTrendPath} className="reportsTrendLine" />
+                {yearlyTrendPoints.map((point) => (
+                  <circle key={point.label} cx={point.x} cy={point.y} r="1.35" className={point.hasActivity ? 'reportsTrendDot active' : 'reportsTrendDot'} />
+                ))}
+              </svg>
+              <div className="reportsTrendMonths">
+                {yearlyTrendPoints.map((point) => <span key={point.label}>{point.label}</span>)}
+              </div>
             </div>
           </div>
 

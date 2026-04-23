@@ -1380,11 +1380,14 @@ body.light .converterRecentBox {
 .reportsYearGrid{display:flex;flex-wrap:wrap;gap:8px}
 .reportsStatChip{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px}
 .reportsTrendBox{padding:12px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}
-.reportsTrendChart{position:relative;height:104px;border-top:1px solid rgba(148,163,184,.2);margin-top:12px}
-.reportsTrendPoint{position:absolute;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px}
-.reportsTrendPoint i{width:8px;height:8px;border-radius:999px;background:#94a3b8}
-.reportsTrendPoint i.active{background:#3b82f6}
-.reportsTrendPoint small{font-size:11px;color:var(--muted);margin-top:10px}
+.reportsTrendChart{margin-top:12px}
+.reportsTrendSvg{width:100%;height:92px;display:block}
+.reportsTrendAxis{stroke:rgba(148,163,184,.35);stroke-width:.35}
+.reportsTrendLine{fill:none;stroke:#3b82f6;stroke-width:1;stroke-linecap:round;stroke-linejoin:round}
+.reportsTrendDot{fill:#94a3b8}
+.reportsTrendDot.active{fill:#3b82f6}
+.reportsTrendMonths{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;margin-top:2px}
+.reportsTrendMonths span{font-size:11px;color:var(--muted);text-align:center}
 .reportsGood{color:#15803d}
 .reportsBad{color:#b91c1c}
 @media (max-width: 900px){
