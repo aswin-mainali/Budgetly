@@ -3196,7 +3196,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                 <h3 style={{ marginBottom: 4 }}>Add Recurring Item</h3>
                 <div className="muted">Create or edit a recurring payment or income.</div>
               </div>
-              <button className="icon" title="Close drawer" onClick={() => setIsDrawerOpen(false)}><ChevronRight size={16} /></button>
             </div>
             <div className="goalFields compact recurringDrawerFields" style={{ marginTop: 14 }}>
               <div className="recurringFieldFull"><small>Name *</small><input className="input" value={isCreating ? draftRecurring.name : (selectedRecurring?.name ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, name: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'name', event.target.value) : null} placeholder="e.g., Rent, Salary, Netflix" /></div>
