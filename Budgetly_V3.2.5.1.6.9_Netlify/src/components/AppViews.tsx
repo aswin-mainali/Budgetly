@@ -555,9 +555,11 @@ const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
 
 
 const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { previousMonthLabel?: string; previousTotals?: { income: number; expenses: number; balance: number } | null }) => {
+  const LOGICAL_WIDTH = 1240
+  const LOGICAL_HEIGHT = 1754
   const canvas = document.createElement('canvas')
-  canvas.width = 2480
-  canvas.height = 3508
+  canvas.width = LOGICAL_WIDTH * 2
+  canvas.height = LOGICAL_HEIGHT * 2
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas
   ctx.scale(2, 2)
@@ -601,7 +603,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
 
   const M = 36
   const G = 18
-  const pageW = canvas.width - M * 2
+  const pageW = LOGICAL_WIDTH - M * 2
 
   const text = (value: string, x: number, y: number, opts?: { size?: number; weight?: string; color?: string; align?: CanvasTextAlign }) => {
     const fontSize = Math.max(12, opts?.size ?? 16)
@@ -649,6 +651,8 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
 
   let y = M
   const iconImage = await loadCanvasImage(REPORT_FAVICON_SRC)
+  ctx.fillStyle = colors.page
+  ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT)
 
   const ReportHeader = () => {
     const h = 196
