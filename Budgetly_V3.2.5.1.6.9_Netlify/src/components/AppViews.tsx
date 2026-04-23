@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -2976,23 +2976,35 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     exportCanvasPdf(`Budgetly-Yearly-Report-${selectedYear}.pdf`, canvas)
   }
 
+  const topCategoryRows = monthlyByCategory.slice(0, 3)
+  const monthListRows = yearSummary.slice(-4).reverse()
+  const yearNetMax = Math.max(...monthSeriesForYear.map((row) => row.net), 0)
+  const yearNetMin = Math.min(...monthSeriesForYear.map((row) => row.net), 0)
+  const yearNetRange = Math.max(yearNetMax - yearNetMin, 1)
+
   return (
     <div className="card reportsPage">
       <div className="row between reportsHeader">
-        <div>
-          <h2>Reports</h2>
-          <div className="muted">Download clean PDF reports for a specific month or full year.</div>
+        <div className="reportsHeadline">
+          <div className="reportsHeadlineIcon"><FileText size={22} /></div>
+          <div>
+            <h2>Reports</h2>
+            <div className="muted">Generate and download monthly and yearly financial summaries.</div>
+          </div>
         </div>
       </div>
 
       <div className={`grid ${isPhone ? '' : 'cols2'} reportsGrid`} style={{ marginTop: 14 }}>
         <div className="card reportsPanel">
-          <div className="row between" style={{ marginBottom: 12 }}>
-            <div>
-              <h3 style={{ marginBottom: 4 }}>Monthly PDF report</h3>
-              <small>Detailed month summary with category spend and transactions.</small>
+          <div className="row between reportsPanelHeader">
+            <div className="reportsPanelTitleWrap">
+              <div className="reportsPanelIcon reportsPanelIconMonth"><Calendar size={18} /></div>
+              <div>
+                <h3 style={{ marginBottom: 4 }}>Monthly Report</h3>
+                <small>Detailed summary of your finances for a selected month.</small>
+              </div>
             </div>
-            <span className="badge">PDF</span>
+            <span className="reportsPdfTag"><FileText size={14} /> PDF</span>
           </div>
 
           <div className="field">
@@ -3003,34 +3015,62 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
           </div>
 
           <div className="reportsStats">
-            <div className="kpi income"><span>Income</span><strong>{helpers.fmtMoney(monthlyIncome, data.currency)}</strong></div>
-            <div className="kpi expenses"><span>Expenses</span><strong>{helpers.fmtMoney(monthlyExpenses, data.currency)}</strong></div>
-            <div className="kpi net"><span>Net</span><strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong></div>
+            <div className="kpi income reportsKpi">
+              <span>Income</span>
+              <strong>{helpers.fmtMoney(monthlyIncome, data.currency)}</strong>
+              <CircleArrowUp size={16} />
+            </div>
+            <div className="kpi expenses reportsKpi">
+              <span>Expenses</span>
+              <strong>{helpers.fmtMoney(monthlyExpenses, data.currency)}</strong>
+              <CircleArrowDown size={16} />
+            </div>
+            <div className="kpi net reportsKpi">
+              <span>Net</span>
+              <strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong>
+              <CircleArrowUp size={16} />
+            </div>
           </div>
 
           <div className="reportsPreviewList">
             <div className="reportsPreviewTitle">Top category spend</div>
-            {monthlyByCategory.slice(0, 3).map((row) => (
-              <div key={row.name} className="reportsPreviewRow">
-                <span>{row.name}</span>
-                <strong>{helpers.fmtMoney(row.total, data.currency)}</strong>
+            {topCategoryRows.map((row, idx) => {
+              const pct = monthlyExpenses > 0 ? (row.total / monthlyExpenses) * 100 : 0
+              return (
+              <div key={row.name} className="reportsPreviewRow reportsCategoryRow">
+                <div className="reportsCategoryMain">
+                  <span className="reportsCategoryIndex">{idx + 1}</span>
+                  <div>
+                    <span>{row.name}</span>
+                    <div className="reportsCategoryBar">
+                      <i style={{ width: `${Math.max(10, Math.min(100, pct))}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="reportsCategoryAmount">
+                  <strong>{helpers.fmtMoney(row.total, data.currency)}</strong>
+                  <small>{pct.toFixed(1)}%</small>
+                </div>
               </div>
-            ))}
+              )})}
             {!monthlyByCategory.length ? <small>No expense categories in this month.</small> : null}
           </div>
 
-          <button className="btn primary reportsDownloadBtn" onClick={makeMonthlyReport}>
-            <FileDown size={16} /> Download monthly PDF
+          <button className="btn reportsDownloadBtn reportsDownloadBtnGreen" onClick={makeMonthlyReport}>
+            <DownloadIcon size={16} /> Download monthly report
           </button>
         </div>
 
         <div className="card reportsPanel">
-          <div className="row between" style={{ marginBottom: 12 }}>
-            <div>
-              <h3 style={{ marginBottom: 4 }}>Yearly PDF report</h3>
-              <small>Year summary with month-by-month totals and recurring snapshot.</small>
+          <div className="row between reportsPanelHeader">
+            <div className="reportsPanelTitleWrap">
+              <div className="reportsPanelIcon reportsPanelIconYear"><BarChart3 size={18} /></div>
+              <div>
+                <h3 style={{ marginBottom: 4 }}>Yearly Report</h3>
+                <small>Year summary with month-by-month totals and trends.</small>
+              </div>
             </div>
-            <span className="badge">PDF</span>
+            <span className="reportsPdfTag"><FileText size={14} /> PDF</span>
           </div>
 
           <div className="field">
@@ -3041,23 +3081,38 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
           </div>
 
           <div className="reportsYearGrid">
-            <div className="badge">Transactions: {yearTransactions.length}</div>
-            <div className="badge">Recurring items: {recurringCount}</div>
+            <div className="reportsStatChip"><ReceiptText size={14} /> Transactions: {yearTransactions.length}</div>
+            <div className="reportsStatChip"><Repeat2 size={14} /> Recurring items: {recurringCount}</div>
+          </div>
+
+          <div className="reportsTrendBox">
+            <div className="reportsPreviewTitle">Yearly net trend</div>
+            <div className="reportsTrendChart">
+              {monthSeriesForYear.map((row, index) => {
+                const y = 8 + (((yearNetMax - row.net) / yearNetRange) * 72)
+                return (
+                  <span key={row.label} className="reportsTrendPoint" style={{ left: `${(index / 11) * 100}%`, top: `${y}px` }}>
+                    <i className={row.net > 0 ? 'active' : ''} />
+                    <small>{row.label}</small>
+                  </span>
+                )
+              })}
+            </div>
           </div>
 
           <div className="reportsPreviewList">
             <div className="reportsPreviewTitle">Month-by-month net</div>
-            {yearSummary.slice(-4).reverse().map((row) => (
+            {monthListRows.map((row) => (
               <div key={row.month} className="reportsPreviewRow">
                 <span>{helpers.monthLabel(row.month)}</span>
-                <strong>{helpers.fmtMoney(row.net, data.currency)}</strong>
+                <strong className={row.net >= 0 ? 'reportsGood' : 'reportsBad'}>{helpers.fmtMoney(row.net, data.currency)}</strong>
               </div>
             ))}
             {!yearSummary.length ? <small>No transactions in this year.</small> : null}
           </div>
 
-          <button className="btn primary reportsDownloadBtn" onClick={makeYearlyReport}>
-            <FileDown size={16} /> Download yearly PDF
+          <button className="btn reportsDownloadBtn reportsDownloadBtnGreen" onClick={makeYearlyReport}>
+            <DownloadIcon size={16} /> Download yearly report
           </button>
         </div>
       </div>
