@@ -6828,10 +6828,11 @@ body.light .categoriesListHeader,
   overflow-y:auto;
   overflow-x:hidden;
   scrollbar-gutter:stable;
+  scrollbar-width:none;
   padding-right:4px;
   padding-bottom:8px;
 }
-.goalsGalleryScrollArea::-webkit-scrollbar{width:8px}
+.goalsGalleryScrollArea::-webkit-scrollbar{width:0;height:0}
 .goalsGalleryScrollArea::-webkit-scrollbar-thumb{background:rgba(96,165,250,.22);border-radius:999px}
 body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .theme-light .goalsGalleryScrollArea::-webkit-scrollbar-thumb{background:rgba(51,65,85,.22)}
@@ -6961,7 +6962,9 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   .toolsPageBody .goalsPage.goalsGalleryPage .goalsGalleryScrollArea{
     overflow-y:auto !important;
     -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
   }
+  .toolsPageBody .goalsPage.goalsGalleryPage .goalsGalleryScrollArea::-webkit-scrollbar{width:8px;height:8px}
   .toolsPageBody .goalsPage.goalsGalleryPage .goalsUpdateFooter{
     position:static;
   }
