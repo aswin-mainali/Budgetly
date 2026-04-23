@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin } from '../hooks/useSuperAdmin'
@@ -561,7 +561,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, FileDown, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1877,37 +1877,25 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, updateGoalField, contributeToGoal, deleteGoal, saveGoals, goalDirty, helpers, data } = budget
+  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, helpers, data } = budget
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved' | 'oldest'>('nearest')
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
+  const [goalModalMode, setGoalModalMode] = useState<'add' | 'edit' | null>(null)
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
+  const [goalDraft, setGoalDraft] = useState<GoalDraft>({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
+  const [goalEmojiAuto, setGoalEmojiAuto] = useState(true)
+  const [goalModalError, setGoalModalError] = useState('')
+  const [modalQuickAmount, setModalQuickAmount] = useState('')
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
-  const useCompactDashboard = !isPhone && isCompactLaptop
-  const [contributions, setContributions] = useState<Record<string, string>>({})
-  const [collapsedGoals, setCollapsedGoals] = useState<Record<string, boolean>>({})
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
-
-  useEffect(() => {
-    setCollapsedGoals((current) => {
-      const next: Record<string, boolean> = {}
-      for (const goal of sortedGoals) next[goal.id] = current[goal.id] ?? true
-      return next
-    })
-  }, [sortedGoals, isPhone])
 
   const totalTarget = sortedGoals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0)
   const totalSaved = sortedGoals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0)
-
-  const applyContribution = (goalId: string) => {
-    const raw = contributions[goalId] ?? ''
-    const amount = Number(raw)
-    if (!Number.isFinite(amount) || amount <= 0) return
-    contributeToGoal(goalId, amount)
-    setContributions((current) => ({ ...current, [goalId]: '' }))
-  }
-
-  const toggleGoalCollapsed = (goalId: string) => {
-    setCollapsedGoals((current) => ({ ...current, [goalId]: !current[goalId] }))
-  }
+  const averageProgress = sortedGoals.length > 0 && totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0
 
   const confirmDeleteGoal = async () => {
     if (!pendingDeleteId) return
@@ -1915,106 +1903,263 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     setPendingDeleteId(null)
   }
 
+  const openAddGoalModal = () => {
+    setGoalDraft({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
+    setGoalEmojiAuto(true)
+    setGoalModalError('')
+    setModalQuickAmount('')
+    setGoalModalMode('add')
+  }
+
+  const openEditGoalModal = (goal: typeof sortedGoals[number]) => {
+    setEditingGoalId(goal.id)
+    setGoalDraft({
+      name: goal.name || '',
+      emoji: goal.emoji || '🎯',
+      target_amount: String(goal.target_amount ?? '0'),
+      current_amount: String(goal.current_amount ?? '0'),
+      target_date: goal.target_date ?? '',
+      note: goal.note ?? '',
+    })
+    setGoalEmojiAuto(false)
+    setGoalModalError('')
+    setModalQuickAmount('')
+    setGoalModalMode('edit')
+  }
+
+  const closeGoalModal = () => {
+    setGoalModalMode(null)
+    setEditingGoalId(null)
+    setModalQuickAmount('')
+  }
+
+  const saveGoalModal = async () => {
+    if (goalModalMode === 'add') {
+      const name = goalDraft.name.trim()
+      const targetAmount = Number(goalDraft.target_amount)
+      const targetDate = goalDraft.target_date.trim()
+      if (!name || !targetDate || !Number.isFinite(targetAmount) || targetAmount <= 0) {
+        setGoalModalError('Name, target amount, and target date are required to save a new goal.')
+        return
+      }
+      addGoal({
+        name,
+        emoji: goalDraft.emoji,
+        target_amount: goalDraft.target_amount,
+        current_amount: goalDraft.current_amount,
+        target_date: goalDraft.target_date || null,
+        note: goalDraft.note,
+      })
+      await saveGoals()
+      closeGoalModal()
+      return
+    }
+    if (goalModalMode === 'edit' && editingGoalId) {
+      updateGoalField(editingGoalId, 'name', goalDraft.name)
+      updateGoalField(editingGoalId, 'emoji', goalDraft.emoji)
+      updateGoalField(editingGoalId, 'target_amount', goalDraft.target_amount)
+      updateGoalField(editingGoalId, 'current_amount', goalDraft.current_amount)
+      updateGoalField(editingGoalId, 'target_date', goalDraft.target_date)
+      updateGoalField(editingGoalId, 'note', goalDraft.note)
+      await saveGoals()
+      closeGoalModal()
+    }
+  }
+
+  const displayGoals = useMemo(() => {
+    const clone = [...sortedGoals]
+    if (sortKey === 'progress') {
+      clone.sort((a, b) => {
+        const targetA = Number(a.target_amount || 0)
+        const targetB = Number(b.target_amount || 0)
+        const currentA = Number(a.current_amount || 0)
+        const currentB = Number(b.current_amount || 0)
+        const progressA = targetA > 0 ? currentA / targetA : 0
+        const progressB = targetB > 0 ? currentB / targetB : 0
+        return progressB - progressA
+      })
+      return clone
+    }
+    if (sortKey === 'saved') {
+      clone.sort((a, b) => Number(b.current_amount || 0) - Number(a.current_amount || 0))
+      return clone
+    }
+    if (sortKey === 'oldest') {
+      const order = new Map((Array.isArray(data.goals) ? data.goals : []).map((goal, index) => [goal.id, index]))
+      clone.sort((a, b) => (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+      return clone
+    }
+    clone.sort((a, b) => {
+      const aDate = a.target_date ? new Date(`${a.target_date}T00:00:00`).getTime() : Number.POSITIVE_INFINITY
+      const bDate = b.target_date ? new Date(`${b.target_date}T00:00:00`).getTime() : Number.POSITIVE_INFINITY
+      return aDate - bDate
+    })
+    return clone
+  }, [sortedGoals, sortKey, data.goals])
+
+  const cardsPerPage = isPhone ? 1 : (isCompactLaptop ? 2 : 3)
+  const pages = Math.max(1, Math.ceil(displayGoals.length / cardsPerPage))
+
+  useEffect(() => {
+    const maxIndex = Math.max(0, pages - 1)
+    setActiveIndex((current) => Math.min(current, maxIndex))
+  }, [pages])
+
+  useEffect(() => {
+    const node = carouselRef.current
+    if (!node) return
+    node.scrollTo({ left: 0, behavior: 'auto' })
+    setActiveIndex(0)
+  }, [sortKey])
+
+  const scrollToIndex = (index: number) => {
+    const node = carouselRef.current
+    if (!node) return
+    const clamped = Math.max(0, Math.min(index, pages - 1))
+    const cardWidth = node.clientWidth
+    node.scrollTo({ left: clamped * cardWidth, behavior: 'smooth' })
+    setActiveIndex(clamped)
+  }
+
+  const onCarouselScroll = () => {
+    const node = carouselRef.current
+    if (!node) return
+    const step = node.clientWidth || 1
+    const nextIndex = Math.round(node.scrollLeft / step)
+    if (nextIndex !== activeIndex) setActiveIndex(nextIndex)
+  }
+
   return (
-    <div className="card dataPageCard goalsPage">
-      <div className="row between" style={{ alignItems: 'flex-start', gap: 12 }}>
+    <div className="card dataPageCard goalsPage goalsGalleryPage">
+      <div className="goalsHeroHeader">
         <div>
           <h2>Goals</h2>
-          <div className="muted">Create custom goals like savings, retirement, a new car, or a vacation. Add emojis, set a target, and track progress as you contribute.</div>
+          <div className="muted">Stay focused. Achieve more.</div>
         </div>
-        <button className="btn primary" onClick={() => addGoal()}>
+        <button className="btn primary goalsHeroAddBtn" onClick={openAddGoalModal}>
           <Plus size={16} /> Add Goal
         </button>
       </div>
 
+      <div className="goalsGalleryScrollArea">
+        <div className="goalsHeroCard">
+          <div className="goalsHeroText">
+            <span className="goalsHeroStar">★</span>
+            <h3>Big goals start with small steps.</h3>
+            <p>Keep saving, stay consistent and make it happen.</p>
+          </div>
+          <div className="goalsHeroMountain" aria-hidden="true">
+            <img src="/goal-mountain.svg" alt="" />
+          </div>
+          <div className="goalsHeroStats">
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon green">🐷</span><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon amber">🪙</span><div><strong>{helpers.fmtMoney(totalTarget, data.currency)}</strong><span>Total target</span></div></div>
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon blue">◔</span><div><strong>{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div></div>
+            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon purple">◬</span><div><strong>{displayGoals.length}</strong><span>Active goals</span></div></div>
+          </div>
+        </div>
 
-      <div className="dataScrollBox goalsScrollBox">
-        <div className="goalGrid">
-        {sortedGoals.map((goal) => {
-          const targetAmount = Number(goal.target_amount || 0)
-          const currentAmount = Number(goal.current_amount || 0)
-          const progress = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0
-          const isCollapsed = !!collapsedGoals[goal.id]
-          return (
-            <div key={goal.id} className={`goalCard${isCollapsed ? ' collapsed' : ''}`}>
-              <div className="row between goalHeaderRow" style={{ alignItems: 'flex-start', gap: 12 }}>
-                <div className="row goalHeaderMain" style={{ gap: 12, alignItems: 'center' }}>
-                  <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
-                  <div>
-                    <div className="goalTitle">{goal.name || 'Untitled goal'}</div>
-                    <div className="muted">{helpers.fmtMoney(currentAmount, data.currency)} saved of {helpers.fmtMoney(targetAmount, data.currency)}</div>
-                  </div>
-                </div>
-                <div className="row goalHeaderActions" style={{ gap: 8, alignItems: 'center' }}>
-                  <button className="icon" onClick={() => toggleGoalCollapsed(goal.id)} title={isCollapsed ? 'Expand goal' : 'Collapse goal'}>
-                    {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-                  </button>
-                  <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
+        <div className="goalsGalleryHeader">
+          <h3>My Goals</h3>
+          <div className="goalsSortRow goalsSortControls">
+            <span className="muted">Sort by:</span>
+            <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved' | 'oldest')}>
+              <option value="nearest">Nearest target</option>
+              <option value="progress">Highest progress</option>
+              <option value="saved">Most saved</option>
+              <option value="oldest">Oldest</option>
+            </select>
+          </div>
+        </div>
 
-              <div className="goalProgressSummary" style={{ marginTop: 12 }}>
-                <div className="row between goalProgressMeta" style={{ marginBottom: 8, gap: 8, flexWrap: 'wrap' }}>
-                  <span className="badge">{progress}% complete</span>
-                  {goal.target_date ? <span className="badge">Target {new Date(`${goal.target_date}T00:00:00`).toLocaleDateString()}</span> : null}
-                </div>
-                <div className="progress">
-                  <div style={{ width: `${progress}%`, background: 'linear-gradient(90deg, rgba(34,197,94,.95), rgba(59,130,246,.95))' }} />
-                </div>
-              </div>
-
-              {!isCollapsed ? (
-                <>
-                  <div className="goalFields">
-                    <div>
-                      <small>Name</small>
-                      <input className="input" value={goal.name} onChange={(event) => updateGoalField(goal.id, 'name', event.target.value)} placeholder="Goal name" />
-                    </div>
-                    <div>
-                      <small>Emoji</small>
-                      <select className="select" value={goal.emoji || '🎯'} onChange={(event) => updateGoalField(goal.id, 'emoji', event.target.value)}>
-                        {CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <small>Target amount</small>
-                      <input className="input" inputMode="decimal" value={goal.target_amount} onChange={(event) => updateGoalField(goal.id, 'target_amount', event.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <small>Saved so far</small>
-                      <input className="input" inputMode="decimal" value={goal.current_amount} onChange={(event) => updateGoalField(goal.id, 'current_amount', event.target.value)} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <small>Target date</small>
-                      <input className="input" type="date" value={goal.target_date ?? ''} onChange={(event) => updateGoalField(goal.id, 'target_date', event.target.value)} />
-                    </div>
-                    <div>
-                      <small>Quick contribution</small>
-                      <div className="goalContributionRow">
-                        <input className="input" inputMode="decimal" value={contributions[goal.id] ?? ''} onChange={(event) => setContributions((current) => ({ ...current, [goal.id]: event.target.value }))} placeholder="0.00" />
-                        <button className="btn" onClick={() => applyContribution(goal.id)}>Add</button>
+        <div className="goalsCarouselShell">
+          {!isPhone ? (
+            <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex - 1)} disabled={activeIndex <= 0} aria-label="Previous goals">
+              <ChevronLeft size={18} />
+            </button>
+          ) : null}
+          <div className="goalsCarouselTrack" ref={carouselRef} onScroll={onCarouselScroll}>
+            {displayGoals.map((goal) => {
+              const targetAmount = Number(goal.target_amount || 0)
+              const currentAmount = Number(goal.current_amount || 0)
+              const progress = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0
+              const targetDate = goal.target_date ? new Date(`${goal.target_date}T00:00:00`).toLocaleDateString() : 'No date'
+              const remaining = Math.max(0, targetAmount - currentAmount)
+              return (
+                <div key={goal.id} className="goalCarouselCard">
+                  <div className="goalCarouselTop">
+                    <div className="goalCarouselTitleRow">
+                      <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
+                      <div>
+                        <div className="goalTitle">{goal.name || 'Untitled goal'}</div>
+                        <div className="muted">{helpers.fmtMoney(currentAmount, data.currency)} saved of {helpers.fmtMoney(targetAmount, data.currency)}</div>
                       </div>
                     </div>
+                    <div className="row goalHeaderActions">
+                      <button className="icon" title="More options" onClick={() => setMenuGoalId((current) => current === goal.id ? null : goal.id)}>
+                        <MoreHorizontal size={16} />
+                      </button>
+                      {menuGoalId === goal.id ? (
+                        <div className="goalMenuPanel">
+                          <button className="btn" onClick={() => { openEditGoalModal(goal); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
+                        </div>
+                      ) : null}
+                      <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div style={{ marginTop: 12 }}>
-                    <small>Note</small>
-                    <textarea className="input" rows={3} value={goal.note ?? ''} onChange={(event) => updateGoalField(goal.id, 'note', event.target.value)} placeholder="Optional note" />
+                  <div className="goalGaugeRow">
+                    <div className="goalGauge">
+                      <svg viewBox="0 0 120 120">
+                        <circle cx="60" cy="60" r="45" className="goalGaugeTrack" />
+                        <circle
+                          cx="60"
+                          cy="60"
+                          r="45"
+                          className="goalGaugeValue"
+                          style={{ strokeDasharray: `${(progress / 100) * 282.74} 282.74` }}
+                        />
+                      </svg>
+                      <div className="goalGaugeCenter">{progress}%</div>
+                    </div>
+                    <div className="goalGaugeMeta">
+                      <div><small>{helpers.fmtMoney(remaining, data.currency)}</small><strong>remaining</strong></div>
+                      <div><small>Target date</small><strong>{targetDate}</strong></div>
+                    </div>
                   </div>
-                </>
-              ) : null}
-            </div>
-          )
-        })}
+                  <div className="goalLinearProgress">
+                    <div style={{ width: `${progress}%` }} />
+                  </div>
+                  <div className="goalStatusStrip">
+                    <TrendingUp size={14} />
+                    {progress >= 70 ? 'You’re on track to reach your goal!' : 'Keep going! Small steps lead to big results.'}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {!isPhone ? (
+            <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex + 1)} disabled={activeIndex >= pages - 1} aria-label="Next goals">
+              <ChevronRight size={18} />
+            </button>
+          ) : null}
         </div>
-        {sortedGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>No goals yet. Add one to start tracking progress.</div> : null}
+
+        {displayGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>No goals yet. Add one to start tracking progress.</div> : null}
+
+        {!isPhone ? (
+          <div className="goalsCarouselDots">
+            {Array.from({ length: pages }).map((_, index) => (
+              <button key={index} className={`goalsDot${activeIndex === index ? ' active' : ''}`} onClick={() => scrollToIndex(index)} aria-label={`View goal page ${index + 1}`} />
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      <div className="row between recurringSummaryRow dataPageFooter" style={{ marginTop: 16, alignItems: 'center', gap: 12 }}>
+      <div className="row between goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
         <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
-        <div className="badge">Progress {totalTarget > 0 ? `${Math.min(100, Math.round((totalSaved / totalTarget) * 100))}%` : '0%'}</div>
         <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
       </div>
 
@@ -2024,8 +2169,72 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         onConfirm={() => void confirmDeleteGoal()}
         onCancel={() => setPendingDeleteId(null)}
       />
+
+      {goalModalMode ? (
+        <div className="deleteConfirmBackdrop" role="presentation">
+          <div className="card goalEditorModal" role="dialog" aria-modal="true">
+            <h3>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
+            {goalModalError ? <div className="goalModalError">{goalModalError}</div> : null}
+            <div className="goalEditorGrid">
+              <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
+                const nextName = event.target.value
+                setGoalDraft((current) => ({ ...current, name: nextName, emoji: goalModalMode === 'add' && goalEmojiAuto ? inferGoalEmojiFromName(nextName) : current.emoji }))
+              }} /></div>
+              <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => {
+                setGoalEmojiAuto(false)
+                setGoalDraft((current) => ({ ...current, emoji: event.target.value }))
+              }}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
+              <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
+              <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
+              <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
+              <div><small>Quick amount</small><div className="goalQuickAddRow"><input className="input" inputMode="decimal" placeholder="0.00" value={modalQuickAmount} onChange={(event) => setModalQuickAmount(event.target.value)} /><button className="btn" onClick={() => {
+                const amount = Number(modalQuickAmount)
+                if (!Number.isFinite(amount) || amount <= 0) return
+                setGoalDraft((current) => {
+                  const currentAmount = Number(current.current_amount || 0)
+                  const targetAmount = Number(current.target_amount || 0)
+                  const next = currentAmount + amount
+                  const safe = Number.isFinite(targetAmount) && targetAmount > 0 ? Math.min(next, targetAmount) : next
+                  return { ...current, current_amount: String(Number(safe.toFixed(2))) }
+                })
+                setModalQuickAmount('')
+              }}>+ Add</button></div></div>
+              <div className="goalEditorFull"><small>Note</small><textarea className="input" rows={3} value={goalDraft.note} onChange={(event) => setGoalDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+            </div>
+            <div className="goalInlineEditorActions">
+              <button className="btn" onClick={closeGoalModal}>Cancel</button>
+              <button className="btn primary" onClick={() => void saveGoalModal()}>Save Goal</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
+}
+
+type GoalDraft = {
+  name: string
+  emoji: string
+  target_amount: string
+  current_amount: string
+  target_date: string
+  note: string
+}
+
+const inferGoalEmojiFromName = (name: string) => {
+  const value = name.toLowerCase()
+  if (!value.trim()) return '🎯'
+  if (value.includes('car') || value.includes('auto')) return '🚗'
+  if (value.includes('home') || value.includes('house')) return '🏡'
+  if (value.includes('trip') || value.includes('travel') || value.includes('vacation')) return '✈️'
+  if (value.includes('school') || value.includes('education') || value.includes('college')) return '🎓'
+  if (value.includes('wedding') || value.includes('ring')) return '💍'
+  if (value.includes('baby') || value.includes('family')) return '👶'
+  if (value.includes('retire')) return '🏖️'
+  if (value.includes('bike')) return '🚲'
+  if (value.includes('emergency')) return '🧯'
+  if (value.includes('gift') || value.includes('holiday')) return '🎁'
+  return '🎯'
 }
 
 
