@@ -7151,7 +7151,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 }
 
 .recurringDesignerLayout{grid-template-columns:minmax(0,1fr) 330px}
-.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px}
+.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px;height:100%}
 .recurringKpiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .recurringKpiCard{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)}
 .recurringKpiCard strong{display:block;font-size:22px;line-height:1.1;margin:4px 0}
@@ -7173,7 +7173,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringDueCol{display:flex;flex-direction:column;gap:2px}
 .recurringActionsCol{display:grid;place-items:center;opacity:.7}
 .recurringFooterText{font-size:12px;padding:4px 2px 0}
-.recurringDesignerDrawer{position:sticky;top:10px;height:fit-content;max-height:none;overflow:visible}
+.recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible}
 
 @media (max-width: 1200px){
   .recurringKpiRow{grid-template-columns:1fr}

@@ -2897,7 +2897,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const isCompactLaptop = useIsCompactLaptop()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [selectedRecurringId, setSelectedRecurringId] = useState<string | null>(null)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(true)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | RecurringKind>('all')
   const [frequencyFilter, setFrequencyFilter] = useState<'all' | RecurrenceType>('all')
@@ -2938,7 +2938,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   useEffect(() => {
     if (!sortedRecurring.length) {
       setSelectedRecurringId(null)
-      setIsDrawerOpen(false)
       previousRecurringIdsRef.current = []
       return
     }
@@ -2949,7 +2948,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
 
     if (newRecurringId && !isCreating) {
       setSelectedRecurringId(newRecurringId)
-      setIsDrawerOpen(true)
     } else if (!isCreating && (!selectedRecurringId || !nextIds.includes(selectedRecurringId))) {
       setSelectedRecurringId(nextIds[0])
     }
@@ -3056,7 +3054,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       await saveRecurring()
       setCreateError(null)
       setSelectedRecurringId(null)
-      setIsDrawerOpen(true)
+      setIsCreating(true)
       setDraftRecurring({
         name: '',
         kind: 'expense',
@@ -3070,6 +3068,19 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       return
     }
     await saveRecurring()
+    setIsCreating(true)
+    setSelectedRecurringId(null)
+    setCreateError(null)
+    setDraftRecurring({
+      name: '',
+      kind: 'expense',
+      category_id: '',
+      amount: '',
+      recurrence_type: 'monthly',
+      anchor_date: '',
+      day_of_month: '',
+      note: '',
+    })
   }
 
   return (
@@ -3131,7 +3142,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               const badgeText = recurrenceType === 'biweekly' ? 'Bi-weekly' : recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'
               const isSelected = item.id === selectedRecurringId && isDrawerOpen
               return (
-                <button key={item.id} type="button" className={`recurringFeedDataRow ${isSelected ? 'selected' : ''}`} onClick={() => { setSelectedRecurringId(item.id); setIsDrawerOpen(true) }}>
+                <button key={item.id} type="button" className={`recurringFeedDataRow ${isSelected ? 'selected' : ''}`} onClick={() => { setSelectedRecurringId(item.id); setIsCreating(false) }}>
                   <div className="recurringNameCol">
                     <div className="recurringItemEmoji">{category?.emoji ?? (item.kind === 'income' ? '💰' : '📌')}</div>
                     <div>
@@ -3162,7 +3173,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                             event.stopPropagation()
                             setSelectedRecurringId(item.id)
                             setIsCreating(false)
-                            setIsDrawerOpen(true)
                             setActiveMenuId(null)
                           }}
                         >
@@ -3189,8 +3199,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
           <div className="muted recurringFooterText">Showing 1 to {recurringRows.length} of {recurringRows.length} items</div>
         </div>
 
-        {(isDrawerOpen && (selectedRecurring || isCreating)) ? (
-          <aside className="recurringDrawerCard recurringDesignerDrawer">
+        <aside className="recurringDrawerCard recurringDesignerDrawer">
             <div className="row between" style={{ alignItems: 'flex-start', gap: 10 }}>
               <div>
                 <h3 style={{ marginBottom: 4 }}>Add Recurring Item</h3>
@@ -3232,15 +3241,13 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
             </div>
             {createError ? <div className="recurringCreateError">{createError}</div> : null}
             <div className="row between recurringDrawerActions">
-              {isCreating ? <button className="btn" onClick={() => { setIsCreating(false); setIsDrawerOpen(false); }}>Cancel</button> : <button className="btn ghost" onClick={() => selectedRecurring ? setPendingDeleteId(selectedRecurring.id) : null}><Trash2 size={16} /> Delete</button>}
+              {isCreating ? <button className="btn" onClick={() => {
+                setCreateError(null)
+                setDraftRecurring({ name: '', kind: 'expense', category_id: '', amount: '', recurrence_type: 'monthly', anchor_date: '', day_of_month: '', note: '' })
+              }}>Cancel</button> : <button className="btn ghost" onClick={() => selectedRecurring ? setPendingDeleteId(selectedRecurring.id) : null}><Trash2 size={16} /> Delete</button>}
               <button className="btn primary" onClick={() => void handleSaveDrawer()} disabled={!isCreating && !recurringDirty}>Save Item</button>
             </div>
           </aside>
-        ) : (
-          <div className="recurringDrawerPlaceholder">
-            <div className="muted">Select an item from the feed to open the side drawer.</div>
-          </div>
-        )}
       </div>
 
       {!isPhone ? null : (
