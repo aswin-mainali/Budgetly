@@ -6825,9 +6825,8 @@ body.light .categoriesListHeader,
 .goalsGalleryScrollArea{
   flex:1 1 auto;
   min-height:0;
-  overflow-y:auto;
-  overflow-x:hidden;
-  scrollbar-gutter:stable;
+  overflow:visible;
+  scrollbar-gutter:auto;
   scrollbar-width:none;
   padding-right:4px;
   padding-bottom:8px;
@@ -6960,8 +6959,10 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
     -webkit-overflow-scrolling:touch;
   }
   .toolsPageBody .goalsPage.goalsGalleryPage .goalsGalleryScrollArea{
+    overflow-x:hidden !important;
     overflow-y:auto !important;
     -webkit-overflow-scrolling:touch;
+    scrollbar-gutter:stable;
     scrollbar-width:thin;
   }
   .toolsPageBody .goalsPage.goalsGalleryPage .goalsGalleryScrollArea::-webkit-scrollbar{width:8px;height:8px}
