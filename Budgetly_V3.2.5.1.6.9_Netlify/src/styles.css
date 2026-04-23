@@ -6951,7 +6951,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   margin-bottom:10px;
 }
 
-@media (max-width: 1200px){
+@media (max-width: 1400px){
   .toolsPageBody .goalsPage.goalsGalleryPage{
     overflow-y:auto !important;
     overflow-x:hidden !important;
