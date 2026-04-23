@@ -677,7 +677,12 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     card(x, yTop, w, 134, 14, bg, br)
     fillRoundedRect(ctx, x + 14, yTop + 20, 44, 44, 22, accent)
     text('•', x + 36, yTop + 47, { size: 40/2, weight: '700', color: '#ffffff', align: 'center' })
-    text(title, x + 72, yTop + 42, { size: 17, color: '#33476b' })
+    if (title === 'Net Savings / Ending Balance') {
+      text('Net Savings /', x + 72, yTop + 35, { size: 14, color: '#33476b' })
+      text('Ending Balance', x + 72, yTop + 52, { size: 14, color: '#33476b' })
+    } else {
+      text(title, x + 72, yTop + 42, { size: 17, color: '#33476b' })
+    }
     text(value, x + 72, yTop + 82, { size: 44/2, weight: '700', color: accent })
     if (cmp) text(`↗ ${cmp}`, x + 72, yTop + 112, { size: 13, weight: '700', color: accent })
   }
