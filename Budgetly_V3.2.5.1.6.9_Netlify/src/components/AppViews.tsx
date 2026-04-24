@@ -3,7 +3,7 @@ import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRol
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
-import { supabase } from '../lib/supabase'
+import { supabase, SUPABASE_CONFIG_ERROR } from '../lib/supabase'
 
 
 type ReportCanvasOptions = {
@@ -4090,6 +4090,21 @@ export function SettingsView({ budget, theme, email, onThemeToggle, onSignOut, a
                   </button>
                 </div>
               </div>
+
+              {SUPABASE_CONFIG_ERROR ? (
+                <div className="settingsFieldCard settingsFieldCardWide">
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Cloud sync setup required</div>
+                    <small>{SUPABASE_CONFIG_ERROR}</small>
+                    <small style={{ display: 'block', marginTop: 6 }}>
+                      Fix: set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> in Netlify Environment Variables for deploy previews and production, then redeploy.
+                    </small>
+                    <small style={{ display: 'block', marginTop: 6 }}>
+                      Missing cloud connection also prevents loading Super Admin features.
+                    </small>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}

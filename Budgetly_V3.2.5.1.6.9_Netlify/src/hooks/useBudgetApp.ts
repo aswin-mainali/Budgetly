@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, SUPABASE_CONFIG_ERROR } from '../lib/supabase'
 import { download, fmtMoney, monthKey, monthLabel, safeCsv } from '../lib/utils'
 import { Category, Transaction, TxType, SyncState, LocalSettings, RecurringItem, RecurrenceType, RecurringKind, Goal } from '../types'
 
@@ -26,6 +26,14 @@ const LOCAL_KEY = 'raswibudgeting:cloud:v1'
 const notify = (message: string) => {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message } }))
+}
+
+const explainSyncError = (error: unknown, fallback: string) => {
+  if (SUPABASE_CONFIG_ERROR) {
+    return `${SUPABASE_CONFIG_ERROR} Add these vars to Netlify (Site configuration → Environment variables) for this deploy context, then redeploy.`
+  }
+  if (error instanceof Error && error.message.trim()) return error.message
+  return fallback
 }
 
 const defaultSeed = (userId: string): DataState => ({
@@ -589,7 +597,7 @@ export function useBudgetApp(userId: string | null) {
       return true
     } catch (error) {
       console.error('Category sync failed:', error)
-      const message = error instanceof Error ? error.message : 'Failed to save categories.'
+      const message = explainSyncError(error, 'Failed to save categories.')
       alert(`Category sync failed: ${message}`)
       setSync('error')
       return false
@@ -687,7 +695,7 @@ export function useBudgetApp(userId: string | null) {
       notify('Transactions updated')
     } catch (error) {
       console.error('Transaction sync failed:', error)
-      const message = error instanceof Error ? error.message : 'Failed to save transactions.'
+      const message = explainSyncError(error, 'Failed to save transactions.')
       alert(`Transaction sync failed: ${message}`)
       setSync('error')
     }
@@ -902,7 +910,7 @@ export function useBudgetApp(userId: string | null) {
       return true
     } catch (error) {
       console.error('Goals sync failed:', error)
-      const message = error instanceof Error ? error.message : 'Failed to save goals.'
+      const message = explainSyncError(error, 'Failed to save goals.')
       alert(`Goals sync failed: ${message}`)
       setSync('error')
       return false
@@ -1016,7 +1024,7 @@ export function useBudgetApp(userId: string | null) {
       return true
     } catch (error) {
       console.error('Recurring sync failed:', error)
-      const message = error instanceof Error ? error.message : 'Failed to save recurring items.'
+      const message = explainSyncError(error, 'Failed to save recurring items.')
       alert(`Recurring sync failed: ${message}`)
       setSync('error')
       return false
