@@ -87,6 +87,21 @@ export default function Sidebar(props: {
         </div>
         </div>
       ) : null}
+      {collapsed ? (
+        <div className="sidebarCollapsedTop">
+          <div className="sidebarUserAvatar" aria-hidden="true">
+            {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <User size={18} />}
+          </div>
+          <button
+            className="sidebarUserMenuBtn"
+            type="button"
+            aria-label="Expand sidebar"
+            onClick={() => setCollapsed(false)}
+          >
+            <Menu size={16} />
+          </button>
+        </div>
+      ) : null}
 
       <div className="sidebarClock" aria-label="Current date and time">
         <div className="clockMain">
