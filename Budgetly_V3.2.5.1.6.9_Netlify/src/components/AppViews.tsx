@@ -917,7 +917,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, User } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -3840,6 +3840,12 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
 
+  const [profileName, setProfileName] = useState('')
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
+  const [profileBusy, setProfileBusy] = useState(false)
+  const [profileError, setProfileError] = useState('')
+  const [profileSuccess, setProfileSuccess] = useState('')
+
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
   const [showPasswordFields, setShowPasswordFields] = useState({ current: false, next: false, confirm: false })
   const [passwordBusy, setPasswordBusy] = useState(false)
@@ -3920,6 +3926,79 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
       setPasswordBusy(false)
     }
   }
+
+  const handleProfilePhotoPick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please choose an image file (PNG, JPG, WEBP, etc.).')
+      setProfileSuccess('')
+      event.currentTarget.value = ''
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const nextValue = typeof reader.result === 'string' ? reader.result : null
+      if (!nextValue) {
+        setProfileError('Failed to read image.')
+        return
+      }
+      setProfileAvatarUrl(nextValue)
+      setProfileError('')
+      setProfileSuccess('')
+    }
+    reader.onerror = () => setProfileError('Failed to load selected image.')
+    reader.readAsDataURL(file)
+    event.currentTarget.value = ''
+  }
+
+  const removeProfilePhoto = () => {
+    setProfileAvatarUrl(null)
+    setProfileError('')
+    setProfileSuccess('')
+  }
+
+  const saveAccountProfile = async () => {
+    setProfileError('')
+    setProfileSuccess('')
+    const cleanName = profileName.trim()
+    if (!cleanName) {
+      setProfileError('Please enter your name before saving.')
+      return
+    }
+    setProfileBusy(true)
+    try {
+      const result = await supabase.auth.updateUser({
+        data: {
+          full_name: cleanName,
+          avatar_url: profileAvatarUrl ?? '',
+        },
+      })
+      if (result.error) throw result.error
+      setProfileSuccess('Profile updated.')
+    } catch (error: any) {
+      setProfileError(error?.message || 'Failed to update profile.')
+    } finally {
+      setProfileBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    let alive = true
+    const loadAccountProfile = async () => {
+      const { data: userData, error } = await supabase.auth.getUser()
+      if (!alive || error) return
+      const metadata = userData.user?.user_metadata as Record<string, unknown> | undefined
+      const metaName = typeof metadata?.full_name === 'string' ? metadata.full_name : ''
+      const metaAvatar = typeof metadata?.avatar_url === 'string' ? metadata.avatar_url : ''
+      setProfileName(metaName)
+      setProfileAvatarUrl(metaAvatar || null)
+    }
+    void loadAccountProfile()
+    return () => {
+      alive = false
+    }
+  }, [])
 
   useEffect(() => {
     if ((settingsSection === 'admin' || settingsSection === 'audit' || settingsSection === 'bugs') && !isSuperAdmin) setSettingsSection('general')
@@ -4048,7 +4127,55 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
               </div>
             </div>
 
-            <div className="card settingsPanelCard settingsPasswordCard">
+            <div className="settingsAccountColumns">
+              <div className="card settingsPanelCard settingsProfileCard">
+                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div className="h1">Profile</div>
+                    <small>Update your name and profile photo.</small>
+                  </div>
+                  <span className="badge">Personal details</span>
+                </div>
+
+                <div className="settingsProfileUploadRow">
+                  <div className="settingsProfileAvatar" aria-hidden="true">
+                    {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <User size={28} />}
+                  </div>
+                  <div className="settingsProfileActions">
+                    <label className="btn primary">
+                      <Upload size={16} /> Upload photo
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleProfilePhotoPick} />
+                    </label>
+                    <button className="btn" type="button" onClick={removeProfilePhoto} disabled={!profileAvatarUrl}>Remove</button>
+                    <small>This photo appears in your profile context. PNG/JPG/WEBP supported.</small>
+                  </div>
+                </div>
+
+                <label className="settingsProfileField">
+                  <span>Name</span>
+                  <input
+                    className="input"
+                    value={profileName}
+                    onChange={(event) => {
+                      setProfileName(event.target.value)
+                      if (profileError) setProfileError('')
+                      if (profileSuccess) setProfileSuccess('')
+                    }}
+                    placeholder="Enter your name"
+                  />
+                </label>
+
+                {profileError ? <small style={{ color: '#fca5a5' }}>{profileError}</small> : null}
+                {profileSuccess ? <small style={{ color: '#34d399' }}>{profileSuccess}</small> : null}
+
+                <div className="row" style={{ justifyContent: 'flex-end' }}>
+                  <button className="btn primary" type="button" onClick={() => void saveAccountProfile()} disabled={profileBusy}>
+                    {profileBusy ? 'Saving...' : 'Save profile'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="card settingsPanelCard settingsPasswordCard">
               <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
                   <div className="h1">Change password</div>
@@ -4132,6 +4259,7 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                 <button className="btn" onClick={() => void handlePasswordChange()} disabled={passwordBusy}>
                   <Lock size={16} /> {passwordBusy ? 'Updating...' : 'Update password'}
                 </button>
+              </div>
               </div>
             </div>
           </div>
