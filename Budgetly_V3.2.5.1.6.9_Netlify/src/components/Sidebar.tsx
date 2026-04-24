@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
@@ -22,11 +22,10 @@ export default function Sidebar(props: {
   toolsSection: 'goals' | 'reports' | 'converter'
   setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
   sync: SyncState
-  onSignOut: () => void
   email?: string | null
   features: FeatureAccess
 }) {
-  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
 
@@ -142,9 +141,6 @@ export default function Sidebar(props: {
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
-        <button className="btn danger" onClick={onSignOut}>
-          <LogOut size={18} /> <span className="navLabel">Sign out</span>
-        </button>
       </div>
     </aside>
   )

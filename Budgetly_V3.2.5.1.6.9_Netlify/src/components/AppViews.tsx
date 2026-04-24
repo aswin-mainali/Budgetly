@@ -917,7 +917,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, LogOut } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1023,6 +1023,7 @@ type SharedProps = {
   theme: 'dark' | 'light'
   email: string | null
   onThemeToggle: () => void
+  onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
 }
@@ -3835,7 +3836,7 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
-export function SettingsView({ budget, theme, email, onThemeToggle, admin }: SharedProps) {
+export function SettingsView({ budget, theme, email, onThemeToggle, onSignOut, admin }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
@@ -3996,6 +3997,13 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                     {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
                   </button>
                 </div>
+                {onSignOut ? (
+                  <div className="row" style={{ marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button className="btn danger" onClick={onSignOut}>
+                      <LogOut size={16} /> Sign out
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
