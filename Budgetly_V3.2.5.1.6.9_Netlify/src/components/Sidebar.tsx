@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, User } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, LogOut, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, User } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
@@ -73,12 +73,7 @@ export default function Sidebar(props: {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
-        <div className="brandTitle">
-          <strong>Budgetly</strong>
-        </div>
-        <button className="btn" onClick={() => setCollapsed(!collapsed)} title="Collapse sidebar">
-          <Menu size={18} />
-        </button>
+        <img className="brandLogoImage" src="/pwa-192.png" alt="Budgetly" />
       </div>
 
       {!collapsed ? (
@@ -179,9 +174,6 @@ export default function Sidebar(props: {
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
-        <button className="btn danger" onClick={onSignOut}>
-          <LogOut size={18} /> <span className="navLabel">Sign out</span>
-        </button>
       </div>
     </aside>
   )
