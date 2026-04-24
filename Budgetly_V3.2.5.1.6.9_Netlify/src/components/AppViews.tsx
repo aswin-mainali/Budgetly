@@ -2903,7 +2903,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const [frequencyFilter, setFrequencyFilter] = useState<'all' | RecurrenceType>('all')
   const [sortBy, setSortBy] = useState<'next_due' | 'amount' | 'name'>('next_due')
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
-  const [isCreating, setIsCreating] = useState(false)
+  const [isCreating, setIsCreating] = useState(true)
   const [createError, setCreateError] = useState<string | null>(null)
   const [draftRecurring, setDraftRecurring] = useState({
     name: '',
