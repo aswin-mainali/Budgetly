@@ -85,10 +85,11 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 .brandTitle span{font-size:12px;color:var(--muted)}
 .sidebar.collapsed .brandTitle{display:none}
 
+.sidebarUserCardWrap{display:grid;gap:8px}
 .sidebarUserCard{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap:8px;
   padding:10px;
   border:1px solid var(--border);
   border-radius:14px;
@@ -122,11 +123,40 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   text-overflow:ellipsis;
 }
 .sidebarUserMeta span{
-  font-size:13px;
+  font-size:12px;
   color:var(--muted);
   white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  overflow:visible;
+}
+.sidebarUserMenuBtn{
+  border:none;
+  background:transparent;
+  color:inherit;
+  display:grid;
+  place-items:center;
+  width:22px;
+  height:22px;
+  border-radius:8px;
+  cursor:pointer;
+}
+.sidebarUserMenuBtn.open{
+  background:rgba(255,255,255,.08);
+}
+.sidebarUserMenuBtn.open svg{
+  transform:rotate(180deg);
+}
+.sidebarUserMenuBtn svg{
+  transition:transform .2s ease;
+}
+.sidebarUserMenu{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:8px;
+  background:rgba(6,16,34,.9);
+}
+.sidebarUserMenu .btn{
+  width:100%;
+  justify-content:flex-start;
 }
 
 .sidebarClock{

@@ -31,6 +31,7 @@ export default function Sidebar(props: {
   const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, profileName, profileAvatarUrl, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -40,6 +41,10 @@ export default function Sidebar(props: {
   useEffect(() => {
     setToolsExpanded(view === 'tools')
   }, [view])
+
+  useEffect(() => {
+    if (collapsed) setUserMenuOpen(false)
+  }, [collapsed])
 
   const clock = useMemo(() => {
     const hour = now.getHours()
@@ -70,7 +75,6 @@ export default function Sidebar(props: {
       <div className="brand">
         <div className="brandTitle">
           <strong>Budgetly</strong>
-          <span>{email ?? 'Signed in'}</span>
         </div>
         <button className="btn" onClick={() => setCollapsed(!collapsed)} title="Collapse sidebar">
           <Menu size={18} />
@@ -78,6 +82,7 @@ export default function Sidebar(props: {
       </div>
 
       {!collapsed ? (
+        <div className="sidebarUserCardWrap">
         <div className="sidebarUserCard">
           <div className="sidebarUserAvatar" aria-hidden="true">
             {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <User size={22} />}
@@ -86,7 +91,23 @@ export default function Sidebar(props: {
             <strong>{userDisplayName}</strong>
             <span>{email ?? 'Signed in user'}</span>
           </div>
-          <ChevronDown size={16} />
+          <button
+            className={`sidebarUserMenuBtn ${userMenuOpen ? 'open' : ''}`}
+            type="button"
+            aria-label="Open user menu"
+            aria-expanded={userMenuOpen}
+            onClick={() => setUserMenuOpen((current) => !current)}
+          >
+            <ChevronDown size={16} />
+          </button>
+        </div>
+        {userMenuOpen ? (
+          <div className="sidebarUserMenu">
+            <button className="btn danger" type="button" onClick={onSignOut}>
+              <LogOut size={16} /> <span>Sign out</span>
+            </button>
+          </div>
+        ) : null}
         </div>
       ) : null}
 
