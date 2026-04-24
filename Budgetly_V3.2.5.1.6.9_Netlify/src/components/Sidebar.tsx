@@ -72,10 +72,6 @@ export default function Sidebar(props: {
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="brand">
-        <img className="brandLogoImage" src="/pwa-192.png" alt="Budgetly" />
-      </div>
-
       {!collapsed ? (
         <div className="sidebarUserCardWrap">
         <div className="sidebarUserCard">
