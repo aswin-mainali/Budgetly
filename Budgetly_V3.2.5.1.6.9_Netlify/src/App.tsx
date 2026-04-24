@@ -306,7 +306,6 @@ export default function App() {
           toolsSection={toolsSection}
           setToolsSection={setToolsSection}
           sync={budget.sync}
-          onSignOut={signOut}
           email={email}
           profileName={profileName}
           profileAvatarUrl={profileAvatarUrl}
@@ -336,7 +335,7 @@ export default function App() {
           </div>
         ) : null}
         {view === 'support' && admin.visibleFeatures.support ? <HelpSupportView email={email} userId={userId} admin={admin} /> : null}
-        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} /> : null}
+        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} onSignOut={signOut} /> : null}
 
         {isMobile ? (
           <nav className="mobileTabBar" aria-label="Mobile navigation">

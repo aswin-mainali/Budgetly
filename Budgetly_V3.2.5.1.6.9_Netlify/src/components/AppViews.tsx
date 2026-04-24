@@ -1023,6 +1023,7 @@ type SharedProps = {
   theme: 'dark' | 'light'
   email: string | null
   onThemeToggle: () => void
+  onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
 }
@@ -3835,7 +3836,7 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
-export function SettingsView({ budget, theme, email, onThemeToggle, admin }: SharedProps) {
+export function SettingsView({ budget, theme, email, onThemeToggle, onSignOut, admin }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
@@ -4074,6 +4075,18 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                   </div>
                   <button className="btn primary" onClick={onThemeToggle} title="Toggle dark/light mode">
                     {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Account session</div>
+                    <small>Sign out from your current Budgetly session on this device.</small>
+                  </div>
+                  <button className="btn danger" type="button" onClick={onSignOut} disabled={!onSignOut}>
+                    Sign out
                   </button>
                 </div>
               </div>

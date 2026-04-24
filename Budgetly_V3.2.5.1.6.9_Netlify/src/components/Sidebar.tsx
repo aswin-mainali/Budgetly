@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, User } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, User } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
@@ -22,16 +22,14 @@ export default function Sidebar(props: {
   toolsSection: 'goals' | 'reports' | 'converter'
   setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
   sync: SyncState
-  onSignOut: () => void
   email?: string | null
   profileName?: string
   profileAvatarUrl?: string | null
   features: FeatureAccess
 }) {
-  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, profileName, profileAvatarUrl, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, profileName, profileAvatarUrl, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -41,10 +39,6 @@ export default function Sidebar(props: {
   useEffect(() => {
     setToolsExpanded(view === 'tools')
   }, [view])
-
-  useEffect(() => {
-    if (collapsed) setUserMenuOpen(false)
-  }, [collapsed])
 
   const clock = useMemo(() => {
     const hour = now.getHours()
@@ -83,22 +77,14 @@ export default function Sidebar(props: {
             <span>{email ?? 'Signed in user'}</span>
           </div>
           <button
-            className={`sidebarUserMenuBtn ${userMenuOpen ? 'open' : ''}`}
+            className="sidebarUserMenuBtn"
             type="button"
-            aria-label="Open user menu"
-            aria-expanded={userMenuOpen}
-            onClick={() => setUserMenuOpen((current) => !current)}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            onClick={() => setCollapsed(!collapsed)}
           >
-            <ChevronDown size={16} />
+            <Menu size={16} />
           </button>
         </div>
-        {userMenuOpen ? (
-          <div className="sidebarUserMenu">
-            <button className="btn danger" type="button" onClick={onSignOut}>
-              <LogOut size={16} /> <span>Sign out</span>
-            </button>
-          </div>
-        ) : null}
         </div>
       ) : null}
 
