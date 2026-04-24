@@ -24,6 +24,8 @@ export default function App() {
   const [sessionChecked, setSessionChecked] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState('')
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey>('dashboard')
@@ -87,11 +89,20 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const applyUserProfile = (user: any) => {
+      const metadata = user?.user_metadata as Record<string, unknown> | undefined
+      const fullName = typeof metadata?.full_name === 'string' ? metadata.full_name : ''
+      const avatar = typeof metadata?.avatar_url === 'string' ? metadata.avatar_url : ''
+      setProfileName(fullName)
+      setProfileAvatarUrl(avatar || null)
+    }
+
     const boot = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      applyUserProfile(user)
       setSessionChecked(true)
     }
 
@@ -101,9 +112,26 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      applyUserProfile(user)
     })
 
     return () => subscription.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    const refreshProfile = async () => {
+      const { data } = await supabase.auth.getUser()
+      const metadata = data.user?.user_metadata as Record<string, unknown> | undefined
+      const fullName = typeof metadata?.full_name === 'string' ? metadata.full_name : ''
+      const avatar = typeof metadata?.avatar_url === 'string' ? metadata.avatar_url : ''
+      setProfileName(fullName)
+      setProfileAvatarUrl(avatar || null)
+    }
+    const handler = () => {
+      void refreshProfile()
+    }
+    window.addEventListener('budgetly:profile-updated', handler)
+    return () => window.removeEventListener('budgetly:profile-updated', handler)
   }, [])
 
   const signOut = async () => {
@@ -280,6 +308,8 @@ export default function App() {
           sync={budget.sync}
           onSignOut={signOut}
           email={email}
+          profileName={profileName}
+          profileAvatarUrl={profileAvatarUrl}
           features={admin.visibleFeatures}
         />
       </div>

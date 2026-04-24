@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, User } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
@@ -24,9 +24,11 @@ export default function Sidebar(props: {
   sync: SyncState
   onSignOut: () => void
   email?: string | null
+  profileName?: string
+  profileAvatarUrl?: string | null
   features: FeatureAccess
 }) {
-  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, profileName, profileAvatarUrl, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
 
@@ -61,6 +63,7 @@ export default function Sidebar(props: {
     sync === 'offline' ? 'Offline' : 'Sync error'
 
   const visibleItems = NAV_ITEMS.filter((item) => item.visible(features))
+  const userDisplayName = profileName?.trim() || (email ? email.split('@')[0] : 'Account user')
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -73,6 +76,19 @@ export default function Sidebar(props: {
           <Menu size={18} />
         </button>
       </div>
+
+      {!collapsed ? (
+        <div className="sidebarUserCard">
+          <div className="sidebarUserAvatar" aria-hidden="true">
+            {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <User size={22} />}
+          </div>
+          <div className="sidebarUserMeta">
+            <strong>{userDisplayName}</strong>
+            <span>{email ?? 'Signed in user'}</span>
+          </div>
+          <ChevronDown size={16} />
+        </div>
+      ) : null}
 
       <div className="sidebarClock" aria-label="Current date and time">
         <div className="clockMain">

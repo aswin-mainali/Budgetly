@@ -3976,6 +3976,7 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
       })
       if (result.error) throw result.error
       setProfileSuccess('Profile updated.')
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('budgetly:profile-updated'))
     } catch (error: any) {
       setProfileError(error?.message || 'Failed to update profile.')
     } finally {
