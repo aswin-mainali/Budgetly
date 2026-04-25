@@ -4155,38 +4155,48 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
                   </div>
                 </div>
 
-                <div className="settingsProfileTop">
-                  <div className="settingsProfileAvatar" aria-label="Profile image preview">
-                    {profileImage ? <img src={profileImage} alt="Profile preview" /> : <span>{profileInitials}</span>}
-                  </div>
-                  <div className="settingsProfileActions">
-                    <button className="btn" type="button" onClick={() => profileImageInputRef.current?.click()}>
-                      <Upload size={16} /> Upload photo
-                    </button>
-                    <button className="btn ghost" type="button" onClick={handleProfilePhotoRemove} disabled={!profileImage}>
-                      <Trash2 size={16} /> Remove
-                    </button>
-                    <small>This photo appears in account areas. JPG, PNG up to 5MB.</small>
-                    <input ref={profileImageInputRef} type="file" accept="image/png,image/jpeg" style={{ display: 'none' }} onChange={handleProfilePhotoUpload} />
+                <div className="settingsProfileSection">
+                  <div className="settingsProfileSectionTitle">Profile photo</div>
+                  <div className="settingsProfileTop">
+                    <div className="settingsProfileAvatar" aria-label="Profile image preview">
+                      {profileImage ? <img src={profileImage} alt="Profile preview" /> : <span>{profileInitials}</span>}
+                    </div>
+                    <div className="settingsProfileActions">
+                      <button className="btn" type="button" onClick={() => profileImageInputRef.current?.click()}>
+                        <Upload size={16} /> Upload photo
+                      </button>
+                      <button className="btn ghost" type="button" onClick={handleProfilePhotoRemove} disabled={!profileImage}>
+                        <Trash2 size={16} /> Remove
+                      </button>
+                      <input ref={profileImageInputRef} type="file" accept="image/png,image/jpeg" style={{ display: 'none' }} onChange={handleProfilePhotoUpload} />
+                    </div>
                   </div>
                 </div>
 
-                <div className="settingsProfileGrid">
-                  <label className="settingsProfileField">
-                    <span>First name</span>
-                    <input className="input" value={profileForm.firstName} onChange={(event) => handleProfileField('firstName', event.target.value)} placeholder="First name" />
+                <div className="settingsProfileSection settingsProfileSectionDivider">
+                  <div className="settingsProfileSectionTitle">Personal information</div>
+                  <div className="settingsProfileGrid">
+                    <label className="settingsProfileField">
+                      <span>First name</span>
+                      <input className="input" value={profileForm.firstName} onChange={(event) => handleProfileField('firstName', event.target.value)} placeholder="First name" />
+                    </label>
+                    <label className="settingsProfileField">
+                      <span>Last name</span>
+                      <input className="input" value={profileForm.lastName} onChange={(event) => handleProfileField('lastName', event.target.value)} placeholder="Last name" />
+                    </label>
+                  </div>
+                  <label className="settingsProfileField settingsProfileFieldWide">
+                    <span>Email</span>
+                    <input className="input" value={email || ''} disabled />
                   </label>
-                  <label className="settingsProfileField">
-                    <span>Last name</span>
-                    <input className="input" value={profileForm.lastName} onChange={(event) => handleProfileField('lastName', event.target.value)} placeholder="Last name" />
-                  </label>
+                  <small>Email cannot be changed.</small>
+                  <div className="settingsProfileInfoNote">This name will appear across your Budgetly workspace.</div>
                 </div>
 
                 {profileError ? <div className="passwordFeedback error">{profileError}</div> : null}
                 {profileSuccess ? <div className="passwordFeedback success">{profileSuccess}</div> : null}
 
-                <div className="row between wrap" style={{ gap: 12, marginTop: 8 }}>
-                  <div className="muted">Profile changes are stored locally for now.</div>
+                <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
                   <button className="btn primary" type="button" onClick={handleProfileSave}>
                     <UserCircle2 size={16} /> Save profile
                   </button>
