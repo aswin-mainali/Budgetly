@@ -2228,9 +2228,29 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsFieldCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38);display:grid;gap:8px;min-width:0}
 .settingsFieldCardWide{grid-column:1 / -1}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
+.settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.settingsProfileCard{display:grid;gap:14px}
+.settingsProfileTop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center}
+.settingsProfileAvatar{
+  width:92px;
+  height:92px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.24);
+  background:linear-gradient(140deg, rgba(59,130,246,.28), rgba(15,23,42,.84));
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  font-size:28px;
+  font-weight:800;
+}
+.settingsProfileAvatar img{width:100%;height:100%;object-fit:cover}
+.settingsProfileActions{display:grid;gap:8px;justify-items:start}
+.settingsProfileGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.settingsProfileField{display:grid;gap:8px}
+.settingsProfileField span{font-size:13px;font-weight:600;opacity:.9}
 .settingsAdminSection{display:grid;gap:16px}
 .wrap{flex-wrap:wrap}
-@media (max-width: 960px){.settingsShell{grid-template-columns:1fr}.settingsSidebarCard{position:static}.settingsGridTwo{grid-template-columns:1fr}}
+@media (max-width: 960px){.settingsShell{grid-template-columns:1fr}.settingsSidebarCard{position:static}.settingsGridTwo{grid-template-columns:1fr}.settingsAccountGrid{grid-template-columns:1fr}.settingsProfileGrid{grid-template-columns:1fr}}
 
 
 .settingsShellTopNav { gap: 14px; }
@@ -6310,6 +6330,14 @@ body.light .settingsFieldCard small,
 body.light .settingsAccountCard small,
 body.light .settingsPanelCard small{
   color: rgba(71,85,105,.88);
+}
+body.light .settingsProfileAvatar{
+  background: linear-gradient(160deg, rgba(191,219,254,.92), rgba(226,232,240,.95));
+  border-color: rgba(148,163,184,.24);
+  color:#1e3a8a;
+}
+body.light .settingsProfileField span{
+  color:#0f172a;
 }
 body.light .passwordSecurityStrip{
   background: linear-gradient(180deg, rgba(248,250,252,.98), rgba(239,246,255,.94));
