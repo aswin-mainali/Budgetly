@@ -2290,7 +2290,8 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsFieldCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38);display:grid;gap:8px;min-width:0}
 .settingsFieldCardWide{grid-column:1 / -1}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
-.settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch}
+.settingsAccountGrid > .card{height:100%}
 .settingsProfileCard{display:grid;gap:10px}
 .settingsProfileSection{display:grid;gap:10px}
 .settingsProfileSectionTitle{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
