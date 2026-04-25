@@ -57,14 +57,14 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     if (!userId) return null
 
     let currentProfile = await getSingleOrNull(
-      supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
+      supabase.from('profiles').select('id,email,first_name,last_name,avatar_url,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
     ) as Profile | null
 
     if (!currentProfile) {
       const insertResult = await supabase.from('profiles').insert({ id: userId, email: email ?? '', role: 'user', is_active: true })
       if (insertResult.error && insertResult.error.code !== '23505') throw new Error(insertResult.error.message || 'Failed to create profile.')
       currentProfile = await getSingleOrNull(
-        supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
+        supabase.from('profiles').select('id,email,first_name,last_name,avatar_url,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
       ) as Profile | null
     }
 
@@ -96,7 +96,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
     setError(null)
     const [profilesResult, accessResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
-      supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id,email,first_name,last_name,avatar_url,role,is_active,created_at,updated_at').order('created_at', { ascending: false }),
       supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
       supabase.from('bug_reports').select('id,user_id,user_email,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),

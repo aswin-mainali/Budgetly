@@ -3,7 +3,8 @@ import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRol
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
-import { supabase } from '../lib/supabase'
+import { supabase, SUPABASE_CONFIG_ERROR } from '../lib/supabase'
+import { deleteProfileAvatar, getAvatarPublicUrl, getUserProfile, saveUserProfile, uploadProfileAvatar } from '../lib/profile'
 
 
 type ReportCanvasOptions = {
@@ -1022,7 +1023,9 @@ type SharedProps = {
   budget: BudgetAppState
   theme: 'dark' | 'light'
   email: string | null
+  userId?: string | null
   onThemeToggle: () => void
+  onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
 }
@@ -3835,10 +3838,26 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
-export function SettingsView({ budget, theme, email, onThemeToggle, admin }: SharedProps) {
+export function SettingsView({ budget, theme, email, userId, onThemeToggle, onSignOut, admin }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
+
+  const [profileFirstName, setProfileFirstName] = useState('')
+  const [profileLastName, setProfileLastName] = useState('')
+  const [profileAvatarPath, setProfileAvatarPath] = useState<string | null>(null)
+  const [profileAvatarPreviewUrl, setProfileAvatarPreviewUrl] = useState('')
+  const [profileAvatarFile, setProfileAvatarFile] = useState<File | null>(null)
+  const [removeAvatarRequested, setRemoveAvatarRequested] = useState(false)
+  const [profileBusy, setProfileBusy] = useState(false)
+  const [profileError, setProfileError] = useState('')
+  const [profileSuccess, setProfileSuccess] = useState('')
+  const profileInitials = `${profileFirstName.trim()} ${profileLastName.trim()}`
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'U'
 
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
   const [showPasswordFields, setShowPasswordFields] = useState({ current: false, next: false, confirm: false })
@@ -3921,6 +3940,107 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
     }
   }
 
+  const handleProfilePhotoPick = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please choose an image file (PNG, JPG, WEBP, etc.).')
+      setProfileSuccess('')
+      event.currentTarget.value = ''
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileError('Image must be 5MB or smaller.')
+      setProfileSuccess('')
+      event.currentTarget.value = ''
+      return
+    }
+    if (profileAvatarPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(profileAvatarPreviewUrl)
+    setProfileAvatarFile(file)
+    setProfileAvatarPreviewUrl(URL.createObjectURL(file))
+    setRemoveAvatarRequested(false)
+    setProfileError('')
+    setProfileSuccess('')
+    event.currentTarget.value = ''
+  }
+
+  const removeProfilePhoto = () => {
+    if (profileAvatarPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(profileAvatarPreviewUrl)
+    setProfileAvatarFile(null)
+    setProfileAvatarPreviewUrl('')
+    setRemoveAvatarRequested(true)
+    setProfileAvatarPath(null)
+    setProfileError('')
+    setProfileSuccess('')
+  }
+
+  const saveAccountProfile = async () => {
+    setProfileError('')
+    setProfileSuccess('')
+    const cleanFirst = profileFirstName.trim()
+    const cleanLast = profileLastName.trim()
+    if (!userId) {
+      setProfileError('No active user session found.')
+      return
+    }
+    if (!cleanFirst && !cleanLast) {
+      setProfileError('Please enter at least a first or last name before saving.')
+      return
+    }
+    setProfileBusy(true)
+    try {
+      let nextAvatarPath = profileAvatarPath
+      if (profileAvatarFile) {
+        nextAvatarPath = await uploadProfileAvatar(profileAvatarFile, userId)
+      } else if (removeAvatarRequested && profileAvatarPath) {
+        await deleteProfileAvatar(profileAvatarPath).catch(() => {})
+        nextAvatarPath = null
+      }
+
+      const savedProfile = await saveUserProfile({
+        userId,
+        email,
+        firstName: cleanFirst,
+        lastName: cleanLast,
+        avatarPath: nextAvatarPath,
+      })
+
+      setProfileFirstName(savedProfile.first_name || '')
+      setProfileLastName(savedProfile.last_name || '')
+      setProfileAvatarPath(savedProfile.avatar_url || null)
+      if (profileAvatarPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(profileAvatarPreviewUrl)
+      setProfileAvatarPreviewUrl(savedProfile.avatar_url ? getAvatarPublicUrl(savedProfile.avatar_url) : '')
+      setProfileAvatarFile(null)
+      setRemoveAvatarRequested(false)
+      setProfileSuccess('Profile updated.')
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('budgetly:profile-updated'))
+    } catch (error: any) {
+      setProfileError(error?.message || 'Failed to update profile.')
+    } finally {
+      setProfileBusy(false)
+    }
+  }
+
+  useEffect(() => {
+    let alive = true
+    const loadAccountProfile = async () => {
+      if (!alive || !userId) return
+      const profile = await getUserProfile(userId)
+      if (!alive || !profile) return
+      setProfileFirstName(profile.first_name || '')
+      setProfileLastName(profile.last_name || '')
+      setProfileAvatarPath(profile.avatar_url || null)
+      setProfileAvatarPreviewUrl(profile.avatar_url ? getAvatarPublicUrl(profile.avatar_url) : '')
+      setProfileAvatarFile(null)
+      setRemoveAvatarRequested(false)
+    }
+    void loadAccountProfile()
+    return () => {
+      alive = false
+      if (profileAvatarPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(profileAvatarPreviewUrl)
+    }
+  }, [userId])
+
   useEffect(() => {
     if ((settingsSection === 'admin' || settingsSection === 'audit' || settingsSection === 'bugs') && !isSuperAdmin) setSettingsSection('general')
   }, [settingsSection, isSuperAdmin])
@@ -3997,6 +4117,33 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                   </button>
                 </div>
               </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Account session</div>
+                    <small>Sign out from your current Budgetly session on this device.</small>
+                  </div>
+                  <button className="btn danger" type="button" onClick={onSignOut} disabled={!onSignOut}>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+
+              {SUPABASE_CONFIG_ERROR ? (
+                <div className="settingsFieldCard settingsFieldCardWide">
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Cloud sync setup required</div>
+                    <small>{SUPABASE_CONFIG_ERROR}</small>
+                    <small style={{ display: 'block', marginTop: 6 }}>
+                      Fix: set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> in Netlify Environment Variables for deploy previews and production, then redeploy.
+                    </small>
+                    <small style={{ display: 'block', marginTop: 6 }}>
+                      Missing cloud connection also prevents loading Super Admin features.
+                    </small>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -4048,7 +4195,70 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
               </div>
             </div>
 
-            <div className="card settingsPanelCard settingsPasswordCard">
+            <div className="settingsAccountColumns">
+              <div className="card settingsPanelCard settingsProfileCard">
+                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div className="h1">Profile</div>
+                    <small>Update your name and profile photo.</small>
+                  </div>
+                  <span className="badge">Personal details</span>
+                </div>
+
+                <div className="settingsProfileUploadRow">
+                  <div className="settingsProfileAvatar" aria-hidden="true">
+                    {profileAvatarPreviewUrl ? <img src={profileAvatarPreviewUrl} alt="" /> : <span>{profileInitials}</span>}
+                  </div>
+                  <div className="settingsProfileActions">
+                    <label className="btn primary">
+                      <Upload size={16} /> Upload photo
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleProfilePhotoPick} />
+                    </label>
+                    <button className="btn" type="button" onClick={removeProfilePhoto} disabled={!profileAvatarPreviewUrl && !profileAvatarPath}>Remove</button>
+                    <small>This photo appears in your profile context. PNG/JPG/WEBP up to 5MB.</small>
+                  </div>
+                </div>
+
+                <div className="settingsProfileNameGrid">
+                  <label className="settingsProfileField">
+                    <span>First name</span>
+                    <input
+                      className="input"
+                      value={profileFirstName}
+                      onChange={(event) => {
+                        setProfileFirstName(event.target.value)
+                        if (profileError) setProfileError('')
+                        if (profileSuccess) setProfileSuccess('')
+                      }}
+                      placeholder="Enter first name"
+                    />
+                  </label>
+                  <label className="settingsProfileField">
+                    <span>Last name</span>
+                    <input
+                      className="input"
+                      value={profileLastName}
+                      onChange={(event) => {
+                        setProfileLastName(event.target.value)
+                        if (profileError) setProfileError('')
+                        if (profileSuccess) setProfileSuccess('')
+                      }}
+                      placeholder="Enter last name"
+                    />
+                  </label>
+                </div>
+
+                {profileError ? <small style={{ color: '#fca5a5' }}>{profileError}</small> : null}
+                {profileSuccess ? <small style={{ color: '#34d399' }}>{profileSuccess}</small> : null}
+
+                <div className="row" style={{ justifyContent: 'flex-end' }}>
+                  <button className="btn primary" type="button" onClick={() => void saveAccountProfile()} disabled={profileBusy}>
+                    {profileBusy ? 'Saving...' : 'Save profile'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="card settingsPanelCard settingsPasswordCard">
               <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
                 <div>
                   <div className="h1">Change password</div>
@@ -4132,6 +4342,7 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                 <button className="btn" onClick={() => void handlePasswordChange()} disabled={passwordBusy}>
                   <Lock size={16} /> {passwordBusy ? 'Updating...' : 'Update password'}
                 </button>
+              </div>
               </div>
             </div>
           </div>

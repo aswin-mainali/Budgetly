@@ -69,6 +69,9 @@ export type UserRole = 'user' | 'admin' | 'super_admin'
 export type Profile = {
   id: string
   email: string
+  first_name?: string
+  last_name?: string
+  avatar_url?: string | null
   role: UserRole
   is_active: boolean
   created_at?: string
