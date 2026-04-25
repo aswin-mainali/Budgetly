@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase, SUPABASE_CONFIG_ERROR } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { FeatureAccess, FeatureKey, Profile, UserFeatureAccess, AdminAuditLog, BugReport, BugReportStatus } from '../types'
 
 const notify = (message: string) => {
@@ -21,10 +21,6 @@ export const DEFAULT_FEATURE_ACCESS: FeatureAccess = {
 }
 
 const FEATURE_KEYS = Object.keys(DEFAULT_FEATURE_ACCESS) as FeatureKey[]
-const FALLBACK_SUPER_ADMIN_EMAILS = new Set(
-  (import.meta.env.VITE_SUPER_ADMIN_EMAILS as string | undefined)?.split(',').map((item) => item.trim().toLowerCase()).filter(Boolean)
-    ?? ['mainali.aswin88@gmail.com'],
-)
 
 export type AdminManagedUser = Profile & {
   feature_access: UserFeatureAccess | null
@@ -53,8 +49,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
   const [busyAction, setBusyAction] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const hasFallbackSuperAdminEmail = !!email && FALLBACK_SUPER_ADMIN_EMAILS.has(email.trim().toLowerCase())
-  const isSuperAdmin = profile?.role === 'super_admin' || hasFallbackSuperAdminEmail
+  const isSuperAdmin = profile?.role === 'super_admin'
 
   const visibleFeatures = useMemo(() => (isSuperAdmin ? DEFAULT_FEATURE_ACCESS : mergeFeatureAccess(featureAccess)), [isSuperAdmin, featureAccess])
 
@@ -142,27 +137,6 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
     const run = async () => {
       try {
-        if (SUPABASE_CONFIG_ERROR) {
-          if (!alive) return
-          if (userId) {
-            setProfile({
-              id: userId,
-              email: email ?? '',
-              role: hasFallbackSuperAdminEmail ? 'super_admin' : 'user',
-              is_active: true,
-            })
-            setFeatureAccess(DEFAULT_FEATURE_ACCESS)
-          } else {
-            setProfile(null)
-            setFeatureAccess(DEFAULT_FEATURE_ACCESS)
-          }
-          setManagedUsers([])
-          setAuditLogs([])
-          setBugReports([])
-          setError(SUPABASE_CONFIG_ERROR)
-          setLoading(false)
-          return
-        }
         if (!userId) {
           if (!alive) return
           setProfile(null)
@@ -186,7 +160,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     return () => {
       alive = false
     }
-  }, [userId, email, hasFallbackSuperAdminEmail, ensureSelfRecords])
+  }, [userId, ensureSelfRecords])
 
   useEffect(() => {
     let alive = true
