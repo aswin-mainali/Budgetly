@@ -1797,6 +1797,55 @@ body.light .mobileInfoCard{background: rgba(255,255,255,.86);}
   border-color: rgba(34,197,94,.5);
   background: rgba(34,197,94,.12);
 }
+.sidebarUserCard{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px;
+  cursor:pointer;
+}
+.sidebarUserCard:hover{background: rgba(255,255,255,.05)}
+.sidebarUserCard.active{
+  border-color: rgba(34,197,94,.5);
+  background: rgba(34,197,94,.12);
+}
+.sidebarUserAvatar{
+  width:40px;
+  height:40px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.28);
+  background:linear-gradient(160deg, rgba(59,130,246,.32), rgba(15,23,42,.8));
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  font-size:14px;
+  font-weight:800;
+  flex:0 0 auto;
+}
+.sidebarUserAvatar img{width:100%;height:100%;object-fit:cover}
+.sidebarUserMeta{
+  display:grid;
+  gap:2px;
+  min-width:0;
+  text-align:left;
+}
+.sidebarUserMeta strong,
+.sidebarUserMeta small{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.sidebarUserMeta strong{font-size:14px;line-height:1.15}
+.sidebarUserMeta small{font-size:12px}
+.sidebarUserCard svg{margin-left:auto;opacity:.75;flex:0 0 auto}
+.sidebar.collapsed .sidebarUserMeta,
+.sidebar.collapsed .sidebarUserCard svg{display:none}
+.sidebar.collapsed .sidebarUserCard{justify-content:center;padding:9px 6px}
 
 .supportPage .muted{color: var(--muted)}
 .supportHeroCard,
@@ -1857,6 +1906,13 @@ body.light .sidebarFooter .btn.support{
 }
 body.light .sidebarFooter .btn.support.active{
   background: rgba(34,197,94,.18);
+}
+body.light .sidebarUserCard{
+  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(246,249,255,.88));
+}
+body.light .sidebarUserAvatar{
+  background: linear-gradient(160deg, rgba(191,219,254,.92), rgba(226,232,240,.95));
+  color:#1e3a8a;
 }
 
 .supportSaaSHero{
@@ -1966,6 +2022,34 @@ body.light .sidebarFooter .btn.support.active{
 }
 .supportContactCard{
   background: linear-gradient(180deg, rgba(9,18,43,.9), rgba(3,7,18,.88));
+}
+.supportUserCard{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background: rgba(255,255,255,.03);
+}
+.supportUserAvatar{
+  width:42px;
+  height:42px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.3);
+  background:linear-gradient(160deg, rgba(59,130,246,.32), rgba(15,23,42,.8));
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  font-weight:800;
+}
+.supportUserAvatar img{width:100%;height:100%;object-fit:cover}
+.supportUserMeta{display:grid;gap:2px;min-width:0}
+.supportUserMeta strong,
+.supportUserMeta small{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .supportContactRows{
   display:grid;

@@ -917,7 +917,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1023,6 +1023,7 @@ type SharedProps = {
   theme: 'dark' | 'light'
   email: string | null
   onThemeToggle: () => void
+  onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
 }
@@ -3835,18 +3836,33 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
-export function SettingsView({ budget, theme, email, onThemeToggle, admin }: SharedProps) {
+export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSignOut }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
+
+  const initialProfile = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('budgetly:userProfile')
+      if (!raw) return { firstName: '', lastName: '', image: '' }
+      const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
+      return {
+        firstName: (parsed.firstName || '').trim(),
+        lastName: (parsed.lastName || '').trim(),
+        image: parsed.image || '',
+      }
+    } catch {
+      return { firstName: '', lastName: '', image: '' }
+    }
+  }, [])
 
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
   const [showPasswordFields, setShowPasswordFields] = useState({ current: false, next: false, confirm: false })
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState('')
-  const [profileForm, setProfileForm] = useState({ firstName: '', lastName: '' })
-  const [profileImage, setProfileImage] = useState<string>('')
+  const [profileForm, setProfileForm] = useState({ firstName: initialProfile.firstName, lastName: initialProfile.lastName })
+  const [profileImage, setProfileImage] = useState<string>(initialProfile.image)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
@@ -3925,8 +3941,14 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
       setProfileSuccess('')
       return
     }
+    localStorage.setItem('budgetly:userProfile', JSON.stringify({
+      firstName: profileForm.firstName.trim(),
+      lastName: profileForm.lastName.trim(),
+      image: profileImage || '',
+    }))
+    window.dispatchEvent(new Event('budgetly:profile-updated'))
     setProfileError('')
-    setProfileSuccess('Profile updated on this device.')
+    setProfileSuccess('Profile updated.')
   }
 
   const togglePasswordVisibility = (field: 'current' | 'next' | 'confirm') => {
@@ -4052,6 +4074,18 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                   </div>
                   <button className="btn primary" onClick={onThemeToggle} title="Toggle dark/light mode">
                     {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <div className="row between wrap" style={{ alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Session</div>
+                    <small>Sign out of your account from this device.</small>
+                  </div>
+                  <button className="btn danger" onClick={onSignOut}>
+                    <LogOut size={16} /> Sign out
                   </button>
                 </div>
               </div>
@@ -4627,6 +4661,36 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
   const [chatReady, setChatReady] = useState(false)
   const [bugModalOpen, setBugModalOpen] = useState(false)
   const [bugBusy, setBugBusy] = useState(false)
+  const [profile, setProfile] = useState<{ firstName: string; lastName: string; image: string }>({ firstName: '', lastName: '', image: '' })
+
+  useEffect(() => {
+    const readProfile = () => {
+      try {
+        const raw = localStorage.getItem('budgetly:userProfile')
+        if (!raw) return setProfile({ firstName: '', lastName: '', image: '' })
+        const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
+        setProfile({
+          firstName: (parsed.firstName || '').trim(),
+          lastName: (parsed.lastName || '').trim(),
+          image: parsed.image || '',
+        })
+      } catch {
+        setProfile({ firstName: '', lastName: '', image: '' })
+      }
+    }
+
+    readProfile()
+    window.addEventListener('budgetly:profile-updated', readProfile)
+    return () => window.removeEventListener('budgetly:profile-updated', readProfile)
+  }, [])
+
+  const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0].replace(/[._-]+/g, ' ').trim()
+  const profileInitials = profileName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U'
 
   const openChat = () => {
     if (!TAWK_ENABLED) return
@@ -4773,6 +4837,16 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
         </div>
 
         <div className="card supportInfoCard supportContactCard">
+          <div className="supportUserCard">
+            <div className="supportUserAvatar">
+              {profile.image ? <img src={profile.image} alt="User profile" /> : <span>{profileInitials}</span>}
+            </div>
+            <div className="supportUserMeta">
+              <strong>{profileName}</strong>
+              <small>{email || 'No email'}</small>
+            </div>
+          </div>
+
           <div className="supportInfoTop">
             <div>
               <div className="supportHeroLabel">Contact panel</div>
