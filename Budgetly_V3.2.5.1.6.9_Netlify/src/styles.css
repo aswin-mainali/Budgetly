@@ -2336,19 +2336,11 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
 .settingsAccountColumns{display:grid;grid-template-columns:minmax(280px,.95fr) minmax(420px,1.35fr);gap:14px;margin-top:14px}
 .settingsProfileCard{display:grid;gap:14px}
+.settingsProfileUploadRow{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .settingsProfileAvatar{width:88px;height:88px;border-radius:999px;border:1px solid rgba(148,163,184,.24);display:grid;place-items:center;background:rgba(15,23,42,.55);overflow:hidden;color:#cbd5e1}
 .settingsProfileAvatar img{width:100%;height:100%;object-fit:cover}
 .settingsProfileActions{display:grid;gap:8px;align-items:start}
 .settingsProfileActions .btn{width:max-content}
-.settingsProfileSplit{display:grid;grid-template-columns:minmax(250px,.85fr) minmax(0,1.15fr);gap:14px;align-items:start}
-.settingsProfileLeftPane,.settingsProfileRightPane{border:1px solid rgba(148,163,184,.14);border-radius:16px;background:rgba(10,18,36,.38);padding:14px;display:grid;gap:12px}
-.settingsProfilePaneTitle{font-size:13px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--muted)}
-.settingsProfileAvatarLarge{width:120px;height:120px;margin:2px auto}
-.settingsProfileAvatarTiny{width:42px;height:42px}
-.settingsProfileInitialsPreview{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;border:1px solid rgba(148,163,184,.16);background:rgba(15,23,42,.42);border-radius:12px;padding:10px}
-.settingsProfileInitialsPreview strong{font-size:13px}
-.settingsProfileInitialsPreview small{display:block}
-.settingsProfileNote{display:grid;gap:3px;border-left:2px solid rgba(16,185,129,.5);padding-left:10px}
 .settingsProfileNameGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .settingsProfileField{display:grid;gap:8px}
 .settingsProfileField span{font-weight:700;font-size:13px;color:var(--muted)}
@@ -2356,8 +2348,7 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsAdminSection{display:grid;gap:16px}
 .wrap{flex-wrap:wrap}
 @media (max-width: 1100px){.settingsAccountColumns{grid-template-columns:1fr}}
-@media (max-width: 840px){.settingsProfileSplit{grid-template-columns:1fr}}
-@media (max-width: 640px){.settingsProfileNameGrid{grid-template-columns:1fr}.settingsProfileActions .btn{width:100%}}
+@media (max-width: 640px){.settingsProfileNameGrid{grid-template-columns:1fr}}
 @media (max-width: 960px){.settingsShell{grid-template-columns:1fr}.settingsSidebarCard{position:static}.settingsGridTwo{grid-template-columns:1fr}}
 
 
