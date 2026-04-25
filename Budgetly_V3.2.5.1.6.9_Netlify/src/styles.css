@@ -81,7 +81,7 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   line-height:1.1;
 }
 
-.brandTitle strong{font-size:14px}
+.brandTitle strong{font-size:14px;font-family:"Lucida Handwriting","Lucida Calligraphy","Segoe Script",cursive}
 .brandTitle span{font-size:12px;color:var(--muted)}
 .sidebar.collapsed .brandTitle{display:none}
 

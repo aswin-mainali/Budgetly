@@ -4005,6 +4005,12 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
     if ((settingsSection === 'admin' || settingsSection === 'audit' || settingsSection === 'bugs') && !isSuperAdmin) setSettingsSection('general')
   }, [settingsSection, isSuperAdmin])
 
+  useEffect(() => {
+    const openGeneral = () => setSettingsSection('general')
+    window.addEventListener('budgetly:open-settings-general', openGeneral)
+    return () => window.removeEventListener('budgetly:open-settings-general', openGeneral)
+  }, [])
+
   return (
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
       <div className="settingsContentStack settingsContentStackTopNav">

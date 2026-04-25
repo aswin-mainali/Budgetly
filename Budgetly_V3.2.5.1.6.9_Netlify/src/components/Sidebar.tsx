@@ -94,13 +94,16 @@ export default function Sidebar(props: {
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join('') || 'U'
+  const openSettingsGeneral = () => {
+    window.dispatchEvent(new Event('budgetly:open-settings-general'))
+    setView('settings')
+  }
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
         <div className="brandTitle">
           <strong>Budgetly</strong>
-          <span>{email ?? 'Signed in'}</span>
         </div>
         <button className="btn" onClick={() => setCollapsed(!collapsed)} title="Collapse sidebar">
           <Menu size={18} />
@@ -175,7 +178,7 @@ export default function Sidebar(props: {
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
-        <button className={`sidebarUserCard ${view === 'support' ? 'active' : ''}`} onClick={() => setView('support')}>
+        <button className={`sidebarUserCard ${view === 'settings' ? 'active' : ''}`} onClick={openSettingsGeneral}>
           <div className="sidebarUserAvatar">
             {storedProfile.image ? <img src={storedProfile.image} alt="User profile" /> : <span>{profileInitials}</span>}
           </div>
