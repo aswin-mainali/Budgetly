@@ -4190,7 +4190,6 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
                     <input className="input" value={email || ''} disabled />
                   </label>
                   <small>Email cannot be changed.</small>
-                  <div className="settingsProfileInfoNote">This name will appear across your Budgetly workspace.</div>
                 </div>
 
                 {profileError ? <div className="passwordFeedback error">{profileError}</div> : null}

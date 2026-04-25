@@ -2290,15 +2290,15 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsFieldCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38);display:grid;gap:8px;min-width:0}
 .settingsFieldCardWide{grid-column:1 / -1}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
-.settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
-.settingsProfileCard{display:grid;gap:14px}
-.settingsProfileSection{display:grid;gap:12px}
+.settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.settingsProfileCard{display:grid;gap:10px}
+.settingsProfileSection{display:grid;gap:10px}
 .settingsProfileSectionTitle{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
-.settingsProfileSectionDivider{padding-top:14px;border-top:1px solid rgba(148,163,184,.18)}
+.settingsProfileSectionDivider{padding-top:10px;border-top:1px solid rgba(148,163,184,.18)}
 .settingsProfileTop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center}
 .settingsProfileAvatar{
-  width:92px;
-  height:92px;
+  width:82px;
+  height:82px;
   border-radius:999px;
   border:1px solid rgba(148,163,184,.24);
   background:linear-gradient(140deg, rgba(59,130,246,.28), rgba(15,23,42,.84));
@@ -2314,14 +2314,6 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsProfileField{display:grid;gap:8px}
 .settingsProfileFieldWide{grid-column:1 / -1}
 .settingsProfileField span{font-size:13px;font-weight:600;opacity:.9}
-.settingsProfileInfoNote{
-  border:1px solid rgba(16,185,129,.22);
-  background:rgba(6,95,70,.14);
-  color:#bbf7d0;
-  border-radius:12px;
-  padding:10px 12px;
-  font-size:13px;
-}
 .settingsAdminSection{display:grid;gap:16px}
 .wrap{flex-wrap:wrap}
 @media (max-width: 960px){.settingsShell{grid-template-columns:1fr}.settingsSidebarCard{position:static}.settingsGridTwo{grid-template-columns:1fr}.settingsAccountGrid{grid-template-columns:1fr}.settingsProfileGrid{grid-template-columns:1fr}}
@@ -6412,11 +6404,6 @@ body.light .settingsProfileAvatar{
 }
 body.light .settingsProfileField span{
   color:#0f172a;
-}
-body.light .settingsProfileInfoNote{
-  background:rgba(220,252,231,.8);
-  border-color:rgba(74,222,128,.3);
-  color:#166534;
 }
 body.light .passwordSecurityStrip{
   background: linear-gradient(180deg, rgba(248,250,252,.98), rgba(239,246,255,.94));
