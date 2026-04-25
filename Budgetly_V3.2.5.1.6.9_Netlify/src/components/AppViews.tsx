@@ -3849,6 +3849,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, onSi
   const [profileAvatarPreviewUrl, setProfileAvatarPreviewUrl] = useState('')
   const [profileAvatarFile, setProfileAvatarFile] = useState<File | null>(null)
   const [removeAvatarRequested, setRemoveAvatarRequested] = useState(false)
+  const [profileUpdatedAt, setProfileUpdatedAt] = useState('')
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
@@ -4008,6 +4009,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, onSi
       setProfileFirstName(savedProfile.first_name || '')
       setProfileLastName(savedProfile.last_name || '')
       setProfileAvatarPath(savedProfile.avatar_url || null)
+      setProfileUpdatedAt(savedProfile.updated_at || new Date().toISOString())
       if (profileAvatarPreviewUrl.startsWith('blob:')) URL.revokeObjectURL(profileAvatarPreviewUrl)
       setProfileAvatarPreviewUrl(savedProfile.avatar_url ? getAvatarPublicUrl(savedProfile.avatar_url) : '')
       setProfileAvatarFile(null)
@@ -4030,6 +4032,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, onSi
       setProfileFirstName(profile.first_name || '')
       setProfileLastName(profile.last_name || '')
       setProfileAvatarPath(profile.avatar_url || null)
+      setProfileUpdatedAt(profile.updated_at || '')
       setProfileAvatarPreviewUrl(profile.avatar_url ? getAvatarPublicUrl(profile.avatar_url) : '')
       setProfileAvatarFile(null)
       setRemoveAvatarRequested(false)
@@ -4202,60 +4205,81 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, onSi
                     <div className="h1">Profile</div>
                     <small>Update your name and profile photo.</small>
                   </div>
-                  <span className="badge">Personal details</span>
+                  <span className="badge">{profileUpdatedAt ? `Last updated: ${new Date(profileUpdatedAt).toLocaleDateString()}` : 'Personal details'}</span>
                 </div>
 
-                <div className="settingsProfileUploadRow">
-                  <div className="settingsProfileAvatar" aria-hidden="true">
-                    {profileAvatarPreviewUrl ? <img src={profileAvatarPreviewUrl} alt="" /> : <span>{profileInitials}</span>}
+                <div className="settingsProfileSplit">
+                  <div className="settingsProfileLeftPane">
+                    <div className="settingsProfilePaneTitle">Profile photo</div>
+                    <div className="settingsProfileAvatar settingsProfileAvatarLarge" aria-hidden="true">
+                      {profileAvatarPreviewUrl ? <img src={profileAvatarPreviewUrl} alt="" /> : <span>{profileInitials}</span>}
+                    </div>
+                    <div className="settingsProfileActions">
+                      <label className="btn primary">
+                        <Upload size={16} /> Upload photo
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleProfilePhotoPick} />
+                      </label>
+                      <button className="btn" type="button" onClick={removeProfilePhoto} disabled={!profileAvatarPreviewUrl && !profileAvatarPath}>Remove</button>
+                      <small>PNG, JPG, or WEBP up to 5MB. This photo appears in your sidebar and dashboard.</small>
+                    </div>
+                    <div className="settingsProfileInitialsPreview">
+                      <div className="settingsProfileAvatar settingsProfileAvatarTiny" aria-hidden="true"><span>{profileInitials}</span></div>
+                      <div>
+                        <strong>Initials preview</strong>
+                        <small>This is how your initials appear without a photo.</small>
+                      </div>
+                    </div>
                   </div>
-                  <div className="settingsProfileActions">
-                    <label className="btn primary">
-                      <Upload size={16} /> Upload photo
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleProfilePhotoPick} />
+
+                  <div className="settingsProfileRightPane">
+                    <div className="settingsProfilePaneTitle">Personal information</div>
+                    <div className="settingsProfileNameGrid">
+                      <label className="settingsProfileField">
+                        <span>First name</span>
+                        <input
+                          className="input"
+                          value={profileFirstName}
+                          onChange={(event) => {
+                            setProfileFirstName(event.target.value)
+                            if (profileError) setProfileError('')
+                            if (profileSuccess) setProfileSuccess('')
+                          }}
+                          placeholder="Enter first name"
+                        />
+                      </label>
+                      <label className="settingsProfileField">
+                        <span>Last name</span>
+                        <input
+                          className="input"
+                          value={profileLastName}
+                          onChange={(event) => {
+                            setProfileLastName(event.target.value)
+                            if (profileError) setProfileError('')
+                            if (profileSuccess) setProfileSuccess('')
+                          }}
+                          placeholder="Enter last name"
+                        />
+                      </label>
+                    </div>
+                    <label className="settingsProfileField">
+                      <span>Email</span>
+                      <input className="input" value={email || ''} disabled />
+                      <small>Email cannot be changed from this screen.</small>
                     </label>
-                    <button className="btn" type="button" onClick={removeProfilePhoto} disabled={!profileAvatarPreviewUrl && !profileAvatarPath}>Remove</button>
-                    <small>This photo appears in your profile context. PNG/JPG/WEBP up to 5MB.</small>
+                    <div className="settingsProfileNote">
+                      <strong>Info</strong>
+                      <small>This name will appear across your Budgetly workspace.</small>
+                    </div>
+                    <div className="row" style={{ justifyContent: 'flex-end' }}>
+                      <button className="btn primary" type="button" onClick={() => void saveAccountProfile()} disabled={profileBusy}>
+                        {profileBusy ? 'Saving...' : 'Save profile'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                <div className="settingsProfileNameGrid">
-                  <label className="settingsProfileField">
-                    <span>First name</span>
-                    <input
-                      className="input"
-                      value={profileFirstName}
-                      onChange={(event) => {
-                        setProfileFirstName(event.target.value)
-                        if (profileError) setProfileError('')
-                        if (profileSuccess) setProfileSuccess('')
-                      }}
-                      placeholder="Enter first name"
-                    />
-                  </label>
-                  <label className="settingsProfileField">
-                    <span>Last name</span>
-                    <input
-                      className="input"
-                      value={profileLastName}
-                      onChange={(event) => {
-                        setProfileLastName(event.target.value)
-                        if (profileError) setProfileError('')
-                        if (profileSuccess) setProfileSuccess('')
-                      }}
-                      placeholder="Enter last name"
-                    />
-                  </label>
                 </div>
 
                 {profileError ? <small style={{ color: '#fca5a5' }}>{profileError}</small> : null}
                 {profileSuccess ? <small style={{ color: '#34d399' }}>{profileSuccess}</small> : null}
-
-                <div className="row" style={{ justifyContent: 'flex-end' }}>
-                  <button className="btn primary" type="button" onClick={() => void saveAccountProfile()} disabled={profileBusy}>
-                    {profileBusy ? 'Saving...' : 'Save profile'}
-                  </button>
-                </div>
               </div>
 
               <div className="card settingsPanelCard settingsPasswordCard">

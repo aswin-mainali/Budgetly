@@ -6,6 +6,7 @@ export type UserProfileRecord = {
   first_name: string
   last_name: string
   avatar_url: string | null
+  updated_at?: string
 }
 
 const AVATAR_BUCKET = 'avatars'
@@ -37,7 +38,7 @@ export const deleteProfileAvatar = async (avatarPath: string | null | undefined)
 export const getUserProfile = async (userId: string) => {
   const result = await supabase
     .from('profiles')
-    .select('id,email,first_name,last_name,avatar_url')
+    .select('id,email,first_name,last_name,avatar_url,updated_at')
     .eq('id', userId)
     .maybeSingle()
   if (result.error && result.error.code !== 'PGRST116') throw new Error(result.error.message || 'Failed to load profile.')
@@ -48,6 +49,7 @@ export const getUserProfile = async (userId: string) => {
     first_name: result.data.first_name ?? '',
     last_name: result.data.last_name ?? '',
     avatar_url: result.data.avatar_url ?? null,
+    updated_at: result.data.updated_at ?? undefined,
   } as UserProfileRecord
 }
 
@@ -65,7 +67,7 @@ export const saveUserProfile = async (input: {
     last_name: normalizeName(input.lastName),
     avatar_url: input.avatarPath,
   }
-  const result = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select('id,email,first_name,last_name,avatar_url').maybeSingle()
+  const result = await supabase.from('profiles').upsert(payload, { onConflict: 'id' }).select('id,email,first_name,last_name,avatar_url,updated_at').maybeSingle()
   if (result.error) throw new Error(result.error.message || 'Failed to save profile.')
   const row = result.data
   if (!row) throw new Error('Profile save returned empty data.')
@@ -75,5 +77,6 @@ export const saveUserProfile = async (input: {
     first_name: row.first_name ?? '',
     last_name: row.last_name ?? '',
     avatar_url: row.avatar_url ?? null,
+    updated_at: row.updated_at ?? undefined,
   } as UserProfileRecord
 }
