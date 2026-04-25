@@ -3,6 +3,7 @@ import { Menu, BarChart3, ListChecks, Tags, Repeat, PanelLeftClose, LifeBuoy, Wr
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
+import { getAvatarPublicUrl, getUserProfile } from './lib/profile'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
@@ -24,6 +25,8 @@ export default function App() {
   const [sessionChecked, setSessionChecked] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState('')
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey>('dashboard')
@@ -87,11 +90,35 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const applyUserProfile = async (user: any) => {
+      const nextUserId = user?.id as string | undefined
+      if (!nextUserId) {
+        setProfileName('')
+        setProfileAvatarUrl(null)
+        return
+      }
+      try {
+        const profile = await getUserProfile(nextUserId)
+        if (!profile) {
+          setProfileName('')
+          setProfileAvatarUrl(null)
+          return
+        }
+        const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim()
+        setProfileName(name)
+        setProfileAvatarUrl(getAvatarPublicUrl(profile.avatar_url))
+      } catch {
+        setProfileName('')
+        setProfileAvatarUrl(null)
+      }
+    }
+
     const boot = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      await applyUserProfile(user)
       setSessionChecked(true)
     }
 
@@ -101,10 +128,30 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      void applyUserProfile(user)
     })
 
     return () => subscription.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    const refreshProfile = async () => {
+      if (!userId) {
+        setProfileName('')
+        setProfileAvatarUrl(null)
+        return
+      }
+      const profile = await getUserProfile(userId)
+      const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()
+      setProfileName(name)
+      setProfileAvatarUrl(getAvatarPublicUrl(profile?.avatar_url))
+    }
+    const handler = () => {
+      void refreshProfile()
+    }
+    window.addEventListener('budgetly:profile-updated', handler)
+    return () => window.removeEventListener('budgetly:profile-updated', handler)
+  }, [userId])
 
   const signOut = async () => {
     await supabase.auth.signOut()
@@ -278,8 +325,9 @@ export default function App() {
           toolsSection={toolsSection}
           setToolsSection={setToolsSection}
           sync={budget.sync}
-          onSignOut={signOut}
           email={email}
+          profileName={profileName}
+          profileAvatarUrl={profileAvatarUrl}
           features={admin.visibleFeatures}
         />
       </div>
@@ -306,7 +354,7 @@ export default function App() {
           </div>
         ) : null}
         {view === 'support' && admin.visibleFeatures.support ? <HelpSupportView email={email} userId={userId} admin={admin} /> : null}
-        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} /> : null}
+        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} userId={userId} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} onSignOut={signOut} /> : null}
 
         {isMobile ? (
           <nav className="mobileTabBar" aria-label="Mobile navigation">

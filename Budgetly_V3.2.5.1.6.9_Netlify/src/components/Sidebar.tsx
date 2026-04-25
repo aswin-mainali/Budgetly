@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
+import brandLogo from '../assets/login-budget.png'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
 
@@ -22,11 +23,12 @@ export default function Sidebar(props: {
   toolsSection: 'goals' | 'reports' | 'converter'
   setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
   sync: SyncState
-  onSignOut: () => void
   email?: string | null
+  profileName?: string
+  profileAvatarUrl?: string | null
   features: FeatureAccess
 }) {
-  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, profileName, profileAvatarUrl, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
 
@@ -61,18 +63,42 @@ export default function Sidebar(props: {
     sync === 'offline' ? 'Offline' : 'Sync error'
 
   const visibleItems = NAV_ITEMS.filter((item) => item.visible(features))
+  const userDisplayName = profileName?.trim() || (email ? email.split('@')[0] : 'Account user')
+  const userInitials = userDisplayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || 'U'
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="brand">
-        <div className="brandTitle">
-          <strong>Budgetly</strong>
-          <span>{email ?? 'Signed in'}</span>
+      {!collapsed ? (
+        <div className="brand sidebarBrandCard">
+          <img src={brandLogo} alt="Budgetly" className="brandLogoImage sidebarBrandImage" />
+          <button
+            className="sidebarUserMenuBtn"
+            type="button"
+            aria-label="Collapse sidebar"
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <Menu size={16} />
+          </button>
         </div>
-        <button className="btn" onClick={() => setCollapsed(!collapsed)} title="Collapse sidebar">
-          <Menu size={18} />
-        </button>
-      </div>
+      ) : null}
+      {collapsed ? (
+        <div className="sidebarCollapsedTop">
+          <img src={brandLogo} alt="Budgetly" className="sidebarCollapsedBrandImage" />
+          <button
+            className="sidebarUserMenuBtn"
+            type="button"
+            aria-label="Expand sidebar"
+            onClick={() => setCollapsed(false)}
+          >
+            <Menu size={16} />
+          </button>
+        </div>
+      ) : null}
 
       <div className="sidebarClock" aria-label="Current date and time">
         <div className="clockMain">
@@ -142,9 +168,24 @@ export default function Sidebar(props: {
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
-        <button className="btn danger" onClick={onSignOut}>
-          <LogOut size={18} /> <span className="navLabel">Sign out</span>
-        </button>
+        {!collapsed ? (
+          <button className="sidebarUserFooterCard" type="button" onClick={() => setView('settings')}>
+            <div className="sidebarUserAvatar" aria-hidden="true">
+              {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <span>{userInitials}</span>}
+            </div>
+            <div className="sidebarUserMeta">
+              <strong>{userDisplayName}</strong>
+              <span>{email ?? 'Signed in user'}</span>
+            </div>
+            <ChevronRight size={18} />
+          </button>
+        ) : (
+          <button className="sidebarUserFooterMini" type="button" onClick={() => setView('settings')} aria-label="Open account settings">
+            <div className="sidebarUserAvatar" aria-hidden="true">
+              {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <span>{userInitials}</span>}
+            </div>
+          </button>
+        )}
       </div>
     </aside>
   )
