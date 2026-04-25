@@ -559,6 +559,13 @@ export function useBudgetApp(userId: string | null) {
 
   const saveCategories = async () => {
     if (!userId || !categoryDirty) return false
+    if (SUPABASE_CONFIG_ERROR) {
+      setPendingCategoryDeletes([])
+      setCategoryDirty(false)
+      setSync(transactionDirty ? 'pending' : 'offline')
+      notify('Saved locally. Cloud sync unavailable.')
+      return true
+    }
     if (!navigator.onLine) {
       setSync('offline')
       return false
@@ -652,6 +659,13 @@ export function useBudgetApp(userId: string | null) {
 
   const saveTransactions = async () => {
     if (!userId || !transactionDirty) return
+    if (SUPABASE_CONFIG_ERROR) {
+      setPendingTxDeletes([])
+      setTransactionDirty(false)
+      setSync('offline')
+      notify('Transactions saved locally. Cloud sync unavailable.')
+      return
+    }
     if (!navigator.onLine) {
       setSync('offline')
       return
@@ -870,6 +884,13 @@ export function useBudgetApp(userId: string | null) {
 
   const saveGoals = async () => {
     if (!userId || !goalDirty) return false
+    if (SUPABASE_CONFIG_ERROR) {
+      setPendingGoalDeletes([])
+      setGoalDirty(false)
+      setSync(categoryDirty || transactionDirty || recurringDirty ? 'pending' : 'offline')
+      notify('Goals saved locally. Cloud sync unavailable.')
+      return true
+    }
     if (!navigator.onLine) {
       setSync('offline')
       return false
@@ -985,6 +1006,13 @@ export function useBudgetApp(userId: string | null) {
 
   const saveRecurring = async () => {
     if (!userId || !recurringDirty) return false
+    if (SUPABASE_CONFIG_ERROR) {
+      setPendingRecurringDeletes([])
+      setRecurringDirty(false)
+      setSync(categoryDirty || transactionDirty ? 'pending' : 'offline')
+      notify('Recurring saved locally. Cloud sync unavailable.')
+      return true
+    }
     if (!navigator.onLine) {
       setSync('offline')
       return false
