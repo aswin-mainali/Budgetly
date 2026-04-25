@@ -917,7 +917,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1023,6 +1023,7 @@ type SharedProps = {
   theme: 'dark' | 'light'
   email: string | null
   onThemeToggle: () => void
+  onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
 }
@@ -3835,16 +3836,36 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
-export function SettingsView({ budget, theme, email, onThemeToggle, admin }: SharedProps) {
+export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSignOut }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
+
+  const initialProfile = useMemo(() => {
+    try {
+      const raw = localStorage.getItem('budgetly:userProfile')
+      if (!raw) return { firstName: '', lastName: '', image: '' }
+      const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
+      return {
+        firstName: (parsed.firstName || '').trim(),
+        lastName: (parsed.lastName || '').trim(),
+        image: parsed.image || '',
+      }
+    } catch {
+      return { firstName: '', lastName: '', image: '' }
+    }
+  }, [])
 
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
   const [showPasswordFields, setShowPasswordFields] = useState({ current: false, next: false, confirm: false })
   const [passwordBusy, setPasswordBusy] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState('')
+  const [profileForm, setProfileForm] = useState({ firstName: initialProfile.firstName, lastName: initialProfile.lastName })
+  const [profileImage, setProfileImage] = useState<string>(initialProfile.image)
+  const [profileError, setProfileError] = useState('')
+  const [profileSuccess, setProfileSuccess] = useState('')
+  const profileImageInputRef = useRef<HTMLInputElement | null>(null)
 
   const passwordStrengthScore = useMemo(() => {
     const value = passwordForm.next || ''
@@ -3865,10 +3886,69 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
     return 'Very strong'
   }, [passwordForm.next, passwordStrengthScore])
 
+  const profileInitials = useMemo(() => {
+    const first = profileForm.firstName.trim().charAt(0)
+    const last = profileForm.lastName.trim().charAt(0)
+    return `${first}${last}`.toUpperCase() || 'U'
+  }, [profileForm.firstName, profileForm.lastName])
+
   const handlePasswordField = (field: 'current' | 'next' | 'confirm', value: string) => {
     setPasswordForm((prev) => ({ ...prev, [field]: value }))
     if (passwordError) setPasswordError('')
     if (passwordSuccess) setPasswordSuccess('')
+  }
+
+  const handleProfileField = (field: 'firstName' | 'lastName', value: string) => {
+    setProfileForm((prev) => ({ ...prev, [field]: value }))
+    if (profileError) setProfileError('')
+    if (profileSuccess) setProfileSuccess('')
+  }
+
+  const handleProfilePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please upload a JPG or PNG image.')
+      event.currentTarget.value = ''
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileError('Profile photo must be 5MB or smaller.')
+      event.currentTarget.value = ''
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setProfileImage(typeof reader.result === 'string' ? reader.result : '')
+      setProfileError('')
+      setProfileSuccess('Profile photo updated. Click save profile to keep changes.')
+    }
+    reader.onerror = () => setProfileError('Failed to read selected image.')
+    reader.readAsDataURL(file)
+    event.currentTarget.value = ''
+  }
+
+  const handleProfilePhotoRemove = () => {
+    setProfileImage('')
+    setProfileError('')
+    setProfileSuccess('Profile photo removed. Click save profile to keep changes.')
+  }
+
+  const handleProfileSave = () => {
+    if (!profileForm.firstName.trim() && !profileForm.lastName.trim()) {
+      setProfileError('Enter at least a first or last name.')
+      setProfileSuccess('')
+      return
+    }
+    localStorage.setItem('budgetly:userProfile', JSON.stringify({
+      firstName: profileForm.firstName.trim(),
+      lastName: profileForm.lastName.trim(),
+      image: profileImage || '',
+    }))
+    window.dispatchEvent(new Event('budgetly:profile-updated'))
+    setProfileError('')
+    setProfileSuccess('Profile updated.')
   }
 
   const togglePasswordVisibility = (field: 'current' | 'next' | 'confirm') => {
@@ -3924,6 +4004,12 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
   useEffect(() => {
     if ((settingsSection === 'admin' || settingsSection === 'audit' || settingsSection === 'bugs') && !isSuperAdmin) setSettingsSection('general')
   }, [settingsSection, isSuperAdmin])
+
+  useEffect(() => {
+    const openGeneral = () => setSettingsSection('general')
+    window.addEventListener('budgetly:open-settings-general', openGeneral)
+    return () => window.removeEventListener('budgetly:open-settings-general', openGeneral)
+  }, [])
 
   return (
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
@@ -3997,6 +4083,18 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
                   </button>
                 </div>
               </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <div className="row between wrap" style={{ alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Session</div>
+                    <small>Sign out of your account from this device.</small>
+                  </div>
+                  <button className="btn danger" onClick={onSignOut}>
+                    <LogOut size={16} /> Sign out
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ) : null}
@@ -4048,90 +4146,147 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin }: Sha
               </div>
             </div>
 
-            <div className="card settingsPanelCard settingsPasswordCard">
-              <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
-                <div>
-                  <div className="h1">Change password</div>
-                  <small>Secure your account with a fresh password. We verify your current password before saving the new one.</small>
-                </div>
-                <span className="badge">Advanced security</span>
-              </div>
-
-              <div className="passwordSecurityStrip">
-                <div className="passwordSecurityCopy">
-                  <strong>Password strength</strong>
-                  <span>{passwordStrengthLabel}</span>
-                </div>
-                <div className={`passwordStrengthPill ${passwordStrengthLabel.toLowerCase().replace(/\s+/g, '-')}`}>{passwordStrengthLabel}</div>
-              </div>
-
-              <div className="settingsPasswordGrid">
-                <div className="settingsPasswordField">
-                  <label>Current password</label>
-                  <div className="passwordInputShell">
-                    <Lock size={16} />
-                    <input
-                      className="input"
-                      type={showPasswordFields.current ? 'text' : 'password'}
-                      value={passwordForm.current}
-                      onChange={(event) => handlePasswordField('current', event.target.value)}
-                      placeholder="Enter current password"
-                    />
-                    <button type="button" className="passwordToggleBtn" onClick={() => togglePasswordVisibility('current')}>
-                      {showPasswordFields.current ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+            <div className="settingsAccountGrid">
+              <div className="card settingsPanelCard settingsProfileCard">
+                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div className="h1">Profile</div>
+                    <small>Update your name and profile photo.</small>
                   </div>
                 </div>
 
-                <div className="settingsPasswordField">
-                  <label>New password</label>
-                  <div className="passwordInputShell">
-                    <Lock size={16} />
-                    <input
-                      className="input"
-                      type={showPasswordFields.next ? 'text' : 'password'}
-                      value={passwordForm.next}
-                      onChange={(event) => handlePasswordField('next', event.target.value)}
-                      placeholder="Create new password"
-                    />
-                    <button type="button" className="passwordToggleBtn" onClick={() => togglePasswordVisibility('next')}>
-                      {showPasswordFields.next ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                <div className="settingsProfileSection">
+                  <div className="settingsProfileSectionTitle">Profile photo</div>
+                  <div className="settingsProfileTop">
+                    <div className="settingsProfileAvatar" aria-label="Profile image preview">
+                      {profileImage ? <img src={profileImage} alt="Profile preview" /> : <span>{profileInitials}</span>}
+                    </div>
+                    <div className="settingsProfileActions">
+                      <button className="btn" type="button" onClick={() => profileImageInputRef.current?.click()}>
+                        <Upload size={16} /> Upload photo
+                      </button>
+                      <button className="btn ghost" type="button" onClick={handleProfilePhotoRemove} disabled={!profileImage}>
+                        <Trash2 size={16} /> Remove
+                      </button>
+                      <input ref={profileImageInputRef} type="file" accept="image/png,image/jpeg" style={{ display: 'none' }} onChange={handleProfilePhotoUpload} />
+                    </div>
                   </div>
                 </div>
 
-                <div className="settingsPasswordField settingsPasswordFieldWide">
-                  <label>Confirm new password</label>
-                  <div className="passwordInputShell">
-                    <Lock size={16} />
-                    <input
-                      className="input"
-                      type={showPasswordFields.confirm ? 'text' : 'password'}
-                      value={passwordForm.confirm}
-                      onChange={(event) => handlePasswordField('confirm', event.target.value)}
-                      placeholder="Re-enter new password"
-                    />
-                    <button type="button" className="passwordToggleBtn" onClick={() => togglePasswordVisibility('confirm')}>
-                      {showPasswordFields.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
+                <div className="settingsProfileSection settingsProfileSectionDivider">
+                  <div className="settingsProfileSectionTitle">Personal information</div>
+                  <div className="settingsProfileGrid">
+                    <label className="settingsProfileField">
+                      <span>First name</span>
+                      <input className="input" value={profileForm.firstName} onChange={(event) => handleProfileField('firstName', event.target.value)} placeholder="First name" />
+                    </label>
+                    <label className="settingsProfileField">
+                      <span>Last name</span>
+                      <input className="input" value={profileForm.lastName} onChange={(event) => handleProfileField('lastName', event.target.value)} placeholder="Last name" />
+                    </label>
                   </div>
+                  <label className="settingsProfileField settingsProfileFieldWide">
+                    <span>Email</span>
+                    <input className="input" value={email || ''} disabled />
+                  </label>
+                  <small>Email cannot be changed.</small>
+                </div>
+
+                {profileError ? <div className="passwordFeedback error">{profileError}</div> : null}
+                {profileSuccess ? <div className="passwordFeedback success">{profileSuccess}</div> : null}
+
+                <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button className="btn primary" type="button" onClick={handleProfileSave}>
+                    <UserCircle2 size={16} /> Save profile
+                  </button>
                 </div>
               </div>
 
-              <div className="passwordHintRow">
-                <span className="pill">Use 8+ characters</span>
-                <span className="pill">Mix upper/lower case</span>
-                <span className="pill">Add a number or symbol</span>
-              </div>
+              <div className="card settingsPanelCard settingsPasswordCard">
+                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div className="h1">Change password</div>
+                    <small>Secure your account with a fresh password. We verify your current password before saving the new one.</small>
+                  </div>
+                  <span className="badge">Advanced security</span>
+                </div>
 
-              {passwordError ? <div className="passwordFeedback error">{passwordError}</div> : null}
-              {passwordSuccess ? <div className="passwordFeedback success">{passwordSuccess}</div> : null}
+                <div className="passwordSecurityStrip">
+                  <div className="passwordSecurityCopy">
+                    <strong>Password strength</strong>
+                    <span>{passwordStrengthLabel}</span>
+                  </div>
+                  <div className={`passwordStrengthPill ${passwordStrengthLabel.toLowerCase().replace(/\s+/g, '-')}`}>{passwordStrengthLabel}</div>
+                </div>
 
-              <div className="row between wrap" style={{ gap: 12, marginTop: 16 }}>
-                <div className="muted">Updating your password signs in the current account with the new credentials.</div>
-                <button className="btn" onClick={() => void handlePasswordChange()} disabled={passwordBusy}>
-                  <Lock size={16} /> {passwordBusy ? 'Updating...' : 'Update password'}
-                </button>
+                <div className="settingsPasswordGrid">
+                  <div className="settingsPasswordField">
+                    <label>Current password</label>
+                    <div className="passwordInputShell">
+                      <Lock size={16} />
+                      <input
+                        className="input"
+                        type={showPasswordFields.current ? 'text' : 'password'}
+                        value={passwordForm.current}
+                        onChange={(event) => handlePasswordField('current', event.target.value)}
+                        placeholder="Enter current password"
+                      />
+                      <button type="button" className="passwordToggleBtn" onClick={() => togglePasswordVisibility('current')}>
+                        {showPasswordFields.current ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="settingsPasswordField">
+                    <label>New password</label>
+                    <div className="passwordInputShell">
+                      <Lock size={16} />
+                      <input
+                        className="input"
+                        type={showPasswordFields.next ? 'text' : 'password'}
+                        value={passwordForm.next}
+                        onChange={(event) => handlePasswordField('next', event.target.value)}
+                        placeholder="Create new password"
+                      />
+                      <button type="button" className="passwordToggleBtn" onClick={() => togglePasswordVisibility('next')}>
+                        {showPasswordFields.next ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="settingsPasswordField settingsPasswordFieldWide">
+                    <label>Confirm new password</label>
+                    <div className="passwordInputShell">
+                      <Lock size={16} />
+                      <input
+                        className="input"
+                        type={showPasswordFields.confirm ? 'text' : 'password'}
+                        value={passwordForm.confirm}
+                        onChange={(event) => handlePasswordField('confirm', event.target.value)}
+                        placeholder="Re-enter new password"
+                      />
+                      <button type="button" className="passwordToggleBtn" onClick={() => togglePasswordVisibility('confirm')}>
+                        {showPasswordFields.confirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="passwordHintRow">
+                  <span className="pill">Use 8+ characters</span>
+                  <span className="pill">Mix upper/lower case</span>
+                  <span className="pill">Add a number or symbol</span>
+                </div>
+
+                {passwordError ? <div className="passwordFeedback error">{passwordError}</div> : null}
+                {passwordSuccess ? <div className="passwordFeedback success">{passwordSuccess}</div> : null}
+
+                <div className="row between wrap" style={{ gap: 12, marginTop: 16 }}>
+                  <div className="muted">Updating your password signs in the current account with the new credentials.</div>
+                  <button className="btn" onClick={() => void handlePasswordChange()} disabled={passwordBusy}>
+                    <Lock size={16} /> {passwordBusy ? 'Updating...' : 'Update password'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { BarChart3, ListChecks, Tags, Settings, LogOut, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
@@ -22,13 +22,13 @@ export default function Sidebar(props: {
   toolsSection: 'goals' | 'reports' | 'converter'
   setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
   sync: SyncState
-  onSignOut: () => void
   email?: string | null
   features: FeatureAccess
 }) {
-  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, onSignOut, email, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
+  const [storedProfile, setStoredProfile] = useState<{ firstName: string; lastName: string; image: string }>({ firstName: '', lastName: '', image: '' })
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -38,6 +38,31 @@ export default function Sidebar(props: {
   useEffect(() => {
     setToolsExpanded(view === 'tools')
   }, [view])
+
+  useEffect(() => {
+    const readProfile = () => {
+      try {
+        const raw = localStorage.getItem('budgetly:userProfile')
+        if (!raw) return setStoredProfile({ firstName: '', lastName: '', image: '' })
+        const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
+        setStoredProfile({
+          firstName: (parsed.firstName || '').trim(),
+          lastName: (parsed.lastName || '').trim(),
+          image: parsed.image || '',
+        })
+      } catch {
+        setStoredProfile({ firstName: '', lastName: '', image: '' })
+      }
+    }
+
+    readProfile()
+    window.addEventListener('budgetly:profile-updated', readProfile)
+    window.addEventListener('storage', readProfile)
+    return () => {
+      window.removeEventListener('budgetly:profile-updated', readProfile)
+      window.removeEventListener('storage', readProfile)
+    }
+  }, [])
 
   const clock = useMemo(() => {
     const hour = now.getHours()
@@ -61,13 +86,24 @@ export default function Sidebar(props: {
     sync === 'offline' ? 'Offline' : 'Sync error'
 
   const visibleItems = NAV_ITEMS.filter((item) => item.visible(features))
+  const fallbackName = (email || 'User').split('@')[0].replace(/[._-]+/g, ' ').trim()
+  const name = `${storedProfile.firstName} ${storedProfile.lastName}`.trim() || fallbackName
+  const profileInitials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'U'
+  const openSettingsGeneral = () => {
+    window.dispatchEvent(new Event('budgetly:open-settings-general'))
+    setView('settings')
+  }
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
         <div className="brandTitle">
           <strong>Budgetly</strong>
-          <span>{email ?? 'Signed in'}</span>
         </div>
         <button className="btn" onClick={() => setCollapsed(!collapsed)} title="Collapse sidebar">
           <Menu size={18} />
@@ -142,8 +178,15 @@ export default function Sidebar(props: {
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
-        <button className="btn danger" onClick={onSignOut}>
-          <LogOut size={18} /> <span className="navLabel">Sign out</span>
+        <button className={`sidebarUserCard ${view === 'settings' ? 'active' : ''}`} onClick={openSettingsGeneral}>
+          <div className="sidebarUserAvatar">
+            {storedProfile.image ? <img src={storedProfile.image} alt="User profile" /> : <span>{profileInitials}</span>}
+          </div>
+          <div className="sidebarUserMeta">
+            <strong>{name}</strong>
+            <small>{email || 'No email'}</small>
+          </div>
+          <ChevronDown size={16} />
         </button>
       </div>
     </aside>
