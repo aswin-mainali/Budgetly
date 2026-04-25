@@ -151,7 +151,8 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   font-size:12px;
   color:var(--muted);
   white-space:nowrap;
-  overflow:visible;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .sidebarUserMenuBtn{
   border:none;
@@ -445,7 +446,7 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 
 @media (max-width: 1366px){
   body:not(.mobile-app) .sidebar{
-    width:236px;
+    width:254px;
     padding:12px;
   }
 
