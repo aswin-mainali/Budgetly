@@ -96,6 +96,14 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   gap:8px;
   position:relative;
 }
+.sidebarBrandCard{
+  justify-content:space-between;
+  padding:8px 12px;
+}
+.sidebarBrandImage{
+  max-width:190px;
+  height:62px;
+}
 .sidebarCollapsedTop{
   display:flex;
   align-items:center;
@@ -105,6 +113,12 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   border:1px solid var(--border);
   border-radius:14px;
   background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+}
+.sidebarCollapsedBrandImage{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  object-fit:cover;
 }
 .sidebarUserCard{
   display:flex;
@@ -311,6 +325,35 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   display:flex;
   flex-direction:column;
   gap:8px;
+}
+.sidebarUserFooterCard{
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+  color:inherit;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-align:left;
+  cursor:pointer;
+}
+.sidebarUserFooterCard > svg{
+  margin-left:auto;
+  opacity:.8;
+}
+.sidebarUserFooterMini{
+  border:1px solid var(--border);
+  border-radius:14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+  padding:8px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.sidebarUserFooterMini .sidebarUserAvatar{
+  width:34px;
+  height:34px;
 }
 
 @media (max-height: 900px){

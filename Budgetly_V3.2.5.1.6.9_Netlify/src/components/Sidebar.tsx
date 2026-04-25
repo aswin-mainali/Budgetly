@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
+import brandLogo from '../assets/login-budget.png'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
 
@@ -73,31 +74,21 @@ export default function Sidebar(props: {
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       {!collapsed ? (
-        <div className="sidebarUserCardWrap">
-        <div className="sidebarUserCard">
-          <div className="sidebarUserAvatar" aria-hidden="true">
-            {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <span>{userInitials}</span>}
-          </div>
-          <div className="sidebarUserMeta">
-            <strong>{userDisplayName}</strong>
-            <span>{email ?? 'Signed in user'}</span>
-          </div>
+        <div className="brand sidebarBrandCard">
+          <img src={brandLogo} alt="Budgetly" className="brandLogoImage sidebarBrandImage" />
           <button
             className="sidebarUserMenuBtn"
             type="button"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label="Collapse sidebar"
             onClick={() => setCollapsed(!collapsed)}
           >
             <Menu size={16} />
           </button>
         </div>
-        </div>
       ) : null}
       {collapsed ? (
         <div className="sidebarCollapsedTop">
-          <div className="sidebarUserAvatar" aria-hidden="true">
-            {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <span>{userInitials}</span>}
-          </div>
+          <img src={brandLogo} alt="Budgetly" className="sidebarCollapsedBrandImage" />
           <button
             className="sidebarUserMenuBtn"
             type="button"
@@ -177,6 +168,24 @@ export default function Sidebar(props: {
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
+        {!collapsed ? (
+          <button className="sidebarUserFooterCard" type="button" onClick={() => setView('settings')}>
+            <div className="sidebarUserAvatar" aria-hidden="true">
+              {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <span>{userInitials}</span>}
+            </div>
+            <div className="sidebarUserMeta">
+              <strong>{userDisplayName}</strong>
+              <span>{email ?? 'Signed in user'}</span>
+            </div>
+            <ChevronRight size={18} />
+          </button>
+        ) : (
+          <button className="sidebarUserFooterMini" type="button" onClick={() => setView('settings')} aria-label="Open account settings">
+            <div className="sidebarUserAvatar" aria-hidden="true">
+              {profileAvatarUrl ? <img src={profileAvatarUrl} alt="" /> : <span>{userInitials}</span>}
+            </div>
+          </button>
+        )}
       </div>
     </aside>
   )
