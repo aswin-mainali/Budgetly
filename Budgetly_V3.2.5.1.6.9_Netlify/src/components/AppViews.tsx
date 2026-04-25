@@ -4661,36 +4661,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
   const [chatReady, setChatReady] = useState(false)
   const [bugModalOpen, setBugModalOpen] = useState(false)
   const [bugBusy, setBugBusy] = useState(false)
-  const [profile, setProfile] = useState<{ firstName: string; lastName: string; image: string }>({ firstName: '', lastName: '', image: '' })
-
-  useEffect(() => {
-    const readProfile = () => {
-      try {
-        const raw = localStorage.getItem('budgetly:userProfile')
-        if (!raw) return setProfile({ firstName: '', lastName: '', image: '' })
-        const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
-        setProfile({
-          firstName: (parsed.firstName || '').trim(),
-          lastName: (parsed.lastName || '').trim(),
-          image: parsed.image || '',
-        })
-      } catch {
-        setProfile({ firstName: '', lastName: '', image: '' })
-      }
-    }
-
-    readProfile()
-    window.addEventListener('budgetly:profile-updated', readProfile)
-    return () => window.removeEventListener('budgetly:profile-updated', readProfile)
-  }, [])
-
-  const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0].replace(/[._-]+/g, ' ').trim()
-  const profileInitials = profileName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('') || 'U'
 
   const openChat = () => {
     if (!TAWK_ENABLED) return
@@ -4837,16 +4807,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
         </div>
 
         <div className="card supportInfoCard supportContactCard">
-          <div className="supportUserCard">
-            <div className="supportUserAvatar">
-              {profile.image ? <img src={profile.image} alt="User profile" /> : <span>{profileInitials}</span>}
-            </div>
-            <div className="supportUserMeta">
-              <strong>{profileName}</strong>
-              <small>{email || 'No email'}</small>
-            </div>
-          </div>
-
           <div className="supportInfoTop">
             <div>
               <div className="supportHeroLabel">Contact panel</div>
