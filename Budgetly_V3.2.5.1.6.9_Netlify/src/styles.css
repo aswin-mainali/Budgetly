@@ -7143,8 +7143,8 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringDrawerCard{display:flex;flex-direction:column}
 .goalFields.compact.recurringDrawerFields{grid-template-columns:1fr 1fr}
 .goalFields.compact.recurringDrawerFields .recurringFieldFull{grid-column:1/-1}
-.recurringDrawerNote{min-height:48px;height:56px;resize:vertical}
-.recurringDrawerActions{margin-top:auto;padding-top:14px}
+.recurringDrawerNote{min-height:32px;height:40px;resize:vertical}
+.recurringDrawerActions{margin-top:auto;padding-top:8px}
 
 @media (max-width: 1200px){
   .recurringFeedLayout{grid-template-columns:minmax(0,1fr)}
@@ -7210,4 +7210,4 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   .recurringFeedHeaderRow{display:none}
 }
 
-.recurringDrawerModal{width:min(560px, calc(100vw - 24px));max-height:calc(100vh - 28px);overflow:hidden}
+.recurringDrawerModal{width:min(560px, calc(100vw - 24px));max-height:calc(100vh - 16px);overflow:hidden;padding:12px 14px}
