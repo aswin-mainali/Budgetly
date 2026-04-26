@@ -2306,6 +2306,9 @@ body.light .sidebarUserAvatar{
   border:none;
   background:transparent;
   border-radius:8px;
+  justify-content:flex-start;
+  gap:8px;
+  flex-direction:row;
 }
 .adminFeatureSection .adminFeatureToggle small{display:none;}
 @media (max-width: 1100px){

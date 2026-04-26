@@ -4902,14 +4902,19 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    try {
-      const raw = window.localStorage.getItem('budgetly_profile')
-      if (!raw) return
-      const parsed = JSON.parse(raw) as { image?: string }
-      setLocalProfileImage((parsed.image || '').trim())
-    } catch {
-      setLocalProfileImage('')
+    const readProfile = () => {
+      try {
+        const raw = window.localStorage.getItem('budgetly:userProfile')
+        if (!raw) return setLocalProfileImage('')
+        const parsed = JSON.parse(raw) as { image?: string }
+        setLocalProfileImage((parsed.image || '').trim())
+      } catch {
+        setLocalProfileImage('')
+      }
     }
+    readProfile()
+    window.addEventListener('budgetly:profile-updated', readProfile)
+    return () => window.removeEventListener('budgetly:profile-updated', readProfile)
   }, [])
 
   const filteredUsers = useMemo(() => {
@@ -4969,6 +4974,22 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     if (!admin.profile?.id) return ''
     if (userId !== admin.profile.id) return ''
     return localProfileImage
+  }
+
+  const featureLabel = (feature: string) => {
+    const labels: Record<string, string> = {
+      dashboard: 'Dashboard',
+      transactions: 'Transactions',
+      categories: 'Categories',
+      recurring: 'Recurring',
+      reports: 'Reports',
+      goals: 'Goals',
+      advice: 'Advice',
+      converter: 'Currency Converter',
+      support: 'Help & Support',
+      settings: 'Settings',
+    }
+    return labels[feature] ?? feature
   }
 
   return (
@@ -5103,8 +5124,8 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                   <div className="adminFeatureGrid">
                     {(['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const).map((feature) => (
                       <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <span>{feature.replace('_', ' ')}</span>
                         <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                        <span>{featureLabel(feature)}</span>
                       </label>
                     ))}
                   </div>
@@ -5114,8 +5135,19 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                   <div className="adminFeatureGrid">
                     {(['advice', 'converter'] as const).map((feature) => (
                       <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <span>{feature.replace('_', ' ')}</span>
                         <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                        <span>{featureLabel(feature)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="adminFeatureSection">
+                  <div className="adminFeatureTitle">Utilities</div>
+                  <div className="adminFeatureGrid">
+                    {(['support'] as const).map((feature) => (
+                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
+                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                        <span>{featureLabel(feature)}</span>
                       </label>
                     ))}
                   </div>
@@ -5123,10 +5155,10 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                 <div className="adminFeatureSection">
                   <div className="adminFeatureTitle">Support</div>
                   <div className="adminFeatureGrid">
-                    {(['support', 'settings'] as const).map((feature) => (
+                    {(['settings'] as const).map((feature) => (
                       <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <span>{feature.replace('_', ' ')}</span>
                         <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                        <span>{featureLabel(feature)}</span>
                       </label>
                     ))}
                   </div>
