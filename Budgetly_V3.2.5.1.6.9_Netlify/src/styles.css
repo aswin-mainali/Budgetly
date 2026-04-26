@@ -7175,14 +7175,18 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringFooterText{font-size:12px;padding:4px 2px 0}
 .recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible;order:1}
 
-@media (max-width: 1200px){
-  .recurringKpiRow{grid-template-columns:1fr}
-  .recurringToolbar{grid-template-columns:1fr 1fr}
-  .recurringFeedDataRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
+@media (max-width: 1400px){
+  .recurringFeedTable{max-height:none;overflow:visible}
   .recurringFeedPage .recurringSummaryRow.dataPageFooter{position:fixed;right:16px;bottom:14px;z-index:60;background:transparent;padding:0;border:0;gap:0}
   .recurringFeedPage .recurringSummaryRow.dataPageFooter .muted,
   .recurringFeedPage .recurringSummaryRow.dataPageFooter .badge{display:none}
   .recurringFeedPage .recurringSummaryRow.dataPageFooter .btn.primary{box-shadow:0 10px 24px rgba(0,0,0,.25)}
+}
+
+@media (max-width: 1200px){
+  .recurringKpiRow{grid-template-columns:1fr}
+  .recurringToolbar{grid-template-columns:1fr 1fr}
+  .recurringFeedDataRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
 }
 @media (max-width: 860px){
   .recurringToolbar{grid-template-columns:1fr}
