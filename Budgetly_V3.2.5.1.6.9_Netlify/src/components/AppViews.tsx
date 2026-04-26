@@ -4891,6 +4891,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all')
+  const [localProfileImage, setLocalProfileImage] = useState('')
 
   useEffect(() => {
     if (!selectedUser) return
@@ -4898,6 +4899,18 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     setDraftActive(selectedUser.is_active)
     setDraftFeatures({ ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) })
   }, [selectedUser, admin.defaultFeatureAccess])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const raw = window.localStorage.getItem('budgetly_profile')
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { image?: string }
+      setLocalProfileImage((parsed.image || '').trim())
+    } catch {
+      setLocalProfileImage('')
+    }
+  }, [])
 
   const filteredUsers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
@@ -4950,6 +4963,12 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     const timestamp = new Date(value)
     if (Number.isNaN(timestamp.getTime())) return 'No recent activity'
     return timestamp.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+
+  const avatarImageForUser = (userId: string) => {
+    if (!admin.profile?.id) return ''
+    if (userId !== admin.profile.id) return ''
+    return localProfileImage
   }
 
   return (
@@ -5008,7 +5027,11 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
             {filteredUsers.length === 0 ? <div className="muted">No users match this search.</div> : filteredUsers.map((user) => (
               <button key={user.id} className={`adminUserRow ${admin.selectedUserId === user.id ? 'active' : ''}`} onClick={() => admin.setSelectedUserId(admin.selectedUserId === user.id ? null : user.id)}>
                 <div className="adminUserIdentity">
-                  <span className="adminAvatar">{formatInitials(user.email)}</span>
+                  <span className="adminAvatar">
+                    {avatarImageForUser(user.id)
+                      ? <img src={avatarImageForUser(user.id)} alt={formatUserName(user.email)} className="adminAvatarImage" />
+                      : formatInitials(user.email)}
+                  </span>
                   <div>
                     <strong>{formatUserName(user.email)}</strong>
                     <div className="muted adminSubRow">{user.email}</div>
@@ -5032,7 +5055,11 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
             <div className="adminDetailInner">
               <div className="row between" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
                 <div className="adminSelectedUser">
-                  <span className="adminAvatar large">{formatInitials(selectedUser.email)}</span>
+                  <span className="adminAvatar large">
+                    {avatarImageForUser(selectedUser.id)
+                      ? <img src={avatarImageForUser(selectedUser.id)} alt={formatUserName(selectedUser.email)} className="adminAvatarImage" />
+                      : formatInitials(selectedUser.email)}
+                  </span>
                   <div>
                     <h3 style={{ marginBottom: 4 }}>User Access & Permissions</h3>
                     <div className="muted">{formatUserName(selectedUser.email)} • {selectedUser.email}</div>

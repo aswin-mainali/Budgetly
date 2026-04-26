@@ -2182,7 +2182,7 @@ body.light .sidebarUserAvatar{
 .adminUserListTall{max-height:540px;overflow:auto;padding-right:4px;}
 .adminDetailScrollable{max-height:640px;overflow:hidden;display:flex;}
 .adminDetailInner{display:flex;flex-direction:column;gap:0;overflow:auto;min-height:0;width:100%;padding-right:6px;}
-.adminDetailFooter{position:sticky;bottom:0;padding-top:12px;background:linear-gradient(180deg, rgba(7,17,38,0) 0%, rgba(7,17,38,.92) 30%, rgba(7,17,38,.98) 100%);}
+.adminDetailFooter{position:sticky;bottom:0;padding-top:12px;background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(246,249,255,.88) 35%, rgba(246,249,255,.98) 100%);}
 .adminEmptyState{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-height:320px;gap:10px;}
 .adminEmptyIcon{width:52px;height:52px;border-radius:16px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(91,159,255,.28);background:rgba(91,159,255,.12);color:#dce9ff;}
 .adminAuditListClear{gap:10px;}
@@ -2242,6 +2242,12 @@ body.light .sidebarUserAvatar{
   font-weight:700;
   color:#dce9ff;
   flex-shrink:0;
+}
+.adminAvatarImage{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  border-radius:50%;
 }
 .adminAvatar.large{
   width:44px;
