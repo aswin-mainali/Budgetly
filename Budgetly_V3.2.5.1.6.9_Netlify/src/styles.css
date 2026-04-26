@@ -7217,3 +7217,92 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
     position:static;
   }
 }
+
+/* Recurring feed + drawer refresh */
+.recurringFeedPage{display:flex;flex-direction:column;gap:14px}
+.recurringFeedHeader{gap:12px;align-items:flex-start}
+.recurringFeedTitleWrap{max-width:760px}
+.recurringFeedLayout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:stretch}
+.recurringFeedLayout.compact{grid-template-columns:minmax(0,1fr)}
+.recurringFeedListCard,
+.recurringDrawerCard,
+.recurringDrawerPlaceholder{border:1px solid var(--border);border-radius:16px;background:var(--panel-soft, rgba(255,255,255,.02));padding:12px}
+.recurringFeedList{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow:auto;padding-right:4px}
+.recurringFeedRow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:inherit;text-align:left;cursor:pointer;transition:border-color .16s ease, background .16s ease}
+.recurringFeedRow:hover{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.06)}
+.recurringFeedRow.selected{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.1)}
+.recurringFeedRowName{font-weight:700}
+.recurringFeedRowMeta{font-size:12px;margin-top:4px}
+.recurringFeedRowRight{display:flex;align-items:center;gap:8px}
+.recurringFeedEmpty,.recurringDrawerPlaceholder{min-height:180px;display:grid;place-items:center;text-align:center}
+.recurringDrawerCard{display:flex;flex-direction:column}
+.goalFields.compact.recurringDrawerFields{grid-template-columns:1fr 1fr}
+.goalFields.compact.recurringDrawerFields .recurringFieldFull{grid-column:1/-1}
+.recurringDrawerNote{min-height:32px;height:40px;resize:vertical}
+.recurringDrawerActions{margin-top:auto;padding-top:8px}
+
+@media (max-width: 1200px){
+  .recurringFeedLayout{grid-template-columns:minmax(0,1fr)}
+}
+
+.recurringDesignerLayout{grid-template-columns:330px minmax(0,1fr)}
+.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px;height:100%;order:2}
+.recurringKpiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.recurringKpiCard{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02);min-height:78px}
+.recurringKpiCard strong{display:block;font-size:18px;line-height:1.1;margin:2px 0}
+.recurringKpiIcon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(79,124,255,.15)}
+.recurringToolbar{display:grid;grid-template-columns:minmax(210px,1fr) repeat(3,minmax(130px,160px));gap:8px}
+.recurringSearchInput{position:relative;display:flex;align-items:center}
+.recurringSearchInput svg{position:absolute;left:10px;opacity:.7}
+.recurringSearchInput .input{padding-left:32px}
+.recurringFeedTable{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
+.recurringFeedDataRow{width:100%;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(120px,1fr) minmax(120px,.8fr) 90px minmax(120px,.9fr) 28px;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.recurringFeedDataRow:hover{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.06)}
+.recurringFeedDataRow.selected{border-color:var(--border);background:transparent}
+.recurringNameCol{display:flex;align-items:center;gap:10px;min-width:0}
+.recurringItemEmoji{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:rgba(79,124,255,.14)}
+.recurringKindPill{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(244,63,94,.12);color:#ff6486}
+.recurringKindPill.income{background:rgba(16,185,129,.16);color:#37d39d}
+.recurringAmountCol.good{color:#35c98d;font-weight:700}
+.recurringFreqPill{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(96,165,250,.16);color:#6ca6ff}
+.recurringDueCol{display:flex;flex-direction:column;gap:2px}
+.recurringActionsCol{display:grid;place-items:center;opacity:.7}
+.recurringFooterText{font-size:12px;padding:4px 2px 0}
+.recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible;order:1}
+
+@media (max-width: 1400px){
+  .recurringFeedTable{max-height:calc(100vh - 360px);overflow:auto}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter{position:fixed;right:16px;bottom:14px;z-index:60;background:transparent;padding:0;border:0;gap:0}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .muted,
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .badge{display:none}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .btn.primary{box-shadow:0 10px 24px rgba(0,0,0,.25)}
+}
+
+@media (max-width: 1200px){
+  .recurringKpiRow{grid-template-columns:1fr}
+  .recurringToolbar{grid-template-columns:1fr 1fr}
+  .recurringFeedDataRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
+}
+@media (max-width: 860px){
+  .recurringToolbar{grid-template-columns:1fr}
+  .recurringFeedDataRow{grid-template-columns:1fr;gap:8px}
+  .recurringActionsCol{justify-content:flex-start}
+  .goalFields.compact.recurringDrawerFields{grid-template-columns:1fr}
+}
+
+.recurringActionsCol{position:relative}
+.recurringRowMenu{position:absolute;top:30px;right:0;display:grid;gap:4px;min-width:110px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--panel, #111827);z-index:8;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.recurringRowMenu button{border:0;background:transparent;color:inherit;text-align:left;padding:6px 8px;border-radius:8px;cursor:pointer}
+.recurringRowMenu button:hover{background:rgba(255,255,255,.06)}
+.recurringRowMenu button.danger{color:#ff7a93}
+.recurringCreateError{margin-top:10px;padding:8px 10px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.08);border-radius:10px;font-size:12px;color:#ff9ab0}
+
+.recurringFeedHeaderRow{position:sticky;top:0;z-index:4;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(120px,1fr) minmax(120px,.8fr) 90px minmax(120px,.9fr) 28px;gap:10px;padding:8px 12px;margin-bottom:2px;font-size:12px;font-weight:700;color:var(--muted);background:var(--panel, #111827);border:1px solid var(--border);border-radius:10px}
+@media (max-width: 1200px){
+  .recurringFeedHeaderRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
+}
+@media (max-width: 860px){
+  .recurringFeedHeaderRow{display:none}
+}
+
+.recurringDrawerModal{width:min(560px, calc(100vw - 24px));max-height:calc(100vh - 16px);overflow:hidden;padding:12px 14px}
