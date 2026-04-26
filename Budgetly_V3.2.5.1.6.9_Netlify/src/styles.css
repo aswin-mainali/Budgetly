@@ -2189,6 +2189,89 @@ body.light .sidebarUserAvatar{
 .adminAuditRowClear{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
 .adminAuditPrimary{flex:1;min-width:0;}
 .adminAuditMeta{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.superAdminPanels{gap:14px;}
+.adminCardShell{
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+}
+.adminSearchBox{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:0 10px;
+  min-height:42px;
+  color:var(--muted);
+}
+.adminSearchBox input{
+  border:0;
+  outline:none;
+  background:transparent;
+  color:var(--text);
+  width:100%;
+}
+.adminInlineField .select{height:42px;}
+.adminUserTableLike{gap:8px;}
+.adminUserIdentity{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.adminAvatar{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  border:1px solid rgba(91,159,255,.3);
+  background:rgba(91,159,255,.12);
+  display:grid;
+  place-items:center;
+  font-size:11px;
+  font-weight:700;
+  color:#dce9ff;
+  flex-shrink:0;
+}
+.adminAvatar.large{
+  width:44px;
+  height:44px;
+  font-size:13px;
+}
+.adminUserMeta{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.successOutline{
+  border-color:rgba(34,197,94,.45);
+  color:#bbf7d0;
+}
+.adminSelectedUser{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.adminRoleStatusRow .field{margin:0;}
+.adminPresetRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.srOnly{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
 @media (max-width: 1100px){
   .adminToolbar{grid-template-columns:1fr 1fr;}
   .adminSearchField{grid-column:1 / -1;}
@@ -2199,6 +2282,8 @@ body.light .sidebarUserAvatar{
   .adminUserListTall{max-height:none;}
   .adminAuditRowClear{flex-direction:column;}
   .adminAuditMeta{justify-content:flex-start;}
+  .adminUserRow{align-items:flex-start;flex-direction:column;}
+  .adminUserMeta{justify-content:flex-start;}
 }
 
 

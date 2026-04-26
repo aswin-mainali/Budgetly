@@ -4934,6 +4934,24 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     return parts.join(' • ')
   }
 
+  const formatUserName = (email: string) => {
+    const base = email.split('@')[0]?.replace(/[._-]+/g, ' ').trim() || email
+    return base.split(' ').filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
+  }
+
+  const formatInitials = (email: string) => {
+    const nameParts = formatUserName(email).split(' ').filter(Boolean)
+    if (nameParts.length >= 2) return `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`.toUpperCase()
+    return nameParts[0]?.slice(0, 2).toUpperCase() || 'U'
+  }
+
+  const formatLastActive = (value?: string | null) => {
+    if (!value) return 'No recent activity'
+    const timestamp = new Date(value)
+    if (Number.isNaN(timestamp.getTime())) return 'No recent activity'
+    return `Updated ${timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+  }
+
   return (
     <div className="grid" style={{ gap: 14 }}>
       {!embedded && <div className="card superAdminHero">
@@ -4948,58 +4966,68 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
         {admin.error ? <div className="supportNotice" style={{ marginTop: 12 }}>{admin.error}</div> : null}
       </div>}
 
-      <div className="grid cols2 adminMainGrid adminMainGridWide">
-        <div className="card adminUserListCard">
+      <div className="grid cols2 adminMainGrid adminMainGridWide superAdminPanels">
+        <div className="card adminUserListCard adminCardShell">
           <div className="row between" style={{ marginBottom: 10, gap: 12, alignItems: 'flex-start' }}>
             <div>
-              <h3 style={{ marginBottom: 4 }}>User management</h3>
-              <div className="muted">Search users, filter access levels, and open a user only when you need to manage them.</div>
+              <h3 style={{ marginBottom: 4 }}>User Directory</h3>
+              <div className="muted">Search and manage workspace users.</div>
             </div>
-            <span className="badge"><Users size={14} /> {filteredUsers.length} shown</span>
+            <span className="badge"><Users size={14} /> {filteredUsers.length} users</span>
           </div>
           <div className="adminToolbar">
-            <label className="field adminSearchField">
-              <span>Search users</span>
-              <input className="input" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search by email" />
+            <label className="adminSearchBox">
+              <Search size={15} />
+              <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Search by name or email..." />
             </label>
-            <label className="field adminCompactField">
-              <span>Status</span>
+            <label className="field adminCompactField adminInlineField">
+              <span className="srOnly">Status</span>
               <select className="select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | 'active' | 'inactive')}>
-                <option value="all">All</option>
+                <option value="all">Status: All</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
             </label>
-            <label className="field adminCompactField">
-              <span>Role</span>
+            <label className="field adminCompactField adminInlineField">
+              <span className="srOnly">Role</span>
               <select className="select" value={roleFilter} onChange={(event) => setRoleFilter(event.target.value as 'all' | UserRole)}>
-                <option value="all">All roles</option>
+                <option value="all">Role: All</option>
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
                 <option value="super_admin">Super Admin</option>
               </select>
             </label>
           </div>
-          <div className="adminUserList adminUserListTall">
+          <div className="adminUserList adminUserListTall adminUserTableLike">
             {filteredUsers.length === 0 ? <div className="muted">No users match this search.</div> : filteredUsers.map((user) => (
               <button key={user.id} className={`adminUserRow ${admin.selectedUserId === user.id ? 'active' : ''}`} onClick={() => admin.setSelectedUserId(admin.selectedUserId === user.id ? null : user.id)}>
-                <div>
-                  <strong>{user.email}</strong>
-                  <div className="muted adminSubRow">{user.role.replace('_', ' ')} • {user.is_active ? 'Active' : 'Inactive'}</div>
+                <div className="adminUserIdentity">
+                  <span className="adminAvatar">{formatInitials(user.email)}</span>
+                  <div>
+                    <strong>{formatUserName(user.email)}</strong>
+                    <div className="muted adminSubRow">{user.email}</div>
+                  </div>
                 </div>
-                <span className={`badge ${user.is_active ? '' : 'dangerOutline'}`}>{user.is_active ? 'Live' : 'Paused'}</span>
+                <div className="adminUserMeta">
+                  <span className="badge">{user.role.replace('_', ' ')}</span>
+                  <span className={`badge ${user.is_active ? 'successOutline' : 'dangerOutline'}`}>{user.is_active ? 'Active' : 'Inactive'}</span>
+                </div>
               </button>
             ))}
           </div>
         </div>
 
         {selectedUser ? (
-          <div className="card adminDetailCard adminDetailScrollable">
+          <div className="card adminDetailCard adminDetailScrollable adminCardShell">
             <div className="adminDetailInner">
               <div className="row between" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
-                <div>
-                  <h3 style={{ marginBottom: 4 }}>Admin controls</h3>
-                  <div className="muted">{selectedUser.email}</div>
+                <div className="adminSelectedUser">
+                  <span className="adminAvatar large">{formatInitials(selectedUser.email)}</span>
+                  <div>
+                    <h3 style={{ marginBottom: 4 }}>User Access & Permissions</h3>
+                    <div className="muted">{formatUserName(selectedUser.email)} • {selectedUser.email}</div>
+                    <div className="muted" style={{ marginTop: 4 }}>{formatLastActive(selectedUser.updated_at)}</div>
+                  </div>
                 </div>
                 <div className="row gap" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
                   <span className="badge"><Lock size={14} /> Protected controls</span>
@@ -5007,7 +5035,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                 </div>
               </div>
 
-              <div className="grid cols2" style={{ marginBottom: 14 }}>
+              <div className="grid cols2 adminRoleStatusRow" style={{ marginBottom: 14 }}>
                 <label className="field">
                   <span>Role</span>
                   <select className="select" value={draftRole} onChange={(event) => setDraftRole(event.target.value as UserRole)}>
@@ -5024,10 +5052,13 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                 </div>
               </div>
 
-              <div className="row gap" style={{ marginBottom: 12, flexWrap: 'wrap' }}>
-                <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess })}>Enable all features</button>
-                <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false })}>Starter access</button>
-                <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, dashboard: true, settings: true, support: true, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false })}>Read-only lite</button>
+              <div className="adminPresetRow" style={{ marginBottom: 12 }}>
+                <span className="muted">Access preset</span>
+                <div className="row gap" style={{ flexWrap: 'wrap' }}>
+                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess })}>Full Access</button>
+                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false })}>Standard</button>
+                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, dashboard: true, settings: true, support: true, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false })}>Read Only</button>
+                </div>
               </div>
 
               <div className="adminFeatureGrid">
