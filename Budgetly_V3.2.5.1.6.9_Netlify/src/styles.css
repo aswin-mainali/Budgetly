@@ -2177,8 +2177,9 @@ body.light .sidebarUserAvatar{
 
 
 .adminMainGridWide{align-items:stretch;}
-.adminToolbar{display:grid;grid-template-columns:minmax(220px,1.6fr) minmax(140px,.7fr) minmax(160px,.8fr);gap:12px;margin-bottom:14px;}
+.adminToolbar{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(120px,.7fr) minmax(120px,.8fr);gap:12px;margin-bottom:14px;}
 .adminSearchField,.adminCompactField{margin:0;}
+.adminToolbar > *{min-width:0;}
 .adminUserListTall{max-height:540px;overflow:auto;padding-right:4px;}
 .adminDetailScrollable{max-height:640px;overflow:hidden;display:flex;}
 .adminDetailInner{display:flex;flex-direction:column;gap:0;overflow:auto;min-height:0;width:100%;padding-right:6px;}
@@ -2314,6 +2315,7 @@ body.light .sidebarUserAvatar{
 @media (max-width: 1100px){
   .adminToolbar{grid-template-columns:1fr 1fr;}
   .adminSearchField{grid-column:1 / -1;}
+  .adminSearchBox{grid-column:1 / -1;}
   .adminDetailScrollable{max-height:none;}
   .adminListHead{display:none;}
 }
@@ -2325,6 +2327,9 @@ body.light .sidebarUserAvatar{
   .adminUserRow{align-items:flex-start;flex-direction:column;}
   .adminUserMeta{justify-content:flex-start;}
   .adminFeatureSection .adminFeatureGrid{grid-template-columns:1fr;}
+}
+@media (max-width: 1280px){
+  .adminMainGrid{grid-template-columns:1fr!important;}
 }
 
 
