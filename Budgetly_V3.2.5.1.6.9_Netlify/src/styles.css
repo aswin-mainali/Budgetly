@@ -7150,8 +7150,8 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   .recurringFeedLayout{grid-template-columns:minmax(0,1fr)}
 }
 
-.recurringDesignerLayout{grid-template-columns:minmax(0,1fr) 330px}
-.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px;height:100%}
+.recurringDesignerLayout{grid-template-columns:330px minmax(0,1fr)}
+.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px;height:100%;order:2}
 .recurringKpiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .recurringKpiCard{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02);min-height:78px}
 .recurringKpiCard strong{display:block;font-size:18px;line-height:1.1;margin:2px 0}
@@ -7173,13 +7173,16 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringDueCol{display:flex;flex-direction:column;gap:2px}
 .recurringActionsCol{display:grid;place-items:center;opacity:.7}
 .recurringFooterText{font-size:12px;padding:4px 2px 0}
-.recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible}
+.recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible;order:1}
 
 @media (max-width: 1200px){
   .recurringKpiRow{grid-template-columns:1fr}
   .recurringToolbar{grid-template-columns:1fr 1fr}
   .recurringFeedDataRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
-  .recurringSummaryRow.dataPageFooter{position:sticky;bottom:0;z-index:6;background:var(--panel, #0f172a);padding:10px 12px;border:1px solid var(--border);border-radius:12px}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter{position:fixed;right:16px;bottom:14px;z-index:60;background:transparent;padding:0;border:0;gap:0}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .muted,
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .badge{display:none}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .btn.primary{box-shadow:0 10px 24px rgba(0,0,0,.25)}
 }
 @media (max-width: 860px){
   .recurringToolbar{grid-template-columns:1fr}
