@@ -5180,18 +5180,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                 <div className="adminFeatureSection">
                   <div className="adminFeatureTitle">Utilities</div>
                   <div className="adminFeatureGrid">
-                    {(['support'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Support</div>
-                  <div className="adminFeatureGrid">
-                    {(['settings'] as const).map((feature) => (
+                    {(['support', 'settings'] as const).map((feature) => (
                       <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
                         <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
                         <span>{featureLabel(feature)}</span>
