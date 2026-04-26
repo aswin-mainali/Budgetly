@@ -4977,7 +4977,18 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     if (!value) return 'No recent activity'
     const timestamp = new Date(value)
     if (Number.isNaN(timestamp.getTime())) return 'No recent activity'
-    return timestamp.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+
+    const now = new Date()
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+    const timeText = timestamp.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
+    if (timestamp >= startOfToday) return `Today, ${timeText}`
+    if (timestamp >= startOfYesterday && timestamp < startOfToday) return `Yesterday, ${timeText}`
+    if (timestamp.getFullYear() === now.getFullYear()) {
+      return `${timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, ${timeText}`
+    }
+    return `${timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}, ${timeText}`
   }
 
   const avatarImageForUser = (userId: string) => {
