@@ -6692,6 +6692,185 @@ body.light .txPageCard .dataStickyTable thead th,
   box-shadow: inset 0 -1px 0 rgba(15,23,42,.05), 0 1px 0 #f8fafc, 0 2px 0 #f8fafc;
 }
 
+/* v3.2.5.1.7 transaction-page-only responsive shell + grids */
+.txPageCard{
+  min-width:0;
+}
+.txFullLayout{
+  min-width:0;
+  gap:12px;
+}
+.txManagePanel{
+  min-height:0;
+}
+.txManagePanel .txPageScrollable{
+  min-height:0;
+  overflow:hidden;
+}
+.txPageCard .transactionsScrollBox,
+.txPageCard .dataMobileList{
+  min-width:0;
+}
+
+.txAddRow{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  grid-auto-flow:row dense;
+  gap:12px;
+  align-items:end;
+}
+.txAddRow .txDateField{grid-column:span 2;}
+.txAddRow .txTypeField{grid-column:span 2;}
+.txAddRow .txCategoryField{grid-column:span 2;}
+.txAddRow .txAmountField{grid-column:span 1;}
+.txAddRow .txNoteField{grid-column:span 4;}
+.txAddRow .txAddButton{grid-column:span 1;}
+
+.txToolbarRow{
+  margin-top:4px;
+  display:grid;
+  grid-template-columns:minmax(220px,1.2fr) minmax(220px,1fr) auto;
+  gap:12px;
+  align-items:end;
+  min-width:0;
+}
+.txToolbarLeft,
+.txToolbarCenter,
+.txToolbarRight{
+  min-width:0;
+}
+.txToolbarRight{
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  gap:12px;
+}
+.txMonthField{min-width:180px;}
+.txItemCount{
+  white-space:nowrap;
+  align-self:center;
+}
+.txToolbarRow .txSearchField,
+.txToolbarRow .txFilterField,
+.txToolbarRow .txMonthField{
+  margin:0;
+}
+.txToolbarRow .filterChips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.txToolbarRow .filterChip{
+  flex:0 0 auto;
+}
+
+@media (max-width: 1460px){
+  .txAddRow{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+  .txAddRow .txDateField,
+  .txAddRow .txTypeField,
+  .txAddRow .txCategoryField,
+  .txAddRow .txAmountField{
+    grid-column:span 2;
+  }
+  .txAddRow .txNoteField{grid-column:span 3;}
+  .txAddRow .txAddButton{grid-column:span 1;}
+}
+
+@media (max-width: 1240px){
+  .txToolbarRow{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:stretch;
+  }
+  .txToolbarLeft{grid-column:1 / -1;}
+  .txToolbarCenter{grid-column:1 / 2;}
+  .txToolbarRight{
+    grid-column:2 / 3;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+  .txMonthField{
+    flex:1 1 210px;
+    min-width:170px;
+    max-width:320px;
+  }
+}
+
+@media (max-width: 1040px){
+  .txAddRow{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .txAddRow .txDateField,
+  .txAddRow .txTypeField,
+  .txAddRow .txCategoryField,
+  .txAddRow .txAmountField{
+    grid-column:span 1;
+  }
+  .txAddRow .txNoteField,
+  .txAddRow .txAddButton{
+    grid-column:1 / -1;
+  }
+  .txToolbarRow{
+    grid-template-columns:1fr;
+  }
+  .txToolbarLeft,
+  .txToolbarCenter,
+  .txToolbarRight{
+    grid-column:1 / -1;
+  }
+  .txToolbarRight{
+    justify-content:space-between;
+    align-items:flex-end;
+  }
+}
+
+@media (max-width: 760px){
+  .txAddRow{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .txAddRow .txDateField,
+  .txAddRow .txTypeField,
+  .txAddRow .txCategoryField,
+  .txAddRow .txAmountField,
+  .txAddRow .txNoteField,
+  .txAddRow .txAddButton{
+    grid-column:1 / -1;
+  }
+  .txToolbarRight{
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+  }
+  .txMonthField{
+    min-width:0;
+    max-width:none;
+    width:100%;
+  }
+  .txItemCount{
+    white-space:normal;
+    text-align:left;
+  }
+}
+
+@media (min-width: 961px){
+  .txPageCard{
+    height:calc(100dvh - 120px) !important;
+    min-height:calc(100dvh - 120px) !important;
+    max-height:calc(100dvh - 120px) !important;
+  }
+}
+
+@media (max-width: 960px){
+  .txFullLayout{
+    height:calc(100dvh - 88px) !important;
+    min-height:calc(100dvh - 88px) !important;
+    max-height:calc(100dvh - 88px) !important;
+  }
+}
+
 .bugReportModal{
   width:min(640px, calc(100vw - 28px));
   max-width:640px;
