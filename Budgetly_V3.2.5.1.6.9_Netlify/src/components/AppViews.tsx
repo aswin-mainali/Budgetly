@@ -3192,7 +3192,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               const badgeText = recurrenceType === 'biweekly' ? 'Bi-weekly' : recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'
               const isSelected = item.id === selectedRecurringId && isDrawerOpen
               return (
-                <button key={item.id} type="button" className={`recurringFeedDataRow ${isSelected ? 'selected' : ''}`} onClick={() => { setSelectedRecurringId(item.id); setIsCreating(false) }}>
+                <div key={item.id} className={`recurringFeedDataRow ${isSelected ? 'selected' : ''}`}>
                   <div className="recurringNameCol">
                     <div className="recurringItemEmoji">{category?.emoji ?? (item.kind === 'income' ? '💰' : '📌')}</div>
                     <div>
@@ -3243,7 +3243,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                       </div>
                     ) : null}
                   </div>
-                </button>
+                </div>
               )
             })}
           </div>
