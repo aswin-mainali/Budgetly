@@ -4949,7 +4949,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     if (!value) return 'No recent activity'
     const timestamp = new Date(value)
     if (Number.isNaN(timestamp.getTime())) return 'No recent activity'
-    return `Updated ${timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+    return timestamp.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   }
 
   return (
@@ -4973,7 +4973,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
               <h3 style={{ marginBottom: 4 }}>User Directory</h3>
               <div className="muted">Search and manage workspace users.</div>
             </div>
-            <span className="badge"><Users size={14} /> {filteredUsers.length} users</span>
+            <span className="muted">{filteredUsers.length} users</span>
           </div>
           <div className="adminToolbar">
             <label className="adminSearchBox">
@@ -4998,6 +4998,12 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
               </select>
             </label>
           </div>
+          <div className="adminListHead">
+            <span>User</span>
+            <span>Role</span>
+            <span>Status</span>
+            <span>Last Active</span>
+          </div>
           <div className="adminUserList adminUserListTall adminUserTableLike">
             {filteredUsers.length === 0 ? <div className="muted">No users match this search.</div> : filteredUsers.map((user) => (
               <button key={user.id} className={`adminUserRow ${admin.selectedUserId === user.id ? 'active' : ''}`} onClick={() => admin.setSelectedUserId(admin.selectedUserId === user.id ? null : user.id)}>
@@ -5008,13 +5014,17 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                     <div className="muted adminSubRow">{user.email}</div>
                   </div>
                 </div>
-                <div className="adminUserMeta">
+                <div className="adminUserMeta role">
                   <span className="badge">{user.role.replace('_', ' ')}</span>
+                </div>
+                <div className="adminUserMeta status">
                   <span className={`badge ${user.is_active ? 'successOutline' : 'dangerOutline'}`}>{user.is_active ? 'Active' : 'Inactive'}</span>
                 </div>
+                <div className="muted adminLastActiveCell">{formatLastActive(user.updated_at)}</div>
               </button>
             ))}
           </div>
+          <div className="adminListFoot muted">Showing {filteredUsers.length === 0 ? 0 : 1} to {filteredUsers.length} of {filteredUsers.length} users</div>
         </div>
 
         {selectedUser ? (
@@ -5030,8 +5040,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                   </div>
                 </div>
                 <div className="row gap" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="badge"><Lock size={14} /> Protected controls</span>
-                  <button className="btn" onClick={() => admin.setSelectedUserId(null)}>Close</button>
+                  <button className="btn" onClick={() => admin.setSelectedUserId(null)}>Actions <ChevronDown size={14} /></button>
                 </div>
               </div>
 
@@ -5061,16 +5070,40 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                 </div>
               </div>
 
-              <div className="adminFeatureGrid">
-                {admin.featureKeys.map((feature) => (
-                  <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                    <div>
-                      <strong>{feature.replace('_', ' ')}</strong>
-                      <small>{draftFeatures[feature] ? 'Visible for this user' : 'Hidden from this user'}</small>
-                    </div>
-                    <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                  </label>
-                ))}
+              <div className="adminFeatureSections">
+                <div className="adminFeatureSection">
+                  <div className="adminFeatureTitle">Core Modules</div>
+                  <div className="adminFeatureGrid">
+                    {(['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const).map((feature) => (
+                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
+                        <span>{feature.replace('_', ' ')}</span>
+                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="adminFeatureSection">
+                  <div className="adminFeatureTitle">Planning</div>
+                  <div className="adminFeatureGrid">
+                    {(['advice', 'converter'] as const).map((feature) => (
+                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
+                        <span>{feature.replace('_', ' ')}</span>
+                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="adminFeatureSection">
+                  <div className="adminFeatureTitle">Support</div>
+                  <div className="adminFeatureGrid">
+                    {(['support', 'settings'] as const).map((feature) => (
+                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
+                        <span>{feature.replace('_', ' ')}</span>
+                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="row between adminDetailFooter" style={{ marginTop: 16, gap: 12 }}>
