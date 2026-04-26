@@ -3074,6 +3074,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     setIsCreating(true)
     setSelectedRecurringId(null)
     setCreateError(null)
+    if (useModalDrawer) setIsAddModalOpen(true)
     setDraftRecurring({
       name: '',
       kind: 'expense',
@@ -3123,11 +3124,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       </div>
       {createError ? <div className="recurringCreateError">{createError}</div> : null}
       <div className="row between recurringDrawerActions">
-        {isCreating ? <button className="btn" onClick={() => {
-          setCreateError(null)
-          setDraftRecurring({ name: '', kind: 'expense', category_id: '', amount: '', recurrence_type: 'monthly', anchor_date: '', day_of_month: '', note: '' })
-          if (useModalDrawer) setIsAddModalOpen(false)
-        }}>Cancel</button> : <button className="btn ghost" onClick={() => selectedRecurring ? setPendingDeleteId(selectedRecurring.id) : null}><Trash2 size={16} /> Delete</button>}
+        {isCreating ? <span /> : <button className="btn ghost" onClick={() => selectedRecurring ? setPendingDeleteId(selectedRecurring.id) : null}><Trash2 size={16} /> Delete</button>}
         <button className="btn primary" onClick={() => void handleSaveDrawer()} disabled={!isCreating && !recurringDirty}>Save Item</button>
       </div>
     </>
