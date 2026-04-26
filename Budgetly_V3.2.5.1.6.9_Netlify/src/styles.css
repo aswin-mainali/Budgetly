@@ -7176,7 +7176,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible;order:1}
 
 @media (max-width: 1400px){
-  .recurringFeedTable{max-height:none;overflow:visible}
+  .recurringFeedTable{max-height:calc(100vh - 360px);overflow:auto}
   .recurringFeedPage .recurringSummaryRow.dataPageFooter{position:fixed;right:16px;bottom:14px;z-index:60;background:transparent;padding:0;border:0;gap:0}
   .recurringFeedPage .recurringSummaryRow.dataPageFooter .muted,
   .recurringFeedPage .recurringSummaryRow.dataPageFooter .badge{display:none}
