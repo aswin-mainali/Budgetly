@@ -7663,10 +7663,10 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   border: 1px solid #d4ddea;
   border-radius: 16px;
   background: #f8fbff;
-  padding: 10px;
+  padding: 8px;
 }
 .txPanelHeaderModern{
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .txAddRowVertical{
   display: flex;
@@ -7691,13 +7691,13 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .txSummaryCard{
   border: 1px solid #d4ddea;
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 10px 12px;
   background: #fff;
 }
 .txSummaryCard strong{
   display: block;
-  margin-top: 2px;
-  font-size: 1.95rem;
+  margin-top: 1px;
+  font-size: 1.55rem;
   color: #1a2437;
   line-height: 1.1;
 }
@@ -7708,13 +7708,13 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   font-size: 1.08rem;
 }
 .txSummaryEmoji{
-  width:36px;
-  height:36px;
-  border-radius:10px;
+  width:30px;
+  height:30px;
+  border-radius:9px;
   display:grid;
   place-items:center;
   background: #eaf0ff;
-  font-size: 1rem;
+  font-size: .9rem;
 }
 .txSummaryCard.income strong{ color: #14a765; }
 .txSummaryCard.expense strong{ color: #e24b59; }
@@ -7741,7 +7741,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   background: #fff;
 }
 .txToolbarRow{
-  padding: 2px 0 8px;
+  padding: 0 0 6px;
 }
 .txDescriptionCell strong{
   display: block;
