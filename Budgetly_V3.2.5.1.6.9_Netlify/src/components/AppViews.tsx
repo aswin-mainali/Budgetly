@@ -917,7 +917,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -4945,13 +4945,19 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                 <div>Reporter</div>
                 <div>Severity</div>
                 <div>Status</div>
+                <div>Actions</div>
               </div>
               <div className="bugsTableBody">
                 {pagedReports.length === 0 ? <div className="muted">No bug reports found.</div> : pagedReports.map((item) => {
                   const timestamp = item.created_at ? new Date(item.created_at) : null
                   const isSelected = selectedReport?.id === item.id
                   return (
-                    <button key={item.id} className={`bugsRowBtn ${isSelected ? 'active' : ''}`} onClick={() => setSelectedId(item.id)}>
+                    <div key={item.id} className={`bugsRowBtn ${isSelected ? 'active' : ''}`} onClick={() => setSelectedId(item.id)} role="button" tabIndex={0} onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setSelectedId(item.id)
+                      }
+                    }}>
                       <div className="bugsDateCell">
                         <strong>{timestamp ? timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'}</strong>
                         <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}</span>
@@ -4959,7 +4965,15 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                       <div className="bugsEmailCell">{item.user_email}</div>
                       <div>{renderSeverityPill(item.severity)}</div>
                       <div>{renderStatusPill(item.status)}</div>
-                    </button>
+                      <div className="bugsActionCell">
+                        <button className="btn bugsViewBtn" onClick={(event) => {
+                          event.stopPropagation()
+                          setSelectedId(item.id)
+                        }}>
+                          View
+                        </button>
+                      </div>
+                    </div>
                   )
                 })}
               </div>
@@ -5000,10 +5014,12 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   <div>
                     <div className="auditDetailHeading">Screenshot</div>
                     {selectedReport.screenshot_data_url ? (
-                      <button className="bugsScreenshotCard" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
+                      <div className="bugsScreenshotCard">
                         <img src={selectedReport.screenshot_data_url} alt={selectedReport.screenshot_name || 'Bug screenshot'} />
-                        <span>Click to expand</span>
-                      </button>
+                        <button className="bugsExpandImageBtn" aria-label="Expand screenshot" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
+                          <Maximize2 size={14} />
+                        </button>
+                      </div>
                     ) : (
                       <div className="muted">No screenshot attached.</div>
                     )}
