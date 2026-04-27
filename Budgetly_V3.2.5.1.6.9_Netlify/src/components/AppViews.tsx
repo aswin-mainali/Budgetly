@@ -1765,7 +1765,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       <div className="row between txPageHeader">
         <div>
           <h2>Transactions</h2>
-          <div className="muted">Add today’s transaction by default, or backdate it if needed. Use Month to view older records.</div>
         </div>
         <button className="btn txTopAddBtn" onClick={() => addPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
           <Plus size={16} /> Add Transaction
