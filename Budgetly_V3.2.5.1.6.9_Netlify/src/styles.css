@@ -6951,7 +6951,10 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsSeverityPill.medium{background:#ffedd5;color:#ea580c}
 .bugsSeverityPill.low{background:#dcfce7;color:#16a34a}
 .bugsStatusPill.pending{background:#fef3c7;color:#d97706}
+.bugsStatusPill.in_progress{background:#dbeafe;color:#2563eb}
+.bugsStatusPill.in_review{background:#ede9fe;color:#7c3aed}
 .bugsStatusPill.completed{background:#dcfce7;color:#15803d}
+.bugsStatusPill.resolved{background:#dcfce7;color:#15803d}
 .bugsPaginationRow{
   display:flex;
   justify-content:space-between;
