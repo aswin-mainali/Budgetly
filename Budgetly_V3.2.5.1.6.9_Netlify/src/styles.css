@@ -6903,22 +6903,22 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsDetailHeaderActions{display:flex;align-items:center;gap:8px}
 .bugsDetailDivider{height:1px;background:#e8edf5;margin:2px 0}
 .bugsCaseId{font-size:13px;font-weight:700;letter-spacing:.01em;color:#5f6f8a;margin-bottom:0}
-.bugsDetailTop h4{margin:0 0 6px;font-size:34px;line-height:1.15;color:#1f2a44}
+.bugsDetailTop h4{margin:0 0 6px;font-size:20px;line-height:1.25;color:#1f2a44}
 .bugsDetailTop .muted{font-size:13px;color:#7d8ba6}
 .bugsStepGrid{display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
-.bugsFixesDetail .auditDetailHeading{font-size:27px;letter-spacing:0;text-transform:none;color:#1f2a44}
-.bugsStepsList{margin:0;padding-left:22px;display:grid;gap:10px;color:#4f5f7f;font-size:20px;line-height:1.5}
+.bugsFixesDetail .auditDetailHeading{font-size:20px;letter-spacing:0;text-transform:none;color:#1f2a44}
+.bugsStepsList{margin:0;padding-left:20px;display:grid;gap:8px;color:#4f5f7f;font-size:13px;line-height:1.5}
 .bugsDetailShot{width:100%;height:210px;object-fit:cover;border-radius:14px;border:1px solid #d4dceb}
-.bugsDetailShotPlaceholder{border:1px dashed #d4dceb;border-radius:14px;min-height:210px;display:grid;place-items:center;color:#7d8ba6;font-size:16px}
+.bugsDetailShotPlaceholder{border:1px dashed #d4dceb;border-radius:14px;min-height:210px;display:grid;place-items:center;color:#7d8ba6;font-size:13px}
 .bugsFixesDetail textarea{min-height:118px;border-radius:12px}
-.bugsFieldLabelRow{display:grid;grid-template-columns:160px 1fr;gap:12px;font-size:22px;font-weight:700;color:#1f2a44;margin-bottom:-8px}
+.bugsFieldLabelRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;font-weight:700;color:#1f2a44;margin-bottom:-8px}
 .bugsFixesDetail .iconBtn{height:44px;width:44px;border-radius:12px;border-color:#d8dfec;background:#fff}
-.bugsFixesDetail .bugFixRow{grid-template-columns:160px 1fr auto auto}
-.bugsFixesDetail .bugFixRow .select{height:56px;font-size:28px;border-radius:14px}
-.bugsFixesDetail .bugFixRow .btn{height:56px;border-radius:14px;font-size:26px;font-weight:700;padding:0 22px}
+.bugsFixesDetail .bugFixRow{grid-template-columns:minmax(130px,1fr) minmax(130px,1fr) auto auto}
+.bugsFixesDetail .bugFixRow .select{height:44px;font-size:16px;border-radius:12px}
+.bugsFixesDetail .bugFixRow .btn{height:44px;border-radius:12px;font-size:14px;font-weight:700;padding:0 16px}
 .bugsFixesDetail .bugFixRow .btn.primary{background:#fff;color:#1677ff;border:1px solid #8ebdff}
 .bugsMarkResolvedBtn{background:linear-gradient(180deg,#1988ff,#1368ea) !important;color:#fff !important;border-color:#1368ea !important}
-.bugsFixesDetail .bugPill.severity{font-size:22px;padding:6px 16px}
+.bugsFixesDetail .bugPill.severity{font-size:11px;padding:4px 10px}
 body.light .bugReportReadonly,
 body.light .bugUploadBox{background:#f8fbff}
 body.light .bugsFixesDetail{background:#fff;border-color:#e6ebf4;box-shadow:none}
