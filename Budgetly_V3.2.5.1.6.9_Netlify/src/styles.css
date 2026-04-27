@@ -6824,48 +6824,80 @@ body.light .txPageCard .dataStickyTable thead th,
 }
 
 .bugReportModal{
-  width:min(640px, calc(100vw - 28px));
-  max-width:640px;
-  padding:28px 28px 22px;
-  border-radius:22px;
+  width:min(710px, calc(100vw - 28px));
+  max-width:710px;
+  padding:30px 24px 0;
+  border-radius:18px;
 }
 .bugReportBrand{
   text-align:center;
   font-weight:800;
-  font-size:14px;
-  color:var(--muted);
+  font-size:30px;
+  line-height:1;
+  color:#1f2a44;
   margin-bottom:8px;
 }
 .bugReportModal h3{
   text-align:center;
   margin:0;
-  font-size:32px;
+  font-size:46px;
+  line-height:1.05;
 }
 .bugReportSubtitle{
   text-align:center;
-  margin:8px 0 18px;
+  margin:8px 0 20px;
+  color:#5f6a80;
 }
 .bugReportField{display:grid;gap:6px;margin-bottom:14px}
 .bugReportField label{font-weight:700;font-size:14px}
 .bugReportField label span{color:#ef4444}
+.bugReportField label small{font-weight:500;color:var(--muted)}
 .bugReportReadonly{
-  min-height:48px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.03)
+  min-height:48px;display:flex;align-items:center;gap:10px;padding:0 14px;border:1px solid #d8deea;border-radius:13px;background:#fff;font-weight:600;color:#3f4b65
 }
-.bugReportTextarea{min-height:120px;resize:vertical}
+.bugMailIcon{
+  width:24px;height:24px;display:grid;place-items:center;background:#f4eefe;border-radius:8px;font-size:13px
+}
+.bugSeverityRow{
+  display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:stretch
+}
+.bugSeverityOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.bugSeverityBtn{
+  min-height:52px;border-radius:13px;border:1px solid #e4e8f1;background:#fff;color:#4c5975;font-weight:700;cursor:pointer
+}
+.bugSeverityBtn.high.active{border-color:#fca5a5;background:#fff5f5;color:#dc2626}
+.bugSeverityBtn.medium.active{border-color:#fdba74;background:#fff7ed;color:#ea580c}
+.bugSeverityBtn.low.active{border-color:#86efac;background:#f0fdf4;color:#16a34a}
+.bugSeverityHint{
+  border-left:1px solid #dde3ef;padding-left:14px;display:grid;align-content:center;gap:4px;color:#5f6a80
+}
+.bugSeverityHint strong{font-size:14px;color:#27354f}
+.bugSeverityHint small{font-size:12px;line-height:1.45}
+.bugReportTextarea{min-height:118px;resize:vertical;border-radius:13px}
 .bugUploadBox{
-  min-height:96px;border:1px dashed var(--line);border-radius:16px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:12px;cursor:pointer;background:rgba(255,255,255,.02)
+  min-height:106px;border:1px dashed #cbb8ff;border-radius:16px;display:grid;place-items:center;text-align:center;color:#69758f;padding:12px;cursor:pointer;background:#fcfaff
 }
+.bugUploadTitle{font-weight:600;color:#35425f}
 .bugUploadBox small{display:block;margin-top:4px}
-.bugContactRow{display:flex;align-items:center;gap:10px;margin:2px 0 8px;color:var(--text)}
-.bugReportActions{display:flex;justify-content:flex-end;gap:12px;margin-top:10px}
+.bugContactRow{display:flex;align-items:flex-start;gap:10px;margin:2px 0 14px;color:var(--text)}
+.bugContactRow span{display:grid;gap:2px}
+.bugContactRow span strong{font-weight:600;color:#34425d}
+.bugContactRow span small{font-size:12px;color:#74809a}
+.bugReportActions{
+  display:flex;justify-content:flex-end;gap:12px;margin-top:6px;border-top:1px solid #e7ebf3;padding:14px 24px;margin-left:-24px;margin-right:-24px;border-bottom-left-radius:18px;border-bottom-right-radius:18px;background:#fff
+}
 .bugDetailText{white-space:pre-wrap;line-height:1.6;color:var(--text)}
 .bugFixRow{display:grid;grid-template-columns:160px 1fr auto;gap:12px;align-items:center}
 .bugImageLink{color:var(--accent);font-weight:700}
 body.light .bugReportReadonly,
-body.light .bugUploadBox{background:#f8fbff}
+body.light .bugUploadBox{background:#fff}
 @media (max-width: 720px){
-  .bugReportModal{padding:22px 16px 16px}
-  .bugReportModal h3{font-size:28px}
+  .bugReportModal{padding:20px 16px 0}
+  .bugReportBrand{font-size:24px}
+  .bugReportModal h3{font-size:32px}
+  .bugSeverityRow,
+  .bugSeverityOptions{grid-template-columns:1fr}
+  .bugSeverityHint{border-left:none;border-top:1px solid #dde3ef;padding-left:0;padding-top:10px}
   .bugFixRow{grid-template-columns:1fr}
   .bugReportActions{flex-direction:column-reverse}
   .bugReportActions .btn{width:100%}

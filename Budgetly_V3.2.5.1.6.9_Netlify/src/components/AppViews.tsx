@@ -4751,7 +4751,14 @@ function BugReportModal({
   onSubmit: (payload: { steps: string; file: File | null; contact: boolean }) => void
   busy: boolean
 }) {
+  const severityOptions = [
+    { key: 'high', label: 'High', icon: '🔴' },
+    { key: 'medium', label: 'Medium', icon: '🟠' },
+    { key: 'low', label: 'Low', icon: '🟢' },
+  ] as const
+
   const [steps, setSteps] = useState('')
+  const [severity, setSeverity] = useState<'high' | 'medium' | 'low'>('medium')
   const [contact, setContact] = useState(true)
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState('')
@@ -4759,6 +4766,7 @@ function BugReportModal({
   useEffect(() => {
     if (!open) {
       setSteps('')
+      setSeverity('medium')
       setContact(true)
       setFile(null)
       setError('')
@@ -4773,7 +4781,7 @@ function BugReportModal({
       return
     }
     setError('')
-    onSubmit({ steps: steps.trim(), file, contact })
+    onSubmit({ steps: `[Severity: ${severity}] ${steps.trim()}`, file, contact })
   }
 
   return (
@@ -4781,36 +4789,60 @@ function BugReportModal({
       <div className="card bugReportModal" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
         <div className="bugReportBrand">🐞 Budgetly</div>
         <h3 id="bug-report-title">Bug report form</h3>
-        <p className="muted bugReportSubtitle">Use this form to report any bugs or issues you encounter.</p>
+        <p className="muted bugReportSubtitle">Use this form to report bugs, issues, or unexpected behavior.</p>
 
         <div className="bugReportField">
           <label>Your email <span>*</span></label>
-          <div className="bugReportReadonly">✉️ {email}</div>
+          <div className="bugReportReadonly"><span className="bugMailIcon">✉️</span>{email}</div>
+        </div>
+
+        <div className="bugReportField">
+          <label>Severity <span>*</span></label>
+          <div className="bugSeverityRow">
+            <div className="bugSeverityOptions">
+              {severityOptions.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`bugSeverityBtn ${severity === item.key ? 'active' : ''} ${item.key}`}
+                  onClick={() => setSeverity(item.key)}
+                >
+                  <span>{item.icon}</span> {item.label}
+                </button>
+              ))}
+            </div>
+            <div className="bugSeverityHint">
+              <strong>Choose the severity</strong>
+              <small>This helps us prioritize and resolve issues faster.</small>
+            </div>
+          </div>
         </div>
 
         <div className="bugReportField">
           <label>Steps to reproduce the issue <span>*</span></label>
-          <small>Please be as detailed as possible.</small>
           <textarea
             className="textarea bugReportTextarea"
             value={steps}
             onChange={(event) => setSteps(event.target.value)}
-            placeholder="What happened, what you clicked, what you expected, and what actually happened..."
+            placeholder="Please provide detailed steps so we can reproduce and understand the issue. Include what happened, what you clicked, what you expected, and what actually happened."
           />
         </div>
 
         <div className="bugReportField">
-          <label>Screenshot of the issue</label>
+          <label>Screenshot of the issue <small>(optional)</small></label>
           <label className="bugUploadBox">
             <input type="file" accept="image/*" onChange={(event) => setFile(event.target.files?.[0] ?? null)} hidden />
-            <div>📁 Drag & drop a file or <u>browse</u></div>
-            <small>{file ? file.name : 'PNG, JPG, or WEBP'}</small>
+            <div className="bugUploadTitle">Drag &amp; drop, <u>browse</u>, or paste screenshot</div>
+            <small>{file ? file.name : 'PNG · JPG · WEBP · up to 5 MB'}</small>
           </label>
         </div>
 
         <label className="bugContactRow">
           <input type="checkbox" checked={contact} onChange={(event) => setContact(event.target.checked)} />
-          <span>Can we contact you when the issue is resolved?</span>
+          <span>
+            <strong>Can we contact you when the issue is resolved?</strong>
+            <small>We'll use your email to follow up if needed.</small>
+          </span>
         </label>
 
         {error ? <div className="passwordFeedback error">{error}</div> : null}
