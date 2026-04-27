@@ -5007,9 +5007,11 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                 <div className="bugsDetailColumns">
                   <div>
                     <div className="auditDetailHeading">Steps to Reproduce</div>
-                    <ol className="bugsStepsList">
-                      {selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>)}
-                    </ol>
+                    <div className="bugsStepsScrollBox">
+                      <ol className="bugsStepsList">
+                        {selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>)}
+                      </ol>
+                    </div>
                   </div>
                   <div>
                     <div className="auditDetailHeading">Screenshot</div>
