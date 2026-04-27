@@ -4711,7 +4711,6 @@ ${rowXml}
               <option>Low</option>
             </select>
             <button className="btn bugsGhostAction" onClick={exportBugHistory}><Download size={14} /> Export</button>
-            <button className="btn primary"><Plus size={14} /> Report Bug</button>
           </div>
 
           <div className="auditTableShell bugTableShell">
