@@ -1950,7 +1950,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                   <th>Category</th>
                   <th className="txHeaderAmount">Amount</th>
                   <th>Note</th>
-                  <th />
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -1964,8 +1964,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                       <td className={`txAmountCell ${transaction.type} txAmountCellAligned`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
                       <td>
                         <div className="txDescriptionCell">
-                          <strong>{transaction.note?.trim() || 'No note'}</strong>
-                          <span>{transaction.type === 'income' ? 'Income entry' : 'Expense entry'}</span>
+                          <strong>{transaction.note?.trim() || 'No Note'}</strong>
                         </div>
                       </td>
                       <td className="txActionCell">
