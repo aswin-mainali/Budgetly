@@ -7161,8 +7161,8 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringToolbar .input{height:44px;border-radius:14px}
 .recurringToolbar .select{min-width:0;padding-right:32px}
 .recurringSearchInput{position:relative;display:flex;align-items:center;min-width:0}
-.recurringSearchInput svg{position:absolute;left:12px;opacity:.7;pointer-events:none}
-.recurringSearchInput .input{padding-left:34px;width:100%}
+.recurringSearchInput svg{position:absolute;left:14px;opacity:.7;pointer-events:none}
+.recurringSearchInput .input{padding-left:42px;width:100%;line-height:1.2}
 .recurringFeedTable{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
 .recurringFeedDataRow{width:100%;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(120px,1fr) minmax(120px,.8fr) 90px minmax(120px,.9fr) 28px;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:inherit;text-align:left;cursor:pointer}
 .recurringFeedDataRow:hover{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.06)}
