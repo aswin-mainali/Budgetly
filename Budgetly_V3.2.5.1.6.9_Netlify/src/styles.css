@@ -6870,9 +6870,9 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsGhostAction{display:inline-flex;align-items:center;gap:7px}
 .bugsFixesToolbar .btn{height:44px}
 .bugTableShell{border-radius:16px}
-.bugsFixesHeaderRow{grid-template-columns:minmax(130px,.95fr) minmax(180px,1.15fr) minmax(160px,1fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr)}
+.bugsFixesHeaderRow{grid-template-columns:minmax(130px,.95fr) minmax(180px,1.15fr) minmax(220px,1.7fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr)}
 .bugsFixesBody{padding:0}
-.bugsFixesRow{display:grid;grid-template-columns:minmax(130px,.95fr) minmax(180px,1.15fr) minmax(160px,1fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
+.bugsFixesRow{display:grid;grid-template-columns:minmax(130px,.95fr) minmax(180px,1.15fr) minmax(220px,1.7fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
 .bugsFixesRow:last-child{border-bottom:none}
 .bugsFixesRow.selected{background:rgba(37,99,235,.09);box-shadow:inset 3px 0 0 #3b82f6}
 .bugsDateCell,.bugsReporterCell,.bugsIssueCell{display:grid;gap:2px}
@@ -6900,7 +6900,6 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsDetailTop{display:flex;align-items:flex-start;gap:10px}
 .bugsBugIcon{width:48px;height:48px;border-radius:14px;border:1px solid #ffe1e1;background:#fff3f3;color:#ff6464;display:grid;place-items:center;font-size:21px;font-weight:700}
 .bugsCaseMetaRow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.bugsDetailHeaderActions{display:flex;align-items:center;gap:8px}
 .bugsDetailDivider{height:1px;background:#e8edf5;margin:2px 0}
 .bugsCaseId{font-size:13px;font-weight:700;letter-spacing:.01em;color:#5f6f8a;margin-bottom:0}
 .bugsDetailTop h4{margin:0 0 6px;font-size:20px;line-height:1.25;color:#1f2a44}

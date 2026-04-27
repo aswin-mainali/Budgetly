@@ -4657,13 +4657,13 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&apos;')
 
-    const header = ['Case ID', 'Date', 'Reporter Email', 'Module', 'Summary', 'Severity', 'Status', 'Internal Notes']
+    const header = ['Case ID', 'Date', 'Reporter Email', 'Issue', 'Summary', 'Severity', 'Status', 'Internal Notes']
     const rowXml = rows.map((item) => {
       const columns = [
         `BUG-${item.id.slice(0, 8)}`,
         item.timestamp.toLocaleString(),
         item.user_email,
-        item.module,
+        item.title,
         item.summary || '',
         item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low',
         item.status === 'completed' ? 'Resolved' : item.statusLabel,
@@ -4731,7 +4731,7 @@ ${rowXml}
             <div className="auditTableHeader bugsFixesHeaderRow">
               <div>Date</div>
               <div>Reporter</div>
-              <div>Module</div>
+              <div>Issue</div>
               <div>Severity</div>
               <div>Status</div>
               <div>Actions</div>
@@ -4750,14 +4750,14 @@ ${rowXml}
                       <strong>{item.reporterHandle}</strong>
                       <span>{item.user_email}</span>
                     </div>
-                    <div className="bugsModuleCell">
-                      <span className="bugModulePill">{item.module}</span>
+                    <div className="bugsIssueCell">
+                      <strong>{item.title}</strong>
+                      <span>{item.summary || 'No extra notes provided.'}</span>
                     </div>
                     <div><span className={`bugPill severity ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
                     <div><span className={`bugPill status ${item.status === 'completed' ? 'resolved' : item.statusLabel === 'In Progress' ? 'review' : 'pending'}`}>{item.statusLabel}</span></div>
                     <div className="bugsActionsCell">
                       <button className="btn">View</button>
-                      <button className="iconBtn" aria-label="More options"><MoreHorizontal size={15} /></button>
                     </div>
                   </div>
                 )
@@ -4789,11 +4789,6 @@ ${rowXml}
                     <h4>{selected.title}</h4>
                     <p className="muted">Reported on {selected.timestamp.toLocaleDateString()} at {selected.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} by {selected.user_email}</p>
                   </div>
-                </div>
-                <div className="bugsDetailHeaderActions">
-                  <button className="iconBtn" aria-label="Previous issue"><ChevronLeft size={14} /></button>
-                  <button className="iconBtn" aria-label="Next issue"><ChevronRight size={14} /></button>
-                  <button className="iconBtn" aria-label="Close issue"><span style={{ fontSize: 16, lineHeight: 1 }}>×</span></button>
                 </div>
               </div>
 
