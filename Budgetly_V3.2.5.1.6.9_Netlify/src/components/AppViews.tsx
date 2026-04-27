@@ -4778,14 +4778,26 @@ ${rowXml}
         <div className="bugsFixesDetail">
           {!selected ? <div className="muted">Select an issue to inspect details.</div> : (
             <>
-              <div className="bugsDetailTop">
-                <div>
-                  <div className="bugsCaseId">BUG-{selected.id.slice(0, 8)}</div>
-                  <h4>{selected.title}</h4>
-                  <p className="muted">Reported on {selected.timestamp.toLocaleDateString()} at {selected.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} by {selected.user_email}</p>
+              <div className="bugsDetailHeaderRow">
+                <div className="bugsDetailTop">
+                  <div className="bugsBugIcon" aria-hidden>☼</div>
+                  <div>
+                    <div className="bugsCaseMetaRow">
+                      <div className="bugsCaseId">BUG-{selected.id.slice(0, 8)}</div>
+                      <span className={`bugPill severity ${selected.severity}`}>{selected.severity === 'high' ? 'High' : selected.severity === 'medium' ? 'Medium' : 'Low'}</span>
+                    </div>
+                    <h4>{selected.title}</h4>
+                    <p className="muted">Reported on {selected.timestamp.toLocaleDateString()} at {selected.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} by {selected.user_email}</p>
+                  </div>
                 </div>
-                <span className={`bugPill severity ${selected.severity}`}>{selected.severity === 'high' ? 'High' : selected.severity === 'medium' ? 'Medium' : 'Low'}</span>
+                <div className="bugsDetailHeaderActions">
+                  <button className="iconBtn" aria-label="Previous issue"><ChevronLeft size={14} /></button>
+                  <button className="iconBtn" aria-label="Next issue"><ChevronRight size={14} /></button>
+                  <button className="iconBtn" aria-label="Close issue"><span style={{ fontSize: 16, lineHeight: 1 }}>×</span></button>
+                </div>
               </div>
+
+              <div className="bugsDetailDivider" />
 
               <div className="auditDetailSection">
                 <div className="auditDetailHeading">Summary</div>
@@ -4810,6 +4822,12 @@ ${rowXml}
                 <textarea className="textarea" placeholder="Add internal notes or update..." value={notesDraft[selected.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selected.id]: event.target.value }))} />
               </div>
 
+              <div className="bugsFieldLabelRow">
+                <span>Status</span>
+                <span>Priority</span>
+                <span />
+                <span />
+              </div>
               <div className="bugFixRow">
                 <select className="select" value={statusDraft[selected.id] || selected.status} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selected.id]: event.target.value as 'pending' | 'completed' }))}>
                   <option value="pending">Pending</option>
