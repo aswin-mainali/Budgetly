@@ -4825,93 +4825,242 @@ function BugReportModal({
 }
 
 function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [severityFilter, setSeverityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [imageModalSrc, setImageModalSrc] = useState<string | null>(null)
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, 'pending' | 'completed'>>({})
+  const [priorityDraft, setPriorityDraft] = useState<Record<string, 'high' | 'medium' | 'low'>>({})
+
+  const reportsWithMeta = useMemo(() => {
+    return admin.bugReports.map((item, index) => {
+      const hash = Array.from(item.id).reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
+      const severityCycle: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'medium', 'low']
+      const priorityCycle: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low']
+      return {
+        ...item,
+        ticketCode: `BUG-${new Date(item.created_at || Date.now()).getFullYear()}-${String((hash + index * 19) % 10000).padStart(4, '0')}`,
+        severity: severityCycle[(hash + index) % severityCycle.length],
+        priority: priorityCycle[(hash + index * 2) % priorityCycle.length],
+      }
+    })
+  }, [admin.bugReports])
+
+  const filteredReports = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase()
+    return reportsWithMeta.filter((item) => {
+      const matchesQuery = !query || item.user_email.toLowerCase().includes(query) || item.steps_to_reproduce.toLowerCase().includes(query) || item.ticketCode.toLowerCase().includes(query)
+      const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+      const matchesSeverity = severityFilter === 'all' || item.severity === severityFilter
+      return matchesQuery && matchesStatus && matchesSeverity
+    })
+  }, [reportsWithMeta, searchTerm, statusFilter, severityFilter])
+
+  const pageSize = 7
+  const totalPages = Math.max(1, Math.ceil(filteredReports.length / pageSize))
+  const pagedReports = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredReports.slice(start, start + pageSize)
+  }, [currentPage, filteredReports])
+  const selectedReport = useMemo(
+    () => filteredReports.find((item) => item.id === selectedId) || pagedReports[0] || null,
+    [filteredReports, selectedId, pagedReports]
+  )
 
   useEffect(() => {
     const nextNotes: Record<string, string> = {}
     const nextStatus: Record<string, 'pending' | 'completed'> = {}
+    const nextPriority: Record<string, 'high' | 'medium' | 'low'> = {}
     admin.bugReports.forEach((item) => {
       nextNotes[item.id] = item.admin_notes ?? ''
       nextStatus[item.id] = item.status
+      const hash = Array.from(item.id).reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
+      nextPriority[item.id] = ['high', 'medium', 'low'][hash % 3] as 'high' | 'medium' | 'low'
     })
     setNotesDraft(nextNotes)
     setStatusDraft(nextStatus)
+    setPriorityDraft(nextPriority)
   }, [admin.bugReports])
 
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages)
+  }, [currentPage, totalPages])
+
+  useEffect(() => {
+    if (!selectedReport) {
+      setSelectedId(null)
+      return
+    }
+    if (selectedId !== selectedReport.id) setSelectedId(selectedReport.id)
+  }, [selectedId, selectedReport])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter, severityFilter])
+
+  const renderSeverityPill = (level: 'high' | 'medium' | 'low') => (
+    <span className={`bugsMetaPill bugsSeverityPill ${level}`}>{level[0].toUpperCase() + level.slice(1)}</span>
+  )
+
+  const renderStatusPill = (status: 'pending' | 'completed') => (
+    <span className={`bugsMetaPill bugsStatusPill ${status}`}>{status === 'completed' ? 'Resolved' : 'Pending'}</span>
+  )
+
+  const selectedSteps = selectedReport?.steps_to_reproduce.split('\n').map((step) => step.trim()).filter(Boolean) || []
+
   return (
-    <div className={`card ${embedded ? 'settingsPanelCard' : ''}`}>
-      <div className="row between" style={{ marginBottom: 14, gap: 12, alignItems: 'flex-start' }}>
-        <div>
-          <h3 style={{ marginBottom: 4 }}>Bugs & Fixes</h3>
-          <div className="muted">Review reported issues, inspect details, and mark them as completed when fixed.</div>
+    <>
+      <div className={`card ${embedded ? 'settingsPanelCard' : ''} bugsPanelCard`}>
+        <div className="row between" style={{ marginBottom: 8, gap: 12, alignItems: 'flex-start' }}>
+          <div>
+            <h3 style={{ marginBottom: 4 }}>Bugs & Fixes</h3>
+            <div className="muted">Track, triage, and resolve reported issues to keep Budgetly stable and reliable.</div>
+          </div>
+          <button className="btn">Workspace controls</button>
         </div>
-        <span className="badge">{admin.bugReports.length} reports</span>
-      </div>
-
-      <div className="auditTableShell">
-        <div className="auditTableHeader bugAuditTableHeader">
-          <div>Time</div>
-          <div>User</div>
-          <div>Action</div>
-          <div className="auditHeaderStatus">Status</div>
-          <div>More detail</div>
+        <div className="bugsPanelTopTabs">
+          <button className="settingsNavBtn settingsTopNavBtn">General</button>
+          <button className="settingsNavBtn settingsTopNavBtn">Data & backup</button>
+          <button className="settingsNavBtn settingsTopNavBtn">Account</button>
+          <button className="settingsNavBtn settingsTopNavBtn">Super Admin</button>
+          <button className="settingsNavBtn settingsTopNavBtn">Audit Log</button>
+          <button className="settingsNavBtn settingsTopNavBtn active">Bugs & Fixes</button>
         </div>
 
-        <div className="auditTableBody adminAuditScrollable">
-          {admin.bugReports.length === 0 ? <div className="muted">No bug reports yet.</div> : admin.bugReports.map((item) => {
-            const isExpanded = expandedId === item.id
-            const timestamp = item.created_at ? new Date(item.created_at) : null
-            return (
-              <div key={item.id} className={`auditEntry ${isExpanded ? 'open' : ''}`}>
-                <div className="auditRowGrid bugAuditRowGrid">
-                  <div className="auditCell auditCellTime">
-                    <strong>{timestamp ? timestamp.toLocaleDateString() : 'Today'}</strong>
-                    <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}</span>
-                  </div>
-                  <div className="auditCell"><span>{item.user_email}</span></div>
-                  <div className="auditCell auditCellAction"><strong>Bug report</strong></div>
-                  <div className="auditCell auditCellStatus"><span className={`auditStatusPill ${item.status === 'completed' ? 'completed' : 'pending'}`}>{item.status}</span></div>
-                  <div className="auditCell auditCellDetailToggle">
-                    <button className="auditDetailBtn" onClick={() => setExpandedId(isExpanded ? null : item.id)}>
-                      {isExpanded ? 'Hide detail' : 'View detail'} <ExternalLink size={14} />
+        <div className="bugsWorkspace">
+          <div className="bugsListPane">
+            <div className="bugsToolbar">
+              <input className="input bugsSearchInput" placeholder="Search bugs..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+              <select className="select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | 'pending' | 'completed')}>
+                <option value="all">Status: All</option>
+                <option value="pending">Status: Pending</option>
+                <option value="completed">Status: Resolved</option>
+              </select>
+              <select className="select" value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value as 'all' | 'high' | 'medium' | 'low')}>
+                <option value="all">Severity: All</option>
+                <option value="high">Severity: High</option>
+                <option value="medium">Severity: Medium</option>
+                <option value="low">Severity: Low</option>
+              </select>
+              <button className="btn">Export</button>
+            </div>
+
+            <div className="bugsTableShell">
+              <div className="bugsTableHeader">
+                <div>Date</div>
+                <div>Reporter</div>
+                <div>Severity</div>
+                <div>Status</div>
+              </div>
+              <div className="bugsTableBody">
+                {pagedReports.length === 0 ? <div className="muted">No bug reports found.</div> : pagedReports.map((item) => {
+                  const timestamp = item.created_at ? new Date(item.created_at) : null
+                  const isSelected = selectedReport?.id === item.id
+                  return (
+                    <button key={item.id} className={`bugsRowBtn ${isSelected ? 'active' : ''}`} onClick={() => setSelectedId(item.id)}>
+                      <div className="bugsDateCell">
+                        <strong>{timestamp ? timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'}</strong>
+                        <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}</span>
+                      </div>
+                      <div className="bugsEmailCell">{item.user_email}</div>
+                      <div>{renderSeverityPill(item.severity)}</div>
+                      <div>{renderStatusPill(item.status)}</div>
                     </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="bugsPaginationRow">
+              <span className="muted">Showing {filteredReports.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredReports.length)} of {filteredReports.length} results</span>
+              <div className="bugsPaginationBtns">
+                <button className="btn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}>‹</button>
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <button key={index + 1} className={`btn ${currentPage === index + 1 ? 'primary' : ''}`} onClick={() => setCurrentPage(index + 1)}>
+                    {index + 1}
+                  </button>
+                ))}
+                <button className="btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}>›</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bugsDetailPane">
+            {selectedReport ? (
+              <>
+                <div className="bugsDetailHeader">
+                  <div className="bugsTicketRow">
+                    <span>{selectedReport.ticketCode}</span>
+                    {renderSeverityPill(selectedReport.severity)}
+                  </div>
+                  <h4>{selectedSteps[0] || 'Bug report detail'}</h4>
+                </div>
+
+                <div className="bugsDetailColumns">
+                  <div>
+                    <div className="auditDetailHeading">Steps to Reproduce</div>
+                    <ol className="bugsStepsList">
+                      {selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>)}
+                    </ol>
+                  </div>
+                  <div>
+                    <div className="auditDetailHeading">Screenshot</div>
+                    {selectedReport.screenshot_data_url ? (
+                      <button className="bugsScreenshotCard" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
+                        <img src={selectedReport.screenshot_data_url} alt={selectedReport.screenshot_name || 'Bug screenshot'} />
+                        <span>Click to expand</span>
+                      </button>
+                    ) : (
+                      <div className="muted">No screenshot attached.</div>
+                    )}
                   </div>
                 </div>
-                {isExpanded ? (
-                  <div className="auditExpandedPanel">
-                    <div className="auditDetailSection">
-                      <div className="auditDetailHeading">Steps to reproduce</div>
-                      <div className="bugDetailText">{item.steps_to_reproduce}</div>
-                    </div>
-                    {item.screenshot_data_url ? (
-                      <div className="auditDetailSection">
-                        <div className="auditDetailHeading">Screenshot</div>
-                        <a className="bugImageLink" href={item.screenshot_data_url} target="_blank" rel="noreferrer">Open screenshot ({item.screenshot_name || 'image'})</a>
-                      </div>
-                    ) : null}
-                    <div className="auditDetailSection">
-                      <div className="auditDetailHeading">Status</div>
-                      <div className="bugFixRow">
-                        <select className="select" value={statusDraft[item.id] || item.status} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [item.id]: event.target.value as 'pending' | 'completed' }))}>
-                          <option value="pending">Pending</option>
-                          <option value="completed">Completed</option>
-                        </select>
-                        <input className="input" placeholder="Internal fix notes" value={notesDraft[item.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [item.id]: event.target.value }))} />
-                        <button className="btn primary" disabled={admin.busyAction === `bug:${item.id}`} onClick={() => admin.updateBugReport(item.id, { status: statusDraft[item.id] || item.status, admin_notes: notesDraft[item.id] || '' })}>
-                          {admin.busyAction === `bug:${item.id}` ? 'Saving...' : 'Save'}
-                        </button>
-                      </div>
-                    </div>
+
+                <div>
+                  <div className="auditDetailHeading">Internal Notes</div>
+                  <textarea className="textarea" placeholder="Add internal notes or updates..." value={notesDraft[selectedReport.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
+                </div>
+
+                <div className="bugsDetailFooter">
+                  <div>
+                    <div className="auditDetailHeading">Status</div>
+                    <select className="select" value={statusDraft[selectedReport.id] || selectedReport.status} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as 'pending' | 'completed' }))}>
+                      <option value="pending">Pending</option>
+                      <option value="completed">Resolved</option>
+                    </select>
                   </div>
-                ) : null}
-              </div>
-            )
-          })}
+                  <div>
+                    <div className="auditDetailHeading">Priority</div>
+                    <select className="select" value={priorityDraft[selectedReport.id] || selectedReport.priority} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as 'high' | 'medium' | 'low' }))}>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => admin.updateBugReport(selectedReport.id, { status: statusDraft[selectedReport.id] || selectedReport.status, admin_notes: notesDraft[selectedReport.id] || '' })}>
+                    {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
+                  </button>
+                  <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: notesDraft[selectedReport.id] || '' })}>
+                    Mark Resolved
+                  </button>
+                </div>
+              </>
+            ) : <div className="muted">No report selected.</div>}
+          </div>
         </div>
       </div>
-    </div>
+      {imageModalSrc ? (
+        <div className="modalWrap" onClick={() => setImageModalSrc(null)}>
+          <div className="card bugsImageModal" onClick={(event) => event.stopPropagation()}>
+            <button className="btn bugsImageClose" onClick={() => setImageModalSrc(null)}>Close</button>
+            <img src={imageModalSrc} alt="Expanded bug screenshot" />
+          </div>
+        </div>
+      ) : null}
+    </>
   )
 }
 
