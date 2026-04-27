@@ -915,28 +915,30 @@ export function useBudgetApp(userId: string | null) {
     [recurring],
   )
 
-  const addRecurring = () => {
-    if (!userId) return
+  const addRecurring = (draft?: Partial<Pick<RecurringItem, 'name' | 'category_id' | 'amount' | 'kind' | 'recurrence_type' | 'day_of_month' | 'anchor_date' | 'note'>>) => {
+    if (!userId) return null
+    const newId = crypto.randomUUID()
     persistLocal((current) => ({
       ...current,
       recurring: [
         ...current.recurring,
         {
-          id: crypto.randomUUID(),
+          id: newId,
           user_id: userId,
-          name: 'New Bill',
-          category_id: null,
-          amount: 0,
-          kind: 'expense',
-          recurrence_type: 'monthly',
-          day_of_month: Math.min(28, new Date().getDate() || 1),
-          anchor_date: todayIso(),
-          note: '',
+          name: draft?.name?.trim() || 'New Bill',
+          category_id: typeof draft?.category_id === 'string' && draft.category_id ? draft.category_id : null,
+          amount: Number.isFinite(Number(draft?.amount)) ? clampMoney(Number(draft?.amount)) : 0,
+          kind: draft?.kind === 'income' ? 'income' : 'expense',
+          recurrence_type: draft?.recurrence_type === 'weekly' || draft?.recurrence_type === 'biweekly' ? draft.recurrence_type : 'monthly',
+          day_of_month: Math.max(1, Math.min(31, Number(draft?.day_of_month ?? Math.min(28, new Date().getDate() || 1)))),
+          anchor_date: draft?.anchor_date || todayIso(),
+          note: typeof draft?.note === 'string' ? draft.note : '',
         },
       ],
     }))
     markRecurringDirty()
     notify('New recurring item added')
+    return newId
   }
 
   const updateRecurringField = (id: string, field: 'name' | 'category_id' | 'amount' | 'day_of_month' | 'note' | 'recurrence_type' | 'anchor_date' | 'kind', value: string) => {
