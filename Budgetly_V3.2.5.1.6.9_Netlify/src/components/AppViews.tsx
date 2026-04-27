@@ -1693,9 +1693,6 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
 export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, activeMonth, setActiveMonth, sortedRecurring } = budget
   const isPhone = useIsPhone()
-  const isCompactLaptop = useIsCompactLaptop()
-  const useCompactDashboard = !isPhone && isCompactLaptop
-  const forceCompactManageToolbar = !isPhone && isCompactLaptop
   const today = new Date().toISOString().slice(0, 10)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
@@ -1758,7 +1755,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-      <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
+      <div className={`txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`}>
         <div className="field txField txDateField">
           <label>Date</label>
           <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
@@ -1822,17 +1819,19 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-      <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
-        <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
-          <div className="field txField txSearchField" style={forceCompactManageToolbar ? { gridColumn: 'auto', maxWidth: 320 } : undefined}>
-            <div className="input-icon txSearchInput" style={forceCompactManageToolbar ? { maxWidth: 320 } : undefined}>
+      <div className="txToolbarRow">
+        <div className="txToolbarLeft">
+          <div className="field txField txSearchField">
+            <div className="input-icon txSearchInput">
               <Search size={16} />
               <span className="txSearchPrefix">Search</span>
               <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" aria-label="Search transactions" />
             </div>
           </div>
+        </div>
 
-          <div className="field txField txFilterField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
+        <div className="txToolbarCenter">
+          <div className="field txField txFilterField">
             <label>Filter</label>
             <div className="filterChips" role="tablist" aria-label="Transaction filter">
               <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
@@ -1840,8 +1839,10 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               <button type="button" className={`filterChip expense ${txType === 'expense' ? 'active' : ''}`} onClick={() => setTxType('expense')}>Expense</button>
             </div>
           </div>
+        </div>
 
-          <div className="field txField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
+        <div className="txToolbarRight">
+          <div className="field txField txMonthField">
             <label>Month</label>
             <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {months.map((month) => (
@@ -1851,9 +1852,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               ))}
             </select>
           </div>
+          <div className="muted txItemCount">{filteredTx.length} item(s)</div>
         </div>
-
-        <div className="muted" style={forceCompactManageToolbar ? { whiteSpace: 'nowrap', marginLeft: 'auto' } : undefined}>{filteredTx.length} item(s)</div>
       </div>
 
       <div className="txPageScrollable">
