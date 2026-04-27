@@ -1842,19 +1842,20 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       </section>
 
       <section className="txPanel txManagePanel txMainPanel" aria-labelledby="tx-manage-title">
-        <div className="txPanelHeader row between">
+        <div className="txManageBox">
+        <div className="txPanelHeader row between txPanelHeaderModern">
           <div className="txSummaryRow">
             <article className="txSummaryCard">
-              <div className="txSummaryLabel"><span className="txSummaryEmoji">🧾</span><span className="muted">This Month Transactions</span></div>
+              <div className="txSummaryLabel"><span className="txSummaryEmoji">🧾</span><span className="muted">Active Items</span></div>
               <strong>{monthTransactions.length}</strong>
             </article>
             <article className="txSummaryCard income">
-              <div className="txSummaryLabel"><span className="txSummaryEmoji">💸</span><span className="muted">Monthly Income</span></div>
-              <strong>{helpers.fmtMoney(monthIncome, data.currency)}</strong>
+              <div className="txSummaryLabel"><span className="txSummaryEmoji">💵</span><span className="muted">Monthly Total</span></div>
+              <strong>{helpers.fmtMoney(monthIncome + monthExpense, data.currency)}</strong>
             </article>
             <article className="txSummaryCard expense">
-              <div className="txSummaryLabel"><span className="txSummaryEmoji">📉</span><span className="muted">Monthly Expenses</span></div>
-              <strong>{helpers.fmtMoney(monthExpense, data.currency)}</strong>
+              <div className="txSummaryLabel"><span className="txSummaryEmoji">🪙</span><span className="muted">Recurring Income</span></div>
+              <strong>{helpers.fmtMoney(monthIncome, data.currency)}</strong>
             </article>
           </div>
         </div>
@@ -1986,6 +1987,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </table>
         </div>
       )}      </div>
+      </div>
 
       <div className="row between dataPageFooter txStickyFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>

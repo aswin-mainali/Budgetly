@@ -7659,6 +7659,15 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   background: var(--panel);
   padding: 14px;
 }
+.txManageBox{
+  border: 1px solid #d4ddea;
+  border-radius: 16px;
+  background: #f8fbff;
+  padding: 10px;
+}
+.txPanelHeaderModern{
+  margin-bottom: 8px;
+}
 .txAddRowVertical{
   display: flex;
   flex-direction: column;
@@ -7680,28 +7689,32 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   gap: 10px;
 }
 .txSummaryCard{
-  border: 1px solid var(--stroke);
+  border: 1px solid #d4ddea;
   border-radius: 12px;
-  padding: 10px 12px;
-  background: var(--panel-soft);
+  padding: 14px 16px;
+  background: #fff;
 }
 .txSummaryCard strong{
   display: block;
-  margin-top: 4px;
-  font-size: 1.35rem;
+  margin-top: 2px;
+  font-size: 1.95rem;
+  color: #1a2437;
+  line-height: 1.1;
 }
 .txSummaryLabel{
   display:flex;
   align-items:center;
   gap:8px;
+  font-size: 1.08rem;
 }
 .txSummaryEmoji{
-  width:28px;
-  height:28px;
+  width:36px;
+  height:36px;
   border-radius:10px;
   display:grid;
   place-items:center;
-  background: rgba(79,124,255,.12);
+  background: #eaf0ff;
+  font-size: 1rem;
 }
 .txSummaryCard.income strong{ color: #14a765; }
 .txSummaryCard.expense strong{ color: #e24b59; }
@@ -7720,6 +7733,16 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .txToolbarFieldsModern .txField{ min-width: auto; }
 .txToolbarFieldsModern .txSearchField{ grid-column: auto; }
 .txToolbarFieldsModern .txSearchInput input{ padding-left: 30px; }
+.txToolbarFieldsModern input,
+.txToolbarFieldsModern select{
+  height: 44px;
+  border: 1px solid #cfd9e9;
+  border-radius: 12px;
+  background: #fff;
+}
+.txToolbarRow{
+  padding: 2px 0 8px;
+}
 .txDescriptionCell strong{
   display: block;
   color: var(--text);
@@ -7739,12 +7762,18 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   padding: 12px 14px;
 }
 .txHeaderNavRow th{
-  background: #e8edf5;
+  background: #f2f6fc;
   color: #3d5478;
   font-weight: 700;
   font-size: .86rem;
   letter-spacing: .01em;
   border-bottom: 1px solid #d8e1ef;
+}
+.txAlignedTable thead th:first-child{
+  border-top-left-radius: 10px;
+}
+.txAlignedTable thead th:last-child{
+  border-top-right-radius: 10px;
 }
 .txHeaderAmount,
 .txAmountCellAligned{
