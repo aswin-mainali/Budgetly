@@ -6862,19 +6862,17 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugFixRow{display:grid;grid-template-columns:160px 1fr auto;gap:12px;align-items:center}
 .bugImageLink{color:var(--accent);font-weight:700}
 .bugsFixesLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
-.bugsFixesMain{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:12px;min-width:0;min-height:0;max-height:min(72vh,760px)}
-.bugsFixesToolbar{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(2,minmax(140px,.85fr)) auto;gap:10px;align-items:stretch}
+.bugsFixesMain{display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;min-width:0;min-height:0}
+.bugsFixesToolbar{display:grid;grid-template-columns:minmax(200px,1.2fr) repeat(3,minmax(120px,.8fr)) auto;gap:10px;align-items:stretch}
 .bugsSearchBox{display:flex;align-items:center;gap:8px;border:1px solid rgba(148,163,184,.24);border-radius:14px;padding:0 11px;background:rgba(255,255,255,.04);height:44px}
 .bugsSearchBox input{appearance:none;border:none !important;outline:none;background:transparent !important;box-shadow:none !important;width:100%;height:100%;color:inherit;font-size:13px;padding:0}
 .bugsFilterSelect{min-width:0;height:44px}
 .bugsGhostAction{display:inline-flex;align-items:center;gap:7px}
 .bugsFixesToolbar .btn{height:44px}
 .bugTableShell{border-radius:16px}
-.bugTableShell{display:grid;grid-template-rows:auto minmax(0,1fr);min-height:0}
-.bugsFixesHeaderRow{grid-template-columns:minmax(140px,1fr) minmax(220px,1.35fr) minmax(110px,.7fr) minmax(120px,.8fr) minmax(140px,.9fr)}
+.bugsFixesHeaderRow{grid-template-columns:minmax(150px,1.2fr) minmax(120px,.8fr) minmax(130px,.9fr) minmax(120px,.8fr)}
 .bugsFixesBody{padding:0}
-.bugsFixesBody{overflow:auto;min-height:0}
-.bugsFixesRow{display:grid;grid-template-columns:minmax(140px,1fr) minmax(220px,1.35fr) minmax(110px,.7fr) minmax(120px,.8fr) minmax(140px,.9fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
+.bugsFixesRow{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(120px,.8fr) minmax(130px,.9fr) minmax(120px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
 .bugsFixesRow:last-child{border-bottom:none}
 .bugsFixesRow.selected{background:rgba(37,99,235,.09);box-shadow:inset 3px 0 0 #3b82f6}
 .bugsDateCell,.bugsReporterCell,.bugsIssueCell{display:grid;gap:2px}
@@ -6897,7 +6895,7 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugPill.status.resolved{background:rgba(34,197,94,.14);color:#166534;border-color:rgba(34,197,94,.24)}
 .bugsPaginationRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px}
 .bugsPager{display:flex;align-items:center;gap:8px}
-.bugsFixesDetail{border:1px solid #e6ebf4;border-radius:14px;padding:18px 16px;display:grid;gap:18px;align-content:start;background:#fff;min-height:0;max-height:min(72vh,760px);overflow:auto}
+.bugsFixesDetail{border:1px solid #e6ebf4;border-radius:14px;padding:18px 16px;display:grid;gap:18px;align-content:start;background:#fff;min-height:0}
 .bugsDetailHeaderRow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .bugsDetailTop{display:flex;align-items:flex-start;gap:10px}
 .bugsBugIcon{width:48px;height:48px;border-radius:14px;border:1px solid #ffe1e1;background:#fff3f3;color:#ff6464;display:grid;place-items:center;font-size:21px;font-weight:700}
@@ -6934,7 +6932,6 @@ body.light .bugsDetailDivider{background:#e8edf5}
 }
 @media (max-width: 1180px){
   .bugsFixesLayout{grid-template-columns:1fr}
-  .bugsFixesMain,.bugsFixesDetail{max-height:none}
 }
 @media (max-width: 980px){
   .bugsFixesToolbar{grid-template-columns:1fr 1fr}

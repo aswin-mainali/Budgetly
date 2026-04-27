@@ -4581,6 +4581,8 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [reporterFilter, setReporterFilter] = useState('all')
+  const [page, setPage] = useState(1)
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, 'pending' | 'completed'>>({})
 
@@ -4641,11 +4643,21 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const filteredRows = useMemo(() => {
     return rows.filter((item) => {
       const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+      const matchesReporter = reporterFilter === 'all' || item.reporterHandle === reporterFilter
       const needle = search.trim().toLowerCase()
       const matchesSearch = !needle || `${item.title} ${item.summary} ${item.user_email}`.toLowerCase().includes(needle)
-      return matchesStatus && matchesSearch
+      return matchesStatus && matchesReporter && matchesSearch
     })
-  }, [rows, search, statusFilter])
+  }, [rows, search, statusFilter, reporterFilter])
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, statusFilter, reporterFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / 7))
+  const safePage = Math.min(page, totalPages)
+  const pagedRows = filteredRows.slice((safePage - 1) * 7, safePage * 7)
+  const reporterOptions = Array.from(new Set(rows.map((item) => item.reporterHandle)))
 
   const selected = filteredRows.find((item) => item.id === selectedId) || filteredRows[0] || null
 
@@ -4724,30 +4736,29 @@ ${rowXml}
               <option>Medium</option>
               <option>Low</option>
             </select>
+            <select className="select bugsFilterSelect" value={reporterFilter} onChange={(event) => setReporterFilter(event.target.value)}>
+              <option value="all">Reporter: All</option>
+              {reporterOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
             <button className="btn bugsGhostAction" onClick={exportBugHistory}><Download size={14} /> Export</button>
           </div>
 
           <div className="auditTableShell bugTableShell">
             <div className="auditTableHeader bugsFixesHeaderRow">
               <div>Date</div>
-              <div>Reporter</div>
               <div>Severity</div>
               <div>Status</div>
               <div>Actions</div>
             </div>
 
             <div className="auditTableBody bugsFixesBody">
-              {filteredRows.length === 0 ? <div className="muted">No bug reports yet.</div> : filteredRows.map((item) => {
+              {filteredRows.length === 0 ? <div className="muted">No bug reports yet.</div> : pagedRows.map((item) => {
                 const isSelected = selected?.id === item.id
                 return (
                   <div key={item.id} className={`bugsFixesRow ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedId(item.id)}>
                     <div className="bugsDateCell">
                       <strong>{item.timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
                       <span>{item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <div className="bugsReporterCell">
-                      <strong>{item.reporterHandle}</strong>
-                      <span>{item.user_email}</span>
                     </div>
                     <div><span className={`bugPill severity ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
                     <div><span className={`bugPill status ${item.status === 'completed' ? 'resolved' : item.statusLabel === 'In Progress' ? 'review' : 'pending'}`}>{item.statusLabel}</span></div>
@@ -4763,9 +4774,12 @@ ${rowXml}
           <div className="bugsPaginationRow">
             <span className="muted">Showing {filteredRows.length} of {admin.bugReports.length} results</span>
             <div className="bugsPager">
-              <button className="iconBtn" aria-label="Previous"><ChevronLeft size={14} /></button>
-              <button className="iconBtn active" aria-label="Page 1">1</button>
-              <button className="iconBtn" aria-label="Next"><ChevronRight size={14} /></button>
+              <button className="iconBtn" aria-label="Previous" onClick={() => setPage((prev) => Math.max(1, prev - 1))}><ChevronLeft size={14} /></button>
+              {Array.from({ length: totalPages }).slice(0, 5).map((_, idx) => {
+                const pageNo = idx + 1
+                return <button key={pageNo} className={`iconBtn ${safePage === pageNo ? 'active' : ''}`} aria-label={`Page ${pageNo}`} onClick={() => setPage(pageNo)}>{pageNo}</button>
+              })}
+              <button className="iconBtn" aria-label="Next" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}><ChevronRight size={14} /></button>
             </div>
           </div>
         </div>
