@@ -6863,16 +6863,16 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugImageLink{color:var(--accent);font-weight:700}
 .bugsFixesLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .bugsFixesMain{display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;min-width:0;min-height:0}
-.bugsFixesToolbar{display:grid;grid-template-columns:minmax(200px,1.2fr) repeat(3,minmax(120px,.8fr)) auto;gap:10px;align-items:stretch}
+.bugsFixesToolbar{display:grid;grid-template-columns:minmax(220px,1.35fr) repeat(2,minmax(130px,.85fr)) auto;gap:10px;align-items:stretch}
 .bugsSearchBox{display:flex;align-items:center;gap:8px;border:1px solid rgba(148,163,184,.24);border-radius:14px;padding:0 11px;background:rgba(255,255,255,.04);height:44px}
 .bugsSearchBox input{appearance:none;border:none !important;outline:none;background:transparent !important;box-shadow:none !important;width:100%;height:100%;color:inherit;font-size:13px;padding:0}
 .bugsFilterSelect{min-width:0;height:44px}
 .bugsGhostAction{display:inline-flex;align-items:center;gap:7px}
 .bugsFixesToolbar .btn{height:44px}
 .bugTableShell{border-radius:16px}
-.bugsFixesHeaderRow{grid-template-columns:minmax(150px,1.2fr) minmax(120px,.8fr) minmax(130px,.9fr) minmax(120px,.8fr)}
+.bugsFixesHeaderRow{grid-template-columns:minmax(140px,1fr) minmax(210px,1.3fr) minmax(110px,.75fr) minmax(120px,.85fr) minmax(120px,.8fr)}
 .bugsFixesBody{padding:0}
-.bugsFixesRow{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(120px,.8fr) minmax(130px,.9fr) minmax(120px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
+.bugsFixesRow{display:grid;grid-template-columns:minmax(140px,1fr) minmax(210px,1.3fr) minmax(110px,.75fr) minmax(120px,.85fr) minmax(120px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
 .bugsFixesRow:last-child{border-bottom:none}
 .bugsFixesRow.selected{background:rgba(37,99,235,.09);box-shadow:inset 3px 0 0 #3b82f6}
 .bugsDateCell,.bugsReporterCell,.bugsIssueCell{display:grid;gap:2px}
