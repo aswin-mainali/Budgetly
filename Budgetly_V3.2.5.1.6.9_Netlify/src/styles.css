@@ -7795,3 +7795,42 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   .txSummaryRow{ grid-template-columns: 1fr; }
   .txToolbarFieldsModern{ grid-template-columns: 1fr 1fr; }
 }
+
+/* v3.2.5.1.6.9.1 hotfix: prevent transactions page bottom clipping */
+.txFullLayout,
+.txPageCard{
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+.txDesktopLayout{
+  align-items: stretch;
+}
+.txMainPanel{
+  display: flex;
+  flex-direction: column;
+}
+.txManageBox{
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.txPageScrollable{
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow: visible;
+}
+.txPageCard .transactionsScrollBox{
+  max-height: none !important;
+  min-height: 320px;
+  overflow: auto;
+}
+.txStickyFooter{
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: var(--panel, #fff);
+  padding-top: 10px;
+  margin-top: 8px;
+}
