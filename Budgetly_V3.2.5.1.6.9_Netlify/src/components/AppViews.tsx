@@ -1694,11 +1694,12 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, activeMonth, setActiveMonth, sortedRecurring } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
-  const useCompactDashboard = !isPhone && isCompactLaptop
-  const forceCompactManageToolbar = !isPhone && isCompactLaptop
   const today = new Date().toISOString().slice(0, 10)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
+  const [txCategoryFilter, setTxCategoryFilter] = useState<string>('all')
+  const [txSort, setTxSort] = useState<'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc'>('date_desc')
+  const addPanelRef = useRef<HTMLElement | null>(null)
   const pendingDeleteTx = useMemo(() => filteredTx.find((transaction) => transaction.id === pendingDeleteId) ?? null, [filteredTx, pendingDeleteId])
   const activeDuplicateGroup = duplicateGroups[0] ?? null
   const filteredCategoriesForDraft = useMemo(() => {
@@ -1742,6 +1743,23 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     setDuplicateGroups(freshGroups)
   }, [data.transactions])
 
+  const monthTransactions = useMemo(() => data.transactions.filter((transaction) => transaction.date.slice(0, 7) === activeMonth), [activeMonth, data.transactions])
+  const monthIncome = useMemo(() => monthTransactions.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0), [monthTransactions])
+  const monthExpense = useMemo(() => monthTransactions.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0), [monthTransactions])
+  const displayTransactions = useMemo(() => {
+    const scoped = txCategoryFilter === 'all'
+      ? filteredTx
+      : filteredTx.filter((transaction) => (transaction.category_id ?? 'uncategorized') === txCategoryFilter)
+    const sorted = [...scoped]
+    sorted.sort((a, b) => {
+      if (txSort === 'date_asc') return a.date.localeCompare(b.date)
+      if (txSort === 'amount_desc') return Math.abs(b.amount) - Math.abs(a.amount)
+      if (txSort === 'amount_asc') return Math.abs(a.amount) - Math.abs(b.amount)
+      return b.date.localeCompare(a.date)
+    })
+    return sorted
+  }, [filteredTx, txCategoryFilter, txSort])
+
   return (
     <div className="card mobileSectionCard dataPageCard txPageCard txFullLayout">
       <div className="row between txPageHeader">
@@ -1749,48 +1767,51 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           <h2>Transactions</h2>
           <div className="muted">Add today’s transaction by default, or backdate it if needed. Use Month to view older records.</div>
         </div>
+        <button className="btn txTopAddBtn" onClick={() => addPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+          <Plus size={16} /> Add Transaction
+        </button>
       </div>
 
-      <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
+      <div className="txDesktopLayout">
+      <section className="txPanel txAddPanel txSidebarPanel" aria-labelledby="tx-add-title" ref={addPanelRef}>
         <div className="txPanelHeader row between">
           <div>
             <h3 id="tx-add-title">Add Transaction</h3>
+            <p className="muted">Record a new income or expense.</p>
           </div>
         </div>
 
-      <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
-        <div className="field txField txDateField">
-          <label>Date</label>
-          <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
+      <div className={`row gap txAddRow txAddRowVertical ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
+        <div className="field txField txNoteField">
+          <label>Name / Description *</label>
+          <input placeholder="e.g., Salary, Rent, Groceries" value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
         </div>
 
         <div className="field txField txTypeField">
-          <label>Type</label>
+          <label>Type *</label>
           <div className="typeToggle" role="tablist" aria-label="Transaction type">
             <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
             <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
           </div>
         </div>
 
-        {txDraft.type === 'expense' ? (
-          <div className="field txField txCategoryField">
-            <label>Expense category</label>
-            <select
-              value={txDraft.category_id}
-              onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
-            >
-              <option value="">Choose category</option>
-              {filteredCategoriesForDraft.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {(category.emoji ?? '🏷️')} {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : null}
+        <div className="field txField txCategoryField">
+          <label>Category *</label>
+          <select
+            value={txDraft.category_id}
+            onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
+          >
+            <option value="">Choose category</option>
+            {filteredCategoriesForDraft.map((category) => (
+              <option key={category.id} value={category.id}>
+                {(category.emoji ?? '🏷️')} {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div className="field txField txAmountField">
-          <label>Amount</label>
+          <label>Amount *</label>
           <input
             inputMode="decimal"
             placeholder="0.00"
@@ -1799,9 +1820,14 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           />
         </div>
 
+        <div className="field txField txDateField">
+          <label>Date *</label>
+          <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
+        </div>
+
         <div className="field txField txGrow txNoteField">
           <label>Note</label>
-          <input placeholder={txDraft.type === 'income' ? 'Salary, freelance, refund…' : 'Groceries, fuel, rent…'} value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
+          <textarea placeholder="Optional note..." value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
         </div>
 
         <button
@@ -1815,34 +1841,50 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       </div>
       </section>
 
-      <section className="txPanel txManagePanel" aria-labelledby="tx-manage-title">
+      <section className="txPanel txManagePanel txMainPanel" aria-labelledby="tx-manage-title">
         <div className="txPanelHeader row between">
-          <div>
-            <h3 id="tx-manage-title">Manage Transactions</h3>
+          <div className="txSummaryRow">
+            <article className="txSummaryCard">
+              <div className="muted">This Month Transactions</div>
+              <strong>{monthTransactions.length}</strong>
+            </article>
+            <article className="txSummaryCard income">
+              <div className="muted">Monthly Income</div>
+              <strong>{helpers.fmtMoney(monthIncome, data.currency)}</strong>
+            </article>
+            <article className="txSummaryCard expense">
+              <div className="muted">Monthly Expenses</div>
+              <strong>{helpers.fmtMoney(monthExpense, data.currency)}</strong>
+            </article>
           </div>
         </div>
 
-      <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
-        <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
-          <div className="field txField txSearchField" style={forceCompactManageToolbar ? { gridColumn: 'auto', maxWidth: 320 } : undefined}>
-            <div className="input-icon txSearchInput" style={forceCompactManageToolbar ? { maxWidth: 320 } : undefined}>
+      <div className="row between txToolbarRow" style={{ marginTop: 8, alignItems: 'flex-end', gap: 12 }}>
+        <div className="row gap txToolbarFields txToolbarFieldsModern">
+          <div className="field txField txSearchField">
+            <div className="input-icon txSearchInput">
               <Search size={16} />
-              <span className="txSearchPrefix">Search</span>
-              <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" aria-label="Search transactions" />
+              <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search transactions..." aria-label="Search transactions" />
             </div>
           </div>
 
-          <div className="field txField txFilterField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
-            <label>Filter</label>
-            <div className="filterChips" role="tablist" aria-label="Transaction filter">
-              <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
-              <button type="button" className={`filterChip income ${txType === 'income' ? 'active' : ''}`} onClick={() => setTxType('income')}>Income</button>
-              <button type="button" className={`filterChip expense ${txType === 'expense' ? 'active' : ''}`} onClick={() => setTxType('expense')}>Expense</button>
-            </div>
+          <div className="field txField txFilterField">
+            <select value={txType} onChange={(event) => setTxType(event.target.value as TxType | 'all')}>
+              <option value="all">All Types</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
           </div>
 
-          <div className="field txField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
-            <label>Month</label>
+          <div className="field txField">
+            <select value={txCategoryFilter} onChange={(event) => setTxCategoryFilter(event.target.value)}>
+              <option value="all">All Categories</option>
+              <option value="uncategorized">Uncategorized</option>
+              {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
+          </div>
+
+          <div className="field txField">
             <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {months.map((month) => (
                 <option key={month} value={month}>
@@ -1851,9 +1893,18 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               ))}
             </select>
           </div>
+
+          <div className="field txField">
+            <select value={txSort} onChange={(event) => setTxSort(event.target.value as 'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc')}>
+              <option value="date_desc">Sort by date (newest)</option>
+              <option value="date_asc">Sort by date (oldest)</option>
+              <option value="amount_desc">Sort by amount (high to low)</option>
+              <option value="amount_asc">Sort by amount (low to high)</option>
+            </select>
+          </div>
         </div>
 
-        <div className="muted" style={forceCompactManageToolbar ? { whiteSpace: 'nowrap', marginLeft: 'auto' } : undefined}>{filteredTx.length} item(s)</div>
+        <div className="muted">{displayTransactions.length} item(s)</div>
       </div>
 
       <div className="txPageScrollable">
@@ -1886,24 +1937,29 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           <table className="table dataStickyTable">
               <thead>
                 <tr>
-                  <th style={{ width: 120 }}>Date</th>
-                  <th style={{ width: 90 }}>Type</th>
+                  <th>Description</th>
                   <th>Category</th>
-                  <th style={{ width: 140, textAlign: 'right' }}>Amount</th>
-                  <th>Note</th>
+                  <th style={{ width: 150, textAlign: 'right' }}>Amount</th>
+                  <th style={{ width: 110 }}>Type</th>
+                  <th style={{ width: 130 }}>Date</th>
                   <th style={{ width: 70 }} />
                 </tr>
               </thead>
               <tbody>
-                {filteredTx.map((transaction) => {
+                {displayTransactions.map((transaction) => {
                   const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
                   return (
                     <tr key={transaction.id}>
-                      <td>{transaction.date}</td>
-                      <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
+                      <td>
+                        <div className="txDescriptionCell">
+                          <strong>{transaction.note?.trim() || (transaction.type === 'income' ? 'Income' : 'Expense')}</strong>
+                          <span>{transaction.type === 'income' ? 'Added income' : 'Expense transaction'}</span>
+                        </div>
+                      </td>
                       <td>{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</td>
                       <td style={{ textAlign: 'right' }} className={`txAmountCell ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
-                      <td className="muted">{transaction.note ?? ''}</td>
+                      <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
+                      <td className="muted">{new Date(`${transaction.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td style={{ textAlign: 'right' }}>
                         <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete">
                           <Trash2 size={16} />
@@ -1912,7 +1968,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                     </tr>
                   )
                 })}
-                {filteredTx.length === 0 ? (
+                {displayTransactions.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="muted" style={{ padding: 18, textAlign: 'center' }}>
                       No transactions found.
@@ -1931,6 +1987,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         </button>
       </div>
       </section>
+      </div>
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}
