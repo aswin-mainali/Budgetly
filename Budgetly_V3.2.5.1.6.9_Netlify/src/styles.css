@@ -7818,21 +7818,27 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .txMainPanel{
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+.txDesktopLayout > .txMainPanel{
+  min-height: calc(100vh - 280px);
 }
 .txManageBox{
   display: flex;
   flex-direction: column;
   min-height: 0;
+  flex: 1 1 auto;
 }
 .txPageScrollable{
   flex: 1 1 auto;
   min-height: 0;
   max-height: none !important;
-  overflow: visible;
+  overflow: hidden;
 }
 .txPageCard .transactionsScrollBox{
   max-height: none !important;
-  min-height: 320px;
+  min-height: clamp(420px, 56vh, 760px);
+  height: 100%;
   overflow: auto;
 }
 .txStickyFooter{
@@ -7844,4 +7850,12 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .txGlobalFooter{
   margin-top: 12px;
   border-top: 1px solid var(--stroke);
+}
+@media (max-width: 1100px){
+  .txDesktopLayout > .txMainPanel{
+    min-height: 0;
+  }
+  .txPageCard .transactionsScrollBox{
+    min-height: 320px;
+  }
 }
