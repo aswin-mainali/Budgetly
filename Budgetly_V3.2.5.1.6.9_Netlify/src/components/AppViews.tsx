@@ -1748,6 +1748,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const monthTransactions = useMemo(() => data.transactions.filter((transaction) => transaction.date.slice(0, 7) === activeMonth), [activeMonth, data.transactions])
   const monthIncome = useMemo(() => monthTransactions.filter((transaction) => transaction.type === 'income').reduce((sum, transaction) => sum + transaction.amount, 0), [monthTransactions])
   const monthExpense = useMemo(() => monthTransactions.filter((transaction) => transaction.type === 'expense').reduce((sum, transaction) => sum + Math.abs(transaction.amount), 0), [monthTransactions])
+  const monthNet = useMemo(() => monthIncome - monthExpense, [monthExpense, monthIncome])
   const displayTransactions = useMemo(() => {
     const scoped = txCategoryFilter === 'all'
       ? filteredTx
@@ -1998,9 +1999,12 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
       <div className="row between dataPageFooter txStickyFooter txGlobalFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
-        <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
-          Update Transactions
-        </button>
+        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          <div className="badge">Estimated monthly net {helpers.fmtMoney(monthNet, data.currency)}</div>
+          <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
+            Update Transactions
+          </button>
+        </div>
       </div>
 
       {useModalAdd && isAddModalOpen ? (

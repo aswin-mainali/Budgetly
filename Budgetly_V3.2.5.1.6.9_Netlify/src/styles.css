@@ -7650,7 +7650,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   display: grid;
   grid-template-columns: minmax(250px, 300px) 1fr;
   gap: 14px;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 .txDesktopLayout.compact{
   grid-template-columns: 1fr;
@@ -7812,6 +7812,9 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   min-height: 0 !important;
   overflow: visible !important;
 }
+.txFullLayout{
+  gap: 6px;
+}
 .txDesktopLayout{
   align-items: stretch;
 }
@@ -7848,7 +7851,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   margin-top: 10px;
 }
 .txGlobalFooter{
-  margin-top: 12px;
+  margin-top: 8px;
   border-top: 1px solid var(--stroke);
 }
 @media (max-width: 1100px){
