@@ -4794,7 +4794,7 @@ ${rowXml}
                       <strong>{item.reporterHandle}</strong>
                       <span>{item.user_email}</span>
                     </div>
-                    <div><span className={`bugPill severity ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
+                    <div><span className={`bugPill bugSeverityPill ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
                     <div><span className={`bugPill bugStatusPill ${item.workflow === 'resolved' ? 'resolved' : item.workflow === 'in_review' ? 'review' : item.workflow === 'in_progress' ? 'inprogress' : 'pending'}`}>{item.statusLabel}</span></div>
                     <div className="bugsActionsCell">
                       <button className="btn">View</button>
