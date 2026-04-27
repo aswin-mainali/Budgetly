@@ -6886,10 +6886,11 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsActionsCell{display:flex;align-items:center;gap:8px}
 .iconBtn{appearance:none;border:1px solid rgba(148,163,184,.24);background:rgba(255,255,255,.06);color:inherit;border-radius:10px;padding:7px 9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px}
 .iconBtn.active{border-color:#3b82f6;background:rgba(59,130,246,.2);font-weight:700}
-.bugPill{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent}
-.bugPill.severity.high{background:rgba(239,68,68,.14);color:#b91c1c;border-color:rgba(239,68,68,.2)}
-.bugPill.severity.medium{background:rgba(251,146,60,.14);color:#c2410c;border-color:rgba(251,146,60,.2)}
-.bugPill.severity.low{background:rgba(34,197,94,.14);color:#166534;border-color:rgba(34,197,94,.2)}
+.bugPill.bugStatusPill.pending{background:rgba(245,158,11,.14);color:#92400e;border-color:rgba(245,158,11,.24)}
+.bugPill.bugStatusPill.review{background:rgba(59,130,246,.12);color:#1d4ed8;border-color:rgba(59,130,246,.24)}
+.bugPill.bugStatusPill.inprogress{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:rgba(37,99,235,.24)}
+.bugPill.bugStatusPill.resolved{background:rgba(34,197,94,.14);color:#166534;border-color:rgba(34,197,94,.24)}
+.bugPill.bugStatusPill{min-width:92px;height:24px;padding:0 10px}
 .bugPill.status.pending{background:rgba(245,158,11,.14);color:#92400e;border-color:rgba(245,158,11,.24)}
 .bugPill.status.review{background:rgba(59,130,246,.12);color:#1d4ed8;border-color:rgba(59,130,246,.24)}
 .bugPill.status.progress{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:rgba(37,99,235,.24)}
