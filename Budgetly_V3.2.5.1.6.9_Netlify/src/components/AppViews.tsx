@@ -922,7 +922,7 @@ import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDo
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
   return (
-    <div className="deleteConfirmBackdrop" role="presentation">
+    <div className="deleteConfirmBackdrop bugReportBackdrop" role="presentation">
       <div className="card deleteConfirmModal" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
         <div className="deleteConfirmIcon" aria-hidden="true">!</div>
         <h3 id="delete-confirm-title">Are you sure?</h3>
@@ -4785,7 +4785,7 @@ function BugReportModal({
   }
 
   return (
-    <div className="deleteConfirmBackdrop" role="presentation">
+    <div className="deleteConfirmBackdrop bugReportBackdrop" role="presentation">
       <div className="card bugReportModal" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
         <div className="bugReportBrand">🐞 Budgetly</div>
         <h3 id="bug-report-title">Bug report form</h3>

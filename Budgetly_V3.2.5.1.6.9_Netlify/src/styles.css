@@ -6826,8 +6826,15 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugReportModal{
   width:min(710px, calc(100vw - 28px));
   max-width:710px;
+  max-height:calc(100vh - 34px);
+  overflow:auto;
   padding:30px 24px 0;
   border-radius:18px;
+}
+.bugReportBackdrop{
+  align-items:flex-start;
+  overflow-y:auto;
+  padding:16px;
 }
 .bugReportBrand{
   text-align:center;
@@ -6863,7 +6870,7 @@ body.light .txPageCard .dataStickyTable thead th,
 }
 .bugSeverityOptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .bugSeverityBtn{
-  min-height:52px;border-radius:13px;border:1px solid #e4e8f1;background:#fff;color:#4c5975;font-weight:700;cursor:pointer
+  min-height:44px;border-radius:12px;border:1px solid #e4e8f1;background:#fff;color:#4c5975;font-weight:700;font-size:14px;cursor:pointer;padding:0 10px
 }
 .bugSeverityBtn.high.active{border-color:#fca5a5;background:#fff5f5;color:#dc2626}
 .bugSeverityBtn.medium.active{border-color:#fdba74;background:#fff7ed;color:#ea580c}
@@ -6894,14 +6901,15 @@ body.light .bugUploadBox{background:#fff}
 @media (max-width: 720px){
   .bugReportModal{
     width:min(710px, calc(100vw - 16px));
+    max-height:calc(100vh - 20px);
     padding:24px 16px 0;
   }
   .bugReportBrand{font-size:26px}
-  .bugReportModal h3{font-size:36px}
-  .bugSeverityRow{grid-template-columns:1fr 170px;gap:10px}
+  .bugReportModal h3{font-size:34px}
+  .bugSeverityRow{grid-template-columns:1fr;gap:8px}
   .bugSeverityOptions{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .bugSeverityBtn{min-height:48px;font-size:15px}
-  .bugSeverityHint{padding-left:10px}
+  .bugSeverityBtn{min-height:40px;font-size:13px;padding:0 8px}
+  .bugSeverityHint{border-left:none;border-top:1px solid #dde3ef;padding-left:0;padding-top:8px}
   .bugFixRow{grid-template-columns:1fr}
   .bugReportActions{flex-direction:row}
   .bugReportActions .btn{width:auto}
