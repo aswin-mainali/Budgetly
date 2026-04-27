@@ -1993,13 +1993,14 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       )}      </div>
       </div>
 
-      <div className="row between dataPageFooter txStickyFooter" style={{ alignItems: 'center', gap: 12 }}>
+      </section>
+      </div>
+
+      <div className="row between dataPageFooter txStickyFooter txGlobalFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
         <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
           Update Transactions
         </button>
-      </div>
-      </section>
       </div>
 
       {useModalAdd && isAddModalOpen ? (
