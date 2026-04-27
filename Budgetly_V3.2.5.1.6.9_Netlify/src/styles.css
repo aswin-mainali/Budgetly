@@ -6865,9 +6865,10 @@ body.light .txPageCard .dataStickyTable thead th,
   display:flex;
   flex-direction:column;
   gap:14px;
-  height:calc(100vh - 170px);
-  min-height:620px;
-  max-height:calc(100vh - 170px);
+  height:calc(100vh - 210px);
+  min-height:0;
+  max-height:calc(100vh - 210px);
+  overflow:hidden;
 }
 .bugsWorkspace{
   display:grid;
@@ -6929,7 +6930,7 @@ body.light .txPageCard .dataStickyTable thead th,
   background:rgba(59,130,246,.08);
 }
 .bugsDateCell{display:grid;gap:2px}
-.bugsDateCell span{font-size:12px;color:var(--muted)}
+.bugsDateCell span{font-size:12px;color:var(--muted);margin-top:3px}
 .bugsEmailCell{font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .bugsActionCell{display:flex;justify-content:flex-start}
 .bugsViewBtn{
@@ -7016,7 +7017,7 @@ body.light .txPageCard .dataStickyTable thead th,
 }
 .bugsDetailFooter{
   display:grid;
-  grid-template-columns:160px 160px auto auto;
+  grid-template-columns:150px 150px 150px auto auto;
   gap:10px;
   align-items:end;
 }

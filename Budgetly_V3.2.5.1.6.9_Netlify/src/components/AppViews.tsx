@@ -4836,6 +4836,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, WorkflowStatus>>({})
   const [priorityDraft, setPriorityDraft] = useState<Record<string, BugPriority>>({})
+  const [severityDraft, setSeverityDraft] = useState<Record<string, 'high' | 'medium' | 'low'>>({})
 
   const parseWorkflow = (item: { status: string; admin_notes?: string | null }): WorkflowStatus => {
     const fromNotes = item.admin_notes?.match(/\[workflow:(pending|in_progress|in_review|resolved)\]/i)?.[1]?.toLowerCase()
@@ -4850,9 +4851,15 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
     return ['high', 'medium', 'low'][hash % 3] as BugPriority
   }
 
-  const withMetaNotes = (rawNotes: string, workflow: WorkflowStatus, priority: BugPriority) => {
-    const cleaned = rawNotes.replace(/\[(workflow|priority):[^\]]+\]/gi, '').trim()
-    return `${cleaned}${cleaned ? '\n' : ''}[workflow:${workflow}] [priority:${priority}]`
+  const parseSeverity = (item: { admin_notes?: string | null; id: string }, fallback: 'high' | 'medium' | 'low'): 'high' | 'medium' | 'low' => {
+    const fromNotes = item.admin_notes?.match(/\[severity:(high|medium|low)\]/i)?.[1]?.toLowerCase()
+    if (fromNotes === 'high' || fromNotes === 'medium' || fromNotes === 'low') return fromNotes
+    return fallback
+  }
+
+  const withMetaNotes = (rawNotes: string, workflow: WorkflowStatus, priority: BugPriority, severity: 'high' | 'medium' | 'low') => {
+    const cleaned = rawNotes.replace(/\[(workflow|priority|severity):[^\]]+\]/gi, '').trim()
+    return `${cleaned}${cleaned ? '\n' : ''}[workflow:${workflow}] [priority:${priority}] [severity:${severity}]`
   }
 
   const reportsWithMeta = useMemo(() => {
@@ -4863,7 +4870,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       return {
         ...item,
         ticketCode: `BUG-${new Date(item.created_at || Date.now()).getFullYear()}-${String((hash + index * 19) % 10000).padStart(4, '0')}`,
-        severity: severityCycle[(hash + index) % severityCycle.length],
+        severity: parseSeverity(item, severityCycle[(hash + index) % severityCycle.length]),
         priority: priorityCycle[(hash + index * 2) % priorityCycle.length],
       }
     })
@@ -4895,14 +4902,17 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
     const nextNotes: Record<string, string> = {}
     const nextStatus: Record<string, WorkflowStatus> = {}
     const nextPriority: Record<string, BugPriority> = {}
+    const nextSeverity: Record<string, 'high' | 'medium' | 'low'> = {}
     admin.bugReports.forEach((item) => {
       nextNotes[item.id] = item.admin_notes ?? ''
       nextStatus[item.id] = parseWorkflow(item)
       nextPriority[item.id] = parsePriority(item)
+      nextSeverity[item.id] = parseSeverity(item, 'medium')
     })
     setNotesDraft(nextNotes)
     setStatusDraft(nextStatus)
     setPriorityDraft(nextPriority)
+    setSeverityDraft(nextSeverity)
   }, [admin.bugReports])
 
   useEffect(() => {
@@ -5066,6 +5076,14 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                     </select>
                   </div>
                   <div>
+                    <div className="auditDetailHeading">Severity</div>
+                    <select className="select" value={severityDraft[selectedReport.id] || selectedReport.severity} onChange={(event) => setSeverityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as 'high' | 'medium' | 'low' }))}>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div>
                     <div className="auditDetailHeading">Priority</div>
                     <select className="select" value={priorityDraft[selectedReport.id] || parsePriority(selectedReport)} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as BugPriority }))}>
                       <option value="high">High</option>
@@ -5076,16 +5094,18 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
+                    const severity = severityDraft[selectedReport.id] || selectedReport.severity
                     admin.updateBugReport(selectedReport.id, {
                       status: workflow === 'resolved' ? 'completed' : 'pending',
-                      admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority),
+                      admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
                     })
                   }}>
                     {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
                   </button>
                   <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority) })
+                    const severity = severityDraft[selectedReport.id] || selectedReport.severity
+                    admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
                   }}>
                     Mark Resolved
                   </button>
