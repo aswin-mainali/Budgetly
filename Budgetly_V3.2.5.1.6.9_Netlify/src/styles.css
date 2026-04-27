@@ -6861,7 +6861,7 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugDetailText{white-space:pre-wrap;line-height:1.6;color:var(--text)}
 .bugFixRow{display:grid;grid-template-columns:160px 1fr auto;gap:12px;align-items:center}
 .bugImageLink{color:var(--accent);font-weight:700}
-.bugsFixesLayout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);gap:14px}
+.bugsFixesLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .bugsFixesMain{display:grid;gap:12px;min-width:0}
 .bugsFixesToolbar{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(2,minmax(140px,.85fr)) auto;gap:10px;align-items:stretch}
 .bugsSearchBox{display:flex;align-items:center;gap:8px;border:1px solid rgba(148,163,184,.24);border-radius:14px;padding:0 11px;background:rgba(255,255,255,.04);height:44px}
