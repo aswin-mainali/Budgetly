@@ -6864,11 +6864,11 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsFixesLayout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);gap:14px}
 .bugsFixesMain{display:grid;gap:12px;min-width:0}
 .bugsFixesToolbar{display:grid;grid-template-columns:minmax(220px,1.45fr) repeat(2,minmax(140px,.85fr)) auto auto;gap:10px;align-items:stretch}
-.bugsSearchBox{display:flex;align-items:center;gap:8px;border:1px solid rgba(148,163,184,.24);border-radius:11px;padding:9px 11px;background:rgba(255,255,255,.04);min-height:56px}
+.bugsSearchBox{display:flex;align-items:center;gap:8px;border:1px solid rgba(148,163,184,.24);border-radius:11px;padding:9px 11px;background:rgba(255,255,255,.04);height:56px}
 .bugsSearchBox input{appearance:none;border:none;outline:none;background:transparent;width:100%;color:inherit;font-size:13px}
-.bugsFilterSelect{min-width:0;min-height:56px}
+.bugsFilterSelect{min-width:0;height:56px}
 .bugsGhostAction{display:inline-flex;align-items:center;gap:7px}
-.bugsFixesToolbar .btn{min-height:56px}
+.bugsFixesToolbar .btn{height:56px}
 .bugTableShell{border-radius:16px}
 .bugsFixesHeaderRow{grid-template-columns:minmax(130px,.95fr) minmax(150px,1fr) minmax(220px,1.7fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr)}
 .bugsFixesBody{padding:0}

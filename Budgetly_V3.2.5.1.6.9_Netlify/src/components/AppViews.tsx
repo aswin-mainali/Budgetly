@@ -4635,6 +4635,53 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
 
   const selected = filteredRows.find((item) => item.id === selectedId) || filteredRows[0] || null
 
+  const exportBugHistory = () => {
+    const escapeXml = (value: string) => value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&apos;')
+
+    const header = ['Case ID', 'Date', 'Reporter Email', 'Issue', 'Summary', 'Severity', 'Status', 'Internal Notes']
+    const rowXml = rows.map((item) => {
+      const columns = [
+        `BUG-${item.id.slice(0, 8)}`,
+        item.timestamp.toLocaleString(),
+        item.user_email,
+        item.title,
+        item.summary || '',
+        item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low',
+        item.status === 'completed' ? 'Resolved' : item.statusLabel,
+        item.admin_notes || '',
+      ]
+      return `<Row>${columns.map((cell) => `<Cell><Data ss:Type="String">${escapeXml(String(cell))}</Data></Cell>`).join('')}</Row>`
+    }).join('')
+
+    const xml = `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Bug History">
+<Table>
+<Row>${header.map((cell) => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join('')}</Row>
+${rowXml}
+</Table>
+</Worksheet>
+</Workbook>`
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `budgetly-bug-history-${new Date().toISOString().slice(0, 10)}.xls`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className={`card ${embedded ? 'settingsPanelCard' : ''}`}>
       <div className="row between" style={{ marginBottom: 12, gap: 12, alignItems: 'flex-start' }}>
@@ -4663,7 +4710,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
               <option>Medium</option>
               <option>Low</option>
             </select>
-            <button className="btn bugsGhostAction"><Download size={14} /> Export</button>
+            <button className="btn bugsGhostAction" onClick={exportBugHistory}><Download size={14} /> Export</button>
             <button className="btn primary"><Plus size={14} /> Report Bug</button>
           </div>
 
