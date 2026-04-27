@@ -4921,15 +4921,6 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
           </div>
           <button className="btn">Workspace controls</button>
         </div>
-        <div className="bugsPanelTopTabs">
-          <button className="settingsNavBtn settingsTopNavBtn">General</button>
-          <button className="settingsNavBtn settingsTopNavBtn">Data & backup</button>
-          <button className="settingsNavBtn settingsTopNavBtn">Account</button>
-          <button className="settingsNavBtn settingsTopNavBtn">Super Admin</button>
-          <button className="settingsNavBtn settingsTopNavBtn">Audit Log</button>
-          <button className="settingsNavBtn settingsTopNavBtn active">Bugs & Fixes</button>
-        </div>
-
         <div className="bugsWorkspace">
           <div className="bugsListPane">
             <div className="bugsToolbar">
