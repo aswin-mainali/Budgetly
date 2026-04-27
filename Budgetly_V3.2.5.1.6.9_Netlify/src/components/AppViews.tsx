@@ -1845,15 +1845,15 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         <div className="txPanelHeader row between">
           <div className="txSummaryRow">
             <article className="txSummaryCard">
-              <div className="muted">This Month Transactions</div>
+              <div className="txSummaryLabel"><span className="txSummaryEmoji">🧾</span><span className="muted">This Month Transactions</span></div>
               <strong>{monthTransactions.length}</strong>
             </article>
             <article className="txSummaryCard income">
-              <div className="muted">Monthly Income</div>
+              <div className="txSummaryLabel"><span className="txSummaryEmoji">💸</span><span className="muted">Monthly Income</span></div>
               <strong>{helpers.fmtMoney(monthIncome, data.currency)}</strong>
             </article>
             <article className="txSummaryCard expense">
-              <div className="muted">Monthly Expenses</div>
+              <div className="txSummaryLabel"><span className="txSummaryEmoji">📉</span><span className="muted">Monthly Expenses</span></div>
               <strong>{helpers.fmtMoney(monthExpense, data.currency)}</strong>
             </article>
           </div>
@@ -1934,15 +1934,23 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         </div>
       ) : (
         <div className="dataScrollBox transactionsScrollBox" style={{ marginTop: 8 }}>
-          <table className="table dataStickyTable">
+          <table className="table dataStickyTable txAlignedTable">
+              <colgroup>
+                <col className="txColDate" />
+                <col className="txColType" />
+                <col className="txColCategory" />
+                <col className="txColAmount" />
+                <col className="txColNote" />
+                <col className="txColActions" />
+              </colgroup>
               <thead>
-                <tr>
-                  <th>Description</th>
+                <tr className="txHeaderNavRow">
+                  <th>Date</th>
+                  <th>Type</th>
                   <th>Category</th>
-                  <th style={{ width: 150, textAlign: 'right' }}>Amount</th>
-                  <th style={{ width: 110 }}>Type</th>
-                  <th style={{ width: 130 }}>Date</th>
-                  <th style={{ width: 70 }} />
+                  <th className="txHeaderAmount">Amount</th>
+                  <th>Note</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -1950,17 +1958,17 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                   const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
                   return (
                     <tr key={transaction.id}>
+                      <td className="muted">{new Date(`${transaction.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                      <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
+                      <td>{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</td>
+                      <td className={`txAmountCell ${transaction.type} txAmountCellAligned`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
                       <td>
                         <div className="txDescriptionCell">
-                          <strong>{transaction.note?.trim() || (transaction.type === 'income' ? 'Income' : 'Expense')}</strong>
-                          <span>{transaction.type === 'income' ? 'Added income' : 'Expense transaction'}</span>
+                          <strong>{transaction.note?.trim() || 'No note'}</strong>
+                          <span>{transaction.type === 'income' ? 'Income entry' : 'Expense entry'}</span>
                         </div>
                       </td>
-                      <td>{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</td>
-                      <td style={{ textAlign: 'right' }} className={`txAmountCell ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
-                      <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
-                      <td className="muted">{new Date(`${transaction.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td className="txActionCell">
                         <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete">
                           <Trash2 size={16} />
                         </button>

@@ -7690,8 +7690,27 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   margin-top: 4px;
   font-size: 1.35rem;
 }
+.txSummaryLabel{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.txSummaryEmoji{
+  width:28px;
+  height:28px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  background: rgba(79,124,255,.12);
+}
 .txSummaryCard.income strong{ color: #14a765; }
 .txSummaryCard.expense strong{ color: #e24b59; }
+.txSummaryCard.income .txSummaryEmoji{
+  background: rgba(20,167,101,.14);
+}
+.txSummaryCard.expense .txSummaryEmoji{
+  background: rgba(226,75,89,.12);
+}
 .txToolbarFieldsModern{
   display: grid;
   grid-template-columns: minmax(220px,1.6fr) repeat(4,minmax(140px,1fr));
@@ -7710,6 +7729,36 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   color: var(--muted);
   font-size: .8rem;
 }
+.txAlignedTable{
+  table-layout: fixed;
+  width: 100%;
+}
+.txAlignedTable td,
+.txAlignedTable th{
+  vertical-align: middle;
+  padding: 12px 14px;
+}
+.txHeaderNavRow th{
+  background: #e8edf5;
+  color: #3d5478;
+  font-weight: 700;
+  font-size: .86rem;
+  letter-spacing: .01em;
+  border-bottom: 1px solid #d8e1ef;
+}
+.txHeaderAmount,
+.txAmountCellAligned{
+  text-align: right;
+}
+.txActionCell{
+  text-align: right;
+}
+.txColDate{ width: 16%; }
+.txColType{ width: 14%; }
+.txColCategory{ width: 24%; }
+.txColAmount{ width: 18%; }
+.txColNote{ width: 24%; }
+.txColActions{ width: 4%; }
 @media (max-width: 1100px){
   .txDesktopLayout{ grid-template-columns: 1fr; }
 }
