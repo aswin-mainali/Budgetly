@@ -4825,90 +4825,324 @@ function BugReportModal({
 }
 
 function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  type WorkflowStatus = 'pending' | 'in_progress' | 'in_review' | 'resolved'
+  type SeverityLevel = 'high' | 'medium' | 'low'
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [page, setPage] = useState(1)
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, 'pending' | 'completed'>>({})
+  const [workflowDraft, setWorkflowDraft] = useState<Record<string, WorkflowStatus>>({})
+  const [severityDraft, setSeverityDraft] = useState<Record<string, SeverityLevel>>({})
 
   useEffect(() => {
+    const parseWorkflow = (rawNotes: string | null | undefined, status: 'pending' | 'completed'): WorkflowStatus => {
+      const match = rawNotes?.match(/\[workflow:(pending|in_progress|in_review|resolved)\]/i)?.[1]
+      if (match === 'pending' || match === 'in_progress' || match === 'in_review' || match === 'resolved') return match
+      return status === 'completed' ? 'resolved' : 'pending'
+    }
+    const parseSeverity = (rawNotes: string | null | undefined, fallback: SeverityLevel): SeverityLevel => {
+      const match = rawNotes?.match(/\[severity:(high|medium|low)\]/i)?.[1]
+      if (match === 'high' || match === 'medium' || match === 'low') return match
+      return fallback
+    }
+    const stripMetaTags = (rawNotes: string | null | undefined) => (rawNotes || '')
+      .replace(/\s*\[workflow:(pending|in_progress|in_review|resolved)\]\s*/ig, ' ')
+      .replace(/\s*\[severity:(high|medium|low)\]\s*/ig, ' ')
+      .trim()
+
     const nextNotes: Record<string, string> = {}
     const nextStatus: Record<string, 'pending' | 'completed'> = {}
+    const nextWorkflow: Record<string, WorkflowStatus> = {}
+    const nextSeverity: Record<string, SeverityLevel> = {}
     admin.bugReports.forEach((item) => {
-      nextNotes[item.id] = item.admin_notes ?? ''
+      const fallbackSeverity: SeverityLevel = item.status === 'completed' ? 'low' : 'medium'
+      nextNotes[item.id] = stripMetaTags(item.admin_notes)
       nextStatus[item.id] = item.status
+      nextWorkflow[item.id] = parseWorkflow(item.admin_notes, item.status)
+      nextSeverity[item.id] = parseSeverity(item.admin_notes, fallbackSeverity)
     })
     setNotesDraft(nextNotes)
     setStatusDraft(nextStatus)
+    setWorkflowDraft(nextWorkflow)
+    setSeverityDraft(nextSeverity)
   }, [admin.bugReports])
+
+  useEffect(() => {
+    if (!admin.bugReports.length) {
+      setSelectedId(null)
+      return
+    }
+    if (selectedId && admin.bugReports.some((item) => item.id === selectedId)) return
+    setSelectedId(admin.bugReports[0].id)
+  }, [admin.bugReports, selectedId])
+
+  const rows = useMemo(() => {
+    const inferModule = (text: string, index: number) => {
+      const value = text.toLowerCase()
+      if (value.includes('transaction')) return 'Transactions'
+      if (value.includes('budget')) return 'Budgets'
+      if (value.includes('categor')) return 'Categories'
+      if (value.includes('recurr')) return 'Recurring'
+      if (value.includes('report')) return 'Reports'
+      if (value.includes('dashboard')) return 'Dashboard'
+      const fallback = ['UI / UX', 'Transactions', 'Budgets', 'Categories', 'Recurring', 'Reports']
+      return fallback[index % fallback.length]
+    }
+
+    return admin.bugReports.map((item, index) => {
+      const timestamp = item.created_at ? new Date(item.created_at) : new Date()
+      const title = item.steps_to_reproduce.split('\n')[0]?.trim() || 'Reported issue'
+      const summary = item.steps_to_reproduce.split('\n').slice(1).join(' ').trim() || item.steps_to_reproduce
+      const module = inferModule(`${title} ${summary}`, index)
+      const severity = severityDraft[item.id] || (index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low')
+      const workflow = workflowDraft[item.id] || (item.status === 'completed' ? 'resolved' : 'pending')
+      const statusLabel = workflow === 'resolved' ? 'Resolved' : workflow === 'in_review' ? 'In Review' : workflow === 'in_progress' ? 'In Progress' : 'Pending'
+      const reporterHandle = item.user_email.split('@')[0]
+      return {
+        ...item,
+        title: title.length > 56 ? `${title.slice(0, 56)}...` : title,
+        summary: summary.length > 96 ? `${summary.slice(0, 96)}...` : summary,
+        timestamp,
+        module,
+        severity,
+        workflow,
+        statusLabel,
+        reporterHandle,
+      }
+    })
+  }, [admin.bugReports, workflowDraft, severityDraft])
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((item) => {
+      const matchesStatus = statusFilter === 'all' || item.status === statusFilter
+      const needle = search.trim().toLowerCase()
+      const matchesSearch = !needle || `${item.title} ${item.summary} ${item.user_email}`.toLowerCase().includes(needle)
+      return matchesStatus && matchesSearch
+    })
+  }, [rows, search, statusFilter])
+
+  useEffect(() => {
+    setPage(1)
+  }, [search, statusFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / 7))
+  const safePage = Math.min(page, totalPages)
+  const pagedRows = filteredRows.slice((safePage - 1) * 7, safePage * 7)
+
+  const selected = filteredRows.find((item) => item.id === selectedId) || filteredRows[0] || null
+
+  const toPersistedNotes = (id: string) => {
+    const clean = (notesDraft[id] || '').trim()
+    const workflow = workflowDraft[id] || 'pending'
+    const severity = severityDraft[id] || 'medium'
+    const tags = `[workflow:${workflow}] [severity:${severity}]`
+    return clean ? `${clean}\n${tags}` : tags
+  }
+
+  const exportBugHistory = () => {
+    const escapeXml = (value: string) => value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;')
+
+    const header = ['Case ID', 'Date', 'Reporter Email', 'Issue', 'Summary', 'Severity', 'Status', 'Internal Notes']
+    const rowXml = rows.map((item) => {
+      const columns = [
+        `BUG-${item.id.slice(0, 8)}`,
+        item.timestamp.toLocaleString(),
+        item.user_email,
+        item.title,
+        item.summary || '',
+        item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low',
+        item.status === 'completed' ? 'Resolved' : item.statusLabel,
+        item.admin_notes || '',
+      ]
+      return `<Row>${columns.map((cell) => `<Cell><Data ss:Type="String">${escapeXml(String(cell))}</Data></Cell>`).join('')}</Row>`
+    }).join('')
+
+    const xml = `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Bug History">
+<Table>
+<Row>${header.map((cell) => `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join('')}</Row>
+${rowXml}
+</Table>
+</Worksheet>
+</Workbook>`
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `budgetly-bug-history-${new Date().toISOString().slice(0, 10)}.xls`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className={`card ${embedded ? 'settingsPanelCard' : ''}`}>
-      <div className="row between" style={{ marginBottom: 14, gap: 12, alignItems: 'flex-start' }}>
+      <div className="row between" style={{ marginBottom: 12, gap: 12, alignItems: 'flex-start' }}>
         <div>
-          <h3 style={{ marginBottom: 4 }}>Bugs & Fixes</h3>
-          <div className="muted">Review reported issues, inspect details, and mark them as completed when fixed.</div>
+          <h3 style={{ marginBottom: 2 }}>Bugs & Fixes</h3>
+          <div className="muted">Track, triage, and resolve reported issues to keep Budgetly stable and reliable.</div>
         </div>
-        <span className="badge">{admin.bugReports.length} reports</span>
+        <button className="btn ghost">Workspace controls</button>
       </div>
 
-      <div className="auditTableShell">
-        <div className="auditTableHeader bugAuditTableHeader">
-          <div>Time</div>
-          <div>User</div>
-          <div>Action</div>
-          <div className="auditHeaderStatus">Status</div>
-          <div>More detail</div>
+      <div className="bugsFixesLayout">
+        <div className="bugsFixesMain">
+          <div className="bugsFixesToolbar">
+            <label className="bugsSearchBox">
+              <Search size={15} />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search bugs..." />
+            </label>
+            <select className="select bugsFilterSelect" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | 'pending' | 'completed')}>
+              <option value="all">Status: All</option>
+              <option value="pending">Status: Pending</option>
+              <option value="completed">Status: Resolved</option>
+            </select>
+            <select className="select bugsFilterSelect" defaultValue="all">
+              <option value="all">Severity: All</option>
+              <option>High</option>
+              <option>Medium</option>
+              <option>Low</option>
+            </select>
+            <button className="btn bugsGhostAction" onClick={exportBugHistory}><Download size={14} /> Export</button>
+          </div>
+
+          <div className="auditTableShell bugTableShell">
+            <div className="auditTableHeader bugsFixesHeaderRow">
+              <div>Date</div>
+              <div>Reporter</div>
+              <div>Severity</div>
+              <div>Status</div>
+              <div>Actions</div>
+            </div>
+
+            <div className="auditTableBody bugsFixesBody">
+              {filteredRows.length === 0 ? <div className="muted">No bug reports yet.</div> : pagedRows.map((item) => {
+                const isSelected = selected?.id === item.id
+                return (
+                  <div key={item.id} className={`bugsFixesRow ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedId(item.id)}>
+                    <div className="bugsDateCell">
+                      <strong>{item.timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+                      <span>{item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className="bugsReporterCell">
+                      <strong>{item.reporterHandle}</strong>
+                      <span>{item.user_email}</span>
+                    </div>
+                    <div><span className={`bugPill bugSeverityPill ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
+                    <div><span className={`bugPill bugStatusPill ${item.workflow === 'resolved' ? 'resolved' : item.workflow === 'in_review' ? 'review' : item.workflow === 'in_progress' ? 'inprogress' : 'pending'}`}>{item.statusLabel}</span></div>
+                    <div className="bugsActionsCell">
+                      <button className="btn">View</button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="bugsPaginationRow">
+            <span className="muted">Showing {filteredRows.length} of {admin.bugReports.length} results</span>
+            <div className="bugsPager">
+              <button className="iconBtn" aria-label="Previous" onClick={() => setPage((prev) => Math.max(1, prev - 1))}><ChevronLeft size={14} /></button>
+              {Array.from({ length: totalPages }).slice(0, 5).map((_, idx) => {
+                const pageNo = idx + 1
+                return <button key={pageNo} className={`iconBtn ${safePage === pageNo ? 'active' : ''}`} aria-label={`Page ${pageNo}`} onClick={() => setPage(pageNo)}>{pageNo}</button>
+              })}
+              <button className="iconBtn" aria-label="Next" onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}><ChevronRight size={14} /></button>
+            </div>
+          </div>
         </div>
 
-        <div className="auditTableBody adminAuditScrollable">
-          {admin.bugReports.length === 0 ? <div className="muted">No bug reports yet.</div> : admin.bugReports.map((item) => {
-            const isExpanded = expandedId === item.id
-            const timestamp = item.created_at ? new Date(item.created_at) : null
-            return (
-              <div key={item.id} className={`auditEntry ${isExpanded ? 'open' : ''}`}>
-                <div className="auditRowGrid bugAuditRowGrid">
-                  <div className="auditCell auditCellTime">
-                    <strong>{timestamp ? timestamp.toLocaleDateString() : 'Today'}</strong>
-                    <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}</span>
-                  </div>
-                  <div className="auditCell"><span>{item.user_email}</span></div>
-                  <div className="auditCell auditCellAction"><strong>Bug report</strong></div>
-                  <div className="auditCell auditCellStatus"><span className={`auditStatusPill ${item.status === 'completed' ? 'completed' : 'pending'}`}>{item.status}</span></div>
-                  <div className="auditCell auditCellDetailToggle">
-                    <button className="auditDetailBtn" onClick={() => setExpandedId(isExpanded ? null : item.id)}>
-                      {isExpanded ? 'Hide detail' : 'View detail'} <ExternalLink size={14} />
-                    </button>
+        <div className="bugsFixesDetail">
+          {!selected ? <div className="muted">Select an issue to inspect details.</div> : (
+            <>
+              <div className="bugsDetailHeaderRow">
+                <div className="bugsDetailTop">
+                  <div className="bugsBugIcon" aria-hidden>☼</div>
+                  <div>
+                    <div className="bugsCaseMetaRow">
+                      <div className="bugsCaseId">BUG-{selected.timestamp.getFullYear()}-{String(selected.timestamp.getMonth() + 1).padStart(2, '0')}{String(selected.timestamp.getDate()).padStart(2, '0')}</div>
+                      <span className={`bugPill severity ${selected.severity}`}>{selected.severity === 'high' ? 'High' : selected.severity === 'medium' ? 'Medium' : 'Low'}</span>
+                    </div>
+                    <h4>{selected.title}</h4>
+                    <p className="muted">Reported on {selected.timestamp.toLocaleDateString()} at {selected.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} by {selected.user_email}</p>
                   </div>
                 </div>
-                {isExpanded ? (
-                  <div className="auditExpandedPanel">
-                    <div className="auditDetailSection">
-                      <div className="auditDetailHeading">Steps to reproduce</div>
-                      <div className="bugDetailText">{item.steps_to_reproduce}</div>
-                    </div>
-                    {item.screenshot_data_url ? (
-                      <div className="auditDetailSection">
-                        <div className="auditDetailHeading">Screenshot</div>
-                        <a className="bugImageLink" href={item.screenshot_data_url} target="_blank" rel="noreferrer">Open screenshot ({item.screenshot_name || 'image'})</a>
-                      </div>
-                    ) : null}
-                    <div className="auditDetailSection">
-                      <div className="auditDetailHeading">Status</div>
-                      <div className="bugFixRow">
-                        <select className="select" value={statusDraft[item.id] || item.status} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [item.id]: event.target.value as 'pending' | 'completed' }))}>
-                          <option value="pending">Pending</option>
-                          <option value="completed">Completed</option>
-                        </select>
-                        <input className="input" placeholder="Internal fix notes" value={notesDraft[item.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [item.id]: event.target.value }))} />
-                        <button className="btn primary" disabled={admin.busyAction === `bug:${item.id}`} onClick={() => admin.updateBugReport(item.id, { status: statusDraft[item.id] || item.status, admin_notes: notesDraft[item.id] || '' })}>
-                          {admin.busyAction === `bug:${item.id}` ? 'Saving...' : 'Save'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
-            )
-          })}
+
+              <div className="bugsDetailDivider" />
+
+              <div className="bugsStepGrid">
+                <div className="auditDetailSection">
+                  <div className="auditDetailHeading">Steps to Reproduce</div>
+                  <ol className="bugsStepsList">
+                    {selected.steps_to_reproduce.split('\n').filter(Boolean).map((step, idx) => <li key={`${selected.id}-step-${idx}`}>{step}</li>)}
+                  </ol>
+                </div>
+                <div className="auditDetailSection">
+                  <div className="auditDetailHeading">Screenshot</div>
+                  {selected.screenshot_data_url ? <img className="bugsDetailShot" src={selected.screenshot_data_url} alt={selected.screenshot_name || 'Bug screenshot'} /> : <div className="bugsDetailShotPlaceholder">No screenshot attached</div>}
+                </div>
+              </div>
+
+              <div className="auditDetailSection">
+                <div className="auditDetailHeading">Internal Notes</div>
+                <textarea className="textarea" placeholder="Add internal notes or update..." value={notesDraft[selected.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selected.id]: event.target.value }))} />
+              </div>
+
+              <div className="bugsFieldLabelRow">
+                <span>Status</span>
+                <span>Priority</span>
+              </div>
+              <div className="bugFixRow">
+                <select
+                  className="select"
+                  value={workflowDraft[selected.id] || (selected.status === 'completed' ? 'resolved' : 'pending')}
+                  onChange={(event) => {
+                    const workflow = event.target.value as WorkflowStatus
+                    setWorkflowDraft((prev) => ({ ...prev, [selected.id]: workflow }))
+                    setStatusDraft((prev) => ({ ...prev, [selected.id]: workflow === 'resolved' ? 'completed' : 'pending' }))
+                  }}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="in_review">In Review</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+                <select className="select" value={severityDraft[selected.id] || selected.severity} onChange={(event) => setSeverityDraft((prev) => ({ ...prev, [selected.id]: event.target.value as SeverityLevel }))}>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+                <button className="btn primary" disabled={admin.busyAction === `bug:${selected.id}`} onClick={() => admin.updateBugReport(selected.id, { status: statusDraft[selected.id] || selected.status, admin_notes: toPersistedNotes(selected.id) })}>
+                  {admin.busyAction === `bug:${selected.id}` ? 'Saving...' : 'Save Update'}
+                </button>
+                <button
+                  className="btn primary bugsMarkResolvedBtn"
+                  onClick={() => {
+                    setWorkflowDraft((prev) => ({ ...prev, [selected.id]: 'resolved' }))
+                    setStatusDraft((prev) => ({ ...prev, [selected.id]: 'completed' }))
+                    const clean = (notesDraft[selected.id] || '').trim()
+                    const severity = severityDraft[selected.id] || 'medium'
+                    const tags = `[workflow:resolved] [severity:${severity}]`
+                    admin.updateBugReport(selected.id, { status: 'completed', admin_notes: clean ? `${clean}\n${tags}` : tags })
+                  }}
+                >↻ Mark Resolved</button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

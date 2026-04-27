@@ -6861,14 +6861,129 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugDetailText{white-space:pre-wrap;line-height:1.6;color:var(--text)}
 .bugFixRow{display:grid;grid-template-columns:160px 1fr auto;gap:12px;align-items:center}
 .bugImageLink{color:var(--accent);font-weight:700}
+.bugsFixesLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.bugsFixesMain{display:grid;grid-template-rows:auto auto 1fr auto;gap:12px;min-width:0;min-height:0}
+.bugsFixesToolbar{display:grid;grid-template-columns:minmax(220px,1.35fr) repeat(2,minmax(130px,.85fr)) auto;gap:10px;align-items:stretch}
+.bugsSearchBox{display:flex;align-items:center;gap:8px;border:1px solid rgba(148,163,184,.24);border-radius:14px;padding:0 11px;background:rgba(255,255,255,.04);height:44px}
+.bugsSearchBox input{appearance:none;border:none !important;outline:none;background:transparent !important;box-shadow:none !important;width:100%;height:100%;color:inherit;font-size:13px;padding:0}
+.bugsFilterSelect{min-width:0;height:44px}
+.bugsGhostAction{display:inline-flex;align-items:center;gap:7px}
+.bugsFixesToolbar .btn{height:44px}
+.bugTableShell{border-radius:16px}
+.bugsFixesHeaderRow{grid-template-columns:minmax(140px,1fr) minmax(210px,1.3fr) minmax(110px,.75fr) minmax(120px,.85fr) minmax(120px,.8fr)}
+.bugsFixesBody{padding:0}
+.bugsFixesRow{display:grid;grid-template-columns:minmax(140px,1fr) minmax(210px,1.3fr) minmax(110px,.75fr) minmax(120px,.85fr) minmax(120px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
+.bugsFixesRow:last-child{border-bottom:none}
+.bugsFixesRow.selected{background:rgba(37,99,235,.09);box-shadow:inset 3px 0 0 #3b82f6}
+.bugsDateCell,.bugsReporterCell,.bugsIssueCell{display:grid;gap:2px}
+.bugsDateCell strong,.bugsReporterCell strong,.bugsIssueCell strong{font-size:12.5px}
+.bugsDateCell span,.bugsReporterCell span,.bugsIssueCell span{font-size:12px;color:var(--muted)}
+.bugsReporterCell{padding-right:4px}
+.bugsIssueCell{min-width:0}
+.bugsIssueCell strong,.bugsIssueCell span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bugsModuleCell{display:flex;align-items:center;padding-left:4px}
+.bugModulePill{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:999px;background:rgba(59,130,246,.11);color:#4768aa;border:1px solid rgba(59,130,246,.18);font-size:11px;font-weight:700}
+.bugsActionsCell{display:flex;align-items:center;gap:8px}
+.iconBtn{appearance:none;border:1px solid rgba(148,163,184,.24);background:rgba(255,255,255,.06);color:inherit;border-radius:10px;padding:7px 9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:34px}
+.iconBtn.active{border-color:#3b82f6;background:rgba(59,130,246,.2);font-weight:700}
+.bugPill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:700;
+  border:1px solid transparent;
+  line-height:1;
+  white-space:nowrap;
+}
+.bugPill.bugSeverityPill.high{
+  background:linear-gradient(180deg, rgba(254,226,226,.96), rgba(254,202,202,.88));
+  color:#b91c1c;border-color:rgba(239,68,68,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(239,68,68,.12);
+}
+.bugPill.bugSeverityPill.medium{
+  background:linear-gradient(180deg, rgba(255,237,213,.97), rgba(254,215,170,.9));
+  color:#c2410c;border-color:rgba(251,146,60,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(251,146,60,.12);
+}
+.bugPill.bugSeverityPill.low{
+  background:linear-gradient(180deg, rgba(220,252,231,.96), rgba(187,247,208,.88));
+  color:#166534;border-color:rgba(34,197,94,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(34,197,94,.12);
+}
+.bugPill.bugStatusPill.pending{
+  background:linear-gradient(180deg, rgba(255,237,213,.97), rgba(254,215,170,.9));
+  color:#92400e;border-color:rgba(245,158,11,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(245,158,11,.12);
+}
+.bugPill.bugStatusPill.review{
+  background:linear-gradient(180deg, rgba(219,234,254,.97), rgba(191,219,254,.9));
+  color:#1d4ed8;border-color:rgba(59,130,246,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(59,130,246,.12);
+}
+.bugPill.bugStatusPill.inprogress{
+  background:linear-gradient(180deg, rgba(219,234,254,.97), rgba(191,219,254,.9));
+  color:#1d4ed8;border-color:rgba(37,99,235,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(37,99,235,.12);
+}
+.bugPill.bugStatusPill.resolved{
+  background:linear-gradient(180deg, rgba(220,252,231,.96), rgba(187,247,208,.88));
+  color:#166534;border-color:rgba(34,197,94,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85), 0 1px 2px rgba(34,197,94,.12);
+}
+.bugPill.bugStatusPill{min-width:96px;min-height:26px;padding:6px 14px}
+.bugPill.status.pending{background:rgba(245,158,11,.14);color:#92400e;border-color:rgba(245,158,11,.24)}
+.bugPill.status.review{background:rgba(59,130,246,.12);color:#1d4ed8;border-color:rgba(59,130,246,.24)}
+.bugPill.status.progress{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:rgba(37,99,235,.24)}
+.bugPill.status.resolved{background:rgba(34,197,94,.14);color:#166534;border-color:rgba(34,197,94,.24)}
+.bugsPaginationRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px}
+.bugsPager{display:flex;align-items:center;gap:8px}
+.bugsFixesDetail{border:1px solid #e6ebf4;border-radius:14px;padding:18px 16px;display:grid;gap:18px;align-content:start;background:#fff;min-height:0}
+.bugsDetailHeaderRow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.bugsDetailTop{display:flex;align-items:flex-start;gap:10px}
+.bugsBugIcon{width:48px;height:48px;border-radius:14px;border:1px solid #ffe1e1;background:#fff3f3;color:#ff6464;display:grid;place-items:center;font-size:21px;font-weight:700}
+.bugsCaseMetaRow{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.bugsDetailDivider{height:1px;background:#e8edf5;margin:2px 0}
+.bugsCaseId{font-size:13px;font-weight:700;letter-spacing:.01em;color:#5f6f8a;margin-bottom:0}
+.bugsDetailTop h4{margin:0 0 6px;font-size:20px;line-height:1.25;color:#1f2a44}
+.bugsDetailTop .muted{font-size:13px;color:#7d8ba6}
+.bugsStepGrid{display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+.bugsFixesDetail .auditDetailHeading{font-size:20px;letter-spacing:0;text-transform:none;color:#1f2a44}
+.bugsStepsList{margin:0;padding-left:20px;display:grid;gap:8px;color:#4f5f7f;font-size:13px;line-height:1.5}
+.bugsDetailShot{width:100%;height:210px;object-fit:cover;border-radius:14px;border:1px solid #d4dceb}
+.bugsDetailShotPlaceholder{border:1px dashed #d4dceb;border-radius:14px;min-height:210px;display:grid;place-items:center;color:#7d8ba6;font-size:13px}
+.bugsFixesDetail textarea{min-height:64px;height:64px;border-radius:12px}
+.bugsFieldLabelRow{display:grid;grid-template-columns:minmax(130px,1fr) minmax(130px,1fr);gap:12px;font-size:14px;font-weight:700;color:#1f2a44;margin-bottom:-8px}
+.bugsFixesDetail .iconBtn{height:44px;width:44px;border-radius:12px;border-color:#d8dfec;background:#fff}
+.bugsFixesDetail .bugFixRow{grid-template-columns:minmax(130px,1fr) minmax(130px,1fr) auto auto}
+.bugsFixesDetail .bugFixRow .select{height:44px;font-size:16px;border-radius:12px}
+.bugsFixesDetail .bugFixRow .btn{height:44px;border-radius:12px;font-size:14px;font-weight:700;padding:0 16px}
+.bugsFixesDetail .bugFixRow .btn.primary{background:#fff;color:#1677ff;border:1px solid #8ebdff}
+.bugsMarkResolvedBtn{background:linear-gradient(180deg,#1988ff,#1368ea) !important;color:#fff !important;border-color:#1368ea !important}
+.bugsFixesDetail .bugPill.severity{font-size:11px;padding:4px 10px}
 body.light .bugReportReadonly,
 body.light .bugUploadBox{background:#f8fbff}
+body.light .bugsFixesDetail{background:#fff;border-color:#e6ebf4;box-shadow:none}
+body.light .bugsBugIcon{background:#fff3f3;border-color:#ffe1e1}
+body.light .bugsDetailDivider{background:#e8edf5}
 @media (max-width: 720px){
   .bugReportModal{padding:22px 16px 16px}
   .bugReportModal h3{font-size:28px}
   .bugFixRow{grid-template-columns:1fr}
   .bugReportActions{flex-direction:column-reverse}
   .bugReportActions .btn{width:100%}
+}
+@media (max-width: 1180px){
+  .bugsFixesLayout{grid-template-columns:1fr}
+}
+@media (max-width: 980px){
+  .bugsFixesToolbar{grid-template-columns:1fr 1fr}
+  .bugsFixesHeaderRow,.bugsFixesRow{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bugsActionsCell{grid-column:1 / -1}
+  .bugsStepGrid{grid-template-columns:1fr}
+  .bugsFieldLabelRow{grid-template-columns:1fr 1fr}
 }
 
 
