@@ -6892,15 +6892,19 @@ body.light .txPageCard .dataStickyTable thead th,
 body.light .bugReportReadonly,
 body.light .bugUploadBox{background:#fff}
 @media (max-width: 720px){
-  .bugReportModal{padding:20px 16px 0}
-  .bugReportBrand{font-size:24px}
-  .bugReportModal h3{font-size:32px}
-  .bugSeverityRow,
-  .bugSeverityOptions{grid-template-columns:1fr}
-  .bugSeverityHint{border-left:none;border-top:1px solid #dde3ef;padding-left:0;padding-top:10px}
+  .bugReportModal{
+    width:min(710px, calc(100vw - 16px));
+    padding:24px 16px 0;
+  }
+  .bugReportBrand{font-size:26px}
+  .bugReportModal h3{font-size:36px}
+  .bugSeverityRow{grid-template-columns:1fr 170px;gap:10px}
+  .bugSeverityOptions{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .bugSeverityBtn{min-height:48px;font-size:15px}
+  .bugSeverityHint{padding-left:10px}
   .bugFixRow{grid-template-columns:1fr}
-  .bugReportActions{flex-direction:column-reverse}
-  .bugReportActions .btn{width:100%}
+  .bugReportActions{flex-direction:row}
+  .bugReportActions .btn{width:auto}
 }
 
 
