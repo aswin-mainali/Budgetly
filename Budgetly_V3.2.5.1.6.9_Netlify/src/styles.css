@@ -6996,6 +6996,7 @@ body.light .txPageCard .dataStickyTable thead th,
   width:100%;
   object-fit:cover;
   border-radius:10px;
+  aspect-ratio:1.8;
 }
 .bugsExpandImageBtn{
   position:absolute;
