@@ -4579,6 +4579,7 @@ function BugReportModal({
 
 function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
   type WorkflowStatus = 'pending' | 'in_progress' | 'in_review' | 'resolved'
+  type SeverityLevel = 'high' | 'medium' | 'low'
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
@@ -4586,6 +4587,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, 'pending' | 'completed'>>({})
   const [workflowDraft, setWorkflowDraft] = useState<Record<string, WorkflowStatus>>({})
+  const [severityDraft, setSeverityDraft] = useState<Record<string, SeverityLevel>>({})
 
   useEffect(() => {
     const parseWorkflow = (rawNotes: string | null | undefined, status: 'pending' | 'completed'): WorkflowStatus => {
@@ -4593,19 +4595,31 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       if (match === 'pending' || match === 'in_progress' || match === 'in_review' || match === 'resolved') return match
       return status === 'completed' ? 'resolved' : 'pending'
     }
-    const stripWorkflow = (rawNotes: string | null | undefined) => (rawNotes || '').replace(/\s*\[workflow:(pending|in_progress|in_review|resolved)\]\s*/ig, '').trim()
+    const parseSeverity = (rawNotes: string | null | undefined, fallback: SeverityLevel): SeverityLevel => {
+      const match = rawNotes?.match(/\[severity:(high|medium|low)\]/i)?.[1]
+      if (match === 'high' || match === 'medium' || match === 'low') return match
+      return fallback
+    }
+    const stripMetaTags = (rawNotes: string | null | undefined) => (rawNotes || '')
+      .replace(/\s*\[workflow:(pending|in_progress|in_review|resolved)\]\s*/ig, ' ')
+      .replace(/\s*\[severity:(high|medium|low)\]\s*/ig, ' ')
+      .trim()
 
     const nextNotes: Record<string, string> = {}
     const nextStatus: Record<string, 'pending' | 'completed'> = {}
     const nextWorkflow: Record<string, WorkflowStatus> = {}
+    const nextSeverity: Record<string, SeverityLevel> = {}
     admin.bugReports.forEach((item) => {
-      nextNotes[item.id] = stripWorkflow(item.admin_notes)
+      const fallbackSeverity: SeverityLevel = item.status === 'completed' ? 'low' : 'medium'
+      nextNotes[item.id] = stripMetaTags(item.admin_notes)
       nextStatus[item.id] = item.status
       nextWorkflow[item.id] = parseWorkflow(item.admin_notes, item.status)
+      nextSeverity[item.id] = parseSeverity(item.admin_notes, fallbackSeverity)
     })
     setNotesDraft(nextNotes)
     setStatusDraft(nextStatus)
     setWorkflowDraft(nextWorkflow)
+    setSeverityDraft(nextSeverity)
   }, [admin.bugReports])
 
   useEffect(() => {
@@ -4635,7 +4649,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       const title = item.steps_to_reproduce.split('\n')[0]?.trim() || 'Reported issue'
       const summary = item.steps_to_reproduce.split('\n').slice(1).join(' ').trim() || item.steps_to_reproduce
       const module = inferModule(`${title} ${summary}`, index)
-      const severity = index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low'
+      const severity = severityDraft[item.id] || (index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low')
       const workflow = workflowDraft[item.id] || (item.status === 'completed' ? 'resolved' : 'pending')
       const statusLabel = workflow === 'resolved' ? 'Resolved' : workflow === 'in_review' ? 'In Review' : workflow === 'in_progress' ? 'In Progress' : 'Pending'
       const reporterHandle = item.user_email.split('@')[0]
@@ -4651,7 +4665,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
         reporterHandle,
       }
     })
-  }, [admin.bugReports, workflowDraft])
+  }, [admin.bugReports, workflowDraft, severityDraft])
 
   const filteredRows = useMemo(() => {
     return rows.filter((item) => {
@@ -4675,7 +4689,9 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const toPersistedNotes = (id: string) => {
     const clean = (notesDraft[id] || '').trim()
     const workflow = workflowDraft[id] || 'pending'
-    return clean ? `${clean}\n[workflow:${workflow}]` : `[workflow:${workflow}]`
+    const severity = severityDraft[id] || 'medium'
+    const tags = `[workflow:${workflow}] [severity:${severity}]`
+    return clean ? `${clean}\n${tags}` : tags
   }
 
   const exportBugHistory = () => {
@@ -4858,7 +4874,7 @@ ${rowXml}
                   <option value="in_review">In Review</option>
                   <option value="resolved">Resolved</option>
                 </select>
-                <select className="select" defaultValue={selected.severity}>
+                <select className="select" value={severityDraft[selected.id] || selected.severity} onChange={(event) => setSeverityDraft((prev) => ({ ...prev, [selected.id]: event.target.value as SeverityLevel }))}>
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
@@ -4872,7 +4888,9 @@ ${rowXml}
                     setWorkflowDraft((prev) => ({ ...prev, [selected.id]: 'resolved' }))
                     setStatusDraft((prev) => ({ ...prev, [selected.id]: 'completed' }))
                     const clean = (notesDraft[selected.id] || '').trim()
-                    admin.updateBugReport(selected.id, { status: 'completed', admin_notes: clean ? `${clean}\n[workflow:resolved]` : '[workflow:resolved]' })
+                    const severity = severityDraft[selected.id] || 'medium'
+                    const tags = `[workflow:resolved] [severity:${severity}]`
+                    admin.updateBugReport(selected.id, { status: 'completed', admin_notes: clean ? `${clean}\n${tags}` : tags })
                   }}
                 >↻ Mark Resolved</button>
               </div>
