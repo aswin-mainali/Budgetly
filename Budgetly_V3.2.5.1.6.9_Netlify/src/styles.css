@@ -6865,9 +6865,9 @@ body.light .txPageCard .dataStickyTable thead th,
   display:flex;
   flex-direction:column;
   gap:14px;
-  height:calc(100vh - 210px);
+  height:calc(100vh - 250px);
   min-height:0;
-  max-height:calc(100vh - 210px);
+  max-height:calc(100vh - 250px);
   overflow:hidden;
 }
 .bugsWorkspace{
@@ -7017,7 +7017,7 @@ body.light .txPageCard .dataStickyTable thead th,
 }
 .bugsDetailFooter{
   display:grid;
-  grid-template-columns:150px 150px 150px auto auto;
+  grid-template-columns:150px 150px auto auto;
   gap:10px;
   align-items:end;
 }

@@ -4836,7 +4836,6 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, WorkflowStatus>>({})
   const [priorityDraft, setPriorityDraft] = useState<Record<string, BugPriority>>({})
-  const [severityDraft, setSeverityDraft] = useState<Record<string, 'high' | 'medium' | 'low'>>({})
 
   const parseWorkflow = (item: { status: string; admin_notes?: string | null }): WorkflowStatus => {
     const fromNotes = item.admin_notes?.match(/\[workflow:(pending|in_progress|in_review|resolved)\]/i)?.[1]?.toLowerCase()
@@ -4861,6 +4860,8 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
     const cleaned = rawNotes.replace(/\[(workflow|priority|severity):[^\]]+\]/gi, '').trim()
     return `${cleaned}${cleaned ? '\n' : ''}[workflow:${workflow}] [priority:${priority}] [severity:${severity}]`
   }
+
+  const stripMetaNotes = (rawNotes?: string | null) => (rawNotes || '').replace(/\[(workflow|priority|severity):[^\]]+\]/gi, '').trim()
 
   const reportsWithMeta = useMemo(() => {
     return admin.bugReports.map((item, index) => {
@@ -4902,17 +4903,14 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
     const nextNotes: Record<string, string> = {}
     const nextStatus: Record<string, WorkflowStatus> = {}
     const nextPriority: Record<string, BugPriority> = {}
-    const nextSeverity: Record<string, 'high' | 'medium' | 'low'> = {}
     admin.bugReports.forEach((item) => {
-      nextNotes[item.id] = item.admin_notes ?? ''
+      nextNotes[item.id] = stripMetaNotes(item.admin_notes)
       nextStatus[item.id] = parseWorkflow(item)
       nextPriority[item.id] = parsePriority(item)
-      nextSeverity[item.id] = parseSeverity(item, 'medium')
     })
     setNotesDraft(nextNotes)
     setStatusDraft(nextStatus)
     setPriorityDraft(nextPriority)
-    setSeverityDraft(nextSeverity)
   }, [admin.bugReports])
 
   useEffect(() => {
@@ -5076,14 +5074,6 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                     </select>
                   </div>
                   <div>
-                    <div className="auditDetailHeading">Severity</div>
-                    <select className="select" value={severityDraft[selectedReport.id] || selectedReport.severity} onChange={(event) => setSeverityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as 'high' | 'medium' | 'low' }))}>
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                    </select>
-                  </div>
-                  <div>
                     <div className="auditDetailHeading">Priority</div>
                     <select className="select" value={priorityDraft[selectedReport.id] || parsePriority(selectedReport)} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as BugPriority }))}>
                       <option value="high">High</option>
@@ -5094,7 +5084,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = severityDraft[selectedReport.id] || selectedReport.severity
+                    const severity = parseSeverity(selectedReport, selectedReport.severity)
                     admin.updateBugReport(selectedReport.id, {
                       status: workflow === 'resolved' ? 'completed' : 'pending',
                       admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
@@ -5104,7 +5094,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   </button>
                   <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = severityDraft[selectedReport.id] || selectedReport.severity
+                    const severity = parseSeverity(selectedReport, selectedReport.severity)
                     admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
                   }}>
                     Mark Resolved
