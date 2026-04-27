@@ -4783,7 +4783,7 @@ ${rowXml}
                   <div className="bugsBugIcon" aria-hidden>☼</div>
                   <div>
                     <div className="bugsCaseMetaRow">
-                      <div className="bugsCaseId">BUG-{selected.id.slice(0, 8)}</div>
+                      <div className="bugsCaseId">BUG-{selected.timestamp.getFullYear()}-{String(selected.timestamp.getMonth() + 1).padStart(2, '0')}{String(selected.timestamp.getDate()).padStart(2, '0')}</div>
                       <span className={`bugPill severity ${selected.severity}`}>{selected.severity === 'high' ? 'High' : selected.severity === 'medium' ? 'Medium' : 'Low'}</span>
                     </div>
                     <h4>{selected.title}</h4>
@@ -4798,11 +4798,6 @@ ${rowXml}
               </div>
 
               <div className="bugsDetailDivider" />
-
-              <div className="auditDetailSection">
-                <div className="auditDetailHeading">Summary</div>
-                <div className="bugDetailText">{selected.summary || selected.steps_to_reproduce}</div>
-              </div>
 
               <div className="bugsStepGrid">
                 <div className="auditDetailSection">
@@ -4825,8 +4820,6 @@ ${rowXml}
               <div className="bugsFieldLabelRow">
                 <span>Status</span>
                 <span>Priority</span>
-                <span />
-                <span />
               </div>
               <div className="bugFixRow">
                 <select className="select" value={statusDraft[selected.id] || selected.status} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selected.id]: event.target.value as 'pending' | 'completed' }))}>
@@ -4841,7 +4834,7 @@ ${rowXml}
                 <button className="btn primary" disabled={admin.busyAction === `bug:${selected.id}`} onClick={() => admin.updateBugReport(selected.id, { status: statusDraft[selected.id] || selected.status, admin_notes: notesDraft[selected.id] || '' })}>
                   {admin.busyAction === `bug:${selected.id}` ? 'Saving...' : 'Save Update'}
                 </button>
-                <button className="btn" onClick={() => admin.updateBugReport(selected.id, { status: 'completed', admin_notes: notesDraft[selected.id] || '' })}>Mark Resolved</button>
+                <button className="btn primary bugsMarkResolvedBtn" onClick={() => admin.updateBugReport(selected.id, { status: 'completed', admin_notes: notesDraft[selected.id] || '' })}>↻ Mark Resolved</button>
               </div>
             </>
           )}
