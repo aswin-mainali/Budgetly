@@ -1695,7 +1695,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
   const useCompactDashboard = !isPhone && isCompactLaptop
-  const forceCompactManageToolbar = !isPhone && isCompactLaptop
   const today = new Date().toISOString().slice(0, 10)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
@@ -1751,76 +1750,76 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         </div>
       </div>
 
-      <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
-        <div className="txPanelHeader row between">
-          <div>
-            <h3 id="tx-add-title">Add Transaction</h3>
+      <div className="txMainLayout">
+        <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
+          <div className="txPanelHeader row between">
+            <div>
+              <h3 id="tx-add-title">Add Transaction</h3>
+            </div>
           </div>
-        </div>
 
-      <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
-        <div className="field txField txDateField">
-          <label>Date</label>
-          <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
-        </div>
+          <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
+            <div className="field txField txDateField">
+              <label>Date</label>
+              <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
+            </div>
 
-        <div className="field txField txTypeField">
-          <label>Type</label>
-          <div className="typeToggle" role="tablist" aria-label="Transaction type">
-            <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
-            <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
-          </div>
-        </div>
+            <div className="field txField txTypeField">
+              <label>Type</label>
+              <div className="typeToggle" role="tablist" aria-label="Transaction type">
+                <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
+                <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
+              </div>
+            </div>
 
-        {txDraft.type === 'expense' ? (
-          <div className="field txField txCategoryField">
-            <label>Expense category</label>
-            <select
-              value={txDraft.category_id}
-              onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
+            {txDraft.type === 'expense' ? (
+              <div className="field txField txCategoryField">
+                <label>Expense category</label>
+                <select
+                  value={txDraft.category_id}
+                  onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
+                >
+                  <option value="">Choose category</option>
+                  {filteredCategoriesForDraft.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {(category.emoji ?? '🏷️')} {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            <div className="field txField txAmountField">
+              <label>Amount</label>
+              <input
+                inputMode="decimal"
+                placeholder="0.00"
+                value={txDraft.amount}
+                onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
+      <div className="txManageToolbar" style={{ marginTop: 4 }}>
+          <div className="field txField txSearchField">
+            <div className="input-icon txSearchInput">
+          <div className="field txField txFilterField">
+          <div className="field txField txMonthField">
+
+        <div className="muted txItemCount">{filteredTx.length} item(s)</div>
+              className={`btn primary txAddButton ${txDraft.type}`}
+              onClick={() => void addTransaction()}
+              disabled={txDraft.type === 'expense' && !txDraft.category_id}
+              title={txDraft.type === 'expense' && !txDraft.category_id ? 'Choose a category first' : undefined}
             >
-              <option value="">Choose category</option>
-              {filteredCategoriesForDraft.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {(category.emoji ?? '🏷️')} {category.name}
-                </option>
-              ))}
-            </select>
+              <Plus size={16} /> Add
+            </button>
           </div>
-        ) : null}
+        </section>
 
-        <div className="field txField txAmountField">
-          <label>Amount</label>
-          <input
-            inputMode="decimal"
-            placeholder="0.00"
-            value={txDraft.amount}
-            onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
-          />
-        </div>
-
-        <div className="field txField txGrow txNoteField">
-          <label>Note</label>
-          <input placeholder={txDraft.type === 'income' ? 'Salary, freelance, refund…' : 'Groceries, fuel, rent…'} value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
-        </div>
-
-        <button
-          className={`btn primary txAddButton ${txDraft.type}`}
-          onClick={() => void addTransaction()}
-          disabled={txDraft.type === 'expense' && !txDraft.category_id}
-          title={txDraft.type === 'expense' && !txDraft.category_id ? 'Choose a category first' : undefined}
-        >
-          <Plus size={16} /> Add
-        </button>
-      </div>
-      </section>
-
-      <section className="txPanel txManagePanel" aria-labelledby="tx-manage-title">
-        <div className="txPanelHeader row between">
-          <div>
-            <h3 id="tx-manage-title">Manage Transactions</h3>
+        <section className="txPanel txManagePanel" aria-labelledby="tx-manage-title">
+          <div className="txPanelHeader row between">
+            <div>
+              <h3 id="tx-manage-title">Manage Transactions</h3>
+            </div>
           </div>
-        </div>
+ 
 
       <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
         <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
@@ -1930,7 +1929,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           Update Transactions
         </button>
       </div>
-      </section>
+        </section>
+      </div>
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}
