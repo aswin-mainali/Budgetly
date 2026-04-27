@@ -6892,6 +6892,7 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugPill.severity.low{background:rgba(34,197,94,.14);color:#166534;border-color:rgba(34,197,94,.2)}
 .bugPill.status.pending{background:rgba(245,158,11,.14);color:#92400e;border-color:rgba(245,158,11,.24)}
 .bugPill.status.review{background:rgba(59,130,246,.12);color:#1d4ed8;border-color:rgba(59,130,246,.24)}
+.bugPill.status.progress{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:rgba(37,99,235,.24)}
 .bugPill.status.resolved{background:rgba(34,197,94,.14);color:#166534;border-color:rgba(34,197,94,.24)}
 .bugsPaginationRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 4px}
 .bugsPager{display:flex;align-items:center;gap:8px}
@@ -6910,7 +6911,7 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsDetailShot{width:100%;height:210px;object-fit:cover;border-radius:14px;border:1px solid #d4dceb}
 .bugsDetailShotPlaceholder{border:1px dashed #d4dceb;border-radius:14px;min-height:210px;display:grid;place-items:center;color:#7d8ba6;font-size:13px}
 .bugsFixesDetail textarea{min-height:118px;border-radius:12px}
-.bugsFieldLabelRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;font-weight:700;color:#1f2a44;margin-bottom:-8px}
+.bugsFieldLabelRow{display:grid;grid-template-columns:minmax(130px,1fr) minmax(130px,1fr);gap:12px;font-size:14px;font-weight:700;color:#1f2a44;margin-bottom:-8px}
 .bugsFixesDetail .iconBtn{height:44px;width:44px;border-radius:12px;border-color:#d8dfec;background:#fff}
 .bugsFixesDetail .bugFixRow{grid-template-columns:minmax(130px,1fr) minmax(130px,1fr) auto auto}
 .bugsFixesDetail .bugFixRow .select{height:44px;font-size:16px;border-radius:12px}

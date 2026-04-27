@@ -4578,22 +4578,34 @@ function BugReportModal({
 }
 
 function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
+  type WorkflowStatus = 'pending' | 'in_progress' | 'in_review' | 'resolved'
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
   const [page, setPage] = useState(1)
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, 'pending' | 'completed'>>({})
+  const [workflowDraft, setWorkflowDraft] = useState<Record<string, WorkflowStatus>>({})
 
   useEffect(() => {
+    const parseWorkflow = (rawNotes: string | null | undefined, status: 'pending' | 'completed'): WorkflowStatus => {
+      const match = rawNotes?.match(/\[workflow:(pending|in_progress|in_review|resolved)\]/i)?.[1]
+      if (match === 'pending' || match === 'in_progress' || match === 'in_review' || match === 'resolved') return match
+      return status === 'completed' ? 'resolved' : 'pending'
+    }
+    const stripWorkflow = (rawNotes: string | null | undefined) => (rawNotes || '').replace(/\s*\[workflow:(pending|in_progress|in_review|resolved)\]\s*/ig, '').trim()
+
     const nextNotes: Record<string, string> = {}
     const nextStatus: Record<string, 'pending' | 'completed'> = {}
+    const nextWorkflow: Record<string, WorkflowStatus> = {}
     admin.bugReports.forEach((item) => {
-      nextNotes[item.id] = item.admin_notes ?? ''
+      nextNotes[item.id] = stripWorkflow(item.admin_notes)
       nextStatus[item.id] = item.status
+      nextWorkflow[item.id] = parseWorkflow(item.admin_notes, item.status)
     })
     setNotesDraft(nextNotes)
     setStatusDraft(nextStatus)
+    setWorkflowDraft(nextWorkflow)
   }, [admin.bugReports])
 
   useEffect(() => {
@@ -4624,7 +4636,8 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       const summary = item.steps_to_reproduce.split('\n').slice(1).join(' ').trim() || item.steps_to_reproduce
       const module = inferModule(`${title} ${summary}`, index)
       const severity = index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low'
-      const statusLabel = item.status === 'completed' ? 'Resolved' : severity === 'high' ? 'In Progress' : 'Pending'
+      const workflow = workflowDraft[item.id] || (item.status === 'completed' ? 'resolved' : 'pending')
+      const statusLabel = workflow === 'resolved' ? 'Resolved' : workflow === 'in_review' ? 'In Review' : workflow === 'in_progress' ? 'In Progress' : 'Pending'
       const reporterHandle = item.user_email.split('@')[0]
       return {
         ...item,
@@ -4633,11 +4646,12 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
         timestamp,
         module,
         severity,
+        workflow,
         statusLabel,
         reporterHandle,
       }
     })
-  }, [admin.bugReports])
+  }, [admin.bugReports, workflowDraft])
 
   const filteredRows = useMemo(() => {
     return rows.filter((item) => {
@@ -4657,6 +4671,12 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const pagedRows = filteredRows.slice((safePage - 1) * 7, safePage * 7)
 
   const selected = filteredRows.find((item) => item.id === selectedId) || filteredRows[0] || null
+
+  const toPersistedNotes = (id: string) => {
+    const clean = (notesDraft[id] || '').trim()
+    const workflow = workflowDraft[id] || 'pending'
+    return clean ? `${clean}\n[workflow:${workflow}]` : `[workflow:${workflow}]`
+  }
 
   const exportBugHistory = () => {
     const escapeXml = (value: string) => value
@@ -4759,7 +4779,7 @@ ${rowXml}
                       <span>{item.user_email}</span>
                     </div>
                     <div><span className={`bugPill severity ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
-                    <div><span className={`bugPill status ${item.status === 'completed' ? 'resolved' : item.statusLabel === 'In Progress' ? 'review' : 'pending'}`}>{item.statusLabel}</span></div>
+                    <div><span className={`bugPill status ${item.workflow === 'resolved' ? 'resolved' : item.workflow === 'in_review' ? 'review' : item.workflow === 'in_progress' ? 'progress' : 'pending'}`}>{item.statusLabel}</span></div>
                     <div className="bugsActionsCell">
                       <button className="btn">View</button>
                     </div>
@@ -4824,19 +4844,37 @@ ${rowXml}
                 <span>Priority</span>
               </div>
               <div className="bugFixRow">
-                <select className="select" value={statusDraft[selected.id] || selected.status} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selected.id]: event.target.value as 'pending' | 'completed' }))}>
+                <select
+                  className="select"
+                  value={workflowDraft[selected.id] || (selected.status === 'completed' ? 'resolved' : 'pending')}
+                  onChange={(event) => {
+                    const workflow = event.target.value as WorkflowStatus
+                    setWorkflowDraft((prev) => ({ ...prev, [selected.id]: workflow }))
+                    setStatusDraft((prev) => ({ ...prev, [selected.id]: workflow === 'resolved' ? 'completed' : 'pending' }))
+                  }}
+                >
                   <option value="pending">Pending</option>
-                  <option value="completed">Resolved</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="in_review">In Review</option>
+                  <option value="resolved">Resolved</option>
                 </select>
                 <select className="select" defaultValue={selected.severity}>
                   <option value="high">High</option>
                   <option value="medium">Medium</option>
                   <option value="low">Low</option>
                 </select>
-                <button className="btn primary" disabled={admin.busyAction === `bug:${selected.id}`} onClick={() => admin.updateBugReport(selected.id, { status: statusDraft[selected.id] || selected.status, admin_notes: notesDraft[selected.id] || '' })}>
+                <button className="btn primary" disabled={admin.busyAction === `bug:${selected.id}`} onClick={() => admin.updateBugReport(selected.id, { status: statusDraft[selected.id] || selected.status, admin_notes: toPersistedNotes(selected.id) })}>
                   {admin.busyAction === `bug:${selected.id}` ? 'Saving...' : 'Save Update'}
                 </button>
-                <button className="btn primary bugsMarkResolvedBtn" onClick={() => admin.updateBugReport(selected.id, { status: 'completed', admin_notes: notesDraft[selected.id] || '' })}>↻ Mark Resolved</button>
+                <button
+                  className="btn primary bugsMarkResolvedBtn"
+                  onClick={() => {
+                    setWorkflowDraft((prev) => ({ ...prev, [selected.id]: 'resolved' }))
+                    setStatusDraft((prev) => ({ ...prev, [selected.id]: 'completed' }))
+                    const clean = (notesDraft[selected.id] || '').trim()
+                    admin.updateBugReport(selected.id, { status: 'completed', admin_notes: clean ? `${clean}\n[workflow:resolved]` : '[workflow:resolved]' })
+                  }}
+                >↻ Mark Resolved</button>
               </div>
             </>
           )}
