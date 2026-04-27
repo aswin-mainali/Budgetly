@@ -4663,9 +4663,6 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
               <option>Medium</option>
               <option>Low</option>
             </select>
-            <select className="select bugsFilterSelect" defaultValue="all">
-              <option value="all">Reporter: All</option>
-            </select>
             <button className="btn bugsGhostAction"><Download size={14} /> Export</button>
             <button className="btn primary"><Plus size={14} /> Report Bug</button>
           </div>
