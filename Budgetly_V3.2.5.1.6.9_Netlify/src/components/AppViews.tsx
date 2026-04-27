@@ -4605,10 +4605,23 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   }, [admin.bugReports, selectedId])
 
   const rows = useMemo(() => {
+    const inferModule = (text: string, index: number) => {
+      const value = text.toLowerCase()
+      if (value.includes('transaction')) return 'Transactions'
+      if (value.includes('budget')) return 'Budgets'
+      if (value.includes('categor')) return 'Categories'
+      if (value.includes('recurr')) return 'Recurring'
+      if (value.includes('report')) return 'Reports'
+      if (value.includes('dashboard')) return 'Dashboard'
+      const fallback = ['UI / UX', 'Transactions', 'Budgets', 'Categories', 'Recurring', 'Reports']
+      return fallback[index % fallback.length]
+    }
+
     return admin.bugReports.map((item, index) => {
       const timestamp = item.created_at ? new Date(item.created_at) : new Date()
       const title = item.steps_to_reproduce.split('\n')[0]?.trim() || 'Reported issue'
       const summary = item.steps_to_reproduce.split('\n').slice(1).join(' ').trim() || item.steps_to_reproduce
+      const module = inferModule(`${title} ${summary}`, index)
       const severity = index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low'
       const statusLabel = item.status === 'completed' ? 'Resolved' : severity === 'high' ? 'In Progress' : 'Pending'
       const reporterHandle = item.user_email.split('@')[0]
@@ -4617,6 +4630,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
         title: title.length > 56 ? `${title.slice(0, 56)}...` : title,
         summary: summary.length > 96 ? `${summary.slice(0, 96)}...` : summary,
         timestamp,
+        module,
         severity,
         statusLabel,
         reporterHandle,
@@ -4643,13 +4657,13 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       .replaceAll('"', '&quot;')
       .replaceAll("'", '&apos;')
 
-    const header = ['Case ID', 'Date', 'Reporter Email', 'Issue', 'Summary', 'Severity', 'Status', 'Internal Notes']
+    const header = ['Case ID', 'Date', 'Reporter Email', 'Module', 'Summary', 'Severity', 'Status', 'Internal Notes']
     const rowXml = rows.map((item) => {
       const columns = [
         `BUG-${item.id.slice(0, 8)}`,
         item.timestamp.toLocaleString(),
         item.user_email,
-        item.title,
+        item.module,
         item.summary || '',
         item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low',
         item.status === 'completed' ? 'Resolved' : item.statusLabel,
@@ -4717,7 +4731,7 @@ ${rowXml}
             <div className="auditTableHeader bugsFixesHeaderRow">
               <div>Date</div>
               <div>Reporter</div>
-              <div>Issue</div>
+              <div>Module</div>
               <div>Severity</div>
               <div>Status</div>
               <div>Actions</div>
@@ -4736,9 +4750,8 @@ ${rowXml}
                       <strong>{item.reporterHandle}</strong>
                       <span>{item.user_email}</span>
                     </div>
-                    <div className="bugsIssueCell">
-                      <strong>{item.title}</strong>
-                      <span>{item.summary || 'No extra notes provided.'}</span>
+                    <div className="bugsModuleCell">
+                      <span className="bugModulePill">{item.module}</span>
                     </div>
                     <div><span className={`bugPill severity ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
                     <div><span className={`bugPill status ${item.status === 'completed' ? 'resolved' : item.statusLabel === 'In Progress' ? 'review' : 'pending'}`}>{item.statusLabel}</span></div>
