@@ -1700,6 +1700,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [txCategoryFilter, setTxCategoryFilter] = useState<string>('all')
   const [txSort, setTxSort] = useState<'date_desc' | 'date_asc' | 'amount_desc' | 'amount_asc'>('date_desc')
   const addPanelRef = useRef<HTMLElement | null>(null)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const useModalAdd = isPhone || isCompactLaptop
   const pendingDeleteTx = useMemo(() => filteredTx.find((transaction) => transaction.id === pendingDeleteId) ?? null, [filteredTx, pendingDeleteId])
   const activeDuplicateGroup = duplicateGroups[0] ?? null
   const filteredCategoriesForDraft = useMemo(() => {
@@ -1760,85 +1762,88 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     return sorted
   }, [filteredTx, txCategoryFilter, txSort])
 
+  const addTransactionForm = (
+    <div className={`row gap txAddRow txAddRowVertical ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
+      <div className="field txField txNoteField">
+        <label>Name / Description *</label>
+        <input placeholder="e.g., Salary, Rent, Groceries" value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
+      </div>
+
+      <div className="field txField txTypeField">
+        <label>Type *</label>
+        <div className="typeToggle" role="tablist" aria-label="Transaction type">
+          <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
+          <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
+        </div>
+      </div>
+
+      <div className="field txField txCategoryField">
+        <label>Category *</label>
+        <select
+          value={txDraft.category_id}
+          onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
+        >
+          <option value="">Choose category</option>
+          {filteredCategoriesForDraft.map((category) => (
+            <option key={category.id} value={category.id}>
+              {(category.emoji ?? '🏷️')} {category.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="field txField txAmountField">
+        <label>Amount *</label>
+        <input
+          inputMode="decimal"
+          placeholder="0.00"
+          value={txDraft.amount}
+          onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
+        />
+      </div>
+
+      <div className="field txField txDateField">
+        <label>Date *</label>
+        <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
+      </div>
+
+      <div className="field txField txGrow txNoteField">
+        <label>Note</label>
+        <textarea placeholder="Optional note..." value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
+      </div>
+
+      <button
+        className={`btn primary txAddButton ${txDraft.type}`}
+        onClick={() => void addTransaction()}
+        disabled={txDraft.type === 'expense' && !txDraft.category_id}
+        title={txDraft.type === 'expense' && !txDraft.category_id ? 'Choose a category first' : undefined}
+      >
+        <Plus size={16} /> Add
+      </button>
+    </div>
+  )
+
   return (
     <div className="card mobileSectionCard dataPageCard txPageCard txFullLayout">
       <div className="row between txPageHeader">
         <div>
           <h2>Transactions</h2>
         </div>
-        <button className="btn txTopAddBtn" onClick={() => addPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+        <button className="btn txTopAddBtn" onClick={() => (useModalAdd ? setIsAddModalOpen(true) : addPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))}>
           <Plus size={16} /> Add Transaction
         </button>
       </div>
 
-      <div className="txDesktopLayout">
-      <section className="txPanel txAddPanel txSidebarPanel" aria-labelledby="tx-add-title" ref={addPanelRef}>
+      <div className={`txDesktopLayout ${useModalAdd ? 'compact' : ''}`}>
+      {!useModalAdd ? <section className="txPanel txAddPanel txSidebarPanel" aria-labelledby="tx-add-title" ref={addPanelRef}>
         <div className="txPanelHeader row between">
           <div>
             <h3 id="tx-add-title">Add Transaction</h3>
             <p className="muted">Record a new income or expense.</p>
           </div>
         </div>
-
-      <div className={`row gap txAddRow txAddRowVertical ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
-        <div className="field txField txNoteField">
-          <label>Name / Description *</label>
-          <input placeholder="e.g., Salary, Rent, Groceries" value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
-        </div>
-
-        <div className="field txField txTypeField">
-          <label>Type *</label>
-          <div className="typeToggle" role="tablist" aria-label="Transaction type">
-            <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
-            <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
-          </div>
-        </div>
-
-        <div className="field txField txCategoryField">
-          <label>Category *</label>
-          <select
-            value={txDraft.category_id}
-            onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
-          >
-            <option value="">Choose category</option>
-            {filteredCategoriesForDraft.map((category) => (
-              <option key={category.id} value={category.id}>
-                {(category.emoji ?? '🏷️')} {category.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field txField txAmountField">
-          <label>Amount *</label>
-          <input
-            inputMode="decimal"
-            placeholder="0.00"
-            value={txDraft.amount}
-            onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
-          />
-        </div>
-
-        <div className="field txField txDateField">
-          <label>Date *</label>
-          <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
-        </div>
-
-        <div className="field txField txGrow txNoteField">
-          <label>Note</label>
-          <textarea placeholder="Optional note..." value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
-        </div>
-
-        <button
-          className={`btn primary txAddButton ${txDraft.type}`}
-          onClick={() => void addTransaction()}
-          disabled={txDraft.type === 'expense' && !txDraft.category_id}
-          title={txDraft.type === 'expense' && !txDraft.category_id ? 'Choose a category first' : undefined}
-        >
-          <Plus size={16} /> Add
-        </button>
-      </div>
-      </section>
+        {addTransactionForm}
+      </section> : null}
 
       <section className="txPanel txManagePanel txMainPanel" aria-labelledby="tx-manage-title">
         <div className="txManageBox">
@@ -1996,6 +2001,16 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       </div>
       </section>
       </div>
+
+      {useModalAdd && isAddModalOpen ? (
+        <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setIsAddModalOpen(false)}>
+          <div className="card txAddModal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <h3 style={{ marginBottom: 4 }}>Add Transaction</h3>
+            <div className="muted">Record a new income or expense.</div>
+            {addTransactionForm}
+          </div>
+        </div>
+      ) : null}
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}

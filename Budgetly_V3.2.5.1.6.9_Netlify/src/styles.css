@@ -7652,6 +7652,9 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
   gap: 14px;
   margin-top: 12px;
 }
+.txDesktopLayout.compact{
+  grid-template-columns: 1fr;
+}
 .txSidebarPanel,
 .txMainPanel{
   border: 1px solid var(--stroke);
@@ -7681,6 +7684,12 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .txAddRowVertical .txAddButton{
   width: 100%;
   justify-content: center;
+}
+.txAddModal{
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100vh - 18px);
+  overflow: auto;
+  padding: 14px 16px;
 }
 .txSummaryRow{
   width: 100%;
