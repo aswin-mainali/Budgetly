@@ -6870,9 +6870,9 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsGhostAction{display:inline-flex;align-items:center;gap:7px}
 .bugsFixesToolbar .btn{height:44px}
 .bugTableShell{border-radius:16px}
-.bugsFixesHeaderRow{grid-template-columns:minmax(130px,.95fr) minmax(180px,1.15fr) minmax(220px,1.7fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr)}
+.bugsFixesHeaderRow{grid-template-columns:minmax(140px,1fr) minmax(220px,1.35fr) minmax(110px,.7fr) minmax(120px,.8fr) minmax(140px,.9fr)}
 .bugsFixesBody{padding:0}
-.bugsFixesRow{display:grid;grid-template-columns:minmax(130px,.95fr) minmax(180px,1.15fr) minmax(220px,1.7fr) minmax(95px,.6fr) minmax(110px,.75fr) minmax(130px,.8fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
+.bugsFixesRow{display:grid;grid-template-columns:minmax(140px,1fr) minmax(220px,1.35fr) minmax(110px,.7fr) minmax(120px,.8fr) minmax(140px,.9fr);align-items:center;gap:16px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,.12);cursor:pointer}
 .bugsFixesRow:last-child{border-bottom:none}
 .bugsFixesRow.selected{background:rgba(37,99,235,.09);box-shadow:inset 3px 0 0 #3b82f6}
 .bugsDateCell,.bugsReporterCell,.bugsIssueCell{display:grid;gap:2px}
@@ -6936,7 +6936,7 @@ body.light .bugsDetailDivider{background:#e8edf5}
 @media (max-width: 980px){
   .bugsFixesToolbar{grid-template-columns:1fr 1fr}
   .bugsFixesHeaderRow,.bugsFixesRow{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .bugsIssueCell,.bugsActionsCell{grid-column:1 / -1}
+  .bugsActionsCell{grid-column:1 / -1}
   .bugsStepGrid{grid-template-columns:1fr}
   .bugsFieldLabelRow{grid-template-columns:1fr 1fr}
 }

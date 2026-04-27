@@ -4731,7 +4731,6 @@ ${rowXml}
             <div className="auditTableHeader bugsFixesHeaderRow">
               <div>Date</div>
               <div>Reporter</div>
-              <div>Issue</div>
               <div>Severity</div>
               <div>Status</div>
               <div>Actions</div>
@@ -4749,10 +4748,6 @@ ${rowXml}
                     <div className="bugsReporterCell">
                       <strong>{item.reporterHandle}</strong>
                       <span>{item.user_email}</span>
-                    </div>
-                    <div className="bugsIssueCell">
-                      <strong>{item.title}</strong>
-                      <span>{item.summary || 'No extra notes provided.'}</span>
                     </div>
                     <div><span className={`bugPill severity ${item.severity}`}>{item.severity === 'high' ? 'High' : item.severity === 'medium' ? 'Medium' : 'Low'}</span></div>
                     <div><span className={`bugPill status ${item.status === 'completed' ? 'resolved' : item.statusLabel === 'In Progress' ? 'review' : 'pending'}`}>{item.statusLabel}</span></div>
