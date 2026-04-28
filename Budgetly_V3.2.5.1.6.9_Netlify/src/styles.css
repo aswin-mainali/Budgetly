@@ -6751,6 +6751,42 @@ body.light .txPageCard .transactionsScrollBox,
 .txPageCard .dataStickyTable thead th{
   z-index:25;
 }
+.txPageCard .txHistoryTable{
+  table-layout:fixed;
+}
+.txPageCard .txHistoryTable th,
+.txPageCard .txHistoryTable td{
+  vertical-align:middle;
+  padding-inline:10px;
+}
+.txPageCard .txHistoryTable th:nth-child(1),
+.txPageCard .txHistoryTable td:nth-child(1){
+  width:120px;
+}
+.txPageCard .txHistoryTable th:nth-child(2),
+.txPageCard .txHistoryTable td:nth-child(2){
+  width:100px;
+}
+.txPageCard .txHistoryTable th:nth-child(3),
+.txPageCard .txHistoryTable td:nth-child(3){
+  width:40%;
+}
+.txPageCard .txHistoryTable th:nth-child(4),
+.txPageCard .txHistoryTable td:nth-child(4){
+  width:170px;
+  text-align:right;
+  padding-right:16px;
+}
+.txPageCard .txHistoryTable th:nth-child(5),
+.txPageCard .txHistoryTable td:nth-child(5){
+  width:30%;
+  padding-left:16px;
+}
+.txPageCard .txHistoryTable th:nth-child(6),
+.txPageCard .txHistoryTable td:nth-child(6){
+  width:68px;
+  text-align:right;
+}
 .txPageCard h2,
 .txPageCard > .row.between,
 .txPageCard .txAddRow,

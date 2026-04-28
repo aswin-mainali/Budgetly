@@ -1903,7 +1903,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         </div>
       ) : (
         <div className="dataScrollBox transactionsScrollBox" style={{ marginTop: 8 }}>
-          <table className="table dataStickyTable">
+          <table className="table dataStickyTable txHistoryTable">
               <thead>
                 <tr>
                   <th style={{ width: 120 }}>Date</th>
