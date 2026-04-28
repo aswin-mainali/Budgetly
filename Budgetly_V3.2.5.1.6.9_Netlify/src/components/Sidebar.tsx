@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
+import { readCachedUserProfile } from '../lib/userProfile'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
 
@@ -41,26 +42,13 @@ export default function Sidebar(props: {
 
   useEffect(() => {
     const readProfile = () => {
-      try {
-        const raw = localStorage.getItem('budgetly:userProfile')
-        if (!raw) return setStoredProfile({ firstName: '', lastName: '', image: '' })
-        const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
-        setStoredProfile({
-          firstName: (parsed.firstName || '').trim(),
-          lastName: (parsed.lastName || '').trim(),
-          image: parsed.image || '',
-        })
-      } catch {
-        setStoredProfile({ firstName: '', lastName: '', image: '' })
-      }
+      setStoredProfile(readCachedUserProfile())
     }
 
     readProfile()
     window.addEventListener('budgetly:profile-updated', readProfile)
-    window.addEventListener('storage', readProfile)
     return () => {
       window.removeEventListener('budgetly:profile-updated', readProfile)
-      window.removeEventListener('storage', readProfile)
     }
   }, [])
 

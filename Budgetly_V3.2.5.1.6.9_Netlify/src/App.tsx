@@ -3,6 +3,7 @@ import { Menu, BarChart3, ListChecks, Tags, Repeat, PanelLeftClose, LifeBuoy, Wr
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
+import { syncProfileCacheForUser } from './lib/userProfile'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
@@ -92,6 +93,7 @@ export default function App() {
       const user = sessionData.session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      await syncProfileCacheForUser(user)
       setSessionChecked(true)
     }
 
@@ -101,6 +103,7 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      void syncProfileCacheForUser(user)
     })
 
     return () => subscription.subscription.unsubscribe()
@@ -305,7 +308,7 @@ export default function App() {
           </div>
         ) : null}
         {view === 'support' && admin.visibleFeatures.support ? <HelpSupportView email={email} userId={userId} admin={admin} /> : null}
-        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} onSignOut={() => void signOut()} /> : null}
+        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} userId={userId} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} onSignOut={() => void signOut()} /> : null}
 
         {isMobile ? (
           <nav className="mobileTabBar" aria-label="Mobile navigation">
