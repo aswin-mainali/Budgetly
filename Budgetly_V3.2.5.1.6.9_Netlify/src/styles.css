@@ -5374,32 +5374,30 @@ body.light .txSearchPrefix{
     gap:8px;
   }
 
-  .txAddRow .txDateField,
-  .txAddRow .txTypeField,
-  .txAddRow .txCategoryField{
-    grid-column:span 4 !important;
+  .txPageCard .txAddRow .txDateField,
+  .txPageCard .txAddRow .txTypeField,
+  .txPageCard .txAddRow .txCategoryField,
+  .txPageCard .txAddRow .txAmountField{
+    grid-column:span 2 !important;
   }
 
-  .txAddRow .txAmountField{
+  .txPageCard .txAddRow .txNoteField{
     grid-column:span 3 !important;
   }
 
-  .txAddRow .txNoteField{
-    grid-column:span 7 !important;
-  }
-
-  .txAddRow .txAddButton{
-    grid-column:span 2 !important;
-    min-height:40px;
+  .txPageCard .txAddRow .txAddButton{
+    grid-column:span 1 !important;
+    min-height:36px;
     align-self:end;
     justify-self:stretch;
     white-space:nowrap;
+    padding-inline:10px;
   }
 
-  .txAddRow .txCategoryField select,
-  .txAddRow .txAmountField input,
-  .txAddRow .txNoteField input{
-    min-height:40px;
+  .txPageCard .txAddRow .txField input,
+  .txPageCard .txAddRow .txField select,
+  .txPageCard .txAddRow .typeToggle{
+    min-height:36px;
   }
 
   .txToolbarFields{
