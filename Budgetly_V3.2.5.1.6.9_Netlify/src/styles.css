@@ -6757,34 +6757,30 @@ body.light .txPageCard .transactionsScrollBox,
 .txPageCard .txHistoryTable th,
 .txPageCard .txHistoryTable td{
   vertical-align:middle;
-  padding-inline:10px;
+  padding-inline:14px;
 }
 .txPageCard .txHistoryTable th:nth-child(1),
 .txPageCard .txHistoryTable td:nth-child(1){
-  width:120px;
+  width:130px;
 }
 .txPageCard .txHistoryTable th:nth-child(2),
 .txPageCard .txHistoryTable td:nth-child(2){
-  width:100px;
-}
-.txPageCard .txHistoryTable th:nth-child(3),
-.txPageCard .txHistoryTable td:nth-child(3){
-  width:40%;
+  width:110px;
 }
 .txPageCard .txHistoryTable th:nth-child(4),
 .txPageCard .txHistoryTable td:nth-child(4){
-  width:170px;
+  width:180px;
   text-align:right;
-  padding-right:16px;
+  padding-right:24px;
 }
 .txPageCard .txHistoryTable th:nth-child(5),
 .txPageCard .txHistoryTable td:nth-child(5){
-  width:30%;
-  padding-left:16px;
+  width:26%;
+  padding-left:24px;
 }
 .txPageCard .txHistoryTable th:nth-child(6),
 .txPageCard .txHistoryTable td:nth-child(6){
-  width:68px;
+  width:72px;
   text-align:right;
 }
 .txPageCard h2,
