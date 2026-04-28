@@ -4,6 +4,7 @@ import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { deleteProfileImage, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 
 
 type ReportCanvasOptions = {
@@ -1022,6 +1023,7 @@ type SharedProps = {
   budget: BudgetAppState
   theme: 'dark' | 'light'
   email: string | null
+  userId?: string | null
   onThemeToggle: () => void
   onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
@@ -4083,25 +4085,12 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
-export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSignOut }: SharedProps) {
+export function SettingsView({ budget, theme, email, userId, onThemeToggle, admin, onSignOut }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
 
-  const initialProfile = useMemo(() => {
-    try {
-      const raw = localStorage.getItem('budgetly:userProfile')
-      if (!raw) return { firstName: '', lastName: '', image: '' }
-      const parsed = JSON.parse(raw) as { firstName?: string; lastName?: string; image?: string }
-      return {
-        firstName: (parsed.firstName || '').trim(),
-        lastName: (parsed.lastName || '').trim(),
-        image: parsed.image || '',
-      }
-    } catch {
-      return { firstName: '', lastName: '', image: '' }
-    }
-  }, [])
+  const initialProfile = useMemo(() => readCachedUserProfile(), [])
 
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
   const [showPasswordFields, setShowPasswordFields] = useState({ current: false, next: false, confirm: false })
@@ -4110,6 +4099,9 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
   const [passwordSuccess, setPasswordSuccess] = useState('')
   const [profileForm, setProfileForm] = useState({ firstName: initialProfile.firstName, lastName: initialProfile.lastName })
   const [profileImage, setProfileImage] = useState<string>(initialProfile.image)
+  const [pendingProfileImageFile, setPendingProfileImageFile] = useState<File | null>(null)
+  const [pendingProfileImagePreview, setPendingProfileImagePreview] = useState('')
+  const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
@@ -4151,6 +4143,30 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
     if (profileSuccess) setProfileSuccess('')
   }
 
+  useEffect(() => {
+    const readProfile = () => {
+      const next = readCachedUserProfile()
+      setProfileForm({ firstName: next.firstName, lastName: next.lastName })
+      setProfileImage(next.image)
+      setPendingProfileImageFile(null)
+      setPendingProfileImagePreview('')
+    }
+
+    readProfile()
+    window.addEventListener('budgetly:profile-updated', readProfile)
+    window.addEventListener('storage', readProfile)
+    return () => {
+      window.removeEventListener('budgetly:profile-updated', readProfile)
+      window.removeEventListener('storage', readProfile)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
+    }
+  }, [pendingProfileImagePreview])
+
   const handleProfilePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -4165,37 +4181,69 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setProfileImage(typeof reader.result === 'string' ? reader.result : '')
-      setProfileError('')
-      setProfileSuccess('Profile photo updated. Click save profile to keep changes.')
-    }
-    reader.onerror = () => setProfileError('Failed to read selected image.')
-    reader.readAsDataURL(file)
+    if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
+    const preview = URL.createObjectURL(file)
+    setPendingProfileImageFile(file)
+    setPendingProfileImagePreview(preview)
+    setProfileImage(preview)
+    setProfileError('')
+    setProfileSuccess('Profile photo selected. Click save profile to upload and keep changes.')
     event.currentTarget.value = ''
   }
 
   const handleProfilePhotoRemove = () => {
+    if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
+    setPendingProfileImageFile(null)
+    setPendingProfileImagePreview('')
     setProfileImage('')
     setProfileError('')
     setProfileSuccess('Profile photo removed. Click save profile to keep changes.')
   }
 
-  const handleProfileSave = () => {
+  const handleProfileSave = async () => {
     if (!profileForm.firstName.trim() && !profileForm.lastName.trim()) {
       setProfileError('Enter at least a first or last name.')
       setProfileSuccess('')
       return
     }
-    localStorage.setItem('budgetly:userProfile', JSON.stringify({
-      firstName: profileForm.firstName.trim(),
-      lastName: profileForm.lastName.trim(),
-      image: profileImage || '',
-    }))
-    window.dispatchEvent(new Event('budgetly:profile-updated'))
-    setProfileError('')
-    setProfileSuccess('Profile updated.')
+    if (!userId) {
+      setProfileError('No active user found.')
+      setProfileSuccess('')
+      return
+    }
+
+    const cachedProfile = readCachedUserProfile()
+    let imageUrl = profileImage || ''
+
+    setProfileBusy(true)
+    try {
+      const imageRemoved = !profileImage
+      if (pendingProfileImageFile) {
+        imageUrl = await uploadProfileImage(userId, pendingProfileImageFile, cachedProfile.image)
+      } else if (imageRemoved && cachedProfile.image) {
+        await deleteProfileImage(cachedProfile.image)
+        imageUrl = ''
+      } else {
+        imageUrl = cachedProfile.image
+      }
+
+      const saved = await saveProfileToTable(userId, {
+        firstName: profileForm.firstName.trim(),
+        lastName: profileForm.lastName.trim(),
+        image: imageUrl,
+      })
+      setProfileForm({ firstName: saved.firstName, lastName: saved.lastName })
+      setProfileImage(saved.image)
+      setPendingProfileImageFile(null)
+      setPendingProfileImagePreview('')
+      setProfileError('')
+      setProfileSuccess('Profile updated.')
+    } catch (error: any) {
+      setProfileError(error?.message || 'Failed to update profile.')
+      setProfileSuccess('')
+    } finally {
+      setProfileBusy(false)
+    }
   }
 
   const togglePasswordVisibility = (field: 'current' | 'next' | 'confirm') => {
@@ -4409,10 +4457,10 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
                       {profileImage ? <img src={profileImage} alt="Profile preview" /> : <span>{profileInitials}</span>}
                     </div>
                     <div className="settingsProfileActions">
-                      <button className="btn" type="button" onClick={() => profileImageInputRef.current?.click()}>
+                      <button className="btn" type="button" onClick={() => profileImageInputRef.current?.click()} disabled={profileBusy}>
                         <Upload size={16} /> Upload photo
                       </button>
-                      <button className="btn ghost" type="button" onClick={handleProfilePhotoRemove} disabled={!profileImage}>
+                      <button className="btn ghost" type="button" onClick={handleProfilePhotoRemove} disabled={!profileImage || profileBusy}>
                         <Trash2 size={16} /> Remove
                       </button>
                       <input ref={profileImageInputRef} type="file" accept="image/png,image/jpeg" style={{ display: 'none' }} onChange={handleProfilePhotoUpload} />
@@ -4443,8 +4491,8 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
                 {profileSuccess ? <div className="passwordFeedback success">{profileSuccess}</div> : null}
 
                 <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
-                  <button className="btn primary" type="button" onClick={handleProfileSave}>
-                    <UserCircle2 size={16} /> Save profile
+                  <button className="btn primary" type="button" onClick={() => void handleProfileSave()} disabled={profileBusy}>
+                    <UserCircle2 size={16} /> {profileBusy ? 'Saving…' : 'Save profile'}
                   </button>
                 </div>
               </div>
@@ -5353,23 +5401,9 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const readProfile = () => {
-      try {
-        const raw = window.localStorage.getItem('budgetly:userProfile')
-        if (!raw) {
-          setLocalProfileImage('')
-          setLocalProfileName({ firstName: '', lastName: '' })
-          return
-        }
-        const parsed = JSON.parse(raw) as { image?: string; firstName?: string; lastName?: string }
-        setLocalProfileImage((parsed.image || '').trim())
-        setLocalProfileName({
-          firstName: (parsed.firstName || '').trim(),
-          lastName: (parsed.lastName || '').trim(),
-        })
-      } catch {
-        setLocalProfileImage('')
-        setLocalProfileName({ firstName: '', lastName: '' })
-      }
+      const profile = readCachedUserProfile()
+      setLocalProfileImage(profile.image)
+      setLocalProfileName({ firstName: profile.firstName, lastName: profile.lastName })
     }
     readProfile()
     window.addEventListener('budgetly:profile-updated', readProfile)
