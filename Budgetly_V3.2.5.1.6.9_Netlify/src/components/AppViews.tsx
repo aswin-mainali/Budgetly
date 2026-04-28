@@ -1758,21 +1758,21 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           <h2>Transactions</h2>
           <div className="muted">Add today’s transaction by default, or backdate it if needed. Use Month to view older records.</div>
         </div>
+        {useTxAddModal ? (
+          <button className="btn primary txOpenAddModalBtn" type="button" onClick={() => setTxAddModalOpen(true)}>
+            <Plus size={16} /> Add Transaction
+          </button>
+        ) : null}
       </div>
 
+      {!useTxAddModal ? (
       <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
         <div className="txPanelHeader row between">
           <div>
             <h3 id="tx-add-title">Add Transaction</h3>
           </div>
-          {useTxAddModal ? (
-            <button className="btn primary txOpenAddModalBtn" type="button" onClick={() => setTxAddModalOpen(true)}>
-              <Plus size={16} /> Add Transaction
-            </button>
-          ) : null}
         </div>
 
-      {!useTxAddModal ? (
         <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
           <div className="field txField txDateField">
             <label>Date</label>
@@ -1828,8 +1828,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             <Plus size={16} /> Add
           </button>
         </div>
-      ) : null}
       </section>
+      ) : null}
 
       {useTxAddModal && txAddModalOpen ? (
         <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setTxAddModalOpen(false)}>
