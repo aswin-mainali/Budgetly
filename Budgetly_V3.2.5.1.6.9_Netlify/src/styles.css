@@ -6808,6 +6808,42 @@ body.light .txPageCard .txToolbarRow,
 .txPageCard .txToolbarRow{
   padding-bottom:8px;
 }
+.txOpenAddModalBtn{
+  min-height:38px;
+  white-space:nowrap;
+}
+.txAddModal{
+  width:min(640px, calc(100vw - 28px));
+  max-width:640px;
+  border-radius:20px;
+  padding:16px;
+}
+.txAddModalGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px 12px;
+}
+.txAddModalNote{
+  grid-column:1 / -1;
+}
+@media (max-width: 1366px){
+  .txPageCard .txAddPanel{
+    padding-top:10px;
+    padding-bottom:10px;
+  }
+  .txPageCard .txAddPanel .txPanelHeader{
+    align-items:center;
+    margin-bottom:0;
+  }
+}
+@media (max-width: 640px){
+  .txAddModalGrid{
+    grid-template-columns:1fr;
+  }
+  .txAddModalNote{
+    grid-column:auto;
+  }
+}
 
 
 /* v3.2.5.1.2 targeted polish: solid tx sticky header + unified nav active color */
