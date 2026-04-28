@@ -14,10 +14,31 @@ const IDLE_WARNING_MS = 60 * 1000
 
 
 type ToastItem = { id: number; message: string }
+type SyncedProfile = { firstName: string; lastName: string; image: string }
 
 const showToast = (message: string) => {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message } }))
+}
+
+const profileFromMetadata = (metadata: Record<string, unknown> | undefined): SyncedProfile => {
+  const firstName = typeof metadata?.firstName === 'string'
+    ? metadata.firstName
+    : typeof metadata?.first_name === 'string'
+      ? metadata.first_name
+      : ''
+  const lastName = typeof metadata?.lastName === 'string'
+    ? metadata.lastName
+    : typeof metadata?.last_name === 'string'
+      ? metadata.last_name
+      : ''
+  const image = typeof metadata?.image === 'string'
+    ? metadata.image
+    : typeof metadata?.avatar_url === 'string'
+      ? metadata.avatar_url
+      : ''
+
+  return { firstName: firstName.trim(), lastName: lastName.trim(), image }
 }
 
 export default function App() {
@@ -87,11 +108,24 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const syncProfileFromUser = (user: { user_metadata?: Record<string, unknown> } | null) => {
+      if (typeof window === 'undefined') return
+      if (!user) {
+        window.localStorage.removeItem('budgetly:userProfile')
+        window.dispatchEvent(new Event('budgetly:profile-updated'))
+        return
+      }
+      const profile = profileFromMetadata(user.user_metadata)
+      window.localStorage.setItem('budgetly:userProfile', JSON.stringify(profile))
+      window.dispatchEvent(new Event('budgetly:profile-updated'))
+    }
+
     const boot = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
       const user = sessionData.session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      syncProfileFromUser(user ? { user_metadata: user.user_metadata as Record<string, unknown> } : null)
       setSessionChecked(true)
     }
 
@@ -101,6 +135,7 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      syncProfileFromUser(user ? { user_metadata: user.user_metadata as Record<string, unknown> } : null)
     })
 
     return () => subscription.subscription.unsubscribe()

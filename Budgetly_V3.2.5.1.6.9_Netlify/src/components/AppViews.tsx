@@ -4087,6 +4087,32 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
+  const [profileBusy, setProfileBusy] = useState(false)
+
+  const profileFromMetadata = (metadata: Record<string, unknown> | undefined) => {
+    const firstName = typeof metadata?.firstName === 'string'
+      ? metadata.firstName
+      : typeof metadata?.first_name === 'string'
+        ? metadata.first_name
+        : ''
+    const lastName = typeof metadata?.lastName === 'string'
+      ? metadata.lastName
+      : typeof metadata?.last_name === 'string'
+        ? metadata.last_name
+        : ''
+    const image = typeof metadata?.image === 'string'
+      ? metadata.image
+      : typeof metadata?.avatar_url === 'string'
+        ? metadata.avatar_url
+        : ''
+
+    return { firstName: firstName.trim(), lastName: lastName.trim(), image }
+  }
+
+  const persistProfileLocally = (profile: { firstName: string; lastName: string; image: string }) => {
+    localStorage.setItem('budgetly:userProfile', JSON.stringify(profile))
+    window.dispatchEvent(new Event('budgetly:profile-updated'))
+  }
 
   const initialProfile = useMemo(() => {
     try {
@@ -4182,20 +4208,55 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
     setProfileSuccess('Profile photo removed. Click save profile to keep changes.')
   }
 
-  const handleProfileSave = () => {
+  useEffect(() => {
+    const loadRemoteProfile = async () => {
+      const { data: userData } = await supabase.auth.getUser()
+      const user = userData.user
+      if (!user) return
+      const remoteProfile = profileFromMetadata(user.user_metadata as Record<string, unknown>)
+      setProfileForm({ firstName: remoteProfile.firstName, lastName: remoteProfile.lastName })
+      setProfileImage(remoteProfile.image || '')
+      persistProfileLocally(remoteProfile)
+    }
+    void loadRemoteProfile()
+  }, [])
+
+  const handleProfileSave = async () => {
     if (!profileForm.firstName.trim() && !profileForm.lastName.trim()) {
       setProfileError('Enter at least a first or last name.')
       setProfileSuccess('')
       return
     }
-    localStorage.setItem('budgetly:userProfile', JSON.stringify({
+
+    const nextProfile = {
       firstName: profileForm.firstName.trim(),
       lastName: profileForm.lastName.trim(),
       image: profileImage || '',
-    }))
-    window.dispatchEvent(new Event('budgetly:profile-updated'))
-    setProfileError('')
-    setProfileSuccess('Profile updated.')
+    }
+
+    setProfileBusy(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          firstName: nextProfile.firstName,
+          lastName: nextProfile.lastName,
+          image: nextProfile.image,
+          first_name: nextProfile.firstName,
+          last_name: nextProfile.lastName,
+          avatar_url: nextProfile.image,
+          full_name: `${nextProfile.firstName} ${nextProfile.lastName}`.trim(),
+        },
+      })
+      if (error) throw error
+      persistProfileLocally(nextProfile)
+      setProfileError('')
+      setProfileSuccess('Profile updated across your account.')
+    } catch (err: any) {
+      setProfileError(err?.message || 'Failed to sync profile to your account.')
+      setProfileSuccess('')
+    } finally {
+      setProfileBusy(false)
+    }
   }
 
   const togglePasswordVisibility = (field: 'current' | 'next' | 'confirm') => {
@@ -4443,7 +4504,7 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
                 {profileSuccess ? <div className="passwordFeedback success">{profileSuccess}</div> : null}
 
                 <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
-                  <button className="btn primary" type="button" onClick={handleProfileSave}>
+                  <button className="btn primary" type="button" onClick={() => void handleProfileSave()} disabled={profileBusy}>
                     <UserCircle2 size={16} /> Save profile
                   </button>
                 </div>
