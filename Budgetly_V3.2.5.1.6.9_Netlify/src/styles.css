@@ -3107,6 +3107,104 @@ body.light .sidebarFooter .btn.danger{
   }
 }
 
+/* Light mode auth redesign (keeps dark mode unchanged) */
+body.light .authWrap{
+  position:relative;
+  overflow:hidden;
+}
+body.light .authWrap::before{
+  opacity:.14;
+  filter:saturate(.9) contrast(.95) brightness(1.12);
+  transform:scale(1.03);
+}
+body.light .authWrap::after{
+  background:
+    linear-gradient(180deg, rgba(247,250,255,.88), rgba(242,246,252,.90)),
+    radial-gradient(900px 680px at 18% 18%, rgba(148,163,184,.22), transparent 62%),
+    radial-gradient(860px 620px at 80% 26%, rgba(191,219,254,.24), transparent 58%);
+}
+body.light .authShell{
+  width:min(1040px, calc(100% - 40px));
+  gap:16px;
+}
+body.light .authVisual,
+body.light .authCardModern{
+  background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(248,250,254,.9));
+  border:1px solid rgba(148,163,184,.24);
+  box-shadow:0 16px 44px rgba(148,163,184,.20), inset 0 1px 0 rgba(255,255,255,.88);
+}
+body.light .authVisualPremium{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.93), rgba(247,250,255,.92)),
+    url("./assets/login-bg.jpeg") center/cover no-repeat;
+  border-color:rgba(148,163,184,.22);
+  box-shadow:0 16px 44px rgba(148,163,184,.2), inset 0 1px 0 rgba(255,255,255,.9);
+}
+body.light .authVisualPremium::after{
+  background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(241,245,251,.74));
+}
+body.light .authVisualBackdrop,
+body.light .authGlow,
+body.light .authGridMask,
+body.light .authRing{
+  display:none;
+}
+body.light .authVisual{
+  color:#0f172a;
+}
+body.light .authBrandMark,
+body.light .authVisualCopy h2,
+body.light .authTitle{
+  color:#0f172a;
+}
+body.light .authBrandSubtle,
+body.light .authVisualCopy p,
+body.light .authSubtitle,
+body.light .authSwitchRow{
+  color:#4b5563;
+}
+body.light .authKicker,
+body.light .authEyebrow{
+  color:#818cf8;
+}
+body.light .authHeroPanel{
+  background:linear-gradient(180deg, rgba(255,255,255,.8), rgba(242,246,252,.95));
+  border-color:rgba(148,163,184,.24);
+}
+body.light .authHeroMiniLineOne{
+  background:linear-gradient(90deg, rgba(125,211,252,.9), rgba(99,102,241,.85));
+}
+body.light .authHeroMiniLineTwo{
+  background:linear-gradient(90deg, rgba(147,197,253,.9), rgba(34,211,238,.85));
+}
+body.light .authModeBadge{
+  background:rgba(238,242,255,.88);
+  color:#4f46e5;
+  border-color:rgba(129,140,248,.25);
+}
+body.light .authInputWrapEnhanced{
+  background:rgba(237,242,252,.86);
+  border-color:rgba(191,219,254,.72);
+}
+body.light .authInputWrapEnhanced svg,
+body.light .authVisibilityButton{
+  color:#6b7280;
+}
+body.light .authPrimaryButton{
+  border:none;
+  color:#fff;
+  background:linear-gradient(90deg, #4f46e5, #3b82f6);
+  box-shadow:0 10px 20px rgba(59,130,246,.24);
+}
+body.light .authPrimaryButton:hover{
+  filter:brightness(1.02);
+}
+body.light .authTrustItem{
+  background:rgba(239,246,255,.7);
+  border-color:rgba(191,219,254,.75);
+  color:#334155;
+}
+
 @media (max-width: 540px){
   .authVisual{
     order:2;
@@ -7720,3 +7818,32 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 }
 
 .recurringDrawerModal{width:min(560px, calc(100vw - 24px));max-height:calc(100vh - 16px);overflow:hidden;padding:12px 14px}
+
+/* Final light-mode auth lock: force mock-matching palette */
+body.light .authWrap::before{
+  opacity:.16 !important;
+  filter:saturate(.88) brightness(1.08) contrast(.94) !important;
+}
+body.light .authWrap::after{
+  background:
+    linear-gradient(180deg, rgba(245,248,253,.90), rgba(239,243,249,.92)) !important;
+}
+body.light .authVisualPremium,
+body.light .authVisual,
+body.light .authCardModern{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.94), rgba(247,250,255,.92)),
+    url("./assets/login-bg.jpeg") center/cover no-repeat !important;
+  border:1px solid rgba(203,213,225,.60) !important;
+  box-shadow:0 16px 46px rgba(148,163,184,.20), inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+body.light .authVisual::after,
+body.light .authVisualPremium::after{
+  background:linear-gradient(180deg, rgba(255,255,255,.74), rgba(241,245,251,.76)) !important;
+}
+body.light .authVisualBackdrop,
+body.light .authGlow,
+body.light .authGridMask,
+body.light .authRing{
+  display:none !important;
+}
