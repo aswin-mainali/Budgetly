@@ -5374,32 +5374,33 @@ body.light .txSearchPrefix{
     gap:8px;
   }
 
-  .txAddRow .txDateField,
-  .txAddRow .txTypeField,
-  .txAddRow .txCategoryField{
-    grid-column:span 4 !important;
+  .txPageCard .txAddRow .txDateField,
+  .txPageCard .txAddRow .txTypeField,
+  .txPageCard .txAddRow .txAmountField{
+    grid-column:span 2 !important;
   }
 
-  .txAddRow .txAmountField{
+  .txPageCard .txAddRow .txCategoryField{
     grid-column:span 3 !important;
   }
 
-  .txAddRow .txNoteField{
-    grid-column:span 7 !important;
+  .txPageCard .txAddRow .txNoteField{
+    grid-column:span 2 !important;
   }
 
-  .txAddRow .txAddButton{
-    grid-column:span 2 !important;
-    min-height:40px;
+  .txPageCard .txAddRow .txAddButton{
+    grid-column:span 1 !important;
+    min-height:36px;
     align-self:end;
     justify-self:stretch;
     white-space:nowrap;
+    padding-inline:10px;
   }
 
-  .txAddRow .txCategoryField select,
-  .txAddRow .txAmountField input,
-  .txAddRow .txNoteField input{
-    min-height:40px;
+  .txPageCard .txAddRow .txField input,
+  .txPageCard .txAddRow .txField select,
+  .txPageCard .txAddRow .typeToggle{
+    min-height:36px;
   }
 
   .txToolbarFields{
@@ -6750,6 +6751,50 @@ body.light .txPageCard .transactionsScrollBox,
 .txPageCard .dataStickyTable thead th{
   z-index:25;
 }
+.txPageCard .txHistoryTable{
+  table-layout:fixed;
+}
+.txPageCard .txHistoryTable .txColDate{width:130px;}
+.txPageCard .txHistoryTable .txColType{width:110px;}
+.txPageCard .txHistoryTable .txColAmount{width:180px;}
+.txPageCard .txHistoryTable .txColNote{width:26%;}
+.txPageCard .txHistoryTable .txColActions{width:72px;}
+.txPageCard .txHistoryTable th,
+.txPageCard .txHistoryTable td{
+  vertical-align:middle;
+  padding:12px 14px;
+}
+.txPageCard .txHistoryTable th:nth-child(4),
+.txPageCard .txHistoryTable td:nth-child(4){
+  text-align:right;
+  padding-right:24px;
+}
+.txPageCard .txHistoryTable th:nth-child(5),
+.txPageCard .txHistoryTable td:nth-child(5){
+  padding-left:24px;
+}
+.txPageCard .txHistoryTable th:nth-child(6),
+.txPageCard .txHistoryTable td:nth-child(6){
+  text-align:right;
+}
+@media (min-width: 1200px){
+  .txPageCard .txHistoryTable .txColDate{width:140px;}
+  .txPageCard .txHistoryTable .txColType{width:120px;}
+  .txPageCard .txHistoryTable .txColAmount{width:200px;}
+  .txPageCard .txHistoryTable .txColNote{width:28%;}
+  .txPageCard .txHistoryTable th,
+  .txPageCard .txHistoryTable td{
+    padding:13px 18px;
+  }
+  .txPageCard .txHistoryTable th:nth-child(4),
+  .txPageCard .txHistoryTable td:nth-child(4){
+    padding-right:30px;
+  }
+  .txPageCard .txHistoryTable th:nth-child(5),
+  .txPageCard .txHistoryTable td:nth-child(5){
+    padding-left:30px;
+  }
+}
 .txPageCard h2,
 .txPageCard > .row.between,
 .txPageCard .txAddRow,
@@ -6770,6 +6815,42 @@ body.light .txPageCard .txToolbarRow,
 }
 .txPageCard .txToolbarRow{
   padding-bottom:8px;
+}
+.txOpenAddModalBtn{
+  min-height:38px;
+  white-space:nowrap;
+}
+.txAddModal{
+  width:min(640px, calc(100vw - 28px));
+  max-width:640px;
+  border-radius:20px;
+  padding:16px;
+}
+.txAddModalGrid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:10px 12px;
+}
+.txAddModalNote{
+  grid-column:1 / -1;
+}
+@media (max-width: 1366px){
+  .txPageCard .txAddPanel{
+    padding-top:10px;
+    padding-bottom:10px;
+  }
+  .txPageCard .txAddPanel .txPanelHeader{
+    align-items:center;
+    margin-bottom:0;
+  }
+}
+@media (max-width: 640px){
+  .txAddModalGrid{
+    grid-template-columns:1fr;
+  }
+  .txAddModalNote{
+    grid-column:auto;
+  }
 }
 
 
