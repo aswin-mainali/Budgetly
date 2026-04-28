@@ -392,18 +392,23 @@ create policy "user_account_profiles_self_delete"
 on public.user_account_profiles for delete
 using (auth.uid() = user_id);
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'profile-images',
-  'profile-images',
-  true,
-  5242880,
-  array['image/png', 'image/jpeg', 'image/webp']
-)
-on conflict (id) do update
-set public = excluded.public,
-    file_size_limit = excluded.file_size_limit,
-    allowed_mime_types = excluded.allowed_mime_types;
+do $$
+begin
+  if not exists (select 1 from storage.buckets where id = 'profile-images') then
+    perform storage.create_bucket(
+      'profile-images',
+      public := true,
+      file_size_limit := 5242880,
+      allowed_mime_types := array['image/png', 'image/jpeg', 'image/webp']
+    );
+  end if;
+end $$;
+
+update storage.buckets
+set public = true,
+    file_size_limit = 5242880,
+    allowed_mime_types = array['image/png', 'image/jpeg', 'image/webp']
+where id = 'profile-images';
 
 drop policy if exists "profile_images_owner_select" on storage.objects;
 create policy "profile_images_owner_select"

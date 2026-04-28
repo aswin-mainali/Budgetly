@@ -123,7 +123,13 @@ export const uploadProfileImage = async (userId: string, file: File, previousIma
     contentType: file.type || undefined,
   })
 
-  if (uploadResult.error) throw new Error(uploadResult.error.message || 'Failed to upload profile image.')
+  if (uploadResult.error) {
+    const message = uploadResult.error.message || 'Failed to upload profile image.'
+    if (message.toLowerCase().includes('bucket not found')) {
+      throw new Error('Profile image bucket "profile-images" is missing. Run the user_account_profiles storage SQL migration in Supabase first.')
+    }
+    throw new Error(message)
+  }
 
   const { data: publicData } = supabase.storage.from(PROFILE_IMAGE_BUCKET).getPublicUrl(path)
   const imageUrl = publicData.publicUrl
