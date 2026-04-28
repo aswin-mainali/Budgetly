@@ -6852,6 +6852,29 @@ body.light .txPageCard .dataStickyTable thead th,
   min-height:48px;display:flex;align-items:center;gap:8px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.03)
 }
 .bugReportTextarea{min-height:120px;resize:vertical}
+.bugSeverityField{margin-top:-2px}
+.bugSeverityTabs{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bugSeverityTab{
+  min-width:92px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:14px;
+  font-weight:500;
+  padding:0 16px;
+  transition:all .16s ease;
+}
+.bugSeverityTab.high{border-color:#fca5a5;color:#dc2626;background:#fff5f5}
+.bugSeverityTab.medium{border-color:#fcd34d;color:#b45309;background:#fff9eb}
+.bugSeverityTab.low{border-color:#86efac;color:#15803d;background:#f0fdf4}
+.bugSeverityTab.active{
+  box-shadow:0 0 0 2px rgba(148,163,184,.18) inset;
+  transform:translateY(-1px);
+}
+.bugSeverityTab.high.active{background:#fee2e2}
+.bugSeverityTab.medium.active{background:#fef3c7}
+.bugSeverityTab.low.active{background:#dcfce7}
 .bugUploadBox{
   min-height:96px;border:1px dashed var(--line);border-radius:16px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:12px;cursor:pointer;background:rgba(255,255,255,.02)
 }
@@ -7048,6 +7071,9 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsImageClose{justify-self:end}
 body.light .bugReportReadonly,
 body.light .bugUploadBox{background:#f8fbff}
+body.light .bugSeverityTab{
+  background:#fff;
+}
 @media (max-width: 720px){
   .bugReportModal{padding:22px 16px 16px}
   .bugReportModal h3{font-size:28px}

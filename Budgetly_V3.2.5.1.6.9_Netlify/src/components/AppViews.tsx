@@ -4748,12 +4748,13 @@ function BugReportModal({
   open: boolean
   email: string
   onClose: () => void
-  onSubmit: (payload: { steps: string; file: File | null; contact: boolean }) => void
+  onSubmit: (payload: { steps: string; file: File | null; contact: boolean; severity: 'high' | 'medium' | 'low' }) => void
   busy: boolean
 }) {
   const [steps, setSteps] = useState('')
   const [contact, setContact] = useState(true)
   const [file, setFile] = useState<File | null>(null)
+  const [severity, setSeverity] = useState<'high' | 'medium' | 'low'>('high')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -4761,6 +4762,7 @@ function BugReportModal({
       setSteps('')
       setContact(true)
       setFile(null)
+      setSeverity('high')
       setError('')
     }
   }, [open])
@@ -4773,7 +4775,7 @@ function BugReportModal({
       return
     }
     setError('')
-    onSubmit({ steps: steps.trim(), file, contact })
+    onSubmit({ steps: steps.trim(), file, contact, severity })
   }
 
   return (
@@ -4797,6 +4799,24 @@ function BugReportModal({
             onChange={(event) => setSteps(event.target.value)}
             placeholder="What happened, what you clicked, what you expected, and what actually happened..."
           />
+        </div>
+
+        <div className="bugReportField bugSeverityField">
+          <label>Severity:</label>
+          <div className="bugSeverityTabs" role="tablist" aria-label="Bug severity">
+            {(['high', 'medium', 'low'] as const).map((level) => (
+              <button
+                key={level}
+                type="button"
+                role="tab"
+                aria-selected={severity === level}
+                className={`bugSeverityTab ${level} ${severity === level ? 'active' : ''}`}
+                onClick={() => setSeverity(level)}
+              >
+                {level.charAt(0).toUpperCase() + level.slice(1)}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="bugReportField">
@@ -5157,7 +5177,7 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
   }
 
 
-  const submitBugReport = async ({ steps, file, contact }: { steps: string; file: File | null; contact: boolean }) => {
+  const submitBugReport = async ({ steps, file, contact, severity }: { steps: string; file: File | null; contact: boolean; severity: 'high' | 'medium' | 'low' }) => {
     if (!userId || !email) return
     setBugBusy(true)
     try {
@@ -5167,6 +5187,7 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
         user_email: email,
         steps_to_reproduce: steps,
         contact_when_resolved: contact,
+        admin_notes: `[severity:${severity}]`,
         screenshot_name: file?.name ?? null,
         screenshot_data_url: screenshotDataUrl,
         status: 'pending',
