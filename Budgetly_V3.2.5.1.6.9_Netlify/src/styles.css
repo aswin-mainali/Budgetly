@@ -3133,6 +3133,22 @@ body.light .authCardModern{
   border:1px solid rgba(148,163,184,.24);
   box-shadow:0 16px 44px rgba(148,163,184,.20), inset 0 1px 0 rgba(255,255,255,.88);
 }
+body.light .authVisualPremium{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.93), rgba(247,250,255,.92)),
+    url("./assets/login-bg.jpeg") center/cover no-repeat;
+  border-color:rgba(148,163,184,.22);
+  box-shadow:0 16px 44px rgba(148,163,184,.2), inset 0 1px 0 rgba(255,255,255,.9);
+}
+body.light .authVisualPremium::after{
+  background:linear-gradient(180deg, rgba(255,255,255,.72), rgba(241,245,251,.74));
+}
+body.light .authVisualBackdrop,
+body.light .authGlow,
+body.light .authGridMask,
+body.light .authRing{
+  display:none;
+}
 body.light .authVisual{
   color:#0f172a;
 }
