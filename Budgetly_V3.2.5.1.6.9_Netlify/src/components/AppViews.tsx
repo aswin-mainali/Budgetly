@@ -2237,7 +2237,11 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               <span>Budget</span>
               <span className="categoriesListHeaderActions">Actions</span>
             </div>
-            {filteredAndSortedCategories.length === 0 ? <div className="muted mobileEmptyCard">No matching categories.</div> : filteredAndSortedCategories.map((category: Category) => {
+            {filteredAndSortedCategories.length === 0 ? (
+              <div className="muted mobileEmptyCard">
+                {sortedCategories.length === 0 ? 'Create your first category here.' : 'No matching categories.'}
+              </div>
+            ) : filteredAndSortedCategories.map((category: Category) => {
               const isEditing = !!editingCategoryIds[category.id]
               return (
                 <article key={category.id} className="categoriesListItem">
