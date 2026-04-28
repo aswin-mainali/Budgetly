@@ -6826,8 +6826,12 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugReportModal{
   width:min(640px, calc(100vw - 28px));
   max-width:640px;
-  padding:28px 28px 22px;
+  max-height:calc(100vh - 36px);
+  overflow:auto;
+  padding:30px 28px 24px;
   border-radius:22px;
+  border:1px solid rgba(148,163,184,.24);
+  box-shadow:0 28px 90px rgba(2,6,23,.30);
 }
 .bugReportBrand{
   text-align:center;
@@ -6876,7 +6880,7 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugSeverityTab.medium.active{background:#fef3c7}
 .bugSeverityTab.low.active{background:#dcfce7}
 .bugUploadBox{
-  min-height:96px;border:1px dashed var(--line);border-radius:16px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:12px;cursor:pointer;background:rgba(255,255,255,.02)
+  min-height:96px;border:1px dashed var(--line);border-radius:16px;display:grid;place-items:center;text-align:center;color:var(--muted);padding:16px;cursor:pointer;background:rgba(255,255,255,.02)
 }
 .bugUploadBox small{display:block;margin-top:4px}
 .bugContactRow{display:flex;align-items:center;gap:10px;margin:2px 0 8px;color:var(--text)}
@@ -7071,11 +7075,19 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugsImageClose{justify-self:end}
 body.light .bugReportReadonly,
 body.light .bugUploadBox{background:#f8fbff}
+body.light .bugReportModal{
+  border-color:rgba(203,213,225,.8);
+  box-shadow:0 24px 60px rgba(15,23,42,.20);
+}
 body.light .bugSeverityTab{
   background:#fff;
 }
 @media (max-width: 720px){
-  .bugReportModal{padding:22px 16px 16px}
+  .bugReportModal{
+    max-height:calc(100vh - 20px);
+    padding:20px 16px 16px;
+    border-radius:18px;
+  }
   .bugReportModal h3{font-size:28px}
   .bugFixRow{grid-template-columns:1fr}
   .bugReportActions{flex-direction:column-reverse}
