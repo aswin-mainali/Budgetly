@@ -1979,14 +1979,22 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       ) : (
         <div className="dataScrollBox transactionsScrollBox" style={{ marginTop: 8 }}>
           <table className="table dataStickyTable txHistoryTable">
+              <colgroup>
+                <col className="txColDate" />
+                <col className="txColType" />
+                <col className="txColCategory" />
+                <col className="txColAmount" />
+                <col className="txColNote" />
+                <col className="txColActions" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ width: 120 }}>Date</th>
-                  <th style={{ width: 90 }}>Type</th>
+                  <th>Date</th>
+                  <th>Type</th>
                   <th>Category</th>
-                  <th style={{ width: 140, textAlign: 'right' }}>Amount</th>
+                  <th>Amount</th>
                   <th>Note</th>
-                  <th style={{ width: 70 }} />
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -1997,9 +2005,9 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                       <td>{transaction.date}</td>
                       <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
                       <td>{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</td>
-                      <td style={{ textAlign: 'right' }} className={`txAmountCell ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
+                      <td className={`txAmountCell ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
                       <td className="muted">{transaction.note ?? ''}</td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td>
                         <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete">
                           <Trash2 size={16} />
                         </button>

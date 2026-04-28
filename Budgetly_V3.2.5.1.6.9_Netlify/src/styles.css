@@ -6754,33 +6754,27 @@ body.light .txPageCard .transactionsScrollBox,
 .txPageCard .txHistoryTable{
   table-layout:fixed;
 }
+.txPageCard .txHistoryTable .txColDate{width:130px;}
+.txPageCard .txHistoryTable .txColType{width:110px;}
+.txPageCard .txHistoryTable .txColAmount{width:180px;}
+.txPageCard .txHistoryTable .txColNote{width:26%;}
+.txPageCard .txHistoryTable .txColActions{width:72px;}
 .txPageCard .txHistoryTable th,
 .txPageCard .txHistoryTable td{
   vertical-align:middle;
-  padding-inline:14px;
-}
-.txPageCard .txHistoryTable th:nth-child(1),
-.txPageCard .txHistoryTable td:nth-child(1){
-  width:130px;
-}
-.txPageCard .txHistoryTable th:nth-child(2),
-.txPageCard .txHistoryTable td:nth-child(2){
-  width:110px;
+  padding:12px 14px;
 }
 .txPageCard .txHistoryTable th:nth-child(4),
 .txPageCard .txHistoryTable td:nth-child(4){
-  width:180px;
   text-align:right;
   padding-right:24px;
 }
 .txPageCard .txHistoryTable th:nth-child(5),
 .txPageCard .txHistoryTable td:nth-child(5){
-  width:26%;
   padding-left:24px;
 }
 .txPageCard .txHistoryTable th:nth-child(6),
 .txPageCard .txHistoryTable td:nth-child(6){
-  width:72px;
   text-align:right;
 }
 .txPageCard h2,
