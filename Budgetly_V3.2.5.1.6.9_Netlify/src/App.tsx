@@ -21,25 +21,7 @@ const showToast = (message: string) => {
   window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message } }))
 }
 
-const profileFromMetadata = (metadata: Record<string, unknown> | undefined): SyncedProfile => {
-  const firstName = typeof metadata?.firstName === 'string'
-    ? metadata.firstName
-    : typeof metadata?.first_name === 'string'
-      ? metadata.first_name
-      : ''
-  const lastName = typeof metadata?.lastName === 'string'
-    ? metadata.lastName
-    : typeof metadata?.last_name === 'string'
-      ? metadata.last_name
-      : ''
-  const image = typeof metadata?.image === 'string'
-    ? metadata.image
-    : typeof metadata?.avatar_url === 'string'
-      ? metadata.avatar_url
-      : ''
-
-  return { firstName: firstName.trim(), lastName: lastName.trim(), image }
-}
+const emptyProfile: SyncedProfile = { firstName: '', lastName: '', image: '' }
 
 export default function App() {
   const [sessionChecked, setSessionChecked] = useState(false)
@@ -108,14 +90,28 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const syncProfileFromUser = (user: { user_metadata?: Record<string, unknown> } | null) => {
+    const syncProfileFromUser = async (userId: string | null) => {
       if (typeof window === 'undefined') return
-      if (!user) {
+      if (!userId) {
         window.localStorage.removeItem('budgetly:userProfile')
         window.dispatchEvent(new Event('budgetly:profile-updated'))
         return
       }
-      const profile = profileFromMetadata(user.user_metadata)
+      const { data, error } = await supabase
+        .from('user_account_profiles')
+        .select('first_name,last_name,image_url')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (error) {
+        window.localStorage.setItem('budgetly:userProfile', JSON.stringify(emptyProfile))
+        window.dispatchEvent(new Event('budgetly:profile-updated'))
+        return
+      }
+      const profile = {
+        firstName: (data?.first_name || '').trim(),
+        lastName: (data?.last_name || '').trim(),
+        image: data?.image_url || '',
+      }
       window.localStorage.setItem('budgetly:userProfile', JSON.stringify(profile))
       window.dispatchEvent(new Event('budgetly:profile-updated'))
     }
@@ -125,7 +121,7 @@ export default function App() {
       const user = sessionData.session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
-      syncProfileFromUser(user ? { user_metadata: user.user_metadata as Record<string, unknown> } : null)
+      await syncProfileFromUser(user?.id ?? null)
       setSessionChecked(true)
     }
 
@@ -135,7 +131,7 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
-      syncProfileFromUser(user ? { user_metadata: user.user_metadata as Record<string, unknown> } : null)
+      void syncProfileFromUser(user?.id ?? null)
     })
 
     return () => subscription.subscription.unsubscribe()

@@ -4089,25 +4089,11 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
   const isSuperAdmin = !!admin?.isSuperAdmin
   const [profileBusy, setProfileBusy] = useState(false)
 
-  const profileFromMetadata = (metadata: Record<string, unknown> | undefined) => {
-    const firstName = typeof metadata?.firstName === 'string'
-      ? metadata.firstName
-      : typeof metadata?.first_name === 'string'
-        ? metadata.first_name
-        : ''
-    const lastName = typeof metadata?.lastName === 'string'
-      ? metadata.lastName
-      : typeof metadata?.last_name === 'string'
-        ? metadata.last_name
-        : ''
-    const image = typeof metadata?.image === 'string'
-      ? metadata.image
-      : typeof metadata?.avatar_url === 'string'
-        ? metadata.avatar_url
-        : ''
-
-    return { firstName: firstName.trim(), lastName: lastName.trim(), image }
-  }
+  const profileFromRow = (row: { first_name?: string | null; last_name?: string | null; image_url?: string | null } | null | undefined) => ({
+    firstName: (row?.first_name || '').trim(),
+    lastName: (row?.last_name || '').trim(),
+    image: row?.image_url || '',
+  })
 
   const persistProfileLocally = (profile: { firstName: string; lastName: string; image: string }) => {
     localStorage.setItem('budgetly:userProfile', JSON.stringify(profile))
@@ -4213,7 +4199,12 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
       const { data: userData } = await supabase.auth.getUser()
       const user = userData.user
       if (!user) return
-      const remoteProfile = profileFromMetadata(user.user_metadata as Record<string, unknown>)
+      const { data: profileRow } = await supabase
+        .from('user_account_profiles')
+        .select('first_name,last_name,image_url')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      const remoteProfile = profileFromRow(profileRow)
       setProfileForm({ firstName: remoteProfile.firstName, lastName: remoteProfile.lastName })
       setProfileImage(remoteProfile.image || '')
       persistProfileLocally(remoteProfile)
@@ -4236,19 +4227,55 @@ export function SettingsView({ budget, theme, email, onThemeToggle, admin, onSig
 
     setProfileBusy(true)
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          firstName: nextProfile.firstName,
-          lastName: nextProfile.lastName,
-          image: nextProfile.image,
-          first_name: nextProfile.firstName,
-          last_name: nextProfile.lastName,
-          avatar_url: nextProfile.image,
-          full_name: `${nextProfile.firstName} ${nextProfile.lastName}`.trim(),
-        },
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      if (userError) throw userError
+      const user = userData.user
+      if (!user) throw new Error('No active user.')
+
+      const { data: existingRow, error: existingError } = await supabase
+        .from('user_account_profiles')
+        .select('image_url')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (existingError) throw existingError
+
+      let uploadedImageUrl = nextProfile.image
+      if (nextProfile.image && nextProfile.image.startsWith('data:image/')) {
+        const response = await fetch(nextProfile.image)
+        const blob = await response.blob()
+        const extension = blob.type === 'image/png' ? 'png' : 'jpg'
+        const filePath = `${user.id}/${Date.now()}.${extension}`
+        const { error: uploadError } = await supabase.storage
+          .from('profile-images')
+          .upload(filePath, blob, {
+            contentType: blob.type || 'image/jpeg',
+            upsert: false,
+          })
+        if (uploadError) throw uploadError
+        const { data: publicData } = supabase.storage.from('profile-images').getPublicUrl(filePath)
+        uploadedImageUrl = publicData.publicUrl
+        if (existingRow?.image_url?.includes('/storage/v1/object/public/profile-images/')) {
+          const oldPath = existingRow.image_url.split('/storage/v1/object/public/profile-images/')[1]
+          if (oldPath) await supabase.storage.from('profile-images').remove([oldPath])
+        }
+      }
+
+      const { error: upsertError } = await supabase.from('user_account_profiles').upsert({
+        user_id: user.id,
+        first_name: nextProfile.firstName,
+        last_name: nextProfile.lastName,
+        image_url: uploadedImageUrl || null,
+      }, {
+        onConflict: 'user_id',
       })
-      if (error) throw error
-      persistProfileLocally(nextProfile)
+      if (upsertError) throw upsertError
+
+      if (!uploadedImageUrl && existingRow?.image_url?.includes('/storage/v1/object/public/profile-images/')) {
+        const oldPath = existingRow.image_url.split('/storage/v1/object/public/profile-images/')[1]
+        if (oldPath) await supabase.storage.from('profile-images').remove([oldPath])
+      }
+
+      persistProfileLocally({ ...nextProfile, image: uploadedImageUrl || '' })
       setProfileError('')
       setProfileSuccess('Profile updated across your account.')
     } catch (err: any) {
