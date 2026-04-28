@@ -6777,6 +6777,24 @@ body.light .txPageCard .transactionsScrollBox,
 .txPageCard .txHistoryTable td:nth-child(6){
   text-align:right;
 }
+@media (min-width: 1200px){
+  .txPageCard .txHistoryTable .txColDate{width:140px;}
+  .txPageCard .txHistoryTable .txColType{width:120px;}
+  .txPageCard .txHistoryTable .txColAmount{width:200px;}
+  .txPageCard .txHistoryTable .txColNote{width:28%;}
+  .txPageCard .txHistoryTable th,
+  .txPageCard .txHistoryTable td{
+    padding:13px 18px;
+  }
+  .txPageCard .txHistoryTable th:nth-child(4),
+  .txPageCard .txHistoryTable td:nth-child(4){
+    padding-right:30px;
+  }
+  .txPageCard .txHistoryTable th:nth-child(5),
+  .txPageCard .txHistoryTable td:nth-child(5){
+    padding-left:30px;
+  }
+}
 .txPageCard h2,
 .txPageCard > .row.between,
 .txPageCard .txAddRow,
