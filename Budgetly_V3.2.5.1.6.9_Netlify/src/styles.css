@@ -6826,8 +6826,6 @@ body.light .txPageCard .dataStickyTable thead th,
 .bugReportModal{
   width:min(640px, calc(100vw - 28px));
   max-width:640px;
-  max-height:calc(100vh - 36px);
-  overflow:auto;
   padding:30px 28px 24px;
   border-radius:22px;
   border:1px solid rgba(148,163,184,.24);
@@ -7084,14 +7082,23 @@ body.light .bugSeverityTab{
 }
 @media (max-width: 720px){
   .bugReportModal{
-    max-height:calc(100vh - 20px);
     padding:20px 16px 16px;
     border-radius:18px;
   }
   .bugReportModal h3{font-size:28px}
+  .bugReportSubtitle{margin:6px 0 14px}
+  .bugReportField{margin-bottom:10px}
+  .bugReportTextarea{min-height:92px}
+  .bugUploadBox{min-height:80px;padding:12px}
+  .bugContactRow{margin:0 0 6px}
   .bugFixRow{grid-template-columns:1fr}
   .bugReportActions{flex-direction:column-reverse}
   .bugReportActions .btn{width:100%}
+}
+@media (max-width: 440px){
+  .bugReportModal h3{font-size:25px}
+  .bugReportTextarea{min-height:74px}
+  .bugUploadBox{min-height:70px}
 }
 @media (max-width: 1280px){
   .bugsWorkspace{grid-template-columns:1fr}
