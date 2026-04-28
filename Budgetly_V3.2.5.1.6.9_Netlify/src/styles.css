@@ -5376,13 +5376,16 @@ body.light .txSearchPrefix{
 
   .txPageCard .txAddRow .txDateField,
   .txPageCard .txAddRow .txTypeField,
-  .txPageCard .txAddRow .txCategoryField,
   .txPageCard .txAddRow .txAmountField{
     grid-column:span 2 !important;
   }
 
-  .txPageCard .txAddRow .txNoteField{
+  .txPageCard .txAddRow .txCategoryField{
     grid-column:span 3 !important;
+  }
+
+  .txPageCard .txAddRow .txNoteField{
+    grid-column:span 2 !important;
   }
 
   .txPageCard .txAddRow .txAddButton{

@@ -1768,10 +1768,28 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
         <div className="field txField txTypeField">
           <label>Type</label>
-          <div className="typeToggle" role="tablist" aria-label="Transaction type">
-            <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
-            <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
-          </div>
+          {isCompactLaptop ? (
+            <select
+              aria-label="Transaction type"
+              value={txDraft.type}
+              onChange={(event) => {
+                const nextType = event.target.value as TxType
+                setTxDraft((current) => ({
+                  ...current,
+                  type: nextType,
+                  category_id: nextType === 'income' ? '' : current.category_id,
+                }))
+              }}
+            >
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          ) : (
+            <div className="typeToggle" role="tablist" aria-label="Transaction type">
+              <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
+              <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
+            </div>
+          )}
         </div>
 
         {txDraft.type === 'expense' ? (
