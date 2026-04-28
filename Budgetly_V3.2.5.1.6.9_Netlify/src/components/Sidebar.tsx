@@ -47,10 +47,8 @@ export default function Sidebar(props: {
 
     readProfile()
     window.addEventListener('budgetly:profile-updated', readProfile)
-    window.addEventListener('storage', readProfile)
     return () => {
       window.removeEventListener('budgetly:profile-updated', readProfile)
-      window.removeEventListener('storage', readProfile)
     }
   }, [])
 

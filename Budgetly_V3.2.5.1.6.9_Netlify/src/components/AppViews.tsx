@@ -4,7 +4,7 @@ import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
-import { deleteProfileImage, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
+import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 
 
 type ReportCanvasOptions = {
@@ -4090,7 +4090,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
 
-  const initialProfile = useMemo(() => readCachedUserProfile(), [])
+  const initialProfile = useMemo(() => ({ firstName: '', lastName: '', image: '' }), [])
 
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' })
   const [showPasswordFields, setShowPasswordFields] = useState({ current: false, next: false, confirm: false })
@@ -4101,6 +4101,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [profileImage, setProfileImage] = useState<string>(initialProfile.image)
   const [pendingProfileImageFile, setPendingProfileImageFile] = useState<File | null>(null)
   const [pendingProfileImagePreview, setPendingProfileImagePreview] = useState('')
+  const [savedProfileImage, setSavedProfileImage] = useState('')
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
@@ -4144,21 +4145,50 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   }
 
   useEffect(() => {
-    const readProfile = () => {
-      const next = readCachedUserProfile()
-      setProfileForm({ firstName: next.firstName, lastName: next.lastName })
-      setProfileImage(next.image)
+    if (!userId) {
+      setProfileForm({ firstName: '', lastName: '' })
+      setProfileImage('')
+      setSavedProfileImage('')
+      setPendingProfileImageFile(null)
+      setPendingProfileImagePreview('')
+      return
+    }
+
+    let cancelled = false
+    const loadRemoteProfile = async () => {
+      try {
+        const next = await loadProfileFromTable(userId)
+        if (cancelled) return
+        setProfileForm({ firstName: next.firstName, lastName: next.lastName })
+        setProfileImage(next.image)
+        setSavedProfileImage(next.image)
+        setPendingProfileImageFile(null)
+        setPendingProfileImagePreview('')
+      } catch {
+        if (cancelled) return
+        const fallback = readCachedUserProfile()
+        setProfileForm({ firstName: fallback.firstName, lastName: fallback.lastName })
+        setProfileImage(fallback.image)
+        setSavedProfileImage(fallback.image)
+      }
+    }
+
+    void loadRemoteProfile()
+    return () => { cancelled = true }
+  }, [userId])
+
+  useEffect(() => {
+    const readProfile = (event: Event) => {
+      const detail = (event as CustomEvent<{ firstName?: string; lastName?: string; image?: string }>).detail
+      if (!detail) return
+      setProfileForm({ firstName: detail.firstName || '', lastName: detail.lastName || '' })
+      setProfileImage(detail.image || '')
+      setSavedProfileImage(detail.image || '')
       setPendingProfileImageFile(null)
       setPendingProfileImagePreview('')
     }
-
-    readProfile()
-    window.addEventListener('budgetly:profile-updated', readProfile)
-    window.addEventListener('storage', readProfile)
-    return () => {
-      window.removeEventListener('budgetly:profile-updated', readProfile)
-      window.removeEventListener('storage', readProfile)
-    }
+    window.addEventListener('budgetly:profile-updated', readProfile as EventListener)
+    return () => window.removeEventListener('budgetly:profile-updated', readProfile as EventListener)
   }, [])
 
   useEffect(() => {
@@ -4212,19 +4242,18 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
       return
     }
 
-    const cachedProfile = readCachedUserProfile()
     let imageUrl = profileImage || ''
 
     setProfileBusy(true)
     try {
       const imageRemoved = !profileImage
       if (pendingProfileImageFile) {
-        imageUrl = await uploadProfileImage(userId, pendingProfileImageFile, cachedProfile.image)
-      } else if (imageRemoved && cachedProfile.image) {
-        await deleteProfileImage(cachedProfile.image)
+        imageUrl = await uploadProfileImage(userId, pendingProfileImageFile, savedProfileImage)
+      } else if (imageRemoved && savedProfileImage) {
+        await deleteProfileImage(savedProfileImage)
         imageUrl = ''
       } else {
-        imageUrl = cachedProfile.image
+        imageUrl = savedProfileImage
       }
 
       const saved = await saveProfileToTable(userId, {
@@ -4234,6 +4263,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
       })
       setProfileForm({ firstName: saved.firstName, lastName: saved.lastName })
       setProfileImage(saved.image)
+      setSavedProfileImage(saved.image)
       setPendingProfileImageFile(null)
       setPendingProfileImagePreview('')
       setProfileError('')

@@ -1,7 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 
-export const USER_PROFILE_STORAGE_KEY = 'budgetly:userProfile'
 const PROFILE_IMAGE_BUCKET = 'profile-images'
 
 export type UserAccountProfile = {
@@ -10,39 +9,32 @@ export type UserAccountProfile = {
   image: string
 }
 
+let inMemoryProfile: UserAccountProfile = {
+  firstName: '',
+  lastName: '',
+  image: '',
+}
+
 const normalizeProfile = (value?: Partial<UserAccountProfile> | null): UserAccountProfile => ({
   firstName: (value?.firstName || '').trim(),
   lastName: (value?.lastName || '').trim(),
   image: (value?.image || '').trim(),
 })
 
-export const readCachedUserProfile = (): UserAccountProfile => {
-  if (typeof window === 'undefined') return normalizeProfile()
-  try {
-    const raw = window.localStorage.getItem(USER_PROFILE_STORAGE_KEY)
-    if (!raw) return normalizeProfile()
-    const parsed = JSON.parse(raw) as Partial<UserAccountProfile>
-    return normalizeProfile(parsed)
-  } catch {
-    return normalizeProfile()
-  }
-}
-
 const emitProfileUpdated = () => {
   if (typeof window === 'undefined') return
-  window.dispatchEvent(new Event('budgetly:profile-updated'))
+  window.dispatchEvent(new CustomEvent('budgetly:profile-updated', { detail: inMemoryProfile }))
 }
 
+export const readCachedUserProfile = (): UserAccountProfile => inMemoryProfile
+
 export const cacheUserProfile = (profile: Partial<UserAccountProfile> | null) => {
-  if (typeof window === 'undefined') return
-  const normalized = normalizeProfile(profile)
-  window.localStorage.setItem(USER_PROFILE_STORAGE_KEY, JSON.stringify(normalized))
+  inMemoryProfile = normalizeProfile(profile)
   emitProfileUpdated()
 }
 
 export const clearCachedUserProfile = () => {
-  if (typeof window === 'undefined') return
-  window.localStorage.removeItem(USER_PROFILE_STORAGE_KEY)
+  inMemoryProfile = normalizeProfile()
   emitProfileUpdated()
 }
 
@@ -73,7 +65,7 @@ export const syncProfileCacheForUser = async (user: User | null) => {
     cacheUserProfile(profile)
     return profile
   } catch {
-    cacheUserProfile(normalizeProfile())
+    clearCachedUserProfile()
     return normalizeProfile()
   }
 }
