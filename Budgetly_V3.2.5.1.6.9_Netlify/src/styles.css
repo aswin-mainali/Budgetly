@@ -7818,3 +7818,32 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 }
 
 .recurringDrawerModal{width:min(560px, calc(100vw - 24px));max-height:calc(100vh - 16px);overflow:hidden;padding:12px 14px}
+
+/* Final light-mode auth lock: force mock-matching palette */
+body.light .authWrap::before{
+  opacity:.16 !important;
+  filter:saturate(.88) brightness(1.08) contrast(.94) !important;
+}
+body.light .authWrap::after{
+  background:
+    linear-gradient(180deg, rgba(245,248,253,.90), rgba(239,243,249,.92)) !important;
+}
+body.light .authVisualPremium,
+body.light .authVisual,
+body.light .authCardModern{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.94), rgba(247,250,255,.92)),
+    url("./assets/login-bg.jpeg") center/cover no-repeat !important;
+  border:1px solid rgba(203,213,225,.60) !important;
+  box-shadow:0 16px 46px rgba(148,163,184,.20), inset 0 1px 0 rgba(255,255,255,.95) !important;
+}
+body.light .authVisual::after,
+body.light .authVisualPremium::after{
+  background:linear-gradient(180deg, rgba(255,255,255,.74), rgba(241,245,251,.76)) !important;
+}
+body.light .authVisualBackdrop,
+body.light .authGlow,
+body.light .authGridMask,
+body.light .authRing{
+  display:none !important;
+}
