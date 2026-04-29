@@ -2715,8 +2715,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
           </div>
         </div>)}
         </div>
-        <div className="debtTableFooter">🔒 Your data is secure and encrypted</div>
-        <div className="row end" style={{ marginTop: 10 }}><button className="btn primary" onClick={() => void debt.saveDebts()} disabled={!debt.debtDirty}>Update Debt</button></div>
+        <div className="row end debtUpdateFooter"><button className="btn primary" onClick={() => void debt.saveDebts()} disabled={!debt.debtDirty}>Update Debt</button></div>
       </div> : null}
     {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
     {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
