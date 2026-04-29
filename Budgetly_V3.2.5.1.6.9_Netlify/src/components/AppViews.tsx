@@ -2687,13 +2687,10 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="card debtKpiCard"><div className="debtKpiIcon green">💼</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon blue">📅</div><div><small>Minimum monthly payments</small><strong>CA$720</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Estimated debt-free date</small><strong>Aug 2028</strong></div></div>
-      <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>RBC Visa · 22.99%</strong></div></div>
     </div>
     <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
     {tab === 'overview' ? <div className="debtOverview">
       <div className="debtLeftCol">
-        <div className="card debtPanel"><h3>⚖️ Payoff strategy</h3><div className="debtPills">{(['avalanche','snowball','custom'] as const).map(s=><button key={s} className={debt.strategy===s?'active':''} onClick={()=>debt.setStrategy(s)}>{s[0].toUpperCase()+s.slice(1)}</button>)}</div><p className="muted">{debt.strategy==='avalanche'?'Extra payments go to the highest-interest debt first.':debt.strategy==='snowball'?'Extra payments go to the smallest balance first.':'Manually choose your payoff order.'}</p></div>
-        <div className="card debtPanel"><h3>🧮 Extra payment planner</h3><input className="input" value={`CA$${debt.extraMonthlyPayment}`} readOnly /><div className="debtMetaLine">✅ Finish 9 months sooner</div><div className="debtMetaLine">💵 Interest saved: CA$1,240</div></div>
         <div className="card debtPanel"><h3>📅 Upcoming debt payments</h3><div className="debtMetaLine">RBC Visa — Apr 30, 2026 — CA$120.00 <span className="pill warn">Due soon</span></div><div className="debtMetaLine">Student Loan — May 1, 2026 — CA$300.00 <span className="pill">Upcoming</span></div><div className="debtMetaLine">Car Loan — May 3, 2026 — CA$350.00 <span className="pill">Upcoming</span></div><button className="btn ghost">View all upcoming payments</button></div>
         <div className="card debtPanel"><h3>📈 Debt-free progress</h3><p className="muted">You’ve cleared CA$3,400 of CA$18,450</p><div className="debtProgress"><span style={{ width: '18%' }} /></div><div className="row between"><small>CA$15,050 remaining</small><small>9 months sooner with plan</small></div></div>
       </div>
