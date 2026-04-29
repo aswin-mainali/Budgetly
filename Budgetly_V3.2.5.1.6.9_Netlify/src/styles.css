@@ -7861,7 +7861,7 @@ body.light .authRing{
 .debtOverview{display:grid;grid-template-columns:340px 1fr;gap:12px}.debtLeft,.debtRight{display:grid;gap:10px}.debtPills{display:flex;gap:8px}.debtPills button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 12px}.debtPills .active{background:#059669;color:#fff}
 .debtRow{display:grid;grid-template-columns:1.4fr 1.2fr .8fr .7fr .7fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:12px}.debtRow.paid{opacity:.6}
 @media (max-width:1200px){.debtKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.debtOverview{grid-template-columns:1fr}.debtRow{grid-template-columns:1fr 1fr}}
-.debtPage{display:grid;gap:12px;background:linear-gradient(180deg,#f5fbfb,#eef5fb);padding:8px 4px;border-radius:16px;height:100%;overflow:auto;padding-right:10px}
+.debtPage{display:grid;gap:12px;background:linear-gradient(180deg,#f5fbfb,#eef5fb);padding:8px 4px;border-radius:16px;height:100%;overflow:hidden}
 .debtHeader h2{font-size:40px;line-height:1;margin:0 0 4px}.debtHeader p{font-size:18px}
 .debtKpis{grid-template-columns:repeat(4,minmax(0,1fr))}
 .debtKpiCard{display:flex;gap:12px;align-items:center;background:#fff;border:1px solid #dce5f0;border-radius:14px;box-shadow:0 1px 0 rgba(15,23,42,.03);padding:12px 14px;min-height:86px}
@@ -7870,6 +7870,7 @@ body.light .authRing{
 .debtTabs button{font-weight:600;color:#4b5563}.debtTabs button.active{color:#139a6c}
 .debtOverview{display:grid;grid-template-columns:320px 1fr;gap:10px}.debtLeftCol{display:grid;gap:10px}
 .debtTableWrap{padding:10px}
+.debtRowsScroll{max-height:calc(100vh - 420px);overflow:auto;padding-right:6px}
 .debtPanel h3{font-size:22px;margin:0 0 8px}.debtMetaLine{font-size:13px;color:#334155;display:flex;justify-content:space-between;margin:6px 0}
 .debtProgress{height:8px;background:#e8edf5;border-radius:999px;overflow:hidden}.debtProgress span{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#22c55e)}
 .debtToolbar{display:grid;grid-template-columns:1.2fr repeat(3,.7fr);gap:8px;margin-bottom:10px}

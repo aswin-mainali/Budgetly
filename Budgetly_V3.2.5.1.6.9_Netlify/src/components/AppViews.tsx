@@ -2694,6 +2694,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
         <div className="debtToolbar"><input className="input" placeholder="Search debts" /><select className="select"><option>All Types</option></select><select className="select"><option>All Statuses</option></select><select className="select"><option>Sort by: Highest Interest</option></select></div>
         <div className="debtHeaderRow"><span>Debt</span><span>Balance</span><span>Interest Rate</span><span>Due Date</span><span>Projected Payoff</span><span>Status</span><span>Actions</span></div>
+        <div className="debtRowsScroll">
         {debt.debts.map(d=><div key={d.id} className={`debtRowRich debtRowTable ${d.status==='paid_off'?'paid':''}`}>
           <div><div className="debtName">{d.name}</div><small>{d.lender}</small><div className="debtTags"><span className="tag">{d.type}</span><span className={`tag ${d.id===debt.focusDebtId?'focus':''}`}>{d.id===debt.focusDebtId?'Focus Debt':d.status==='paid_off'?'Paid Off':'Active'}</span></div></div>
           <div><strong>CA${d.current_balance.toLocaleString()}</strong></div><div><strong>{d.interest_rate}%</strong></div>
@@ -2709,6 +2710,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
             </div> : null}
           </div>
         </div>)}
+        </div>
         <div className="debtTableFooter">🔒 Your data is secure and encrypted</div>
       </div> : null}
     {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
