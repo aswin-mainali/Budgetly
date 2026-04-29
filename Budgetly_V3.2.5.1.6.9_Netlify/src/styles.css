@@ -2329,8 +2329,12 @@ body.light .sidebarUserAvatar{
   .adminUserMeta{justify-content:flex-start;}
   .adminFeatureSection .adminFeatureGrid{grid-template-columns:1fr;}
 }
-@media (max-width: 1280px){
-  .adminMainGrid{grid-template-columns:1fr!important;}
+@media (max-width: 1400px){
+  .adminMainGrid,
+  .adminMainGridWide,
+  .superAdminPanels{
+    grid-template-columns:1fr!important;
+  }
 }
 
 
