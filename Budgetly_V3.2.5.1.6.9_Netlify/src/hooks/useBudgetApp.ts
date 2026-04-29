@@ -28,31 +28,15 @@ const notify = (message: string) => {
   window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message } }))
 }
 
-const defaultSeed = (userId: string): DataState => ({
+const defaultSeed = (_userId: string): DataState => ({
   currency: 'CAD',
-  categories: [
-    { id: crypto.randomUUID(), user_id: userId, name: 'Groceries', color: '#6EE7B7', emoji: '🛒', budget_monthly: 500, sort_order: 1 },
-    { id: crypto.randomUUID(), user_id: userId, name: 'Car Payment', color: '#93C5FD', emoji: '🚗', budget_monthly: 400, sort_order: 2 },
-    { id: crypto.randomUUID(), user_id: userId, name: 'Car Insurance', color: '#FCA5A5', emoji: '🛡️', budget_monthly: 220, sort_order: 3 },
-    { id: crypto.randomUUID(), user_id: userId, name: 'Rent', color: '#FDE68A', emoji: '🏠', budget_monthly: 1200, sort_order: 4 },
-    { id: crypto.randomUUID(), user_id: userId, name: 'Misc', color: '#C4B5FD', emoji: '📦', budget_monthly: 200, sort_order: 5 },
-  ],
+  categories: [],
   settings: {
     allowTxnInFutureDate: false,
   },
   recurring: [],
   goals: [],
-  transactions: [
-    {
-      id: crypto.randomUUID(),
-      user_id: userId,
-      date: todayIso(),
-      type: 'expense',
-      category_id: null,
-      amount: 0,
-      note: 'Add your first transaction',
-    },
-  ],
+  transactions: [],
 })
 
 const clampMoney = (n: number) => (Number.isFinite(n) ? Math.max(0, n) : 0)
@@ -289,12 +273,7 @@ export function useBudgetApp(userId: string | null) {
 
         if (cloudCats.length === 0 && cloudTx.length === 0 && cloudRecurring.length === 0 && cloudGoals.length === 0) {
           const seeded = defaultSeed(userId)
-          const seededTx = seeded.transactions.map((tx) => ({ ...tx, category_id: seeded.categories[0]?.id ?? null }))
-          await Promise.all([
-            supabase.from('categories').insert(seeded.categories),
-            supabase.from('transactions').insert(seededTx),
-          ])
-          persistLocal({ ...seeded, transactions: seededTx })
+          persistLocal(seeded)
           setSync('synced')
           return
         }
