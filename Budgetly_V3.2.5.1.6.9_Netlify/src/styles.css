@@ -7890,4 +7890,6 @@ body.light .authRing{
 .debtModalGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .debtModalGrid label{display:grid;gap:6px}
 .debtModalFull{grid-column:1/-1}
+.debtIconRow{display:flex;gap:8px;flex-wrap:wrap}
+.debtIconRow .btn{min-width:38px;padding:0 10px}
 @media (max-width:1200px){.debtKpis{grid-template-columns:1fr 1fr}.debtOverview{grid-template-columns:1fr}.debtToolbar{grid-template-columns:1fr 1fr}.debtHeaderRow{display:none}.debtRowRich{grid-template-columns:1fr 1fr}}
