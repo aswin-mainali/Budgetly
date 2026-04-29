@@ -7944,6 +7944,8 @@ body.light .authRing{
   .sidebarContainer.mobile.closed{left:-100%}
   .mobileMenuBtn{display:none}
   .sidebar .brand strong{font-size:48px}
+  .sidebarContainer.mobile .brandTitle{display:none}
+  .sidebarContainer.mobile .brand{justify-content:flex-end;min-height:52px}
   body.mobile-app .mobileKpiGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   body.mobile-app .mobileKpiGrid .mobileKpiNet{grid-column:auto}
   body.mobile-app .mobileKpiCard{
