@@ -2177,10 +2177,11 @@ body.light .sidebarUserAvatar{
 
 
 .adminMainGridWide{align-items:stretch;}
+.adminUserListCard{display:flex;flex-direction:column;max-height:640px;overflow:hidden;}
 .adminToolbar{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(120px,.7fr) minmax(120px,.8fr);gap:12px;margin-bottom:14px;}
 .adminSearchField,.adminCompactField{margin:0;}
 .adminToolbar > *{min-width:0;}
-.adminUserListTall{max-height:540px;overflow:auto;padding-right:4px;}
+.adminUserListTall{max-height:540px;overflow-y:auto;overflow-x:hidden;padding-right:4px;flex:1;min-height:0;}
 .adminDetailScrollable{max-height:640px;overflow:hidden;display:flex;}
 .adminDetailInner{display:flex;flex-direction:column;gap:0;overflow:auto;min-height:0;width:100%;padding-right:6px;}
 .adminDetailFooter{position:sticky;bottom:0;padding-top:12px;background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(246,249,255,.88) 35%, rgba(246,249,255,.98) 100%);}
@@ -2328,8 +2329,12 @@ body.light .sidebarUserAvatar{
   .adminUserMeta{justify-content:flex-start;}
   .adminFeatureSection .adminFeatureGrid{grid-template-columns:1fr;}
 }
-@media (max-width: 1280px){
-  .adminMainGrid{grid-template-columns:1fr!important;}
+@media (max-width: 1400px){
+  .adminMainGrid,
+  .adminMainGridWide,
+  .superAdminPanels{
+    grid-template-columns:1fr!important;
+  }
 }
 
 

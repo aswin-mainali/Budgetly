@@ -24,6 +24,9 @@ const FEATURE_KEYS = Object.keys(DEFAULT_FEATURE_ACCESS) as FeatureKey[]
 
 export type AdminManagedUser = Profile & {
   feature_access: UserFeatureAccess | null
+  first_name?: string | null
+  last_name?: string | null
+  image_url?: string | null
 }
 
 const mergeFeatureAccess = (value?: Partial<FeatureAccess> | null): FeatureAccess => ({
@@ -95,9 +98,10 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
 
     setError(null)
-    const [profilesResult, accessResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
+    const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
       supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').order('created_at', { ascending: false }),
       supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at'),
+      supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
       supabase.from('bug_reports').select('id,user_id,user_email,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
       supabase.from('transactions').select('*', { count: 'exact', head: true }),
@@ -108,14 +112,22 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
     if (profilesResult.error) throw new Error(profilesResult.error.message)
     if (accessResult.error) throw new Error(accessResult.error.message)
+    if (accountProfilesResult.error) throw new Error(accountProfilesResult.error.message)
     if (auditResult.error) throw new Error(auditResult.error.message)
     if (bugResult.error) throw new Error(bugResult.error.message)
 
     const accessMap = new Map((accessResult.data ?? []).map((row) => [row.user_id, row]))
-    const nextManagedUsers = (profilesResult.data ?? []).map((item) => ({
-      ...item,
-      feature_access: accessMap.get(item.id) ?? null,
-    })) as AdminManagedUser[]
+    const accountProfileMap = new Map((accountProfilesResult.data ?? []).map((row) => [row.user_id, row]))
+    const nextManagedUsers = (profilesResult.data ?? []).map((item) => {
+      const accountProfile = accountProfileMap.get(item.id)
+      return {
+        ...item,
+        feature_access: accessMap.get(item.id) ?? null,
+        first_name: accountProfile?.first_name ?? null,
+        last_name: accountProfile?.last_name ?? null,
+        image_url: accountProfile?.image_url ?? null,
+      }
+    }) as AdminManagedUser[]
 
     setManagedUsers(nextManagedUsers)
     setAuditLogs((auditResult.data ?? []) as AdminAuditLog[])
