@@ -1662,13 +1662,13 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           <div className="row between" style={{ marginBottom: 10 }}>
             <div>
               <h3 style={{ marginBottom: 4 }}>Recurring</h3>
-              <div className="h1" style={{ fontSize: 28, marginBottom: 0 }}>{upcomingRecurringThisMonth.length} upcoming this month</div>
+              <div className="h1" style={{ fontSize: 28, marginBottom: 0 }}>{upcomingRecurringThisMonth.length} Upcoming For Next 7 Days</div>
             </div>
-            <span className="badge">This month</span>
+            <span className="badge">Next 7 days</span>
           </div>
           <div className="grid recurringScrollArea" style={{ gap: 8 }}>
             {upcomingRecurringThisMonth.length === 0 ? (
-              <div className="muted recurringEmpty">No recurring bills or income are still due this month.</div>
+              <div className="muted recurringEmpty">No recurring bills or income are due in the next 7 days.</div>
             ) : upcomingRecurringThisMonth.map((item) => (
               <div key={item.id} className="recurringUpcomingItem">
                 <div className="recurringUpcomingMain">

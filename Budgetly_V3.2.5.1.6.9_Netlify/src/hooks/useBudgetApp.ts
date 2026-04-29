@@ -1006,13 +1006,13 @@ export function useBudgetApp(userId: string | null) {
 
   const upcomingRecurringThisMonth = useMemo(() => {
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    const todayStart = startOfLocalDay(now)
+    const windowStart = startOfLocalDay(now)
+    const windowEnd = new Date(windowStart.getFullYear(), windowStart.getMonth(), windowStart.getDate() + 7)
+    const todayStart = windowStart
     const rows: Array<RecurringItem & { dueDateIso: string; dueDay: number; daysAway: number; category: Category | null; recurrenceLabel: string }> = []
 
     const pushOccurrence = (item: RecurringItem, dueDate: Date, recurrenceLabel: string) => {
-      if (dueDate < todayStart || dueDate > monthEnd) return
+      if (dueDate < windowStart || dueDate > windowEnd) return
       const category = item.category_id ? catsById.get(item.category_id) ?? null : null
       const diffDays = Math.max(0, Math.ceil((startOfLocalDay(dueDate).getTime() - todayStart.getTime()) / 86400000))
       rows.push({
@@ -1029,18 +1029,24 @@ export function useBudgetApp(userId: string | null) {
     for (const item of sortedRecurring) {
       const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
       if (recurrenceType === 'monthly') {
-        const dueDay = Math.max(1, Math.min(monthEnd.getDate(), Number(item.day_of_month ?? 1) || 1))
-        pushOccurrence(item, new Date(now.getFullYear(), now.getMonth(), dueDay), 'Every month')
+        const dueDay = Math.max(1, Math.min(31, Number(item.day_of_month ?? 1) || 1))
+        const monthDays = new Date(windowStart.getFullYear(), windowStart.getMonth() + 1, 0).getDate()
+        const dueDate = new Date(windowStart.getFullYear(), windowStart.getMonth(), Math.min(dueDay, monthDays))
+        if (dueDate < windowStart) {
+          const nextMonthDays = new Date(windowStart.getFullYear(), windowStart.getMonth() + 2, 0).getDate()
+          dueDate.setMonth(dueDate.getMonth() + 1, Math.min(dueDay, nextMonthDays))
+        }
+        pushOccurrence(item, dueDate, 'Every month')
         continue
       }
 
-      const anchor = parseIsoLocal(item.anchor_date) ?? new Date(now.getFullYear(), now.getMonth(), Math.max(1, Math.min(monthEnd.getDate(), Number(item.day_of_month ?? now.getDate()) || now.getDate())))
+      const anchor = parseIsoLocal(item.anchor_date) ?? windowStart
       const stepDays = recurrenceType === 'weekly' ? 7 : 14
       let occurrence = startOfLocalDay(anchor)
-      while (occurrence < monthStart) {
+      while (occurrence < windowStart) {
         occurrence = new Date(occurrence.getFullYear(), occurrence.getMonth(), occurrence.getDate() + stepDays)
       }
-      while (occurrence <= monthEnd) {
+      while (occurrence <= windowEnd) {
         pushOccurrence(item, occurrence, recurrenceType === 'weekly' ? 'Every week' : 'Every 2 weeks')
         occurrence = new Date(occurrence.getFullYear(), occurrence.getMonth(), occurrence.getDate() + stepDays)
       }
