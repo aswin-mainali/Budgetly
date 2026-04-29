@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
@@ -29,6 +30,8 @@ export default function Sidebar(props: {
   const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
+  const [floatingToolsPos, setFloatingToolsPos] = useState<{ top: number; left: number } | null>(null)
+  const toolsButtonRef = useRef<HTMLButtonElement | null>(null)
   const [storedProfile, setStoredProfile] = useState<{ firstName: string; lastName: string; image: string }>({ firstName: '', lastName: '', image: '' })
 
   useEffect(() => {
@@ -37,8 +40,43 @@ export default function Sidebar(props: {
   }, [])
 
   useEffect(() => {
-    setToolsExpanded(view === 'tools')
-  }, [view])
+    if (!toolsExpanded || collapsed) {
+      setFloatingToolsPos(null)
+      return
+    }
+
+    const updatePosition = () => {
+      if (!toolsButtonRef.current) return
+      const rect = toolsButtonRef.current.getBoundingClientRect()
+      setFloatingToolsPos({
+        top: rect.top,
+        left: rect.right + 12,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [toolsExpanded, collapsed])
+
+  useEffect(() => {
+    if (!toolsExpanded) return
+
+    const onPointerDown = (event: MouseEvent) => {
+      const targetNode = event.target as Node | null
+      const clickedButton = !!(targetNode && toolsButtonRef.current?.contains(targetNode))
+      const submenuElement = document.getElementById('utilities-submenu')
+      const clickedSubmenu = !!(targetNode && submenuElement?.contains(targetNode))
+      if (!clickedButton && !clickedSubmenu) setToolsExpanded(false)
+    }
+
+    window.addEventListener('mousedown', onPointerDown)
+    return () => window.removeEventListener('mousedown', onPointerDown)
+  }, [toolsExpanded])
 
   useEffect(() => {
     const readProfile = () => {
@@ -111,16 +149,16 @@ export default function Sidebar(props: {
 
       <div className="nav">
         {visibleItems.map((item) => {
-          const isActive = item.key === 'tools' ? view === 'tools' : view === item.key
+          const isActive = item.key === 'tools' ? (view === 'tools' || toolsExpanded) : view === item.key
           if (item.key === 'tools') {
             const hasAnyTool = features.goals || features.reports || features.converter
             return (
-              <React.Fragment key={item.key}>
+              <div key={item.key} className="toolsNavItem">
                 <button
+                  ref={toolsButtonRef}
                   className={`toolsNavButton ${isActive ? 'active' : ''}`}
                   onClick={() => {
-                    setView('tools')
-                    setToolsExpanded((current) => (view === 'tools' ? !current : true))
+                    setToolsExpanded((current) => !current)
                   }}
                   aria-expanded={toolsExpanded}
                   aria-controls="utilities-submenu"
@@ -128,26 +166,27 @@ export default function Sidebar(props: {
                   {item.icon} <span className="navLabel">{item.label}</span>
                   <span className="toolsChevron">{toolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 </button>
-                {toolsExpanded && !collapsed && hasAnyTool ? (
-                  <div className="toolsSubNav" id="utilities-submenu">
+                {toolsExpanded && !collapsed && hasAnyTool && floatingToolsPos ? createPortal(
+                  <div className="toolsSubNav floating" id="utilities-submenu" style={{ position: 'fixed', top: floatingToolsPos.top, left: floatingToolsPos.left }}>
                     {features.goals ? (
-                      <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals') }}>
+                      <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals'); setToolsExpanded(false) }}>
                         <Target size={16} /> <span className="navLabel">Goals</span>
                       </button>
                     ) : null}
                     {features.reports ? (
-                      <button className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports') }}>
+                      <button className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports'); setToolsExpanded(false) }}>
                         <BarChart3 size={16} /> <span className="navLabel">Reports</span>
                       </button>
                     ) : null}
                     {features.converter ? (
-                      <button className={toolsSection === 'converter' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('converter') }}>
+                      <button className={toolsSection === 'converter' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('converter'); setToolsExpanded(false) }}>
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
-                  </div>
+                  </div>,
+                  document.body
                 ) : null}
-              </React.Fragment>
+              </div>
             )
           }
           return (
