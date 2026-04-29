@@ -53,6 +53,7 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   padding:12px;
   position:sticky;
   top:0;
+  z-index:25;
   height:100dvh;
   overflow:visible;
   display:flex;
@@ -214,13 +215,31 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   border-radius:16px;
   background: linear-gradient(180deg, rgba(12,29,56,.96), rgba(8,22,44,.96));
   box-shadow: 0 12px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
-  z-index: 30;
+  z-index: 200;
+  pointer-events: auto;
 }
 
 .toolsSubNav.floating button{
   padding:9px 10px;
   border-radius:12px;
   background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+}
+
+body.light .toolsSubNav.floating{
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,249,255,.96));
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+body.light .toolsSubNav.floating button{
+  color: #0f172a;
+  border-color: rgba(148, 163, 184, 0.35);
+  background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(241,245,249,.92));
+}
+
+body.light .toolsSubNav.floating button.active{
+  border-color: rgba(59,130,246,.45);
+  background: rgba(59,130,246,.14);
 }
 
 .toolsSubNav button{
