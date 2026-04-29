@@ -213,10 +213,10 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   border:1px solid var(--border);
   border-left:1px solid var(--border);
   border-radius:16px;
-  background: linear-gradient(180deg, rgba(12,29,56,.62), rgba(8,22,44,.56));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 12px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.1);
+  background: linear-gradient(180deg, rgba(12,29,56,.32), rgba(8,22,44,.26)) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 10px 30px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.14);
   z-index: 200;
   pointer-events: auto;
 }
@@ -224,19 +224,20 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 .toolsSubNav.floating button{
   padding:9px 10px;
   border-radius:12px;
-  background: linear-gradient(180deg, rgba(255,255,255,.36), rgba(255,255,255,.2));
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.08)) !important;
+  border-color: rgba(148,163,184,.22) !important;
 }
 
 body.light .toolsSubNav.floating{
-  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(246,249,255,.62));
-  border-color: rgba(148, 163, 184, 0.35);
+  background: linear-gradient(180deg, rgba(255,255,255,.38), rgba(246,249,255,.22)) !important;
+  border-color: rgba(148, 163, 184, 0.3);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255,255,255,.92);
 }
 
 body.light .toolsSubNav.floating button{
   color: #0f172a;
-  border-color: rgba(148, 163, 184, 0.35);
-  background: linear-gradient(180deg, rgba(255,255,255,.74), rgba(241,245,249,.6));
+  border-color: rgba(148, 163, 184, 0.26) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.38), rgba(241,245,249,.2)) !important;
 }
 
 body.light .toolsSubNav.floating button.active{
