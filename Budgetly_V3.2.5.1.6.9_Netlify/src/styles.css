@@ -7912,14 +7912,56 @@ body.light .authRing{
 
 @media (max-width: 768px){
   .sidebarContainer.mobile.open{left:0}
-  .sidebarContainer.mobile .sidebar{width:min(86vw,360px);height:100dvh;border-right:1px solid var(--border);border-radius:0 20px 20px 0}
-  .main.mainMobile{padding:10px 12px calc(104px + env(safe-area-inset-bottom));overflow-y:auto}
+  .sidebarContainer.mobile .sidebar{
+    width:min(90vw,380px);
+    height:100dvh;
+    max-height:100dvh;
+    overflow-y:auto;
+    border-right:1px solid var(--border);
+    border-radius:0 20px 20px 0;
+    padding-bottom:calc(24px + env(safe-area-inset-bottom));
+  }
+  .main.mainMobile{
+    padding:98px 12px calc(104px + env(safe-area-inset-bottom));
+    overflow-y:auto;
+  }
+  .mobileTopBar{
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    z-index:60;
+    padding:12px 14px;
+    background:linear-gradient(180deg, rgba(8,22,44,.97), rgba(8,22,44,.88));
+    border-bottom:1px solid var(--border);
+    backdrop-filter:blur(10px);
+  }
   .mobileTabBar{position:fixed;left:10px;right:10px;bottom:10px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-radius:18px;background:rgba(10,24,48,.95);border:1px solid var(--border);backdrop-filter:blur(12px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));z-index:40}
   .mobileTabBar button{background:transparent;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px}
   .mobileTabBar button.active{color:#3b82f6;background:rgba(59,130,246,.13);border-radius:12px}
   .mobileOverlay{position:fixed;inset:0;background:rgba(5,14,30,.5);backdrop-filter:blur(2px);z-index:30}
-  .sidebarContainer.mobile{position:fixed;left:-100%;top:0;z-index:40;transition:left .25s ease}
+  .sidebarContainer.mobile{position:fixed;left:-100%;top:0;bottom:0;z-index:65;transition:left .25s ease}
   .sidebarContainer.mobile.closed{left:-100%}
   .mobileMenuBtn{display:none}
-  .sidebar .brand strong{font-size:56px}
+  .sidebar .brand strong{font-size:48px}
+  body.mobile-app .mobileKpiGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  body.mobile-app .mobileKpiGrid .mobileKpiNet{grid-column:auto}
+  body.mobile-app .mobileKpiCard{
+    min-height:84px;
+    padding:10px 10px 12px;
+    border-radius:16px;
+  }
+  body.mobile-app .mobileKpiCard strong{
+    font-size:clamp(1.2rem,4.9vw,1.6rem);
+    letter-spacing:-.03em;
+  }
+  body.mobile-app .mobileKpiCard span{
+    font-size:11px;
+    letter-spacing:.04em;
+  }
+}
+
+@media (max-width: 560px) {
+  body.mobile-app .mobileKpiGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  body.mobile-app .mobileKpiGrid .mobileKpiNet { grid-column: auto; }
 }
