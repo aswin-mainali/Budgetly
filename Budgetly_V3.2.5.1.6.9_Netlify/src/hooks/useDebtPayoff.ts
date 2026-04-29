@@ -20,6 +20,7 @@ export function useDebtPayoff(userId: string | null){
   const [payments, setPayments] = useState<DebtPayment[]>([])
   const [strategy, setStrategy] = useState<DebtStrategy>('avalanche')
   const [extraMonthlyPayment, setExtraMonthlyPayment] = useState(100)
+  const [debtDirty, setDebtDirty] = useState(false)
 
   useEffect(() => { if (!userId) return; (async()=>{
     const debtRes = await supabase.from('debts').select('*').eq('user_id', userId).order('created_at', { ascending: true })
@@ -27,6 +28,7 @@ export function useDebtPayoff(userId: string | null){
     const settingsRes = await supabase.from('debt_settings').select('*').eq('user_id', userId).maybeSingle()
     if (!debtRes.error && debtRes.data && debtRes.data.length) setDebts(debtRes.data as Debt[])
     else setDebts(seedDebts(userId))
+    setDebtDirty(false)
     if (!payRes.error && payRes.data) setPayments(payRes.data as DebtPayment[])
     if (!settingsRes.error && settingsRes.data) { setStrategy((settingsRes.data.strategy_type || 'avalanche') as DebtStrategy); setExtraMonthlyPayment(Number(settingsRes.data.extra_monthly_payment || 100)) }
   })() }, [userId])
@@ -47,6 +49,7 @@ export function useDebtPayoff(userId: string | null){
     const nextBalance = Math.max(0, debt.current_balance - amount)
     const nextStatus: DebtStatus = nextBalance <= 0 ? 'paid_off' : 'active'
     setDebts(curr=>curr.map(d=>d.id===debtId?{...d,current_balance:nextBalance,status:nextStatus}:d))
+    setDebtDirty(true)
     const payload = { debt_id: debtId, user_id: userId, amount, payment_date: paymentDate, source_type:'manual', note }
     await supabase.from('debt_payments').insert(payload)
     await supabase.from('debts').update({ current_balance: nextBalance, status: nextStatus }).eq('id', debtId).eq('user_id', userId)
@@ -57,6 +60,7 @@ export function useDebtPayoff(userId: string | null){
     const tempId = `tmp-${Date.now()}`
     const row: Debt = { ...payload, id: tempId, user_id: userId }
     setDebts((curr) => [row, ...curr])
+    setDebtDirty(true)
     const res = await supabase.from('debts').insert({ ...payload, user_id: userId }).select('*').single()
     if (!res.error && res.data) {
       setDebts((curr) => curr.map((d) => d.id === tempId ? (res.data as Debt) : d))
@@ -66,14 +70,23 @@ export function useDebtPayoff(userId: string | null){
   const updateDebt = async (id: string, payload: Partial<Omit<Debt, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) => {
     if (!userId) return
     setDebts((curr) => curr.map((d) => d.id === id ? { ...d, ...payload } as Debt : d))
+    setDebtDirty(true)
     await supabase.from('debts').update(payload).eq('id', id).eq('user_id', userId)
   }
 
   const deleteDebt = async (id: string) => {
     if (!userId) return
     setDebts((curr) => curr.filter((d) => d.id !== id))
+    setDebtDirty(true)
     await supabase.from('debts').delete().eq('id', id).eq('user_id', userId)
   }
 
-  return { debts, payments, activeDebts, strategy, setStrategy, extraMonthlyPayment, setExtraMonthlyPayment, totalDebt, minimumMonthly, highestInterest, focusDebtId, recordPayment, addDebt, updateDebt, deleteDebt }
+  const saveDebts = async () => {
+    if (!userId) return
+    const rows = debts.map(({ id, user_id, created_at, updated_at, ...rest }) => ({ id: id.startsWith('tmp-') ? undefined : id, user_id, ...rest }))
+    await supabase.from('debts').upsert(rows as any, { onConflict: 'id' })
+    setDebtDirty(false)
+  }
+
+  return { debts, payments, activeDebts, strategy, setStrategy, extraMonthlyPayment, setExtraMonthlyPayment, totalDebt, minimumMonthly, highestInterest, focusDebtId, recordPayment, addDebt, updateDebt, deleteDebt, debtDirty, saveDebts }
 }
