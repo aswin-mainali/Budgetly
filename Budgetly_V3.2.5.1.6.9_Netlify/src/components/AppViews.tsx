@@ -2680,6 +2680,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
 export function DebtPayoffView({ userId }: { userId: string | null }) {
   const debt = useDebtPayoff(userId)
   const [tab, setTab] = useState<'overview' | 'history' | 'projection' | 'advice'>('overview')
+  const [openMenuDebtId, setOpenMenuDebtId] = useState<string | null>(null)
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary">＋ Add Debt</button></div></div>
@@ -2700,7 +2701,14 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
           <div><div className="debtName">{d.name}</div><small>{d.lender}</small><div className="debtTags"><span className="tag">{d.type}</span><span className={`tag ${d.id===debt.focusDebtId?'focus':''}`}>{d.id===debt.focusDebtId?'Focus Debt':d.status==='paid_off'?'Paid Off':'Active'}</span></div></div>
           <div><small>Balance</small><strong>CA${d.current_balance.toLocaleString()}</strong></div><div><small>Interest rate</small><strong>{d.interest_rate}%</strong></div><div><small>Min payment</small><strong>CA${d.minimum_payment.toFixed(2)}</strong></div>
           <div><small>Due date</small><strong>{d.due_day_or_date ? new Date(d.due_day_or_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong><small>{d.status === 'paid_off' ? 'Paid off on Jan 2026' : 'Projected payoff'}</small><strong>{d.status === 'paid_off' ? '' : 'Oct 2026'}</strong></div>
-          <div className="debtActions"><button className="btn">View details</button><button className="btn primary" onClick={()=>void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment')}>Make payment</button><button className="btn">Edit</button></div>
+          <div className="debtActions">
+            <button className="btn debtMoreBtn" onClick={() => setOpenMenuDebtId((current) => current === d.id ? null : d.id)}>⋮</button>
+            {openMenuDebtId === d.id ? <div className="debtActionMenu">
+              <button className="btn primary" onClick={()=>{ void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment'); setOpenMenuDebtId(null) }}>Make payment</button>
+              <button className="btn" onClick={()=>setOpenMenuDebtId(null)}>Edit</button>
+              <button className="btn danger" onClick={()=>setOpenMenuDebtId(null)}>Delete</button>
+            </div> : null}
+          </div>
           <div className="debtProgress"><span style={{ width: `${Math.min(100, Math.max(0, pct(d)))}%` }} /></div><small>Paid off {pct(d)}%</small>
         </div>)}
       </div></div> : null}

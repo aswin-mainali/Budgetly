@@ -7875,5 +7875,10 @@ body.light .authRing{
 .debtRowRich{display:grid;grid-template-columns:1.6fr repeat(4,.7fr) 240px;gap:10px;align-items:center;padding:12px;border-top:1px solid #e5eaf2}.debtName{font-size:26px;font-weight:700;line-height:1.1}
 .debtTags{display:flex;gap:6px;margin-top:4px}.tag{background:#edf2ff;color:#3155b4;border-radius:999px;padding:2px 8px;font-size:11px}.tag.focus{background:#fff2e6;color:#ba5a00}
 .debtActions{display:grid;gap:6px}.debtActions .btn{height:30px;padding:0 10px;font-size:12px}
+.debtActions{position:relative;justify-items:end}
+.debtMoreBtn{width:34px;height:34px;line-height:1;padding:0;font-size:20px}
+.debtActionMenu{position:absolute;top:38px;right:0;display:grid;gap:6px;width:240px;padding:10px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 12px 30px rgba(15,23,42,.14);z-index:20}
+.debtActionMenu .btn{justify-content:flex-start;border-radius:999px}
+.debtActionMenu .btn.danger{color:#dc2626;border-color:#fecaca}
 .debtRowRich.paid{opacity:.75}
 @media (max-width:1200px){.debtKpis{grid-template-columns:1fr}.debtOverview{grid-template-columns:1fr}.debtToolbar{grid-template-columns:1fr 1fr}.debtRowRich{grid-template-columns:1fr 1fr}}
