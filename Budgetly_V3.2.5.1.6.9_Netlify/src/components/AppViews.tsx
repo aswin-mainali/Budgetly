@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
+import { useDebtPayoff } from '../hooks/useDebtPayoff'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
@@ -2674,6 +2675,47 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       ) : null}
     </div>
   )
+}
+
+export function DebtPayoffView({ userId }: { userId: string | null }) {
+  const debt = useDebtPayoff(userId)
+  const [tab, setTab] = useState<'overview' | 'history' | 'projection' | 'advice'>('overview')
+  const [openMenuDebtId, setOpenMenuDebtId] = useState<string | null>(null)
+  const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
+  return <div className="debtPage">
+    <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary">＋ Add Debt</button></div></div>
+    <div className="debtKpis">
+      <div className="card debtKpiCard"><div className="debtKpiIcon green">💼</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon blue">📅</div><div><small>Minimum monthly payments</small><strong>CA$720</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Estimated debt-free date</small><strong>Aug 2028</strong></div></div>
+    </div>
+    <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
+    {tab === 'overview' ? <div className="debtOverview">
+      <div className="debtLeftCol">
+        <div className="card debtPanel"><h3>📅 Upcoming debt payments</h3><div className="debtMetaLine">RBC Visa — Apr 30, 2026 — CA$120.00 <span className="pill warn">Due soon</span></div><div className="debtMetaLine">Student Loan — May 1, 2026 — CA$300.00 <span className="pill">Upcoming</span></div><div className="debtMetaLine">Car Loan — May 3, 2026 — CA$350.00 <span className="pill">Upcoming</span></div><button className="btn ghost">View all upcoming payments</button></div>
+        <div className="card debtPanel"><h3>📈 Debt-free progress</h3><p className="muted">You’ve cleared CA$3,400 of CA$18,450</p><div className="debtProgress"><span style={{ width: '18%' }} /></div><div className="row between"><small>CA$15,050 remaining</small><small>9 months sooner with plan</small></div></div>
+      </div>
+      <div className="debtRight card">
+        <div className="debtToolbar"><input className="input" placeholder="Search debts..." /><select className="select"><option>All Types</option></select><select className="select"><option>All Statuses</option></select><select className="select"><option>Sort by: Highest Interest</option></select></div>
+        {debt.debts.map(d=><div key={d.id} className={`debtRowRich ${d.status==='paid_off'?'paid':''}`}>
+          <div><div className="debtName">{d.name}</div><small>{d.lender}</small><div className="debtTags"><span className="tag">{d.type}</span><span className={`tag ${d.id===debt.focusDebtId?'focus':''}`}>{d.id===debt.focusDebtId?'Focus Debt':d.status==='paid_off'?'Paid Off':'Active'}</span></div></div>
+          <div><small>Balance</small><strong>CA${d.current_balance.toLocaleString()}</strong></div><div><small>Interest rate</small><strong>{d.interest_rate}%</strong></div><div><small>Min payment</small><strong>CA${d.minimum_payment.toFixed(2)}</strong></div>
+          <div className="debtDueCol"><small>Due date</small><strong>{d.due_day_or_date ? new Date(d.due_day_or_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong><small>{d.status === 'paid_off' ? 'Paid off on Jan 2026' : 'Projected payoff'}</small><strong>{d.status === 'paid_off' ? '' : 'Oct 2026'}</strong></div>
+          <div className="debtActions">
+            <button className="btn debtMoreBtn" onClick={() => setOpenMenuDebtId((current) => current === d.id ? null : d.id)}>⋮</button>
+            {openMenuDebtId === d.id ? <div className="debtActionMenu">
+              <button className="btn primary" onClick={()=>{ void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment'); setOpenMenuDebtId(null) }}>Make payment</button>
+              <button className="btn" onClick={()=>setOpenMenuDebtId(null)}>Edit</button>
+              <button className="btn danger" onClick={()=>setOpenMenuDebtId(null)}>Delete</button>
+            </div> : null}
+          </div>
+          <div className="debtProgress"><span style={{ width: `${Math.min(100, Math.max(0, pct(d)))}%` }} /></div><small>Paid off {pct(d)}%</small>
+        </div>)}
+      </div></div> : null}
+    {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
+    {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
+    {tab === 'advice' ? <div className="card"><h3>Advice</h3><ul><li>Highest-interest debt should be prioritized.</li><li>Extra CA$50 could reduce payoff time.</li><li>Minimum payments are consuming a high share of cash flow.</li><li>One debt is close to being cleared.</li></ul></div> : null}
+  </div>
 }
 
 type GoalDraft = {
