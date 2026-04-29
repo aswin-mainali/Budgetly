@@ -7892,4 +7892,9 @@ body.light .authRing{
 .debtModalFull{grid-column:1/-1}
 .debtIconRow{display:flex;gap:8px;flex-wrap:wrap}
 .debtIconRow .btn{min-width:38px;padding:0 10px}
+.debtIconBtn{height:42px;min-width:44px;font-size:19px;padding:0 12px}
+.debtToggle{width:44px;height:24px;border-radius:999px;border:1px solid #cbd5e1;background:#e2e8f0;position:relative;cursor:pointer;transition:.2s}
+.debtToggle.on{background:#22c55e;border-color:#22c55e}
+.debtToggleKnob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.debtToggle.on .debtToggleKnob{left:22px}
 @media (max-width:1200px){.debtKpis{grid-template-columns:1fr 1fr}.debtOverview{grid-template-columns:1fr}.debtToolbar{grid-template-columns:1fr 1fr}.debtHeaderRow{display:none}.debtRowRich{grid-template-columns:1fr 1fr}}
