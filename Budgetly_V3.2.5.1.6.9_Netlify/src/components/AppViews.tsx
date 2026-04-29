@@ -2684,10 +2684,10 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary">＋ Add Debt</button></div></div>
     <div className="debtKpis">
-      <div className="card debtKpiCard"><div className="debtKpiIcon green">💼</div><div><small>Total debt remaining</small><strong>CA$18,450</strong><span>Across 4 accounts</span></div></div>
-      <div className="card debtKpiCard"><div className="debtKpiIcon blue">📅</div><div><small>Minimum monthly payments</small><strong>CA$720</strong><span>Due across all debts</span></div></div>
-      <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Estimated debt-free date</small><strong>Aug 2028</strong><span>9 months sooner with plan</span></div></div>
-      <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>RBC Visa · 22.99%</strong><span>Credit Card</span></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon green">💼</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon blue">📅</div><div><small>Minimum monthly payments</small><strong>CA$720</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Estimated debt-free date</small><strong>Aug 2028</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>RBC Visa · 22.99%</strong></div></div>
     </div>
     <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
     {tab === 'overview' ? <div className="debtOverview">
