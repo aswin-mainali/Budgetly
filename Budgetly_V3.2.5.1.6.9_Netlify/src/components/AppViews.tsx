@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
-import { useSuperAdmin } from '../hooks/useSuperAdmin'
+import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
@@ -5609,25 +5609,26 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     return `${timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}, ${timeText}`
   }
 
-  const avatarImageForUser = (userId: string) => {
-    if (!admin.profile?.id) return ''
-    if (userId !== admin.profile.id) return ''
-    return localProfileImage
+  const avatarImageForUser = (user: AdminManagedUser) => {
+    if (admin.profile?.id === user.id && localProfileImage) return localProfileImage
+    return user.image_url ?? ''
   }
 
-  const displayNameForUser = (userId: string, email: string) => {
-    if (admin.profile?.id === userId) {
+  const displayNameForUser = (user: AdminManagedUser) => {
+    if (admin.profile?.id === user.id) {
       const fullName = `${localProfileName.firstName} ${localProfileName.lastName}`.trim()
       if (fullName) return fullName
     }
-    return formatUserName(email)
+    const accountName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
+    if (accountName) return accountName
+    return formatUserName(user.email)
   }
 
-  const initialsForUser = (userId: string, email: string) => {
-    const name = displayNameForUser(userId, email)
+  const initialsForUser = (user: AdminManagedUser) => {
+    const name = displayNameForUser(user)
     const parts = name.split(' ').filter(Boolean)
     if (parts.length >= 2) return `${parts[0].charAt(0)}${parts[1].charAt(0)}`.toUpperCase()
-    return parts[0]?.slice(0, 2).toUpperCase() || formatInitials(email)
+    return parts[0]?.slice(0, 2).toUpperCase() || formatInitials(user.email)
   }
 
   const featureLabel = (feature: string) => {
@@ -5703,12 +5704,12 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
               <button key={user.id} className={`adminUserRow ${admin.selectedUserId === user.id ? 'active' : ''}`} onClick={() => admin.setSelectedUserId(admin.selectedUserId === user.id ? null : user.id)}>
                 <div className="adminUserIdentity">
                   <span className="adminAvatar">
-                    {avatarImageForUser(user.id)
-                      ? <img src={avatarImageForUser(user.id)} alt={displayNameForUser(user.id, user.email)} className="adminAvatarImage" />
-                      : initialsForUser(user.id, user.email)}
+                    {avatarImageForUser(user)
+                      ? <img src={avatarImageForUser(user)} alt={displayNameForUser(user)} className="adminAvatarImage" />
+                      : initialsForUser(user)}
                   </span>
                   <div>
-                    <strong>{displayNameForUser(user.id, user.email)}</strong>
+                    <strong>{displayNameForUser(user)}</strong>
                     <div className="muted adminSubRow">{user.email}</div>
                   </div>
                 </div>
@@ -5731,13 +5732,13 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
               <div className="row between" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
                 <div className="adminSelectedUser">
                   <span className="adminAvatar large">
-                    {avatarImageForUser(selectedUser.id)
-                      ? <img src={avatarImageForUser(selectedUser.id)} alt={displayNameForUser(selectedUser.id, selectedUser.email)} className="adminAvatarImage" />
-                      : initialsForUser(selectedUser.id, selectedUser.email)}
+                    {avatarImageForUser(selectedUser)
+                      ? <img src={avatarImageForUser(selectedUser)} alt={displayNameForUser(selectedUser)} className="adminAvatarImage" />
+                      : initialsForUser(selectedUser)}
                   </span>
                   <div>
                     <h3 style={{ marginBottom: 4 }}>User Access & Permissions</h3>
-                    <div className="muted">{displayNameForUser(selectedUser.id, selectedUser.email)} • {selectedUser.email}</div>
+                    <div className="muted">{displayNameForUser(selectedUser)} • {selectedUser.email}</div>
                     <div className="muted" style={{ marginTop: 4 }}>{formatLastActive(selectedUser.updated_at)}</div>
                   </div>
                 </div>
