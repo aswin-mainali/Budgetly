@@ -20,8 +20,8 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
-  toolsSection: 'goals' | 'reports' | 'converter'
-  setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
+  toolsSection: 'goals' | 'reports' | 'converter' | 'debt_payoff'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt_payoff') => void
   sync: SyncState
   email?: string | null
   features: FeatureAccess
@@ -145,6 +145,9 @@ export default function Sidebar(props: {
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
+                    <button className={toolsSection === 'debt_payoff' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('debt_payoff') }}>
+                      <span style={{ fontWeight: 700 }}>₵</span> <span className="navLabel">Debt Payoff</span>
+                    </button>
                   </div>
                 ) : null}
               </React.Fragment>

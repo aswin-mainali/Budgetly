@@ -6,7 +6,7 @@ import { supabase } from './lib/supabase'
 import { syncProfileCacheForUser } from './lib/userProfile'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
-import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
+import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, DebtPayoffView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -28,7 +28,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey>('dashboard')
-  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter'>('goals')
+  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt_payoff'>('goals')
   const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
@@ -227,6 +227,7 @@ export default function App() {
     if (toolsSection === 'converter' && !admin.visibleFeatures.converter) {
       if (admin.visibleFeatures.goals) setToolsSection('goals')
       else if (admin.visibleFeatures.reports) setToolsSection('reports')
+      else setToolsSection('debt_payoff')
     }
   }, [view, toolsSection, admin.visibleFeatures])
 
@@ -304,6 +305,7 @@ export default function App() {
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}
+              {toolsSection === 'debt_payoff' ? <DebtPayoffView userId={userId} /> : null}
             </div>
           </div>
         ) : null}

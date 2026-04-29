@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
+import { useDebtPayoff } from '../hooks/useDebtPayoff'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
@@ -2674,6 +2675,28 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       ) : null}
     </div>
   )
+}
+
+export function DebtPayoffView({ userId }: { userId: string | null }) {
+  const debt = useDebtPayoff(userId)
+  const [tab, setTab] = useState<'overview' | 'history' | 'projection' | 'advice'>('overview')
+  return <div className="debtPage">
+    <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">Make Payment</button><button className="btn primary">+ Add Debt</button></div></div>
+    <div className="debtKpis">
+      <div className="card"><small>Total debt remaining</small><strong>CA${debt.totalDebt.toLocaleString()}</strong><span>Across {debt.debts.length} accounts</span></div>
+      <div className="card"><small>Minimum monthly payments</small><strong>CA${debt.minimumMonthly.toLocaleString()}</strong><span>Due across all debts</span></div>
+      <div className="card"><small>Estimated debt-free date</small><strong>Aug 2028</strong><span>9 months sooner with plan</span></div>
+      <div className="card"><small>Highest interest debt</small><strong>{debt.highestInterest?.name ?? '—'} · {debt.highestInterest?.interest_rate?.toFixed(2) ?? '0.00'}%</strong><span>{debt.highestInterest?.type ?? ''}</span></div>
+    </div>
+    <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
+    {tab === 'overview' ? <div className="debtOverview"><div className="debtLeft card"><h3>Payoff strategy</h3><div className="debtPills">{(['avalanche','snowball','custom'] as const).map(s=><button key={s} className={debt.strategy===s?'active':''} onClick={()=>debt.setStrategy(s)}>{s[0].toUpperCase()+s.slice(1)}</button>)}</div><p className="muted">{debt.strategy==='avalanche'?'Extra payments go to the highest-interest debt first.':debt.strategy==='snowball'?'Extra payments go to the smallest balance first.':'Manually choose your payoff order.'}</p></div><div className="debtRight card">
+      <input className="input" placeholder="Search debts..." />
+      {debt.debts.map(d=><div key={d.id} className={`debtRow ${d.status==='paid_off'?'paid':''}`}><strong>{d.name}</strong><span>{d.lender}</span><span>CA${d.current_balance.toLocaleString()}</span><span>{d.interest_rate}%</span><span>{d.id===debt.focusDebtId?'Focus Debt':'Active'}</span><button className="btn" onClick={()=>void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment')}>Make payment</button></div>)}
+    </div></div> : null}
+    {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
+    {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
+    {tab === 'advice' ? <div className="card"><h3>Advice</h3><ul><li>Highest-interest debt should be prioritized.</li><li>Extra CA$50 could reduce payoff time.</li><li>Minimum payments are consuming a high share of cash flow.</li><li>One debt is close to being cleared.</li></ul></div> : null}
+  </div>
 }
 
 type GoalDraft = {

@@ -7852,3 +7852,12 @@ body.light .authGridMask,
 body.light .authRing{
   display:none !important;
 }
+
+/* Debt payoff */
+.debtPage{display:grid;gap:14px;background:linear-gradient(135deg,rgba(196,242,226,.22),rgba(191,219,254,.2));padding:10px;border-radius:18px}
+.debtHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.debtHeader h2{margin:0}.debtHeader p{margin:4px 0 0;color:var(--muted)}
+.debtKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.debtKpis .card{border:1px solid var(--border)}.debtKpis strong{display:block;font-size:28px}
+.debtTabs{display:flex;gap:8px;border-bottom:1px solid var(--border)}.debtTabs button{background:transparent;border:none;padding:8px 12px}.debtTabs button.active{color:#059669;border-bottom:2px solid #10b981}
+.debtOverview{display:grid;grid-template-columns:340px 1fr;gap:12px}.debtLeft,.debtRight{display:grid;gap:10px}.debtPills{display:flex;gap:8px}.debtPills button{border:1px solid var(--border);background:#fff;border-radius:999px;padding:6px 12px}.debtPills .active{background:#059669;color:#fff}
+.debtRow{display:grid;grid-template-columns:1.4fr 1.2fr .8fr .7fr .7fr auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:12px}.debtRow.paid{opacity:.6}
+@media (max-width:1200px){.debtKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.debtOverview{grid-template-columns:1fr}.debtRow{grid-template-columns:1fr 1fr}}
