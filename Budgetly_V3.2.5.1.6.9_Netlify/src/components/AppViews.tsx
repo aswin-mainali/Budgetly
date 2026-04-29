@@ -1679,7 +1679,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : undefined }}>{item.kind === 'income' ? '+' : ''}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
