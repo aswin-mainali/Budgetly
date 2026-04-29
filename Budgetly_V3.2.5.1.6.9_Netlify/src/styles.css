@@ -183,6 +183,10 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   justify-content: flex-start;
 }
 
+.toolsNavItem{
+  position: relative;
+}
+
 .toolsChevron{
   margin-left: auto;
   display: inline-flex;
@@ -196,6 +200,27 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
   margin: 0 0 0 14px;
   padding: 2px 0 2px 12px;
   border-left: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.toolsSubNav.floating{
+  position:absolute;
+  left: calc(100% + 12px);
+  top: 0;
+  min-width: 140px;
+  margin:0;
+  padding:10px;
+  border:1px solid var(--border);
+  border-left:1px solid var(--border);
+  border-radius:16px;
+  background: linear-gradient(180deg, rgba(12,29,56,.96), rgba(8,22,44,.96));
+  box-shadow: 0 12px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  z-index: 30;
+}
+
+.toolsSubNav.floating button{
+  padding:9px 10px;
+  border-radius:12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
 }
 
 .toolsSubNav button{

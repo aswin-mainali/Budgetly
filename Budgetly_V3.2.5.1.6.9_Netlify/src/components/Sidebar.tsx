@@ -115,7 +115,7 @@ export default function Sidebar(props: {
           if (item.key === 'tools') {
             const hasAnyTool = features.goals || features.reports || features.converter
             return (
-              <React.Fragment key={item.key}>
+              <div key={item.key} className="toolsNavItem">
                 <button
                   className={`toolsNavButton ${isActive ? 'active' : ''}`}
                   onClick={() => {
@@ -129,7 +129,7 @@ export default function Sidebar(props: {
                   <span className="toolsChevron">{toolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 </button>
                 {toolsExpanded && !collapsed && hasAnyTool ? (
-                  <div className="toolsSubNav" id="utilities-submenu">
+                  <div className="toolsSubNav floating" id="utilities-submenu">
                     {features.goals ? (
                       <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals') }}>
                         <Target size={16} /> <span className="navLabel">Goals</span>
@@ -147,7 +147,7 @@ export default function Sidebar(props: {
                     ) : null}
                   </div>
                 ) : null}
-              </React.Fragment>
+              </div>
             )
           }
           return (
