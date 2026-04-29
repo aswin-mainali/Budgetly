@@ -40,10 +40,6 @@ export default function Sidebar(props: {
   }, [])
 
   useEffect(() => {
-    setToolsExpanded(view === 'tools')
-  }, [view])
-
-  useEffect(() => {
     if (!toolsExpanded || collapsed) {
       setFloatingToolsPos(null)
       return
@@ -173,17 +169,17 @@ export default function Sidebar(props: {
                 {toolsExpanded && !collapsed && hasAnyTool && floatingToolsPos ? createPortal(
                   <div className="toolsSubNav floating" id="utilities-submenu" style={{ position: 'fixed', top: floatingToolsPos.top, left: floatingToolsPos.left }}>
                     {features.goals ? (
-                      <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals') }}>
+                      <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals'); setToolsExpanded(false) }}>
                         <Target size={16} /> <span className="navLabel">Goals</span>
                       </button>
                     ) : null}
                     {features.reports ? (
-                      <button className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports') }}>
+                      <button className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports'); setToolsExpanded(false) }}>
                         <BarChart3 size={16} /> <span className="navLabel">Reports</span>
                       </button>
                     ) : null}
                     {features.converter ? (
-                      <button className={toolsSection === 'converter' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('converter') }}>
+                      <button className={toolsSection === 'converter' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('converter'); setToolsExpanded(false) }}>
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
