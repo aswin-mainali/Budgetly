@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
@@ -65,6 +66,21 @@ export default function Sidebar(props: {
       window.removeEventListener('scroll', updatePosition, true)
     }
   }, [toolsExpanded, collapsed])
+
+  useEffect(() => {
+    if (!toolsExpanded) return
+
+    const onPointerDown = (event: MouseEvent) => {
+      const targetNode = event.target as Node | null
+      const clickedButton = !!(targetNode && toolsButtonRef.current?.contains(targetNode))
+      const submenuElement = document.getElementById('utilities-submenu')
+      const clickedSubmenu = !!(targetNode && submenuElement?.contains(targetNode))
+      if (!clickedButton && !clickedSubmenu) setToolsExpanded(false)
+    }
+
+    window.addEventListener('mousedown', onPointerDown)
+    return () => window.removeEventListener('mousedown', onPointerDown)
+  }, [toolsExpanded])
 
   useEffect(() => {
     const readProfile = () => {
@@ -137,7 +153,7 @@ export default function Sidebar(props: {
 
       <div className="nav">
         {visibleItems.map((item) => {
-          const isActive = item.key === 'tools' ? view === 'tools' : view === item.key
+          const isActive = item.key === 'tools' ? (view === 'tools' || toolsExpanded) : view === item.key
           if (item.key === 'tools') {
             const hasAnyTool = features.goals || features.reports || features.converter
             return (
@@ -146,8 +162,7 @@ export default function Sidebar(props: {
                   ref={toolsButtonRef}
                   className={`toolsNavButton ${isActive ? 'active' : ''}`}
                   onClick={() => {
-                    setView('tools')
-                    setToolsExpanded((current) => (view === 'tools' ? !current : true))
+                    setToolsExpanded((current) => !current)
                   }}
                   aria-expanded={toolsExpanded}
                   aria-controls="utilities-submenu"
@@ -155,8 +170,8 @@ export default function Sidebar(props: {
                   {item.icon} <span className="navLabel">{item.label}</span>
                   <span className="toolsChevron">{toolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 </button>
-                {toolsExpanded && !collapsed && hasAnyTool ? (
-                  <div className="toolsSubNav floating" id="utilities-submenu" style={floatingToolsPos ? { position: 'fixed', top: floatingToolsPos.top, left: floatingToolsPos.left } : undefined}>
+                {toolsExpanded && !collapsed && hasAnyTool && floatingToolsPos ? createPortal(
+                  <div className="toolsSubNav floating" id="utilities-submenu" style={{ position: 'fixed', top: floatingToolsPos.top, left: floatingToolsPos.left }}>
                     {features.goals ? (
                       <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals') }}>
                         <Target size={16} /> <span className="navLabel">Goals</span>
@@ -172,7 +187,8 @@ export default function Sidebar(props: {
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
-                  </div>
+                  </div>,
+                  document.body
                 ) : null}
               </div>
             )
