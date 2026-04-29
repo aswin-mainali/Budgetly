@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
@@ -29,6 +29,8 @@ export default function Sidebar(props: {
   const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, features } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
+  const [floatingToolsPos, setFloatingToolsPos] = useState<{ top: number; left: number } | null>(null)
+  const toolsButtonRef = useRef<HTMLButtonElement | null>(null)
   const [storedProfile, setStoredProfile] = useState<{ firstName: string; lastName: string; image: string }>({ firstName: '', lastName: '', image: '' })
 
   useEffect(() => {
@@ -39,6 +41,30 @@ export default function Sidebar(props: {
   useEffect(() => {
     setToolsExpanded(view === 'tools')
   }, [view])
+
+  useEffect(() => {
+    if (!toolsExpanded || collapsed) {
+      setFloatingToolsPos(null)
+      return
+    }
+
+    const updatePosition = () => {
+      if (!toolsButtonRef.current) return
+      const rect = toolsButtonRef.current.getBoundingClientRect()
+      setFloatingToolsPos({
+        top: rect.top,
+        left: rect.right + 12,
+      })
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [toolsExpanded, collapsed])
 
   useEffect(() => {
     const readProfile = () => {
@@ -117,6 +143,7 @@ export default function Sidebar(props: {
             return (
               <div key={item.key} className="toolsNavItem">
                 <button
+                  ref={toolsButtonRef}
                   className={`toolsNavButton ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     setView('tools')
@@ -129,7 +156,7 @@ export default function Sidebar(props: {
                   <span className="toolsChevron">{toolsExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 </button>
                 {toolsExpanded && !collapsed && hasAnyTool ? (
-                  <div className="toolsSubNav floating" id="utilities-submenu">
+                  <div className="toolsSubNav floating" id="utilities-submenu" style={floatingToolsPos ? { position: 'fixed', top: floatingToolsPos.top, left: floatingToolsPos.left } : undefined}>
                     {features.goals ? (
                       <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals') }}>
                         <Target size={16} /> <span className="navLabel">Goals</span>
