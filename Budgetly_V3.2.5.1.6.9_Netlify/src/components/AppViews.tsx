@@ -2700,7 +2700,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         {debt.debts.map(d=><div key={d.id} className={`debtRowRich ${d.status==='paid_off'?'paid':''}`}>
           <div><div className="debtName">{d.name}</div><small>{d.lender}</small><div className="debtTags"><span className="tag">{d.type}</span><span className={`tag ${d.id===debt.focusDebtId?'focus':''}`}>{d.id===debt.focusDebtId?'Focus Debt':d.status==='paid_off'?'Paid Off':'Active'}</span></div></div>
           <div><small>Balance</small><strong>CA${d.current_balance.toLocaleString()}</strong></div><div><small>Interest rate</small><strong>{d.interest_rate}%</strong></div><div><small>Min payment</small><strong>CA${d.minimum_payment.toFixed(2)}</strong></div>
-          <div><small>Due date</small><strong>{d.due_day_or_date ? new Date(d.due_day_or_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong><small>{d.status === 'paid_off' ? 'Paid off on Jan 2026' : 'Projected payoff'}</small><strong>{d.status === 'paid_off' ? '' : 'Oct 2026'}</strong></div>
+          <div className="debtDueCol"><small>Due date</small><strong>{d.due_day_or_date ? new Date(d.due_day_or_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong><small>{d.status === 'paid_off' ? 'Paid off on Jan 2026' : 'Projected payoff'}</small><strong>{d.status === 'paid_off' ? '' : 'Oct 2026'}</strong></div>
           <div className="debtActions">
             <button className="btn debtMoreBtn" onClick={() => setOpenMenuDebtId((current) => current === d.id ? null : d.id)}>⋮</button>
             {openMenuDebtId === d.id ? <div className="debtActionMenu">

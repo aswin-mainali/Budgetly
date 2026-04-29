@@ -7872,7 +7872,8 @@ body.light .authRing{
 .debtPanel h3{font-size:22px;margin:0 0 8px}.debtMetaLine{font-size:13px;color:#334155;display:flex;justify-content:space-between;margin:6px 0}
 .debtProgress{height:8px;background:#e8edf5;border-radius:999px;overflow:hidden}.debtProgress span{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#22c55e)}
 .debtToolbar{display:grid;grid-template-columns:1.2fr repeat(3,.7fr);gap:8px;margin-bottom:10px}
-.debtRowRich{display:grid;grid-template-columns:1.6fr repeat(4,.7fr) 240px;gap:10px;align-items:center;padding:12px;border-top:1px solid #e5eaf2}.debtName{font-size:26px;font-weight:700;line-height:1.1}
+.debtRowRich{display:grid;grid-template-columns:1.7fr .7fr .7fr .7fr .95fr 64px;gap:10px;align-items:center;padding:12px;border-top:1px solid #e5eaf2}.debtName{font-size:26px;font-weight:700;line-height:1.1}
+.debtDueCol{padding-left:14px}
 .debtTags{display:flex;gap:6px;margin-top:4px}.tag{background:#edf2ff;color:#3155b4;border-radius:999px;padding:2px 8px;font-size:11px}.tag.focus{background:#fff2e6;color:#ba5a00}
 .debtActions{display:grid;gap:6px}.debtActions .btn{height:30px;padding:0 10px;font-size:12px}
 .debtActions{position:relative;justify-items:end}
