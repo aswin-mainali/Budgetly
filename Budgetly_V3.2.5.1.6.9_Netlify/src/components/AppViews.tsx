@@ -2681,9 +2681,11 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const debt = useDebtPayoff(userId)
   const [tab, setTab] = useState<'overview' | 'history' | 'projection' | 'advice'>('overview')
   const [openMenuDebtId, setOpenMenuDebtId] = useState<string | null>(null)
+  const [showAddDebt, setShowAddDebt] = useState(false)
+  const [debtForm, setDebtForm] = useState({ name: '', lender: '', type: 'Credit Card', status: 'active', current_balance: '0', interest_rate: '0', minimum_payment: '0', due_day_or_date: '', original_balance: '0', payment_frequency: 'monthly', note: '' })
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
   return <div className="debtPage">
-    <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary">＋ Add Debt</button></div></div>
+    <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary" onClick={() => setShowAddDebt(true)}>＋ Add Debt</button></div></div>
     <div className="debtKpis">
       <div className="card debtKpiCard"><div className="debtKpiIcon green">👛</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon blue">🗓️</div><div><small>Monthly minimums</small><strong>CA$720</strong></div></div>
@@ -2716,6 +2718,24 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
     {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
     {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
     {tab === 'advice' ? <div className="card"><h3>Advice</h3><ul><li>Highest-interest debt should be prioritized.</li><li>Extra CA$50 could reduce payoff time.</li><li>Minimum payments are consuming a high share of cash flow.</li><li>One debt is close to being cleared.</li></ul></div> : null}
+    {showAddDebt ? <div className="deleteConfirmBackdrop"><div className="card debtModal">
+      <div className="row between"><h3>Add New Debt</h3><button className="btn" onClick={() => setShowAddDebt(false)}>✕</button></div>
+      <p className="muted">Enter the debt details below to create a new payoff account.</p>
+      <div className="debtModalGrid">
+        <label><small>Debt name</small><input className="input" value={debtForm.name} onChange={(e)=>setDebtForm({ ...debtForm, name: e.target.value })} /></label>
+        <label><small>Lender</small><input className="input" value={debtForm.lender} onChange={(e)=>setDebtForm({ ...debtForm, lender: e.target.value })} /></label>
+        <label><small>Debt type</small><select className="select" value={debtForm.type} onChange={(e)=>setDebtForm({ ...debtForm, type: e.target.value })}><option>Credit Card</option><option>Student Loan</option><option>Car Loan</option><option>Personal Loan</option><option>Line of Credit</option><option>Mortgage</option><option>Family/Friend</option><option>Other</option></select></label>
+        <label><small>Status</small><select className="select" value={debtForm.status} onChange={(e)=>setDebtForm({ ...debtForm, status: e.target.value })}><option value="active">Active</option><option value="paid_off">Paid Off</option></select></label>
+        <label><small>Current balance</small><input className="input" value={debtForm.current_balance} onChange={(e)=>setDebtForm({ ...debtForm, current_balance: e.target.value })} /></label>
+        <label><small>Interest rate (%)</small><input className="input" value={debtForm.interest_rate} onChange={(e)=>setDebtForm({ ...debtForm, interest_rate: e.target.value })} /></label>
+        <label><small>Minimum payment</small><input className="input" value={debtForm.minimum_payment} onChange={(e)=>setDebtForm({ ...debtForm, minimum_payment: e.target.value })} /></label>
+        <label><small>Due date</small><input type="date" className="input" value={debtForm.due_day_or_date} onChange={(e)=>setDebtForm({ ...debtForm, due_day_or_date: e.target.value })} /></label>
+        <label><small>Original amount</small><input className="input" value={debtForm.original_balance} onChange={(e)=>setDebtForm({ ...debtForm, original_balance: e.target.value })} /></label>
+        <label><small>Payment frequency</small><select className="select" value={debtForm.payment_frequency} onChange={(e)=>setDebtForm({ ...debtForm, payment_frequency: e.target.value })}><option value="monthly">Monthly</option><option value="biweekly">Biweekly</option><option value="weekly">Weekly</option></select></label>
+        <label className="debtModalFull"><small>Notes</small><textarea className="input" rows={3} value={debtForm.note} onChange={(e)=>setDebtForm({ ...debtForm, note: e.target.value })} /></label>
+      </div>
+      <div className="row end" style={{ marginTop: 10, gap: 10 }}><button className="btn" onClick={() => setShowAddDebt(false)}>Cancel</button><button className="btn primary" onClick={async () => { await debt.addDebt({ name: debtForm.name || 'New Debt', lender: debtForm.lender || '', type: debtForm.type as any, status: debtForm.status as any, current_balance: Number(debtForm.current_balance || 0), original_balance: Number(debtForm.original_balance || debtForm.current_balance || 0), interest_rate: Number(debtForm.interest_rate || 0), minimum_payment: Number(debtForm.minimum_payment || 0), payment_frequency: debtForm.payment_frequency, due_day_or_date: debtForm.due_day_or_date || null, note: debtForm.note || null }); setShowAddDebt(false) }}>Create debt</button></div>
+    </div></div> : null}
   </div>
 }
 

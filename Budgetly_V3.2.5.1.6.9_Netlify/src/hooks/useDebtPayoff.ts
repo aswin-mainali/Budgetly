@@ -52,5 +52,16 @@ export function useDebtPayoff(userId: string | null){
     await supabase.from('debts').update({ current_balance: nextBalance, status: nextStatus }).eq('id', debtId).eq('user_id', userId)
   }
 
-  return { debts, payments, activeDebts, strategy, setStrategy, extraMonthlyPayment, setExtraMonthlyPayment, totalDebt, minimumMonthly, highestInterest, focusDebtId, recordPayment }
+  const addDebt = async (payload: Omit<Debt, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    if (!userId) return
+    const tempId = `tmp-${Date.now()}`
+    const row: Debt = { ...payload, id: tempId, user_id: userId }
+    setDebts((curr) => [row, ...curr])
+    const res = await supabase.from('debts').insert({ ...payload, user_id: userId }).select('*').single()
+    if (!res.error && res.data) {
+      setDebts((curr) => curr.map((d) => d.id === tempId ? (res.data as Debt) : d))
+    }
+  }
+
+  return { debts, payments, activeDebts, strategy, setStrategy, extraMonthlyPayment, setExtraMonthlyPayment, totalDebt, minimumMonthly, highestInterest, focusDebtId, recordPayment, addDebt }
 }
