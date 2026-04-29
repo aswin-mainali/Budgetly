@@ -1344,7 +1344,7 @@ body.light .converterRecentBox {
 }
 .recurringUpcomingTitle{font-size:18px;font-weight:700;line-height:1.1}
 .recurringUpcomingAmount{display:flex;flex-direction:column;align-items:flex-end;gap:4px;text-align:right}
-.recurringUpcomingAmount strong{font-size:18px}
+.recurringUpcomingAmount strong{font-size:18px;white-space:nowrap}
 .recurringEmpty{padding:14px;border:1px dashed var(--border);border-radius:16px;background:rgba(255,255,255,.02);min-height:96px;display:grid;place-items:center;text-align:center}
 .recurringDayField{display:flex;align-items:center;gap:8px}
 .recurringDayField .input{padding-left:10px}
