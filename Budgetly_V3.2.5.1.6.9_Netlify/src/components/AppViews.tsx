@@ -1751,6 +1751,88 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     setDuplicateGroups(freshGroups)
   }, [data.transactions])
 
+  if (isPhone) {
+    return (
+      <div className="card mobileSectionCard dataPageCard categoriesPageCard mobileTxPageLikeCategories">
+        <section className="categoriesComposer card">
+          <div className="categoriesSectionHead">
+            <h2>Transactions</h2>
+            <p className="muted">Add and manage your transactions with a mobile-first layout.</p>
+          </div>
+          <button className="btn primary" type="button" onClick={() => setTxAddModalOpen(true)}>
+            <Plus size={16} /> Add Transaction
+          </button>
+        </section>
+
+        <section className="categoriesManage card">
+          <div className="categoriesSectionHead">
+            <h2>Manage Transactions</h2>
+            <p className="muted">{filteredTx.length} item(s)</p>
+          </div>
+          <div className="categoriesToolbarRow mobileTxToolbarCompact">
+            <div className="categoriesSearchWrap">
+              <Search size={16} />
+              <input className="input" value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" />
+            </div>
+            <select className="select" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+              {months.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
+            </select>
+            <select className="select" value={txType} onChange={(event) => setTxType(event.target.value as TxType | 'all')}>
+              <option value="all">All</option><option value="income">Income</option><option value="expense">Expense</option>
+            </select>
+          </div>
+
+          <div className="mobileTxList">
+            {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
+              const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
+              return (
+                <div key={transaction.id} className="mobileInfoCard">
+                  <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
+                    <div>
+                      <div className="mobileCardTitle">{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</div>
+                      <div className="muted">{transaction.note?.trim() || 'No note'}</div>
+                    </div>
+                    <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete"><Trash2 size={16} /></button>
+                  </div>
+                  <div className="mobileMetaRow">
+                    <span className="badge">{transaction.date}</span>
+                    <span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span>
+                  </div>
+                  <div className={`mobileAmountRow ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        <div className="row between dataPageFooter mobileTxFooter" style={{ alignItems: 'center', gap: 12 }}>
+          <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
+          <button className="btn primary" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>Update Transactions</button>
+        </div>
+
+        {txAddModalOpen ? (
+          <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setTxAddModalOpen(false)}>
+            <div className="card txAddModal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+              <div className="row between" style={{ alignItems: 'center', marginBottom: 6 }}>
+                <h3 style={{ margin: 0 }}>Add Transaction</h3>
+                <button className="btn" type="button" onClick={() => setTxAddModalOpen(false)}>Close</button>
+              </div>
+              <div className="txAddModalGrid">{/* keep existing fields simple */}
+                <div className="field txField"><label>Date</label><input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} /></div>
+                <div className="field txField"><label>Type</label><select value={txDraft.type} onChange={(event) => setTxDraft((current) => ({ ...current, type: event.target.value as TxType }))}><option value="income">Income</option><option value="expense">Expense</option></select></div>
+                <div className="field txField"><label>Amount</label><input inputMode="decimal" value={txDraft.amount} onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))} /></div>
+                <div className="field txField txAddModalNote"><label>Note</label><input value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+              </div>
+              <div className="row between" style={{ marginTop: 14, justifyContent: 'flex-end', gap: 10 }}>
+                <button className="btn primary" onClick={() => void handleAddTransaction()}>Save Transaction</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    )
+  }
+
   return (
     <div className="card mobileSectionCard dataPageCard txPageCard txFullLayout">
       <div className="row between txPageHeader">
