@@ -2692,12 +2692,12 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary" onClick={() => { setDebtForm(blankDebtForm); setEditingDebtId(null); setShowAddDebt(true) }}>＋ Add Debt</button></div></div>
-    <div className="debtKpis">
+    {tab === 'overview' ? <div className="debtKpis">
       <div className="card debtKpiCard"><div className="debtKpiIcon green">👛</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon blue">🗓️</div><div><small>Monthly minimums</small><strong>CA$720</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Debt-free date</small><strong>Aug 2028</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
-    </div>
+    </div> : null}
     <div className="debtTabs">{(['overview','history','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':'Advice'}</button>)}</div>
     {/* Projection tab intentionally hidden for now; keep section below for easy re-enable later. */}
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
