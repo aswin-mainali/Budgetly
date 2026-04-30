@@ -2684,6 +2684,8 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const [showAddDebt, setShowAddDebt] = useState(false)
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null)
   const [pendingDeleteDebtId, setPendingDeleteDebtId] = useState<string | null>(null)
+  const [customPayDebtId, setCustomPayDebtId] = useState<string | null>(null)
+  const [customPayAmount, setCustomPayAmount] = useState('')
   const blankDebtForm = { name: '', lender: '', type: 'Credit Card', status: 'active', current_balance: '0', interest_rate: '0', minimum_payment: '0', due_day_or_date: '', original_balance: '0', start_date: '', target_payoff_date: '', payment_frequency: 'monthly', note: '', icon: '💳', mark_focus_debt: false, include_in_calculation: true }
   const [debtForm, setDebtForm] = useState(blankDebtForm)
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
@@ -2710,14 +2712,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
             <button className="btn debtMoreBtn" onClick={() => setOpenMenuDebtId((current) => current === d.id ? null : d.id)}>⋮</button>
             {openMenuDebtId === d.id ? <div className="debtActionMenu">
               <button className="btn primary" onClick={()=>{ void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment'); setOpenMenuDebtId(null) }}>Make payment</button>
-              <button className="btn" onClick={() => {
-                const value = window.prompt(`Enter custom payment amount for ${d.name}`, `${d.minimum_payment || 100}`)
-                const amount = Number(value)
-                if (Number.isFinite(amount) && amount > 0) {
-                  void debt.recordPayment(d.id, amount, new Date().toISOString().slice(0, 10), 'Custom payment')
-                }
-                setOpenMenuDebtId(null)
-              }}>Pay Custom</button>
+              <button className="btn" onClick={() => { setCustomPayDebtId(d.id); setCustomPayAmount(String(d.minimum_payment || 100)); setOpenMenuDebtId(null) }}>Pay Custom</button>
               <button className="btn" onClick={()=>{ setDebtForm({ name: d.name, lender: d.lender, type: d.type, status: d.status, current_balance: String(d.current_balance), interest_rate: String(d.interest_rate), minimum_payment: String(d.minimum_payment), due_day_or_date: d.due_day_or_date || '', original_balance: String(d.original_balance), start_date: (d.note?.match(/\\[start:(.*?)\\]/)?.[1] || ''), target_payoff_date: (d.note?.match(/\\[target:(.*?)\\]/)?.[1] || ''), payment_frequency: d.payment_frequency, note: (d.note || '').replace(/\\s*\\[(icon|start|target|focus|calc):.*?\\]/g, '').trim(), icon: (d.note?.match(/\\[icon:(.*?)\\]/)?.[1] || '💳'), mark_focus_debt: d.note?.includes('[focus:true]') || false, include_in_calculation: !d.note?.includes('[calc:false]') }); setEditingDebtId(d.id); setShowAddDebt(true); setOpenMenuDebtId(null) }}>Edit</button>
               <button className="btn danger" onClick={()=>{ setPendingDeleteDebtId(d.id); setOpenMenuDebtId(null) }}>Delete</button>
             </div> : null}
@@ -2758,6 +2753,22 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       onConfirm={() => { if (pendingDeleteDebtId) void debt.deleteDebt(pendingDeleteDebtId); setPendingDeleteDebtId(null) }}
       onCancel={() => setPendingDeleteDebtId(null)}
     />
+    {customPayDebtId ? <div className="deleteConfirmBackdrop">
+      <div className="card debtPayModal">
+        <h3>Enter Custom Payment Amount For {debt.debts.find((d) => d.id === customPayDebtId)?.name || 'Debt'}</h3>
+        <input className="input" value={customPayAmount} onChange={(e) => setCustomPayAmount(e.target.value)} inputMode="decimal" />
+        <div className="row end" style={{ marginTop: 10, gap: 10 }}>
+          <button className="btn" onClick={() => { setCustomPayDebtId(null); setCustomPayAmount('') }}>Cancel</button>
+          <button className="btn primary" onClick={() => {
+            const amount = Number(customPayAmount)
+            if (Number.isFinite(amount) && amount > 0 && customPayDebtId) {
+              void debt.recordPayment(customPayDebtId, amount, new Date().toISOString().slice(0, 10), 'Custom payment')
+            }
+            setCustomPayDebtId(null); setCustomPayAmount('')
+          }}>Pay</button>
+        </div>
+      </div>
+    </div> : null}
   </div>
 }
 
