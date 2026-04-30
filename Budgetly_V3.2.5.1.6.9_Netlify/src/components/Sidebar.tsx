@@ -21,8 +21,8 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
-  toolsSection: 'goals' | 'reports' | 'converter'
-  setToolsSection: (v: 'goals' | 'reports' | 'converter') => void
+  toolsSection: 'goals' | 'reports' | 'converter' | 'debt'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt') => void
   sync: SyncState
   email?: string | null
   features: FeatureAccess
