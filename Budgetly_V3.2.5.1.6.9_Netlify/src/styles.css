@@ -2502,7 +2502,7 @@ body.light .deleteConfirmModal p strong{color:#111827}
   border:0;
   outline:none;
   padding:0 14px;
-  font-size:40px;
+  font-size:24px;
   color:#1e293b;
   background:transparent;
 }
@@ -2546,7 +2546,7 @@ body.light .deleteConfirmModal p strong{color:#111827}
   .debtPayModeToggle button{font-size:14px;padding:11px 6px}
   .debtPayModalAmountWrap{margin:0 14px;height:56px;border-radius:12px}
   .debtPayModalAmountWrap span{font-size:20px;padding:0 14px}
-  .debtPayModalAmountWrap input{font-size:26px;padding:0 14px}
+  .debtPayModalAmountWrap input{font-size:22px;padding:0 14px}
   .debtPayModal small{margin:8px 14px 14px;font-size:14px}
   .debtPayModalActions{padding:0 14px 14px;gap:10px}
   .debtPayModalCancelBtn,.debtPayModalPayBtn{min-width:0;flex:1}
