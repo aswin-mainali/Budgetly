@@ -8045,11 +8045,22 @@ body.light .authRing{
     height:auto !important;
     max-height:none !important;
     overflow:visible !important;
+    display:block !important;
+    flex:none !important;
   }
   body.mobile-app .txManagePanel .dataMobileList{
     height:auto !important;
     max-height:none !important;
     overflow:visible !important;
+    display:block !important;
+    flex:none !important;
+    padding-right:0 !important;
+  }
+  body.mobile-app .txPageCard .dataMobileList{
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+    flex:none !important;
   }
   body.mobile-app .txStickyFooter{
     position:static !important;
