@@ -8019,6 +8019,32 @@ body.light .authRing{
     font-size:11px;
     letter-spacing:.04em;
   }
+  body.mobile-app .txPageCard{
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  body.mobile-app .txManagePanel{
+    display:block !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  body.mobile-app .txManagePanel .txPageScrollable{
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  body.mobile-app .txManagePanel .dataMobileList{
+    height:auto !important;
+    max-height:none !important;
+    overflow:visible !important;
+  }
+  body.mobile-app .txStickyFooter{
+    position:static !important;
+    bottom:auto !important;
+  }
 }
 
 @media (max-width: 560px) {
