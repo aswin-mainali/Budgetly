@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, BarChart3, ListChecks, Tags, Repeat, PanelLeftClose, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight } from 'lucide-react'
+import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Wallet, Plus } from 'lucide-react'
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
-import { syncProfileCacheForUser } from './lib/userProfile'
+import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
@@ -27,8 +27,8 @@ export default function App() {
   const [email, setEmail] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [view, setView] = useState<ViewKey>('dashboard')
-  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter'>('goals')
+  const [view, setView] = useState<ViewKey | 'utilities_hub'>('dashboard')
+  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt'>('goals')
   const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
@@ -69,7 +69,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 960px)')
+    const mediaQuery = window.matchMedia('(max-width: 768px)')
     const onChange = () => {
       const mobile = mediaQuery.matches
       setIsMobile(mobile)
@@ -215,7 +215,7 @@ export default function App() {
   }, [userId, admin.loading, admin.profile, admin.isSuperAdmin, admin.visibleFeatures, view, firstAllowedView])
 
   useEffect(() => {
-    if (view !== 'tools') return
+    if (view !== 'tools' && view !== 'utilities_hub') return
     if (toolsSection === 'goals' && !admin.visibleFeatures.goals) {
       if (admin.visibleFeatures.reports) setToolsSection('reports')
       else if (admin.visibleFeatures.converter) setToolsSection('converter')
@@ -256,6 +256,9 @@ export default function App() {
     }
     if (isMobile) setCollapsed(true)
   }
+  const profile = readCachedUserProfile()
+  const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0]
+  const profileImage = profile.image
 
   const handleOpenTransactionsByType = (type: 'income' | 'expense') => {
     budget.setTxType(type)
@@ -288,9 +291,13 @@ export default function App() {
 
       <main className={`main ${isMobile ? 'mainMobile' : ''}`}>
         {isMobile ? (
-          <button className="mobileMenuBtn" onClick={() => setCollapsed((current) => !current)} aria-label="Menu" title="Menu">
-            <Menu size={18} />
-          </button>
+          <header className="mobileTopBar">
+            <button className="mobileIconBtn" onClick={() => setCollapsed(false)} aria-label="Open menu"><Menu size={22} /></button>
+            <div className="mobileWordmark">Budgetly</div>
+            <button className="mobileAvatarBtn" onClick={() => handleViewChange('settings')} aria-label="Open settings">
+              {profileImage ? <img src={profileImage} alt="Profile" /> : <span>{profileName.charAt(0).toUpperCase()}</span>}
+            </button>
+          </header>
         ) : null}
 
         {view === 'dashboard' && admin.visibleFeatures.dashboard ? <DashboardView budget={budget} theme={theme} onOpenTransactionsByType={handleOpenTransactionsByType} /> : null}
@@ -298,7 +305,19 @@ export default function App() {
         {view === 'categories' && admin.visibleFeatures.categories ? <CategoriesView budget={budget} /> : null}
         {view === 'recurring' && admin.visibleFeatures.recurring ? <RecurringView budget={budget} /> : null}
         {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} /> : null}
-        {view === 'tools' ? (
+        {(view === 'tools' || view === 'utilities_hub') ? (
+          view === 'utilities_hub' ? (
+            <section className="mobileUtilitiesHub">
+              <div className="mobileUtilitiesHero">
+                <h1>Utilities</h1>
+                <p>Tools to plan, track, and improve your finances.</p>
+              </div>
+              <button className="utilityCard" onClick={() => { setToolsSection('goals'); setView('tools') }}><Target size={22} /><div><strong>Goals</strong><p>Set financial goals and track your progress.</p></div><ChevronRight size={18} /></button>
+              <button className="utilityCard" onClick={() => { setToolsSection('reports'); setView('tools') }}><BarChart3 size={22} /><div><strong>Reports</strong><p>View insights and reports for this month.</p></div><ChevronRight size={18} /></button>
+              <button className="utilityCard" onClick={() => { setToolsSection('converter'); setView('tools') }}><ArrowLeftRight size={22} /><div><strong>Currency Converter</strong><p>Convert currencies with live exchange rates.</p></div><ChevronRight size={18} /></button>
+              <button className="utilityCard"><Wallet size={22} /><div><strong>Debt Payoff</strong><p>Plan and track debt payoff journey.</p></div><ChevronRight size={18} /></button>
+            </section>
+          ) : (
           <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
             <div className={`toolsPageBody ${toolsSection === 'converter' ? 'toolsPageBodyConverter' : ''}`}>
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
@@ -306,20 +325,18 @@ export default function App() {
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}
             </div>
           </div>
+          )
         ) : null}
         {view === 'support' && admin.visibleFeatures.support ? <HelpSupportView email={email} userId={userId} admin={admin} /> : null}
         {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} userId={userId} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} onSignOut={() => void signOut()} /> : null}
 
         {isMobile ? (
-          <nav className="mobileTabBar" aria-label="Mobile navigation">
-            {admin.visibleFeatures.dashboard ? <button className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Home</span></button> : null}
-            {admin.visibleFeatures.transactions ? <button className={view === 'transactions' ? 'active' : ''} onClick={() => handleViewChange('transactions')}><ListChecks size={18} /><span>Txns</span></button> : null}
-            {admin.visibleFeatures.categories ? <button className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Cats</span></button> : null}
-            {admin.visibleFeatures.recurring ? <button className={view === 'recurring' ? 'active' : ''} onClick={() => handleViewChange('recurring')}><Repeat size={18} /><span>Recurring</span></button> : null}
-            {admin.visibleFeatures.advice ? <button className={view === 'advice' ? 'active' : ''} onClick={() => handleViewChange('advice')}><Sparkles size={18} /><span>Advice</span></button> : null}
-            <button className={view === 'tools' ? 'active' : ''} onClick={() => handleViewChange('tools')}><Wrench size={18} /><span>Utilities</span></button>
-            {admin.visibleFeatures.support ? <button className={view === 'support' ? 'active' : ''} onClick={() => handleViewChange('support')}><LifeBuoy size={18} /><span>Support</span></button> : null}
-            <button className={collapsed ? '' : 'active'} onClick={() => setCollapsed((current) => !current)}><PanelLeftClose size={18} /><span>More</span></button>
+          <nav className="mobileTabBar mobileTabBarPlus" aria-label="Mobile navigation">
+            {admin.visibleFeatures.dashboard ? <button className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Dashboard</span></button> : null}
+            {admin.visibleFeatures.categories ? <button className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
+            {admin.visibleFeatures.transactions ? <button className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /></button> : null}
+            <button className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
+            {admin.visibleFeatures.settings ? <button className={view === 'settings' ? 'active' : ''} onClick={() => handleViewChange('settings')}><Settings size={18} /><span>Settings</span></button> : null}
           </nav>
         ) : null}
       </main>
