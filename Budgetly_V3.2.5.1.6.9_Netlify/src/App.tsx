@@ -33,6 +33,7 @@ export default function App() {
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [debtSync, setDebtSync] = useState<null | 'pending' | 'synced'>(null)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -66,6 +67,15 @@ export default function App() {
 
     window.addEventListener('budgetly:toast', handleToast as EventListener)
     return () => window.removeEventListener('budgetly:toast', handleToast as EventListener)
+  }, [])
+
+  useEffect(() => {
+    const onDebtSync = (event: Event) => {
+      const custom = event as CustomEvent<{ sync?: 'pending' | 'synced' }>
+      setDebtSync(custom.detail?.sync ?? null)
+    }
+    window.addEventListener('budgetly:debt-sync-status', onDebtSync as EventListener)
+    return () => window.removeEventListener('budgetly:debt-sync-status', onDebtSync as EventListener)
   }, [])
 
   useEffect(() => {
@@ -281,7 +291,7 @@ export default function App() {
           setView={handleViewChange}
           toolsSection={toolsSection}
           setToolsSection={setToolsSection}
-          sync={budget.sync}
+          sync={debtSync === 'pending' ? 'pending' : budget.sync}
           email={email}
           features={admin.visibleFeatures}
         />
