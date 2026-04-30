@@ -2416,7 +2416,6 @@ body.light .deleteConfirmModal p strong{color:#111827}
 }
 
 .debtPayModal{
-  width:min(640px, 100%);
   background:#fff;
   border:1px solid #e2e8f0;
   border-radius:24px;
