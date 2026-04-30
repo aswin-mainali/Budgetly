@@ -93,13 +93,31 @@ export function useDebtPayoff(userId: string | null){
       const delResult = await supabase.from('debts').delete().eq('user_id', userId).in('id', deletedDebtIds)
       if (delResult.error) throw delResult.error
     }
-    const rows = debts.map(({ id, user_id, created_at, updated_at, ...rest }) => ({ ...rest, user_id, ...(id.startsWith('tmp-') ? {} : { id }) }))
-    const result = await supabase.from('debts').upsert(rows as any, { onConflict: 'id' })
-    if (result.error) throw result.error
+
+    const existingRows = debts
+      .filter((d) => !d.id.startsWith('tmp-'))
+      .map(({ id, user_id, created_at, updated_at, ...rest }) => ({ id, user_id, ...rest }))
+    if (existingRows.length > 0) {
+      const upsertExisting = await supabase.from('debts').upsert(existingRows as any, { onConflict: 'id' })
+      if (upsertExisting.error) throw upsertExisting.error
+    }
+
+    const newRows = debts
+      .filter((d) => d.id.startsWith('tmp-'))
+      .map(({ id, user_id, created_at, updated_at, ...rest }) => ({ user_id, ...rest }))
+    if (newRows.length > 0) {
+      const insertNew = await supabase.from('debts').insert(newRows as any)
+      if (insertNew.error) throw insertNew.error
+    }
+
     const refreshed = await supabase.from('debts').select('*').eq('user_id', userId).order('created_at', { ascending: true })
-    if (!refreshed.error && refreshed.data) setDebts(refreshed.data as Debt[])
+    if (refreshed.error) throw refreshed.error
+    setDebts((refreshed.data || []) as Debt[])
     setDeletedDebtIds([])
     setDebtDirtyWithSignal(false)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Debt changes saved' } }))
+    }
   }
 
   return { debts, payments, activeDebts, strategy, setStrategy, extraMonthlyPayment, setExtraMonthlyPayment, totalDebt, minimumMonthly, highestInterest, focusDebtId, recordPayment, addDebt, updateDebt, deleteDebt, debtDirty, saveDebts }
