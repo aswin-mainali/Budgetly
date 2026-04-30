@@ -2572,14 +2572,12 @@ body.light .deleteConfirmModal p strong{color:#111827}
 @media (max-width: 960px){.debtAdviceGrid{grid-template-columns:1fr}}
 @media (max-width: 960px){
   .debtPage{
-    height:100%;
-    min-height:0;
-    max-height:none;
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding-right:4px;
+    height:auto !important;
+    min-height:100%;
+    max-height:none !important;
+    overflow:visible !important;
+    padding-right:0;
     padding-bottom:24px;
-    -webkit-overflow-scrolling:touch;
   }
   .debtPage > *:last-child{margin-bottom:24px}
 }
