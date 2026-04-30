@@ -336,7 +336,6 @@ export default function App() {
             {admin.visibleFeatures.categories ? <button className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
             {admin.visibleFeatures.transactions ? <button className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /></button> : null}
             <button className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
-            {admin.visibleFeatures.advice ? <button className={view === 'advice' ? 'active' : ''} onClick={() => handleViewChange('advice')}><Sparkles size={18} /><span>Advice</span></button> : null}
             {admin.visibleFeatures.settings ? <button className={view === 'settings' ? 'active' : ''} onClick={() => handleViewChange('settings')}><Settings size={18} /><span>Settings</span></button> : null}
           </nav>
         ) : null}

@@ -8004,7 +8004,7 @@ body.light .utilityCard p{
   .mobileTabBar{position:fixed;left:10px;right:10px;bottom:10px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-radius:18px;background:rgba(10,24,48,.95);border:1px solid var(--border);backdrop-filter:blur(12px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));z-index:40}
   .mobileTabBar button{background:transparent;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px}
   .mobileTabBar button.active{color:#3b82f6;background:rgba(59,130,246,.13);border-radius:12px}
-  .mobileTabBarPlus{grid-template-columns:repeat(6,minmax(0,1fr));align-items:end}
+  .mobileTabBarPlus{grid-template-columns:repeat(5,minmax(0,1fr));align-items:end}
   .mobileTabBarPlus .mobilePlusTab{
     width:52px;
     height:52px;
