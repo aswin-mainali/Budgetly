@@ -2698,7 +2698,8 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Debt-free date</small><strong>Aug 2028</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
     </div>
-    <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
+    <div className="debtTabs">{(['overview','history','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':'Advice'}</button>)}</div>
+    {/* Projection tab intentionally hidden for now; keep section below for easy re-enable later. */}
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
         <div className="debtToolbar"><input className="input" placeholder="Search debts" /><select className="select"><option>All Types</option></select><select className="select"><option>All Statuses</option></select><select className="select"><option>Sort by: Highest Interest</option></select></div>
         <div className="debtHeaderRow"><span>Debt</span><span>Balance</span><span>Interest Rate</span><span>Due Date</span><span>Projected Payoff</span><span>Status</span><span>Actions</span></div>
