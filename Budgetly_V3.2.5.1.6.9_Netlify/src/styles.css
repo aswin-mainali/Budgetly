@@ -7925,6 +7925,12 @@ body.light .authRing{
     padding:98px 12px calc(104px + env(safe-area-inset-bottom));
     overflow-y:auto;
   }
+  body.light .main.mainMobile{
+    background:
+      radial-gradient(1200px 820px at 18% 10%, rgba(59,130,246,.08), transparent 58%),
+      radial-gradient(1000px 760px at 84% 18%, rgba(16,185,129,.07), transparent 54%),
+      linear-gradient(180deg, #f5f8fd 0%, #eef3fa 100%);
+  }
   .mobileTopBar{
     position:fixed;
     top:0;
@@ -7936,9 +7942,36 @@ body.light .authRing{
     border-bottom:1px solid var(--border);
     backdrop-filter:blur(10px);
   }
+  body.light .mobileTopBar{
+    background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,255,.92));
+    border-bottom:1px solid rgba(203,213,225,.65);
+    box-shadow:0 8px 22px rgba(15,23,42,.08);
+  }
+  body.light .mobileWordmark{
+    color:#0f172a;
+  }
+  body.light .mobileIconBtn,
+  body.light .mobileAvatarBtn{
+    background:linear-gradient(180deg, #ffffff, #f3f6fb);
+    border-color:rgba(203,213,225,.8);
+    color:#334155;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.92);
+  }
   .mobileTabBar{position:fixed;left:10px;right:10px;bottom:10px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));border-radius:18px;background:rgba(10,24,48,.95);border:1px solid var(--border);backdrop-filter:blur(12px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));z-index:40}
   .mobileTabBar button{background:transparent;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px}
   .mobileTabBar button.active{color:#3b82f6;background:rgba(59,130,246,.13);border-radius:12px}
+  body.light .mobileTabBar{
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(246,249,255,.96));
+    border:1px solid rgba(203,213,225,.72);
+    box-shadow:0 8px 24px rgba(15,23,42,.08);
+  }
+  body.light .mobileTabBar button{
+    color:#475569;
+  }
+  body.light .mobileTabBar button.active{
+    color:#2563eb;
+    background:rgba(37,99,235,.1);
+  }
   .mobileOverlay{position:fixed;inset:0;background:rgba(5,14,30,.5);backdrop-filter:blur(2px);z-index:30}
   .sidebarContainer.mobile{position:fixed;left:-100%;top:0;bottom:0;z-index:65;transition:left .25s ease}
   .sidebarContainer.mobile.closed{left:-100%}
