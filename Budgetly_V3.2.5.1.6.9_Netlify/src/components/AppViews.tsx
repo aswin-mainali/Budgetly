@@ -2741,6 +2741,14 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         </div>)}</div>
       </div>
       <div className="card debtAdviceCard">
+        <h4>📊 Why this matters</h4>
+        <ul className="debtAdviceList">
+          <li>Highest interest debt: {topDebt ? `${topDebt.name} · ${topDebt.interest_rate.toFixed(2)}%` : '—'}.</li>
+          <li>Extra CA$50/month can reduce interest cost over time.</li>
+          <li>Consistent payments improve payoff speed and confidence.</li>
+        </ul>
+      </div>
+      <div className="card debtAdviceCard">
         <h4>✅ This month’s action checklist</h4>
         <ul className="debtAdviceList">
           <li>Pay minimums on all active debts.</li>
@@ -2755,6 +2763,18 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
           <li>Monthly minimums are currently CA${debt.minimumMonthly.toFixed(0)}.</li>
           <li>{activeDebts.length > 0 ? `${activeDebts.length} active debts still require regular payments.` : 'No active debts currently.'}</li>
           <li>Missing due dates can cause extra fees and slower payoff progress.</li>
+        </ul>
+      </div>
+      <div className="card debtAdviceCard debtAdviceMotivation">
+        <h4>💚 Motivation</h4>
+        <p>You’ve already cleared part of your debt. Staying consistent matters more than making one large payment once.</p>
+      </div>
+      <div className="card debtAdviceCard">
+        <h4>💡 Quick guidance</h4>
+        <ul className="debtAdviceList">
+          <li>Avalanche works best if you want to minimize interest.</li>
+          <li>Snowball can help motivation if you need faster wins.</li>
+          <li>Even small extra payments help if they’re consistent.</li>
         </ul>
       </div>
     </div> : null}

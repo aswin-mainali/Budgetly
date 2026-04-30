@@ -2558,6 +2558,7 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .debtAdviceEyebrow{font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.04em}
 .debtAdviceCard h3{margin:6px 0 6px;font-size:26px;line-height:1.2}
 .debtAdviceCard p{margin:0;color:#64748b}
+.debtAdviceMotivation{background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(255,255,255,.95))}
 .debtAdviceTag{display:inline-block;margin-top:10px;padding:6px 10px;border-radius:999px;background:rgba(16,185,129,.14);color:#15803d;font-weight:700;font-size:12px}
 .debtAdviceCard h4{margin:0 0 10px 0;font-size:18px}
 .debtAdviceRankList{display:grid;gap:8px}
