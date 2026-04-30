@@ -8024,12 +8024,17 @@ body.light .authRing{
     min-height:0 !important;
     max-height:none !important;
     overflow:visible !important;
+    padding-left:14px !important;
+    padding-right:14px !important;
+    padding-bottom:calc(128px + env(safe-area-inset-bottom)) !important;
   }
   body.mobile-app .txManagePanel{
     display:block !important;
     min-height:0 !important;
     max-height:none !important;
     overflow:visible !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
   }
   body.mobile-app .txManagePanel .txPageScrollable{
     height:auto !important;
@@ -8044,6 +8049,9 @@ body.light .authRing{
   body.mobile-app .txStickyFooter{
     position:static !important;
     bottom:auto !important;
+    margin-top:14px !important;
+    margin-bottom:calc(20px + env(safe-area-inset-bottom)) !important;
+    background:transparent !important;
   }
 }
 
