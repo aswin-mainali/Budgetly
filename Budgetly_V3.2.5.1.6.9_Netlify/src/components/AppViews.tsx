@@ -1910,7 +1910,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         </div>
       ) : null}
 
-      <section className="txPanel txManagePanel" aria-labelledby="tx-manage-title">
+      <section className={`txPanel ${isPhone ? 'mobileTxManagePanel' : 'txManagePanel'}`} aria-labelledby="tx-manage-title">
         <div className="txPanelHeader row between">
           <div>
             <h3 id="tx-manage-title">Manage Transactions</h3>
@@ -1959,9 +1959,9 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         <div className="muted" style={forceCompactManageToolbar ? { whiteSpace: 'nowrap', marginLeft: 'auto' } : undefined}>{filteredTx.length} item(s)</div>
       </div>
 
-      <div className="txPageScrollable">
+      <div className={isPhone ? 'mobileTxListWrap' : 'txPageScrollable'}>
       {isPhone ? (
-        <div className="mobileList dataMobileList" style={{ marginTop: 8 }}>
+        <div className="mobileList dataMobileList mobileTxList" style={{ marginTop: 8 }}>
           {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
             const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
             return (
@@ -2035,7 +2035,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
         </div>
       )}      </div>
 
-      <div className="row between dataPageFooter txStickyFooter" style={{ alignItems: 'center', gap: 12 }}>
+      <div className={`row between dataPageFooter ${isPhone ? 'mobileTxFooter' : 'txStickyFooter'}`} style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
         <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
           Update Transactions
