@@ -2683,6 +2683,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const [openMenuDebtId, setOpenMenuDebtId] = useState<string | null>(null)
   const [showAddDebt, setShowAddDebt] = useState(false)
   const [editingDebtId, setEditingDebtId] = useState<string | null>(null)
+  const [pendingDeleteDebtId, setPendingDeleteDebtId] = useState<string | null>(null)
   const blankDebtForm = { name: '', lender: '', type: 'Credit Card', status: 'active', current_balance: '0', interest_rate: '0', minimum_payment: '0', due_day_or_date: '', original_balance: '0', start_date: '', target_payoff_date: '', payment_frequency: 'monthly', note: '', icon: '💳', mark_focus_debt: false, include_in_calculation: true }
   const [debtForm, setDebtForm] = useState(blankDebtForm)
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
@@ -2710,7 +2711,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
             {openMenuDebtId === d.id ? <div className="debtActionMenu">
               <button className="btn primary" onClick={()=>{ void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment'); setOpenMenuDebtId(null) }}>Make payment</button>
               <button className="btn" onClick={()=>{ setDebtForm({ name: d.name, lender: d.lender, type: d.type, status: d.status, current_balance: String(d.current_balance), interest_rate: String(d.interest_rate), minimum_payment: String(d.minimum_payment), due_day_or_date: d.due_day_or_date || '', original_balance: String(d.original_balance), start_date: (d.note?.match(/\\[start:(.*?)\\]/)?.[1] || ''), target_payoff_date: (d.note?.match(/\\[target:(.*?)\\]/)?.[1] || ''), payment_frequency: d.payment_frequency, note: (d.note || '').replace(/\\s*\\[(icon|start|target|focus|calc):.*?\\]/g, '').trim(), icon: (d.note?.match(/\\[icon:(.*?)\\]/)?.[1] || '💳'), mark_focus_debt: d.note?.includes('[focus:true]') || false, include_in_calculation: !d.note?.includes('[calc:false]') }); setEditingDebtId(d.id); setShowAddDebt(true); setOpenMenuDebtId(null) }}>Edit</button>
-              <button className="btn danger" onClick={()=>{ void debt.deleteDebt(d.id); setOpenMenuDebtId(null) }}>Delete</button>
+              <button className="btn danger" onClick={()=>{ setPendingDeleteDebtId(d.id); setOpenMenuDebtId(null) }}>Delete</button>
             </div> : null}
           </div>
         </div>)}
@@ -2743,6 +2744,12 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       </div>
       <div className="row end" style={{ marginTop: 10, gap: 10 }}><button className="btn" onClick={() => { setShowAddDebt(false); setEditingDebtId(null); setDebtForm(blankDebtForm) }}>Cancel</button><button className="btn primary" onClick={async () => { const payload = { name: debtForm.name || 'New Debt', lender: debtForm.lender || '', type: debtForm.type as any, status: debtForm.status as any, current_balance: Number(debtForm.current_balance || 0), original_balance: Number(debtForm.original_balance || debtForm.current_balance || 0), interest_rate: Number(debtForm.interest_rate || 0), minimum_payment: Number(debtForm.minimum_payment || 0), payment_frequency: debtForm.payment_frequency, due_day_or_date: debtForm.due_day_or_date || null, note: `${debtForm.note || ''} [icon:${debtForm.icon}] [start:${debtForm.start_date || ''}] [target:${debtForm.target_payoff_date || ''}] [focus:${debtForm.mark_focus_debt}] [calc:${debtForm.include_in_calculation}]`.trim() || null }; if (editingDebtId) await debt.updateDebt(editingDebtId, payload); else await debt.addDebt(payload); setShowAddDebt(false); setEditingDebtId(null); setDebtForm(blankDebtForm) }}>{editingDebtId ? 'Save changes' : 'Create debt'}</button></div>
     </div></div> : null}
+    <DeleteConfirmModal
+      open={!!pendingDeleteDebtId}
+      itemLabel={debt.debts.find((d) => d.id === pendingDeleteDebtId)?.name || 'this debt'}
+      onConfirm={() => { if (pendingDeleteDebtId) void debt.deleteDebt(pendingDeleteDebtId); setPendingDeleteDebtId(null) }}
+      onCancel={() => setPendingDeleteDebtId(null)}
+    />
   </div>
 }
 
