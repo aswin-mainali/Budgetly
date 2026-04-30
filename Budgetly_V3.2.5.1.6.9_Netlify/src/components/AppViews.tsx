@@ -2736,7 +2736,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       </div>
       <div className="card debtAdviceCard">
         <h4>🏆 Priority ranking</h4>
-        <div className="debtAdviceRankList">{rankedDebts.slice(0, 4).map((d, idx) => <div key={d.id} className="debtAdviceRankItem">
+        <div className="debtAdviceRankList">{rankedDebts.map((d, idx) => <div key={d.id} className="debtAdviceRankItem">
           <strong>{idx + 1}</strong><span>{d.name}</span><small>{d.type} · {d.interest_rate.toFixed(2)}%</small>
         </div>)}</div>
       </div>
