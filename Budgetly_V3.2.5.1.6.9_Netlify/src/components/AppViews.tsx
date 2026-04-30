@@ -2754,18 +2754,31 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       onCancel={() => setPendingDeleteDebtId(null)}
     />
     {customPayDebtId ? <div className="deleteConfirmBackdrop">
-      <div className="card debtPayModal">
-        <h3>Enter Custom Payment Amount For {debt.debts.find((d) => d.id === customPayDebtId)?.name || 'Debt'}</h3>
-        <input className="input" value={customPayAmount} onChange={(e) => setCustomPayAmount(e.target.value)} inputMode="decimal" />
-        <div className="row end" style={{ marginTop: 10, gap: 10 }}>
-          <button className="btn" onClick={() => { setCustomPayDebtId(null); setCustomPayAmount('') }}>Cancel</button>
-          <button className="btn primary" onClick={() => {
+      <div className="debtPayModal">
+        <div className="debtPayModalHeader">
+          <div className="debtPayModalIcon">💳</div>
+          <div>
+            <h3>Make a payment</h3>
+            <div className="debtPayModalDebtName">{debt.debts.find((d) => d.id === customPayDebtId)?.name || 'Debt'}</div>
+            <p>Enter a custom payment amount</p>
+          </div>
+          <button className="debtPayModalClose" onClick={() => { setCustomPayDebtId(null); setCustomPayAmount('') }} aria-label="Close custom payment modal">✕</button>
+        </div>
+        <label className="debtPayModalLabel">Payment amount</label>
+        <div className="debtPayModalAmountWrap">
+          <span>CA$</span>
+          <input value={customPayAmount} onChange={(e) => setCustomPayAmount(e.target.value)} inputMode="decimal" />
+        </div>
+        <small>Minimum due: CA${Number(debt.debts.find((d) => d.id === customPayDebtId)?.minimum_payment || 0).toFixed(0)}</small>
+        <div className="debtPayModalActions">
+          <button className="btn debtPayModalCancelBtn" onClick={() => { setCustomPayDebtId(null); setCustomPayAmount('') }}>Cancel</button>
+          <button className="btn debtPayModalPayBtn" onClick={() => {
             const amount = Number(customPayAmount)
             if (Number.isFinite(amount) && amount > 0 && customPayDebtId) {
               void debt.recordPayment(customPayDebtId, amount, new Date().toISOString().slice(0, 10), 'Custom payment')
             }
             setCustomPayDebtId(null); setCustomPayAmount('')
-          }}>Pay</button>
+          }}>Pay CA${Number(customPayAmount || 0).toFixed(0)}</button>
         </div>
       </div>
     </div> : null}
