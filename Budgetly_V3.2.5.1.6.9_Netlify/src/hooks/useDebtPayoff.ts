@@ -9,10 +9,10 @@ export type Debt = { id: string; user_id: string; name: string; type: DebtType; 
 export type DebtPayment = { id: string; debt_id: string; user_id: string; amount: number; payment_date: string; source_type: 'manual'|'linked_transaction'|'recurring'; note: string | null; created_at?: string }
 
 const seedDebts = (userId: string): Debt[] => [
-  { id:'seed-rbc', user_id:userId, name:'RBC Visa', type:'Credit Card', lender:'Royal Bank of Canada', original_balance:9050, current_balance:6250, interest_rate:22.99, minimum_payment:120, payment_frequency:'monthly', due_day_or_date:'2026-04-30', note:null, status:'active' },
-  { id:'seed-student', user_id:userId, name:'Student Loan', type:'Student Loan', lender:'Canada Student Loans', original_balance:10000, current_balance:7800, interest_rate:6.45, minimum_payment:300, payment_frequency:'monthly', due_day_or_date:'2026-05-01', note:null, status:'active' },
-  { id:'seed-car', user_id:userId, name:'Car Loan', type:'Car Loan', lender:'TD Auto Finance', original_balance:11900, current_balance:4400, interest_rate:4.99, minimum_payment:350, payment_frequency:'monthly', due_day_or_date:'2026-05-03', note:null, status:'active' },
-  { id:'seed-loc', user_id:userId, name:'Personal Line of Credit', type:'Line of Credit', lender:'Scotiabank', original_balance:3400, current_balance:0, interest_rate:9.99, minimum_payment:0, payment_frequency:'monthly', due_day_or_date:null, note:'Paid off Jan 2026', status:'paid_off' },
+  { id:'tmp-seed-rbc', user_id:userId, name:'RBC Visa', type:'Credit Card', lender:'Royal Bank of Canada', original_balance:9050, current_balance:6250, interest_rate:22.99, minimum_payment:120, payment_frequency:'monthly', due_day_or_date:'2026-04-30', note:null, status:'active' },
+  { id:'tmp-seed-student', user_id:userId, name:'Student Loan', type:'Student Loan', lender:'Canada Student Loans', original_balance:10000, current_balance:7800, interest_rate:6.45, minimum_payment:300, payment_frequency:'monthly', due_day_or_date:'2026-05-01', note:null, status:'active' },
+  { id:'tmp-seed-car', user_id:userId, name:'Car Loan', type:'Car Loan', lender:'TD Auto Finance', original_balance:11900, current_balance:4400, interest_rate:4.99, minimum_payment:350, payment_frequency:'monthly', due_day_or_date:'2026-05-03', note:null, status:'active' },
+  { id:'tmp-seed-loc', user_id:userId, name:'Personal Line of Credit', type:'Line of Credit', lender:'Scotiabank', original_balance:3400, current_balance:0, interest_rate:9.99, minimum_payment:0, payment_frequency:'monthly', due_day_or_date:null, note:'Paid off Jan 2026', status:'paid_off' },
 ]
 
 export function useDebtPayoff(userId: string | null){
