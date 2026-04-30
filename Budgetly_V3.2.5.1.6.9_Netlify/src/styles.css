@@ -8024,50 +8024,52 @@ body.light .authRing{
     min-height:0 !important;
     max-height:none !important;
     overflow:visible !important;
-    padding-left:14px !important;
-    padding-right:14px !important;
-    padding-bottom:calc(128px + env(safe-area-inset-bottom)) !important;
+    padding:14px 14px calc(120px + env(safe-area-inset-bottom)) !important;
   }
   body.mobile-app .txFullLayout{
+    display:block !important;
     height:auto !important;
     min-height:0 !important;
     max-height:none !important;
+    gap:12px !important;
+  }
+  body.mobile-app .txPanel{
+    padding:12px !important;
+    border-radius:18px !important;
+    overflow:visible !important;
   }
   body.mobile-app .txManagePanel{
     display:block !important;
     min-height:0 !important;
     max-height:none !important;
     overflow:visible !important;
-    padding-left:0 !important;
-    padding-right:0 !important;
+    padding:12px !important;
   }
-  body.mobile-app .txManagePanel .txPageScrollable{
-    height:auto !important;
-    max-height:none !important;
-    overflow:visible !important;
-    display:block !important;
-    flex:none !important;
-  }
-  body.mobile-app .txManagePanel .dataMobileList{
-    height:auto !important;
-    max-height:none !important;
-    overflow:visible !important;
-    display:block !important;
-    flex:none !important;
-    padding-right:0 !important;
-  }
+  body.mobile-app .txManagePanel .txPageScrollable,
+  body.mobile-app .txManagePanel .dataMobileList,
   body.mobile-app .txPageCard .dataMobileList{
+    display:block !important;
+    flex:none !important;
     height:auto !important;
     max-height:none !important;
     overflow:visible !important;
-    flex:none !important;
+    padding-right:0 !important;
+  }
+  body.mobile-app .txManagePanel .mobileInfoCard{
+    margin-bottom:10px;
+    border-radius:16px;
   }
   body.mobile-app .txStickyFooter{
     position:static !important;
     bottom:auto !important;
-    margin-top:14px !important;
-    margin-bottom:calc(20px + env(safe-area-inset-bottom)) !important;
+    margin-top:12px !important;
+    margin-bottom:calc(14px + env(safe-area-inset-bottom)) !important;
+    padding-top:4px !important;
     background:transparent !important;
+  }
+  body.mobile-app .txStickyFooter .btn{
+    width:100%;
+    min-height:48px;
   }
 }
 
