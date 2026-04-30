@@ -2570,6 +2570,14 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .debtAdviceRankItem small{color:#64748b}
 .debtAdviceList{margin:0;padding-left:18px;display:grid;gap:8px}
 @media (max-width: 960px){.debtAdviceGrid{grid-template-columns:1fr}}
+@media (max-width: 960px){
+  .debtPage{
+    max-height:calc(100vh - 120px);
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding-right:4px;
+  }
+}
 
 .settingsShell{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start}
 .settingsSidebarCard{position:sticky;top:12px}
