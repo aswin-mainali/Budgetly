@@ -1819,7 +1819,20 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               </div>
               <div className="txAddModalGrid">{/* keep existing fields simple */}
                 <div className="field txField"><label>Date</label><input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} /></div>
-                <div className="field txField"><label>Type</label><select value={txDraft.type} onChange={(event) => setTxDraft((current) => ({ ...current, type: event.target.value as TxType }))}><option value="income">Income</option><option value="expense">Expense</option></select></div>
+                <div className="field txField"><label>Type</label><select value={txDraft.type} onChange={(event) => setTxDraft((current) => ({ ...current, type: event.target.value as TxType, category_id: event.target.value === 'income' ? '' : current.category_id }))}><option value="income">Income</option><option value="expense">Expense</option></select></div>
+                {txDraft.type === 'expense' ? (
+                  <div className="field txField">
+                    <label>Expense category</label>
+                    <select value={txDraft.category_id} onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}>
+                      <option value="">Choose category</option>
+                      {filteredCategoriesForDraft.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {(category.emoji ?? '🏷️')} {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
                 <div className="field txField"><label>Amount</label><input inputMode="decimal" value={txDraft.amount} onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))} /></div>
                 <div className="field txField txAddModalNote"><label>Note</label><input value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} /></div>
               </div>
