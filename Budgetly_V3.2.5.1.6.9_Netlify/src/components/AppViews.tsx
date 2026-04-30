@@ -2686,6 +2686,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const [pendingDeleteDebtId, setPendingDeleteDebtId] = useState<string | null>(null)
   const [customPayDebtId, setCustomPayDebtId] = useState<string | null>(null)
   const [customPayAmount, setCustomPayAmount] = useState('')
+  const [customPayMode, setCustomPayMode] = useState<'minimum' | 'custom'>('custom')
   const blankDebtForm = { name: '', lender: '', type: 'Credit Card', status: 'active', current_balance: '0', interest_rate: '0', minimum_payment: '0', due_day_or_date: '', original_balance: '0', start_date: '', target_payoff_date: '', payment_frequency: 'monthly', note: '', icon: '💳', mark_focus_debt: false, include_in_calculation: true }
   const [debtForm, setDebtForm] = useState(blankDebtForm)
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
@@ -2712,7 +2713,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
             <button className="btn debtMoreBtn" onClick={() => setOpenMenuDebtId((current) => current === d.id ? null : d.id)}>⋮</button>
             {openMenuDebtId === d.id ? <div className="debtActionMenu">
               <button className="btn primary" onClick={()=>{ void debt.recordPayment(d.id, d.minimum_payment || 50, '2026-04-29', 'Manual payment'); setOpenMenuDebtId(null) }}>Make payment</button>
-              <button className="btn" onClick={() => { setCustomPayDebtId(d.id); setCustomPayAmount(String(d.minimum_payment || 100)); setOpenMenuDebtId(null) }}>Pay Custom</button>
+              <button className="btn" onClick={() => { setCustomPayDebtId(d.id); setCustomPayMode('custom'); setCustomPayAmount(String(d.minimum_payment || 100)); setOpenMenuDebtId(null) }}>Pay Custom</button>
               <button className="btn" onClick={()=>{ setDebtForm({ name: d.name, lender: d.lender, type: d.type, status: d.status, current_balance: String(d.current_balance), interest_rate: String(d.interest_rate), minimum_payment: String(d.minimum_payment), due_day_or_date: d.due_day_or_date || '', original_balance: String(d.original_balance), start_date: (d.note?.match(/\\[start:(.*?)\\]/)?.[1] || ''), target_payoff_date: (d.note?.match(/\\[target:(.*?)\\]/)?.[1] || ''), payment_frequency: d.payment_frequency, note: (d.note || '').replace(/\\s*\\[(icon|start|target|focus|calc):.*?\\]/g, '').trim(), icon: (d.note?.match(/\\[icon:(.*?)\\]/)?.[1] || '💳'), mark_focus_debt: d.note?.includes('[focus:true]') || false, include_in_calculation: !d.note?.includes('[calc:false]') }); setEditingDebtId(d.id); setShowAddDebt(true); setOpenMenuDebtId(null) }}>Edit</button>
               <button className="btn danger" onClick={()=>{ setPendingDeleteDebtId(d.id); setOpenMenuDebtId(null) }}>Delete</button>
             </div> : null}
@@ -2758,27 +2759,35 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         <div className="debtPayModalHeader">
           <div className="debtPayModalIcon">💳</div>
           <div>
-            <h3>Make a payment</h3>
-            <div className="debtPayModalDebtName">{debt.debts.find((d) => d.id === customPayDebtId)?.name || 'Debt'}</div>
-            <p>Enter a custom payment amount</p>
+            <h3>Make Payment for {debt.debts.find((d) => d.id === customPayDebtId)?.name || 'Debt'}</h3>
+            <p>Choose how you want to pay this debt today.</p>
           </div>
           <button className="debtPayModalClose" onClick={() => { setCustomPayDebtId(null); setCustomPayAmount('') }} aria-label="Close custom payment modal">✕</button>
         </div>
-        <label className="debtPayModalLabel">Payment amount</label>
+        <div className="debtPayModalDivider" />
+        <label className="debtPayModalLabel">Payment mode</label>
+        <div className="debtPayModeToggle">
+          <button className={customPayMode === 'minimum' ? 'active' : ''} onClick={() => setCustomPayMode('minimum')}>Pay Minimum Payment</button>
+          <button className={customPayMode === 'custom' ? 'active' : ''} onClick={() => setCustomPayMode('custom')}>Pay Custom Amount</button>
+        </div>
+        <label className="debtPayModalLabel">Custom amount (CAD)</label>
         <div className="debtPayModalAmountWrap">
           <span>CA$</span>
-          <input value={customPayAmount} onChange={(e) => setCustomPayAmount(e.target.value)} inputMode="decimal" />
+          <input value={customPayAmount} onChange={(e) => setCustomPayAmount(e.target.value)} inputMode="decimal" disabled={customPayMode === 'minimum'} />
         </div>
-        <small>Minimum due: CA${Number(debt.debts.find((d) => d.id === customPayDebtId)?.minimum_payment || 0).toFixed(0)}</small>
+        <small>ⓘ Minimum payment due: CA${Number(debt.debts.find((d) => d.id === customPayDebtId)?.minimum_payment || 0).toFixed(2)}</small>
+        <div className="debtPayModalDivider" />
         <div className="debtPayModalActions">
           <button className="btn debtPayModalCancelBtn" onClick={() => { setCustomPayDebtId(null); setCustomPayAmount('') }}>Cancel</button>
           <button className="btn debtPayModalPayBtn" onClick={() => {
-            const amount = Number(customPayAmount)
+            const amount = customPayMode === 'minimum'
+              ? Number(debt.debts.find((d) => d.id === customPayDebtId)?.minimum_payment || 0)
+              : Number(customPayAmount)
             if (Number.isFinite(amount) && amount > 0 && customPayDebtId) {
               void debt.recordPayment(customPayDebtId, amount, new Date().toISOString().slice(0, 10), 'Custom payment')
             }
             setCustomPayDebtId(null); setCustomPayAmount('')
-          }}>Pay CA${Number(customPayAmount || 0).toFixed(0)}</button>
+          }}>Pay now</button>
         </div>
       </div>
     </div> : null}

@@ -2416,7 +2416,7 @@ body.light .deleteConfirmModal p strong{color:#111827}
 }
 
 .debtPayModal{
-  width:min(700px, 100%);
+  width:min(640px, 100%);
   background:#fff;
   border:1px solid #e2e8f0;
   border-radius:24px;
@@ -2428,43 +2428,64 @@ body.light .deleteConfirmModal p strong{color:#111827}
   grid-template-columns:auto 1fr auto;
   gap:20px;
   align-items:start;
-  padding:38px 34px 22px;
+  padding:28px 28px 16px;
 }
 .debtPayModalIcon{
-  width:86px;
-  height:86px;
-  border-radius:22px;
+  width:64px;
+  height:64px;
+  border-radius:18px;
   background:#e9f2ff;
   display:grid;
   place-items:center;
-  font-size:42px;
+  font-size:30px;
 }
-.debtPayModal h3{margin:0;color:#253858;font-size:52px;line-height:1.05;font-weight:800}
-.debtPayModalDebtName{margin-top:10px;color:#355c9a;font-size:40px;font-weight:700}
-.debtPayModal p{margin:8px 0 0;color:#6b7b95;font-size:38px}
+.debtPayModal h3{margin:0;color:#253858;font-size:40px;line-height:1.15;font-weight:800}
+.debtPayModal p{margin:8px 0 0;color:#6b7b95;font-size:28px}
 .debtPayModalClose{
-  width:64px;
-  height:64px;
+  width:48px;
+  height:48px;
   border-radius:999px;
   border:1px solid #cbd5e1;
   background:#fff;
   color:#64748b;
-  font-size:34px;
+  font-size:28px;
   line-height:1;
   cursor:pointer;
 }
 .debtPayModalLabel{
   display:block;
-  margin:0 34px 12px;
+  margin:0 28px 10px;
   color:#253858;
-  font-size:36px;
+  font-size:29px;
   font-weight:700;
 }
+.debtPayModeToggle{
+  margin:0 28px 20px;
+  border:1px solid #cfd9e8;
+  border-radius:14px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  overflow:hidden;
+}
+.debtPayModeToggle button{
+  border:0;
+  padding:14px 10px;
+  background:#fff;
+  color:#607192;
+  font-size:24px;
+  font-weight:700;
+  cursor:pointer;
+}
+.debtPayModeToggle button + button{border-left:1px solid #d7e0ed}
+.debtPayModeToggle button.active{
+  background:#eaf9f2;
+  color:#1f9f67;
+}
 .debtPayModalAmountWrap{
-  margin:0 34px;
+  margin:0 28px;
   border:2px solid #bfd0e7;
   border-radius:18px;
-  height:88px;
+  height:74px;
   display:grid;
   grid-template-columns:auto 1fr;
   align-items:center;
@@ -2473,26 +2494,26 @@ body.light .deleteConfirmModal p strong{color:#111827}
   padding:0 24px;
   border-right:2px solid #d4deed;
   color:#394b67;
-  font-size:42px;
+  font-size:34px;
   font-weight:700;
 }
 .debtPayModalAmountWrap input{
   border:0;
   outline:none;
   padding:0 24px;
-  font-size:46px;
+  font-size:34px;
   color:#1e293b;
   background:transparent;
 }
 .debtPayModal small{
   display:block;
-  margin:14px 34px 28px;
+  margin:12px 28px 16px;
   color:#64748b;
-  font-size:32px;
+  font-size:24px;
 }
+.debtPayModalDivider{height:1px;background:#d9e2ef;margin:0 28px 20px}
 .debtPayModalActions{
-  border-top:1px solid #d9e2ef;
-  padding:24px 34px 28px;
+  padding:0 28px 24px;
   display:flex;
   justify-content:flex-end;
   gap:18px;
@@ -2512,18 +2533,21 @@ body.light .deleteConfirmModal p strong{color:#111827}
   color:#fff;
 }
 @media (max-width: 640px){
-  .debtPayModalHeader{padding:20px 18px 16px;gap:12px}
+  .debtPayModal{width:min(520px,100%);border-radius:18px}
+  .debtPayModalHeader{padding:16px 14px 12px;gap:10px}
   .debtPayModalIcon{width:54px;height:54px;border-radius:14px;font-size:24px}
-  .debtPayModal h3{font-size:30px}
-  .debtPayModalDebtName{font-size:22px;margin-top:6px}
-  .debtPayModal p{font-size:18px;margin-top:4px}
+  .debtPayModal h3{font-size:23px}
+  .debtPayModal p{font-size:15px;margin-top:4px}
   .debtPayModalClose{width:40px;height:40px;font-size:20px}
-  .debtPayModalLabel{margin:0 18px 8px;font-size:16px}
-  .debtPayModalAmountWrap{margin:0 18px;height:56px;border-radius:12px}
+  .debtPayModalDivider{margin:0 14px 12px}
+  .debtPayModalLabel{margin:0 14px 8px;font-size:16px}
+  .debtPayModeToggle{margin:0 14px 12px}
+  .debtPayModeToggle button{font-size:14px;padding:11px 6px}
+  .debtPayModalAmountWrap{margin:0 14px;height:56px;border-radius:12px}
   .debtPayModalAmountWrap span{font-size:20px;padding:0 14px}
   .debtPayModalAmountWrap input{font-size:26px;padding:0 14px}
-  .debtPayModal small{margin:10px 18px 16px;font-size:14px}
-  .debtPayModalActions{padding:16px 18px 18px;gap:10px}
+  .debtPayModal small{margin:8px 14px 14px;font-size:14px}
+  .debtPayModalActions{padding:0 14px 14px;gap:10px}
   .debtPayModalCancelBtn,.debtPayModalPayBtn{min-width:0;flex:1}
 }
 
