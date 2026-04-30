@@ -7909,6 +7909,24 @@ body.light .authRing{
 .mobileUtilitiesHero h1{margin:0 0 6px;font-size:44px}.mobileUtilitiesHero p{margin:0;color:var(--muted)}
 .utilityCard{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));color:var(--text)}
 .utilityCard div{flex:1}.utilityCard p{margin:4px 0 0;color:var(--muted)}
+body.light .mobileUtilitiesHub{
+  background:transparent;
+}
+body.light .mobileUtilitiesHero h1{
+  color:#0f172a;
+}
+body.light .mobileUtilitiesHero p{
+  color:#475569;
+}
+body.light .utilityCard{
+  background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(244,248,255,.9));
+  border-color:rgba(203,213,225,.72);
+  color:#0f172a;
+  box-shadow:0 6px 18px rgba(15,23,42,.06);
+}
+body.light .utilityCard p{
+  color:#475569;
+}
 
 @media (max-width: 768px){
   .sidebarContainer.mobile.open{left:0}
