@@ -8020,6 +8020,7 @@ body.light .authRing{
     letter-spacing:.04em;
   }
   body.mobile-app .txPageCard{
+    display:block !important;
     height:auto !important;
     min-height:0 !important;
     max-height:none !important;
@@ -8028,12 +8029,19 @@ body.light .authRing{
   }
   body.mobile-app .txFullLayout{
     display:block !important;
+    flex:none !important;
     height:auto !important;
     min-height:0 !important;
     max-height:none !important;
+    overflow:visible !important;
     gap:12px !important;
   }
   body.mobile-app .txPanel{
+    display:block !important;
+    flex:none !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
     padding:12px !important;
     border-radius:18px !important;
     overflow:visible !important;
@@ -8047,10 +8055,12 @@ body.light .authRing{
   }
   body.mobile-app .txManagePanel .txPageScrollable,
   body.mobile-app .txManagePanel .dataMobileList,
-  body.mobile-app .txPageCard .dataMobileList{
+  body.mobile-app .txPageCard .dataMobileList,
+  body.mobile-app .txPageCard .transactionsScrollBox{
     display:block !important;
     flex:none !important;
     height:auto !important;
+    min-height:0 !important;
     max-height:none !important;
     overflow:visible !important;
     padding-right:0 !important;
