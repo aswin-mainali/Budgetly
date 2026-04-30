@@ -2693,7 +2693,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="card debtKpiCard"><div className="debtKpiIcon green">👛</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon blue">🗓️</div><div><small>Monthly minimums</small><strong>CA$720</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Debt-free date</small><strong>Aug 2028</strong></div></div>
-      <div className="card debtKpiCard"><div className="debtKpiIcon orange">📈</div><div><small>Interest saved with plan</small><strong>CA$1,240</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
     </div>
     <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
