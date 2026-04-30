@@ -8028,6 +8028,11 @@ body.light .authRing{
     padding-right:14px !important;
     padding-bottom:calc(128px + env(safe-area-inset-bottom)) !important;
   }
+  body.mobile-app .txFullLayout{
+    height:auto !important;
+    min-height:0 !important;
+    max-height:none !important;
+  }
   body.mobile-app .txManagePanel{
     display:block !important;
     min-height:0 !important;
