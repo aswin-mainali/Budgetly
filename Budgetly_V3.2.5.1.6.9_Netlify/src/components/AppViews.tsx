@@ -2690,6 +2690,9 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const blankDebtForm = { name: '', lender: '', type: 'Credit Card', status: 'active', current_balance: '0', interest_rate: '0', minimum_payment: '0', due_day_or_date: '', original_balance: '0', start_date: '', target_payoff_date: '', payment_frequency: 'monthly', note: '', icon: '💳', mark_focus_debt: false, include_in_calculation: true }
   const [debtForm, setDebtForm] = useState(blankDebtForm)
   const pct = (d: typeof debt.debts[number]) => Math.round(((d.original_balance - d.current_balance) / Math.max(1, d.original_balance)) * 100)
+  const activeDebts = debt.debts.filter((d) => d.status !== 'paid_off')
+  const rankedDebts = [...activeDebts].sort((a, b) => b.interest_rate - a.interest_rate)
+  const topDebt = rankedDebts[0] || null
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary" onClick={() => { setDebtForm(blankDebtForm); setEditingDebtId(null); setShowAddDebt(true) }}>＋ Add Debt</button></div></div>
     {tab === 'overview' ? <div className="debtKpis">
@@ -2724,7 +2727,37 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       </div> : null}
     {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
     {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
-    {tab === 'advice' ? <div className="card"><h3>Advice</h3><ul><li>Highest-interest debt should be prioritized.</li><li>Extra CA$50 could reduce payoff time.</li><li>Minimum payments are consuming a high share of cash flow.</li><li>One debt is close to being cleared.</li></ul></div> : null}
+    {tab === 'advice' ? <div className="debtAdviceGrid">
+      <div className="card debtAdviceCard debtAdviceHero">
+        <div className="debtAdviceEyebrow">Recommended next step</div>
+        <h3>{topDebt ? `Focus extra payments on ${topDebt.name}.` : 'No active debt to prioritize.'}</h3>
+        <p>{topDebt ? `It has the highest interest rate at ${topDebt.interest_rate.toFixed(2)}%, so paying it down first reduces total interest fastest.` : 'Add active debts to get personalized payoff recommendations.'}</p>
+        <span className="debtAdviceTag">Best move this month</span>
+      </div>
+      <div className="card debtAdviceCard">
+        <h4>🏆 Priority ranking</h4>
+        <div className="debtAdviceRankList">{rankedDebts.slice(0, 4).map((d, idx) => <div key={d.id} className="debtAdviceRankItem">
+          <strong>{idx + 1}</strong><span>{d.name}</span><small>{d.type} · {d.interest_rate.toFixed(2)}%</small>
+        </div>)}</div>
+      </div>
+      <div className="card debtAdviceCard">
+        <h4>✅ This month’s action checklist</h4>
+        <ul className="debtAdviceList">
+          <li>Pay minimums on all active debts.</li>
+          <li>Add an extra payment to {topDebt?.name || 'your highest-interest debt'}.</li>
+          <li>Avoid new credit card balances this month.</li>
+          <li>Review due dates before month-end.</li>
+        </ul>
+      </div>
+      <div className="card debtAdviceCard">
+        <h4>⚠️ Watch-outs</h4>
+        <ul className="debtAdviceList">
+          <li>Monthly minimums are currently CA${debt.minimumMonthly.toFixed(0)}.</li>
+          <li>{activeDebts.length > 0 ? `${activeDebts.length} active debts still require regular payments.` : 'No active debts currently.'}</li>
+          <li>Missing due dates can cause extra fees and slower payoff progress.</li>
+        </ul>
+      </div>
+    </div> : null}
     {showAddDebt ? <div className="deleteConfirmBackdrop"><div className="card debtModal">
       <div className="row between"><h3>{editingDebtId ? 'Edit Debt' : 'Add New Debt'}</h3><button className="btn" onClick={() => { setShowAddDebt(false); setEditingDebtId(null); setDebtForm(blankDebtForm) }}>✕</button></div>
       <p className="muted">Enter the debt details below to create a new payoff account.</p>

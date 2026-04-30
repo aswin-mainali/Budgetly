@@ -2552,6 +2552,22 @@ body.light .deleteConfirmModal p strong{color:#111827}
   .debtPayModalCancelBtn,.debtPayModalPayBtn{min-width:0;flex:1}
 }
 
+.debtAdviceGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.debtAdviceCard{padding:16px;border:1px solid rgba(148,163,184,.2);border-radius:14px}
+.debtAdviceHero{border-color:rgba(16,185,129,.45);background:linear-gradient(135deg,rgba(16,185,129,.08),rgba(255,255,255,.94))}
+.debtAdviceEyebrow{font-size:12px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.04em}
+.debtAdviceCard h3{margin:6px 0 6px;font-size:26px;line-height:1.2}
+.debtAdviceCard p{margin:0;color:#64748b}
+.debtAdviceTag{display:inline-block;margin-top:10px;padding:6px 10px;border-radius:999px;background:rgba(16,185,129,.14);color:#15803d;font-weight:700;font-size:12px}
+.debtAdviceCard h4{margin:0 0 10px 0;font-size:18px}
+.debtAdviceRankList{display:grid;gap:8px}
+.debtAdviceRankItem{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid rgba(148,163,184,.2);border-radius:10px}
+.debtAdviceRankItem strong{width:22px;height:22px;border-radius:999px;background:#16a34a;color:#fff;display:grid;place-items:center;font-size:12px}
+.debtAdviceRankItem span{font-weight:700}
+.debtAdviceRankItem small{color:#64748b}
+.debtAdviceList{margin:0;padding-left:18px;display:grid;gap:8px}
+@media (max-width: 960px){.debtAdviceGrid{grid-template-columns:1fr}}
+
 .settingsShell{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start}
 .settingsSidebarCard{position:sticky;top:12px}
 .settingsNavList{display:grid;gap:10px}
