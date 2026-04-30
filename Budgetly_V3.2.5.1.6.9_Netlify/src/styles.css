@@ -8024,4 +8024,49 @@ body.light .authRing{
 @media (max-width: 560px) {
   body.mobile-app .mobileKpiGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
   body.mobile-app .mobileKpiGrid .mobileKpiNet { grid-column: auto; }
+  body.mobile-app .txManagePanel .txToolbarRowMobile{
+    align-items:flex-end !important;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txToolbarFields{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) 130px;
+    gap:10px;
+    width:100%;
+    align-items:end;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txSearchField{
+    grid-column:1;
+    margin:0;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txField:not(.txSearchField){
+    min-width:0;
+    margin:0;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txFilterField{
+    grid-column:1;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txFilterField select,
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txField select{
+    width:100%;
+    min-height:42px;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .txMonthField{
+    grid-column:2;
+  }
+  body.mobile-app .txManagePanel .txToolbarRowMobile .muted{
+    display:none;
+  }
+  body.mobile-app .txManagePanel .txPageScrollable{
+    max-height:none;
+    overflow:visible;
+    padding-bottom:8px;
+  }
+  body.mobile-app .txManagePanel .dataMobileList{
+    max-height:none;
+    overflow:visible;
+  }
+  body.mobile-app .txStickyFooter{
+    position:sticky;
+    bottom:calc(82px + env(safe-area-inset-bottom));
+  }
 }

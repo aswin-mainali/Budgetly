@@ -1917,7 +1917,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-      <div className="row between txToolbarRow" style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
+      <div className={`row between txToolbarRow ${isPhone ? 'txToolbarRowMobile' : ''}`} style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
         <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
           <div className="field txField txSearchField" style={forceCompactManageToolbar ? { gridColumn: 'auto', maxWidth: 320 } : undefined}>
             <div className="input-icon txSearchInput" style={forceCompactManageToolbar ? { maxWidth: 320 } : undefined}>
@@ -1929,14 +1929,22 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="field txField txFilterField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Filter</label>
-            <div className="filterChips" role="tablist" aria-label="Transaction filter">
-              <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
-              <button type="button" className={`filterChip income ${txType === 'income' ? 'active' : ''}`} onClick={() => setTxType('income')}>Income</button>
-              <button type="button" className={`filterChip expense ${txType === 'expense' ? 'active' : ''}`} onClick={() => setTxType('expense')}>Expense</button>
-            </div>
+            {isPhone ? (
+              <select value={txType} onChange={(event) => setTxType(event.target.value as TxType | 'all')} aria-label="Transaction filter">
+                <option value="all">All</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            ) : (
+              <div className="filterChips" role="tablist" aria-label="Transaction filter">
+                <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
+                <button type="button" className={`filterChip income ${txType === 'income' ? 'active' : ''}`} onClick={() => setTxType('income')}>Income</button>
+                <button type="button" className={`filterChip expense ${txType === 'expense' ? 'active' : ''}`} onClick={() => setTxType('expense')}>Expense</button>
+              </div>
+            )}
           </div>
 
-          <div className="field txField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
+          <div className="field txField txMonthField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Month</label>
             <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {months.map((month) => (
