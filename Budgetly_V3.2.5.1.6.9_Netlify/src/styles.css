@@ -7885,7 +7885,9 @@ body.light .authRing{
 .debtActionMenu .btn{justify-content:flex-start;border-radius:999px}
 .debtActionMenu .btn.danger{color:#dc2626;border-color:#fecaca}
 .debtRowRich.paid{opacity:.75}
-.debtUpdateFooter{position:fixed !important;right:18px !important;bottom:14px !important;z-index:999}
+.debtUpdateFooter{position:fixed !important;right:18px !important;bottom:14px !important;z-index:999;background:transparent;padding:0}
+.debtUpdateFooter .btn.primary{min-height:42px;padding:0 18px;border-radius:14px;box-shadow:0 10px 22px rgba(15,23,42,.20)}
+.debtUpdateFooter .btn.primary:disabled{box-shadow:none;opacity:.65}
 .debtModal{width:min(860px,calc(100vw - 30px));max-height:calc(100vh - 40px);overflow:auto}
 .debtModalGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .debtModalGrid label{display:grid;gap:6px}
