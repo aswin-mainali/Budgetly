@@ -2725,7 +2725,25 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         </div>
         <div className="debtUpdateFooter"><span className="muted">{debt.debtDirty ? 'You have unsaved debt changes.' : 'All debt changes are saved.'}</span><button className="btn primary" onClick={() => { void debt.saveDebts().catch((error) => window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: `Save failed: ${String((error as Error)?.message || error)}` } }))) }} disabled={!debt.debtDirty}>Update Debt</button></div>
       </div> : null}
-    {tab === 'history' ? <div className="card"><h3>Payment History</h3><table className="table"><thead><tr><th>Payment date</th><th>Debt name</th><th>Amount</th><th>Source type</th><th>Notes</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{p.payment_date}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td>CA${Number(p.amount).toFixed(2)}</td><td>{p.source_type}</td><td>{p.note || '—'}</td></tr>)}</tbody></table></div> : null}
+    {tab === 'history' ? <div className="debtHistoryStack">
+      <div className="card debtHistoryKpis">
+        <div className="debtHistoryKpi"><span>💵</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
+        <div className="debtHistoryKpi"><span>📋</span><div><small>Payments logged</small><strong>{debt.payments.length}</strong></div></div>
+        <div className="debtHistoryKpi"><span>🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date || '—'}</strong></div></div>
+        <div className="debtHistoryKpi"><span>📈</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
+      </div>
+      <div className="card debtHistoryCard">
+        <div className="row between"><h3>Payment History</h3><button className="btn">⇩ Export CSV</button></div>
+        <div className="debtHistoryFilters">
+          <input className="input" placeholder="Search debt or notes" />
+          <select className="select"><option>All Debts</option></select>
+          <select className="select"><option>All Sources</option></select>
+          <select className="select"><option>Last 30 days</option></select>
+        </div>
+        <table className="table debtHistoryTable"><thead><tr><th>Date</th><th>Debt</th><th>Amount</th><th>Source</th><th>Notes</th><th>Actions</th></tr></thead><tbody>{debt.payments.map(p=><tr key={p.id}><td>{new Date(p.payment_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })}</td><td>{debt.debts.find(d=>d.id===p.debt_id)?.name ?? 'Debt'}</td><td><strong>CA${Number(p.amount).toFixed(2)}</strong></td><td><span className={`debtSourceTag ${p.source_type === 'manual' ? 'manual' : 'minimum'}`}>{p.source_type === 'manual' ? 'Manual' : 'Minimum'}</span></td><td>{p.note || '—'}</td><td>⋮</td></tr>)}</tbody></table>
+        <small className="muted">Showing {debt.payments.length} of {debt.payments.length} payments</small>
+      </div>
+    </div> : null}
     {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
     {tab === 'advice' ? <div className="debtAdviceGrid">
       <div className="card debtAdviceCard debtAdviceHero">
