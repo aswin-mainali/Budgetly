@@ -2780,7 +2780,6 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
     </div> : null}
     {showAddDebt ? <div className="deleteConfirmBackdrop"><div className="card debtModal">
       <div className="row between"><h3>{editingDebtId ? 'Edit Debt' : 'Add New Debt'}</h3><button className="btn" onClick={() => { setShowAddDebt(false); setEditingDebtId(null); setDebtForm(blankDebtForm) }}>✕</button></div>
-      <p className="muted">Enter the debt details below to create a new payoff account.</p>
       <div className="debtModalGrid">
         <label><small>Debt name</small><input className="input" value={debtForm.name} onChange={(e)=>setDebtForm({ ...debtForm, name: e.target.value })} /></label>
         <label><small>Lender</small><input className="input" value={debtForm.lender} onChange={(e)=>setDebtForm({ ...debtForm, lender: e.target.value })} /></label>
