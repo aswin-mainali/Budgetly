@@ -1693,7 +1693,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
 
 
 export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, activeMonth, setActiveMonth, sortedRecurring } = budget
+  const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, txActiveMonth, setTxActiveMonth, sortedRecurring } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
   const useTxAddModal = isCompactLaptop
@@ -1774,7 +1774,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               <Search size={16} />
               <input className="input" value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" />
             </div>
-            <select className="select" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+            <select className="select" value={txActiveMonth} onChange={(event) => setTxActiveMonth(event.target.value)}>
               {months.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
             </select>
             <select className="select" value={txType} onChange={(event) => setTxType(event.target.value as TxType | 'all')}>
@@ -2041,7 +2041,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="field txField txMonthField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
             <label>Month</label>
-            <select value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+            <select value={txActiveMonth} onChange={(event) => setTxActiveMonth(event.target.value)}>
               {months.map((month) => (
                 <option key={month} value={month}>
                   {helpers.monthLabel(month)}

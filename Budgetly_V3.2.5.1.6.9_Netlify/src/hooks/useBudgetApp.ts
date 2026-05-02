@@ -166,6 +166,7 @@ export function useBudgetApp(userId: string | null) {
     note: '',
   })
   const [activeMonth, setActiveMonth] = useState(() => monthKey(new Date().toISOString()))
+  const [txActiveMonth, setTxActiveMonth] = useState(() => monthKey(new Date().toISOString()))
   const [txSearch, setTxSearch] = useState('')
   const [txType, setTxType] = useState<'all' | TxType>('all')
   const [pendingCategoryDeletes, setPendingCategoryDeletes] = useState<string[]>([])
@@ -370,17 +371,31 @@ export function useBudgetApp(userId: string | null) {
   const months = useMemo(() => {
     const keys = new Set<string>()
     transactions.forEach((tx) => keys.add(monthKey(tx.date)))
-    const values = Array.from(keys).sort().reverse()
-    if (values.length === 0) values.push(monthKey(new Date().toISOString()))
-    return values
+    keys.add(monthKey(new Date().toISOString()))
+    return Array.from(keys).sort().reverse()
   }, [transactions])
 
   useEffect(() => {
     if (!months.includes(activeMonth)) setActiveMonth(months[0])
   }, [months, activeMonth])
 
+  useEffect(() => {
+    if (!months.includes(txActiveMonth)) setTxActiveMonth(months[0])
+  }, [months, txActiveMonth])
+
+  useEffect(() => {
+    const syncActiveMonthToCurrentDate = () => {
+      const currentMonth = monthKey(new Date().toISOString())
+      setActiveMonth((current) => (current === currentMonth ? current : currentMonth))
+    }
+
+    syncActiveMonthToCurrentDate()
+    const timer = window.setInterval(syncActiveMonthToCurrentDate, 60 * 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const monthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === activeMonth), [transactions, activeMonth])
+  const transactionMonthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === txActiveMonth), [transactions, txActiveMonth])
   const income = useMemo(() => monthTx.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
   const expenses = useMemo(() => monthTx.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
   const net = income - expenses
@@ -449,13 +464,13 @@ export function useBudgetApp(userId: string | null) {
 
   const filteredTx = useMemo(() => {
     const query = txSearch.trim().toLowerCase()
-    return monthTx.filter((tx) => {
+    return transactionMonthTx.filter((tx) => {
       if (txType !== 'all' && tx.type !== txType) return false
       const categoryName = tx.category_id ? catsById.get(tx.category_id)?.name ?? '' : 'uncategorized'
       const haystack = `${tx.note ?? ''} ${categoryName} ${tx.amount} ${tx.date} ${tx.type}`.toLowerCase()
       return query ? haystack.includes(query) : true
     })
-  }, [monthTx, txSearch, txType, catsById])
+  }, [transactionMonthTx, txSearch, txType, catsById])
 
   const updateCategoryField = (id: string, field: 'name' | 'budget_monthly' | 'emoji', value: string) => {
     persistLocal((current) => ({
@@ -1068,6 +1083,8 @@ export function useBudgetApp(userId: string | null) {
     months,
     activeMonth,
     setActiveMonth,
+    txActiveMonth,
+    setTxActiveMonth,
     income,
     expenses,
     net,

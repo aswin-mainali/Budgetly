@@ -6,6 +6,9 @@ export const fmtMoney = (n: number, currency = 'CAD') =>
   }).format(Number.isFinite(n) ? n : 0)
 
 export const monthKey = (isoDate: string) => {
+  const match = String(isoDate).match(/^(\d{4})-(\d{2})/)
+  if (match) return `${match[1]}-${match[2]}`
+
   const dt = new Date(isoDate)
   const y = dt.getFullYear()
   const m = String(dt.getMonth() + 1).padStart(2, '0')
