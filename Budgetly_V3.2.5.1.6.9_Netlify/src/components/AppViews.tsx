@@ -1629,7 +1629,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       <div className={`grid dashboardRightCol ${useCompactDashboard ? 'dashboardRightColCompact' : ''}`} style={{ gap: 14 }}>
         <div className="card">
           <div className="row space" style={{ marginBottom: 10 }}>
-            <h3 style={{ marginBottom: 0 }}>Budgets (this month)</h3>
+            <h3 style={{ marginBottom: 0 }}>Budgets (This Month)</h3>
             <span className="badge">Top 4 visible • scroll for more</span>
           </div>
           <div className="grid budgetScrollArea" style={{ gap: 10 }}>
