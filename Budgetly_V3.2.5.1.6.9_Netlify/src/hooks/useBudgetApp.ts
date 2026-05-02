@@ -370,15 +370,24 @@ export function useBudgetApp(userId: string | null) {
   const months = useMemo(() => {
     const keys = new Set<string>()
     transactions.forEach((tx) => keys.add(monthKey(tx.date)))
-    const values = Array.from(keys).sort().reverse()
-    if (values.length === 0) values.push(monthKey(new Date().toISOString()))
-    return values
+    keys.add(monthKey(new Date().toISOString()))
+    return Array.from(keys).sort().reverse()
   }, [transactions])
 
   useEffect(() => {
     if (!months.includes(activeMonth)) setActiveMonth(months[0])
   }, [months, activeMonth])
 
+  useEffect(() => {
+    const syncActiveMonthToCurrentDate = () => {
+      const currentMonth = monthKey(new Date().toISOString())
+      setActiveMonth((current) => (current === currentMonth ? current : currentMonth))
+    }
+
+    syncActiveMonthToCurrentDate()
+    const timer = window.setInterval(syncActiveMonthToCurrentDate, 60 * 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const monthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === activeMonth), [transactions, activeMonth])
   const income = useMemo(() => monthTx.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
