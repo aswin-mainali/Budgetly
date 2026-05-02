@@ -2701,6 +2701,12 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Debt-free date</small><strong>Aug 2028</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
     </div> : null}
+    {tab === 'history' ? <div className="card debtHistoryKpis">
+      <div className="debtHistoryKpi"><span>💵</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
+      <div className="debtHistoryKpi"><span>📋</span><div><small>Payments logged</small><strong>{debt.payments.length}</strong></div></div>
+      <div className="debtHistoryKpi"><span>🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date || '—'}</strong></div></div>
+      <div className="debtHistoryKpi"><span>📈</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
+    </div> : null}
     <div className="debtTabs">{(['overview','history','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':'Advice'}</button>)}</div>
     {/* Projection tab intentionally hidden for now; keep section below for easy re-enable later. */}
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
@@ -2726,12 +2732,6 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         <div className="debtUpdateFooter"><span className="muted">{debt.debtDirty ? 'You have unsaved debt changes.' : 'All debt changes are saved.'}</span><button className="btn primary" onClick={() => { void debt.saveDebts().catch((error) => window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: `Save failed: ${String((error as Error)?.message || error)}` } }))) }} disabled={!debt.debtDirty}>Update Debt</button></div>
       </div> : null}
     {tab === 'history' ? <div className="debtHistoryStack">
-      <div className="card debtHistoryKpis">
-        <div className="debtHistoryKpi"><span>💵</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
-        <div className="debtHistoryKpi"><span>📋</span><div><small>Payments logged</small><strong>{debt.payments.length}</strong></div></div>
-        <div className="debtHistoryKpi"><span>🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date || '—'}</strong></div></div>
-        <div className="debtHistoryKpi"><span>📈</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
-      </div>
       <div className="card debtHistoryCard">
         <div className="row between"><h3>Payment History</h3><button className="btn">⇩ Export CSV</button></div>
         <div className="debtHistoryFilters">
