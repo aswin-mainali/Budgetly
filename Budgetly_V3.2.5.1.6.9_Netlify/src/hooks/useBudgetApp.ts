@@ -370,9 +370,8 @@ export function useBudgetApp(userId: string | null) {
   const months = useMemo(() => {
     const keys = new Set<string>()
     transactions.forEach((tx) => keys.add(monthKey(tx.date)))
-    const values = Array.from(keys).sort().reverse()
-    if (values.length === 0) values.push(monthKey(new Date().toISOString()))
-    return values
+    keys.add(monthKey(new Date().toISOString()))
+    return Array.from(keys).sort().reverse()
   }, [transactions])
 
   useEffect(() => {
