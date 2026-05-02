@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, ReceiptText } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
@@ -21,8 +21,8 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
-  toolsSection: 'goals' | 'reports' | 'converter' | 'debt'
-  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt') => void
+  toolsSection: 'goals' | 'reports' | 'converter' | 'debt' | 'receipts'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt' | 'receipts') => void
   sync: SyncState
   email?: string | null
   features: FeatureAccess
@@ -151,7 +151,7 @@ export default function Sidebar(props: {
         {visibleItems.map((item) => {
           const isActive = item.key === 'tools' ? (view === 'tools' || toolsExpanded) : view === item.key
           if (item.key === 'tools') {
-            const hasAnyTool = features.goals || features.reports || features.converter
+            const hasAnyTool = true
             return (
               <div key={item.key} className="toolsNavItem">
                 <button
@@ -183,6 +183,9 @@ export default function Sidebar(props: {
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
+                                      <button className={toolsSection === 'receipts' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('receipts'); setToolsExpanded(false) }}>
+                        <ReceiptText size={16} /> <span className="navLabel">Receipt Management</span>
+                      </button>
                   </div>,
                   document.body
                 ) : null}

@@ -1,0 +1,3 @@
+export type ReceiptStatus = 'needs_review' | 'ready_to_add' | 'added' | 'failed' | 'archived'
+export type ReceiptRecord = { id: string; user_id: string; storage_path: string; file_name: string; mime_type: string; merchant: string | null; receipt_date: string | null; amount: number | null; category: string | null; notes: string | null; type: 'expense'; status: ReceiptStatus; ocr_confidence: number | null; raw_ocr_text: string | null; transaction_id: string | null; scan_error: string | null; archived_at: string | null; created_at?: string; updated_at?: string }
+export type ReceiptExtraction = { merchant: string; receipt_date: string; amount: number; category: string; notes: string; confidence: number; rawText: string; failed?: boolean }
