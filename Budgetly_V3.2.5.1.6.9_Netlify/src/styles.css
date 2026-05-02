@@ -642,6 +642,15 @@ body.light .select{
   box-shadow: 0 12px 24px rgba(239,68,68,.14);
 }
 .btn.danger:hover{background: linear-gradient(180deg, rgba(239,68,68,.28), rgba(239,68,68,.12));}
+
+body.light .btn.danger{
+  background: linear-gradient(180deg, rgba(254,226,226,.92), rgba(254,242,242,.84));
+  border-color: rgba(239,68,68,.30);
+  color: #b91c1c;
+}
+body.light .btn.danger:hover{
+  background: linear-gradient(180deg, rgba(254,210,210,.98), rgba(254,226,226,.90));
+}
 .btn.ghost{background: transparent}
 
 .table{
