@@ -2702,10 +2702,10 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
     </div> : null}
     {tab === 'history' ? <div className="card debtHistoryKpis">
-      <div className="debtHistoryKpi"><span>💵</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
-      <div className="debtHistoryKpi"><span>📋</span><div><small>Payments logged</small><strong>{debt.payments.length}</strong></div></div>
-      <div className="debtHistoryKpi"><span>🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date || '—'}</strong></div></div>
-      <div className="debtHistoryKpi"><span>📈</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
+      <div className="debtHistoryKpi"><span className="kpiIcon green">💲</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
+      <div className="debtHistoryKpi"><span className="kpiIcon blue">☰</span><div><small>Payments logged</small><strong>{debt.payments.length}</strong></div></div>
+      <div className="debtHistoryKpi"><span className="kpiIcon purple">🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date ? new Date(debt.payments[0].payment_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong></div></div>
+      <div className="debtHistoryKpi"><span className="kpiIcon gold">↗</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
     </div> : null}
     <div className="debtTabs">{(['overview','history','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':'Advice'}</button>)}</div>
     {/* Projection tab intentionally hidden for now; keep section below for easy re-enable later. */}
@@ -2733,7 +2733,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       </div> : null}
     {tab === 'history' ? <div className="debtHistoryStack">
       <div className="card debtHistoryCard">
-        <div className="row between"><h3>Payment History</h3><button className="btn">⇩ Export CSV</button></div>
+        <div className="row between"><h3>Payment History</h3><button className="btn debtExportBtn">⇩ Export CSV</button></div>
         <div className="debtHistoryFilters">
           <input className="input" placeholder="Search debt or notes" />
           <select className="select"><option>All Debts</option></select>
