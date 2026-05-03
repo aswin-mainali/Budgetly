@@ -2613,7 +2613,8 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .debtProjectionSummary{display:grid;gap:10px}
 .debtProjectionSummary div{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .debtProjectionSummary .green{color:#16a34a}
-.debtProjectionAssumptions{margin:0;padding-left:18px;font-size:13px;color:#475569;display:grid;gap:4px}
+.debtMilestone{display:grid;grid-template-columns:94px 1fr;align-items:center;position:relative}
+.debtMilestoneRail{height:56px;width:2px;background:linear-gradient(#22c55e,#16a34a);margin-left:8px;border-radius:999px}
 @media (max-width: 1100px){.debtProjectionLayout{grid-template-columns:1fr}.debtProjectionLegend{grid-template-columns:1fr}}
 @media (max-width: 960px){
   .debtPage{

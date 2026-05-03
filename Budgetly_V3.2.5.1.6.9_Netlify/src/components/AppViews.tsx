@@ -2771,29 +2771,22 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="debtProjectionSide">
         <div className="card debtProjectionSummary">
           <h4>Projection summary</h4>
-          <div><span>Current monthly debt payment</span><strong>CA$720</strong></div>
-          <div><span>Extra payment included</span><strong>CA$100</strong></div>
-          <div><span>Estimated total interest remaining</span><strong>CA$2,960</strong></div>
-          <div><span>Estimated interest saved vs minimum</span><strong className="green">CA$1,240</strong></div>
+          <div><span>💲 Current monthly debt payment</span><strong>CA$720</strong></div>
+          <div><span>➕ Extra payment included</span><strong>CA$100</strong></div>
+          <div><span>％ Estimated total interest remaining</span><strong>CA$2,960</strong></div>
+          <div><span>🛡️ Estimated interest saved vs minimum</span><strong className="green">CA$1,240</strong></div>
         </div>
         <div className="card debtProjectionSummary">
           <h4>Time saved</h4>
-          <strong className="green">Finish 9 months sooner</strong>
+          <strong className="green">⏱️ Finish 9 months sooner</strong>
           <p className="muted">Compared with minimum-only payments.</p>
         </div>
         <div className="card debtProjectionSummary">
           <h4>Next 3 milestones</h4>
-          <div><span>Oct 2026</span><span>RBC Visa projected paid off</span></div>
-          <div><span>Jun 2027</span><span>Car Loan projected paid off</span></div>
-          <div><span>Nov 2027</span><span>Personal line fully cleared</span></div>
-        </div>
-        <div className="card debtProjectionSummary">
-          <h4>Assumptions</h4>
-          <ul className="debtProjectionAssumptions">
-            <li>Interest rates stay the same</li>
-            <li>Payments are made on time each month</li>
-            <li>Extra CA$100 is applied to the focus debt first</li>
-          </ul>
+          <div className="debtMilestone"><span>🟢 Oct 2026</span><span>RBC Visa projected paid off</span></div>
+          <div className="debtMilestone"><span>🟢 Jun 2027</span><span>Car Loan projected paid off</span></div>
+          <div className="debtMilestone"><span>🟢 Nov 2027</span><span>Personal line fully cleared</span></div>
+          <div className="debtMilestoneRail" />
         </div>
       </div>
     </div> : null}
