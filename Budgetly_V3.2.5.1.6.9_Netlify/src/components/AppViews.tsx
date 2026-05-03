@@ -2783,10 +2783,11 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         </div>
         <div className="card debtProjectionSummary">
           <h4>Next 3 milestones</h4>
-          <div className="debtMilestone"><span>🟢 Oct 2026</span><span>RBC Visa projected paid off</span></div>
-          <div className="debtMilestone"><span>🟢 Jun 2027</span><span>Car Loan projected paid off</span></div>
-          <div className="debtMilestone"><span>🟢 Nov 2027</span><span>Personal line fully cleared</span></div>
-          <div className="debtMilestoneRail" />
+          <div className="debtMilestoneList">
+            <div className="debtMilestone"><span>Oct 2026</span><span>RBC Visa projected paid off</span></div>
+            <div className="debtMilestone"><span>Jun 2027</span><span>Car Loan projected paid off</span></div>
+            <div className="debtMilestone"><span>Nov 2027</span><span>Personal line fully cleared</span></div>
+          </div>
         </div>
       </div>
     </div> : null}
