@@ -5178,17 +5178,27 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   )
 
   useEffect(() => {
-    const nextNotes: Record<string, string> = {}
-    const nextStatus: Record<string, WorkflowStatus> = {}
-    const nextPriority: Record<string, BugPriority> = {}
-    admin.bugReports.forEach((item) => {
-      nextNotes[item.id] = stripMetaNotes(item.admin_notes)
-      nextStatus[item.id] = parseWorkflow(item)
-      nextPriority[item.id] = parsePriority(item)
+    setNotesDraft((prev) => {
+      const next: Record<string, string> = {}
+      admin.bugReports.forEach((item) => {
+        next[item.id] = Object.prototype.hasOwnProperty.call(prev, item.id) ? prev[item.id] : stripMetaNotes(item.admin_notes)
+      })
+      return next
     })
-    setNotesDraft(nextNotes)
-    setStatusDraft(nextStatus)
-    setPriorityDraft(nextPriority)
+    setStatusDraft((prev) => {
+      const next: Record<string, WorkflowStatus> = {}
+      admin.bugReports.forEach((item) => {
+        next[item.id] = Object.prototype.hasOwnProperty.call(prev, item.id) ? prev[item.id] : parseWorkflow(item)
+      })
+      return next
+    })
+    setPriorityDraft((prev) => {
+      const next: Record<string, BugPriority> = {}
+      admin.bugReports.forEach((item) => {
+        next[item.id] = Object.prototype.hasOwnProperty.call(prev, item.id) ? prev[item.id] : parsePriority(item)
+      })
+      return next
+    })
   }, [admin.bugReports])
 
   useEffect(() => {
