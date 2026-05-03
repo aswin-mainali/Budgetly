@@ -5145,12 +5145,11 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
     return admin.bugReports.map((item, index) => {
       const hash = Array.from(item.id).reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
       const severityCycle: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'medium', 'low']
-      const priorityCycle: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low']
       return {
         ...item,
         ticketCode: `BUG-${new Date(item.created_at || Date.now()).getFullYear()}-${String((hash + index * 19) % 10000).padStart(4, '0')}`,
         severity: parseSeverity(item, severityCycle[(hash + index) % severityCycle.length]),
-        priority: priorityCycle[(hash + index * 2) % priorityCycle.length],
+        priority: parsePriority(item),
       }
     })
   }, [admin.bugReports])
