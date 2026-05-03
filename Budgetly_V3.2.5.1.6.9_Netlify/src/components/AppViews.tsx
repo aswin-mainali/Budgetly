@@ -2693,6 +2693,14 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const activeDebts = debt.debts.filter((d) => d.status !== 'paid_off')
   const rankedDebts = [...activeDebts].sort((a, b) => b.interest_rate - a.interest_rate)
   const topDebt = rankedDebts[0] || null
+  const projectedMonths = (extra = 0) => {
+    const totalBalance = activeDebts.reduce((sum, d) => sum + Number(d.current_balance || 0), 0)
+    const monthlyBudget = Math.max(1, activeDebts.reduce((sum, d) => sum + Number(d.minimum_payment || 0), 0) + extra)
+    return Math.ceil(totalBalance / monthlyBudget)
+  }
+  const minOnlyMonths = projectedMonths(0)
+  const plus50Months = projectedMonths(50)
+  const plus100Months = projectedMonths(100)
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary" onClick={() => { setDebtForm(blankDebtForm); setEditingDebtId(null); setShowAddDebt(true) }}>＋ Add Debt</button></div></div>
     {tab === 'overview' ? <div className="debtKpis">
@@ -2707,8 +2715,7 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="debtHistoryKpi"><span className="kpiIcon purple">🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date ? new Date(debt.payments[0].payment_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong></div></div>
       <div className="debtHistoryKpi"><span className="kpiIcon gold">↗</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
     </div> : null}
-    <div className="debtTabs">{(['overview','history','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':'Advice'}</button>)}</div>
-    {/* Projection tab intentionally hidden for now; keep section below for easy re-enable later. */}
+    <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
         <div className="debtToolbar"><input className="input" placeholder="Search debts" /><select className="select"><option>All Types</option></select><select className="select"><option>All Statuses</option></select><select className="select"><option>Sort by: Highest Interest</option></select></div>
         <div className="debtHeaderRow"><span>Debt</span><span>Balance</span><span>Interest Rate</span><span>Due Date</span><span>Projected Payoff</span><span>Status</span><span>Actions</span></div>
@@ -2744,7 +2751,15 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         <small className="muted">Showing {debt.payments.length} of {debt.payments.length} payments</small>
       </div>
     </div> : null}
-    {tab === 'projection' ? <div className="card"><h3>Projection</h3><p className="muted">Minimum-only vs current strategy vs strategy + extra payment shown here.</p><div style={{height:220,border:'1px solid var(--border)',borderRadius:12,display:'grid',placeItems:'center'}}>Projection chart scaffold</div></div> : null}
+    {tab === 'projection' ? <div className="card debtProjectionCard">
+      <h3>Projection</h3>
+      <p className="muted">Estimated payoff timeline based on your active debts and monthly payment strategy.</p>
+      <div className="debtProjectionRows">
+        <div className="debtProjectionRow"><span>Minimum-only</span><strong>{minOnlyMonths} months</strong><div className="debtProjectionBar"><i style={{ width: '100%' }} /></div></div>
+        <div className="debtProjectionRow"><span>Current + CA$50/mo</span><strong>{plus50Months} months</strong><div className="debtProjectionBar"><i style={{ width: `${Math.max(20, Math.round((plus50Months / Math.max(1, minOnlyMonths)) * 100))}%` }} /></div></div>
+        <div className="debtProjectionRow"><span>Current + CA$100/mo</span><strong>{plus100Months} months</strong><div className="debtProjectionBar"><i style={{ width: `${Math.max(14, Math.round((plus100Months / Math.max(1, minOnlyMonths)) * 100))}%` }} /></div></div>
+      </div>
+    </div> : null}
     {tab === 'advice' ? <div className="debtAdviceGrid">
       <div className="card debtAdviceCard debtAdviceHero">
         <div className="debtAdviceEyebrow">Recommended next step</div>
