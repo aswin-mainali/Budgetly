@@ -4671,9 +4671,6 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </div>
               <span className="badge">Signed in</span>
             </div>
-            <div className="settingsAccountCard">
-            </div>
-
             <div className="settingsAccountGrid">
               <div className="card settingsPanelCard settingsProfileCard">
                 <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
