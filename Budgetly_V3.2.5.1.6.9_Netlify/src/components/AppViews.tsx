@@ -2757,9 +2757,11 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         <p className="muted">Compare how fast you become debt-free under different payment plans.</p>
         <small className="muted">Remaining debt (CA$)</small>
         <div className="debtProjectionChartMock">
-          <div className="line min" />
-          <div className="line current" />
-          <div className="line extra" />
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="debtProjectionSvg">
+            <polyline points="4,18 18,26 32,34 46,44 60,55 74,66 88,78 96,86" className="projLine min" />
+            <polyline points="4,16 18,28 32,42 46,56 60,72 74,86" className="projLine current" />
+            <polyline points="4,15 18,31 32,50 46,72 58,92" className="projLine extra" />
+          </svg>
           <div className="debtProjectionXAxis"><span>Apr 2026</span><span>Oct 2026</span><span>Apr 2027</span><span>Oct 2027</span><span>Apr 2028</span><span>Oct 2028</span><span>Apr 2029</span><span>Aug 2029</span></div>
         </div>
         <div className="debtProjectionLegend">
