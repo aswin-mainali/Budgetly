@@ -4672,11 +4672,6 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               <span className="badge">Signed in</span>
             </div>
             <div className="settingsAccountCard">
-              <div className="row" style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span className="pill">Email</span>
-                <span className="pill">{email || '—'}</span>
-                {isSuperAdmin ? <span className="pill">Super Admin</span> : null}
-              </div>
             </div>
 
             <div className="settingsAccountGrid">
