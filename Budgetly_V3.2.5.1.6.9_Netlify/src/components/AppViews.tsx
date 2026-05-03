@@ -2703,11 +2703,11 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const plus100Months = projectedMonths(100)
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary" onClick={() => { setDebtForm(blankDebtForm); setEditingDebtId(null); setShowAddDebt(true) }}>＋ Add Debt</button></div></div>
-    {tab === 'overview' ? <div className="debtKpis">
+    {tab === 'overview' || tab === 'projection' ? <div className="debtKpis">
       <div className="card debtKpiCard"><div className="debtKpiIcon green">👛</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon blue">🗓️</div><div><small>Monthly minimums</small><strong>CA$720</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Debt-free date</small><strong>Aug 2028</strong></div></div>
-      <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
+      <div className="card debtKpiCard"><div className="debtKpiIcon orange">📈</div><div><small>{tab === 'projection' ? 'Interest saved with plan' : 'Highest interest debt'}</small><strong>{tab === 'projection' ? 'CA$1,240' : (debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—')}</strong></div></div>
     </div> : null}
     {tab === 'history' ? <div className="card debtHistoryKpis">
       <div className="debtHistoryKpi"><span className="kpiIcon green">💲</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
@@ -2751,13 +2751,34 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
         <small className="muted">Showing {debt.payments.length} of {debt.payments.length} payments</small>
       </div>
     </div> : null}
-    {tab === 'projection' ? <div className="card debtProjectionCard">
-      <h3>Projection</h3>
-      <p className="muted">Estimated payoff timeline based on your active debts and monthly payment strategy.</p>
-      <div className="debtProjectionRows">
-        <div className="debtProjectionRow"><span>Minimum-only</span><strong>{minOnlyMonths} months</strong><div className="debtProjectionBar"><i style={{ width: '100%' }} /></div></div>
-        <div className="debtProjectionRow"><span>Current + CA$50/mo</span><strong>{plus50Months} months</strong><div className="debtProjectionBar"><i style={{ width: `${Math.max(20, Math.round((plus50Months / Math.max(1, minOnlyMonths)) * 100))}%` }} /></div></div>
-        <div className="debtProjectionRow"><span>Current + CA$100/mo</span><strong>{plus100Months} months</strong><div className="debtProjectionBar"><i style={{ width: `${Math.max(14, Math.round((plus100Months / Math.max(1, minOnlyMonths)) * 100))}%` }} /></div></div>
+    {tab === 'projection' ? <div className="debtProjectionLayout">
+      <div className="card debtProjectionMain">
+        <h3>Payoff projection</h3>
+        <p className="muted">Compare how fast you become debt-free under different payment plans.</p>
+        <div className="debtProjectionChartMock">
+          <div className="line min" />
+          <div className="line current" />
+          <div className="line extra" />
+        </div>
+        <div className="debtProjectionLegend">
+          <span className="min">Minimum only · May 2029</span>
+          <span className="current">Current plan · Aug 2028</span>
+          <span className="extra">+ CA$100 extra · Nov 2027</span>
+        </div>
+      </div>
+      <div className="debtProjectionSide">
+        <div className="card debtProjectionSummary">
+          <h4>Projection summary</h4>
+          <div><span>Current monthly debt payment</span><strong>CA$720</strong></div>
+          <div><span>Extra payment included</span><strong>CA$100</strong></div>
+          <div><span>Estimated total interest remaining</span><strong>CA$2,960</strong></div>
+          <div><span>Estimated interest saved vs minimum</span><strong className="green">CA$1,240</strong></div>
+        </div>
+        <div className="card debtProjectionSummary">
+          <h4>Time saved</h4>
+          <strong className="green">Finish 9 months sooner</strong>
+          <p className="muted">Compared with minimum-only payments.</p>
+        </div>
       </div>
     </div> : null}
     {tab === 'advice' ? <div className="debtAdviceGrid">
