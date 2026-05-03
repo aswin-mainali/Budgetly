@@ -2755,10 +2755,12 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
       <div className="card debtProjectionMain">
         <h3>Payoff projection</h3>
         <p className="muted">Compare how fast you become debt-free under different payment plans.</p>
+        <small className="muted">Remaining debt (CA$)</small>
         <div className="debtProjectionChartMock">
           <div className="line min" />
           <div className="line current" />
           <div className="line extra" />
+          <div className="debtProjectionXAxis"><span>Apr 2026</span><span>Oct 2026</span><span>Apr 2027</span><span>Oct 2027</span><span>Apr 2028</span><span>Oct 2028</span><span>Apr 2029</span><span>Aug 2029</span></div>
         </div>
         <div className="debtProjectionLegend">
           <span className="min">Minimum only · May 2029</span>
@@ -2778,6 +2780,20 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
           <h4>Time saved</h4>
           <strong className="green">Finish 9 months sooner</strong>
           <p className="muted">Compared with minimum-only payments.</p>
+        </div>
+        <div className="card debtProjectionSummary">
+          <h4>Next 3 milestones</h4>
+          <div><span>Oct 2026</span><span>RBC Visa projected paid off</span></div>
+          <div><span>Jun 2027</span><span>Car Loan projected paid off</span></div>
+          <div><span>Nov 2027</span><span>Personal line fully cleared</span></div>
+        </div>
+        <div className="card debtProjectionSummary">
+          <h4>Assumptions</h4>
+          <ul className="debtProjectionAssumptions">
+            <li>Interest rates stay the same</li>
+            <li>Payments are made on time each month</li>
+            <li>Extra CA$100 is applied to the focus debt first</li>
+          </ul>
         </div>
       </div>
     </div> : null}

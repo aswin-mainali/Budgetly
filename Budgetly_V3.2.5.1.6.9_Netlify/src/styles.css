@@ -2598,11 +2598,12 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .debtProjectionBar i{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#16a34a)}
 .debtProjectionLayout{display:grid;grid-template-columns:2fr 1fr;gap:12px}
 .debtProjectionMain{display:grid;gap:10px}
-.debtProjectionChartMock{height:280px;border:1px solid #e2e8f0;border-radius:12px;position:relative;background:repeating-linear-gradient(to bottom,#fff 0,#fff 54px,#edf2f7 54px,#edf2f7 56px)}
+.debtProjectionChartMock{height:250px;border:1px solid #e2e8f0;border-radius:12px;position:relative;background:repeating-linear-gradient(to bottom,#fff 0,#fff 46px,#edf2f7 46px,#edf2f7 48px)}
 .debtProjectionChartMock .line{position:absolute;left:28px;right:26px;height:2px;transform-origin:left center}
 .debtProjectionChartMock .line.min{top:68px;background:#94a3b8;transform:rotate(26deg)}
 .debtProjectionChartMock .line.current{top:54px;background:#16a34a;transform:rotate(33deg)}
 .debtProjectionChartMock .line.extra{top:46px;background:#3b82f6;transform:rotate(40deg)}
+.debtProjectionXAxis{position:absolute;left:8px;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));font-size:11px;color:#64748b}
 .debtProjectionLegend{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .debtProjectionLegend span{padding:10px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px}
 .debtProjectionLegend .min{border-left:4px solid #94a3b8}
@@ -2612,6 +2613,7 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .debtProjectionSummary{display:grid;gap:10px}
 .debtProjectionSummary div{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .debtProjectionSummary .green{color:#16a34a}
+.debtProjectionAssumptions{margin:0;padding-left:18px;font-size:13px;color:#475569;display:grid;gap:4px}
 @media (max-width: 1100px){.debtProjectionLayout{grid-template-columns:1fr}.debtProjectionLegend{grid-template-columns:1fr}}
 @media (max-width: 960px){
   .debtPage{
