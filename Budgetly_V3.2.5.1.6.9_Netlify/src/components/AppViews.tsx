@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { RotateCcw, RotateCw, Search, X } from 'lucide-react'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
@@ -4293,6 +4294,39 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
   )
 }
 
+
+const createImageFromFile = (file: File) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error('Unable to read image.'))
+    image.src = URL.createObjectURL(file)
+  })
+
+const cropProfilePhoto = async (file: File, zoom: number, offsetX: number, offsetY: number, rotation: number) => {
+  const image = await createImageFromFile(file)
+  const outputSize = 720
+  const canvas = document.createElement('canvas')
+  canvas.width = outputSize
+  canvas.height = outputSize
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Unable to prepare image canvas.')
+  ctx.save()
+  ctx.translate(outputSize / 2 + offsetX * outputSize, outputSize / 2 + offsetY * outputSize)
+  ctx.rotate((rotation * Math.PI) / 180)
+  const scale = Math.max(outputSize / image.width, outputSize / image.height) * zoom
+  ctx.scale(scale, scale)
+  ctx.drawImage(image, -image.width / 2, -image.height / 2)
+  ctx.restore()
+  return new Promise<File>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      URL.revokeObjectURL(image.src)
+      if (!blob) return reject(new Error('Unable to export cropped photo.'))
+      resolve(new File([blob], `profile-${Date.now()}.jpg`, { type: 'image/jpeg' }))
+    }, 'image/jpeg', 0.92)
+  })
+}
+
 export function SettingsView({ budget, theme, email, userId, onThemeToggle, admin, onSignOut }: SharedProps) {
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
@@ -4314,6 +4348,12 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
+  const [cropModalOpen, setCropModalOpen] = useState(false)
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null)
+  const [cropSourcePreview, setCropSourcePreview] = useState('')
+  const [cropZoom, setCropZoom] = useState(1.15)
+  const [cropRotate, setCropRotate] = useState(0)
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 })
 
   const passwordStrengthScore = useMemo(() => {
     const value = passwordForm.next || ''
@@ -4418,15 +4458,34 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
       event.currentTarget.value = ''
       return
     }
-
-    if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
+    if (cropSourcePreview) URL.revokeObjectURL(cropSourcePreview)
     const preview = URL.createObjectURL(file)
-    setPendingProfileImageFile(file)
-    setPendingProfileImagePreview(preview)
-    setProfileImage(preview)
+    setCropSourceFile(file)
+    setCropSourcePreview(preview)
+    setCropModalOpen(true)
+    setCropZoom(1.15)
+    setCropRotate(0)
+    setCropOffset({ x: 0, y: 0 })
     setProfileError('')
-    setProfileSuccess('Profile photo selected. Click save profile to upload and keep changes.')
+    setProfileSuccess('')
     event.currentTarget.value = ''
+  }
+
+
+  const applyCroppedPhoto = async () => {
+    if (!cropSourceFile) return
+    try {
+      const cropped = await cropProfilePhoto(cropSourceFile, cropZoom, cropOffset.x, cropOffset.y, cropRotate)
+      if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
+      const preview = URL.createObjectURL(cropped)
+      setPendingProfileImageFile(cropped)
+      setPendingProfileImagePreview(preview)
+      setProfileImage(preview)
+      setCropModalOpen(false)
+      setProfileSuccess('Profile photo selected. Click save profile to upload and keep changes.')
+    } catch {
+      setProfileError('Unable to crop photo. Please try another image.')
+    }
   }
 
   const handleProfilePhotoRemove = () => {
@@ -4726,6 +4785,26 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                   </button>
                 </div>
               </div>
+
+
+                {cropModalOpen ? (
+                  <div className="modalWrap" role="dialog" aria-modal="true">
+                    <div className="photoCropModal card settingsPanelCard">
+                      <div className="row between"><div><div className="h1" style={{ marginBottom: 4 }}>Adjust profile photo</div><small>Drag, zoom, and reposition your photo to choose what will be used.</small></div><button className="btn ghost" onClick={() => setCropModalOpen(false)}><X size={16} /></button></div>
+                      <div className="photoCropGrid">
+                        <div className="photoCropStage" onPointerDown={(e) => { const sx=e.clientX; const sy=e.clientY; const base={...cropOffset}; const move=(ev:PointerEvent)=>setCropOffset({x: Math.max(-0.5, Math.min(0.5, base.x + (ev.clientX-sx)/400)), y: Math.max(-0.5, Math.min(0.5, base.y + (ev.clientY-sy)/400))}); const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}; window.addEventListener('pointermove',move);window.addEventListener('pointerup',up); }}>
+                          {cropSourcePreview ? <img src={cropSourcePreview} alt="Crop source" style={{ transform: `translate(${cropOffset.x * 100}%, ${cropOffset.y * 100}%) scale(${cropZoom}) rotate(${cropRotate}deg)` }} /> : null}
+                          <div className="photoCropCircle" />
+                        </div>
+                        <div className="photoCropControls"><div className="settingsProfileSectionTitle">Profile preview</div><div className="photoCropPreview">{cropSourcePreview ? <img src={cropSourcePreview} alt="preview" style={{ transform: `translate(${cropOffset.x * 100}%, ${cropOffset.y * 100}%) scale(${cropZoom}) rotate(${cropRotate}deg)` }} /> : null}</div>
+                          <label>Zoom</label><div className="row" style={{gap:8,alignItems:'center'}}><Search size={15}/><input type="range" min="1" max="2.5" step="0.01" value={cropZoom} onChange={(e)=>setCropZoom(Number(e.target.value))} /></div>
+                          <label>Rotate</label><div className="row" style={{gap:8}}><button className="btn ghost" onClick={()=>setCropRotate((v)=>v-90)}><RotateCcw size={16}/></button><button className="btn ghost" onClick={()=>setCropRotate((v)=>v+90)}><RotateCw size={16}/></button><button className="btn ghost" onClick={()=>{setCropZoom(1.15);setCropRotate(0);setCropOffset({x:0,y:0})}}>Reset</button></div>
+                        </div>
+                      </div>
+                      <div className="row" style={{justifyContent:'flex-end', gap:8}}><button className="btn" onClick={()=>setCropModalOpen(false)}>Cancel</button><button className="btn primary" onClick={() => void applyCroppedPhoto()}>Save photo</button></div>
+                    </div>
+                  </div>
+                ) : null}
 
               <div className="card settingsPanelCard settingsPasswordCard">
                 <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
