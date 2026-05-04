@@ -29,7 +29,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey | 'utilities_hub'>('dashboard')
   const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt'>('goals')
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'))
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
@@ -230,6 +230,57 @@ export default function App() {
     }
   }, [view, toolsSection, admin.visibleFeatures])
 
+  const handleViewChange = (nextView: ViewKey) => {
+    setView(nextView)
+    if (nextView === 'tools') {
+      setToolsSection((current) => current || 'goals')
+    }
+    if (isMobile) setCollapsed(true)
+  }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.metaKey) return
+
+      if (event.altKey && event.key.toLowerCase() === 't' && admin.visibleFeatures.transactions) {
+        event.preventDefault()
+        event.stopPropagation()
+        handleViewChange('transactions')
+        return
+      }
+      if (event.altKey) return
+
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      const isTypingContext =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        !!target?.isContentEditable
+      if (isTypingContext) return
+
+      const key = event.key.toLowerCase()
+      const goTo = (nextView: ViewKey, tools?: 'goals' | 'reports' | 'converter' | 'debt') => {
+        event.preventDefault()
+        if (tools) setToolsSection(tools)
+        handleViewChange(nextView)
+      }
+
+      if (event.shiftKey && key === 'd' && admin.visibleFeatures.dashboard) goTo('dashboard')
+      if (event.shiftKey) return
+
+      if (key === 'c' && admin.visibleFeatures.categories) goTo('categories')
+      if (key === 'r' && admin.visibleFeatures.recurring) goTo('recurring')
+      if (key === 'a' && admin.visibleFeatures.advice) goTo('advice')
+      if (key === 'g' && admin.visibleFeatures.goals) goTo('tools', 'goals')
+      if (key === 's' && admin.visibleFeatures.settings) goTo('settings')
+      if (key === 'h' && admin.visibleFeatures.support) goTo('support')
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [admin.visibleFeatures, isMobile])
+
   if (!sessionChecked) return null
   if (!userId) return <Auth />
   if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
@@ -249,13 +300,6 @@ export default function App() {
     )
   }
 
-  const handleViewChange = (nextView: ViewKey) => {
-    setView(nextView)
-    if (nextView === 'tools') {
-      setToolsSection((current) => current || 'goals')
-    }
-    if (isMobile) setCollapsed(true)
-  }
   const profile = readCachedUserProfile()
   const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0]
   const profileImage = profile.image
