@@ -2570,16 +2570,16 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .debtAdviceRankItem small{color:#64748b}
 .debtAdviceList{margin:0;padding-left:18px;display:grid;gap:8px}
 @media (max-width: 960px){.debtAdviceGrid{grid-template-columns:1fr}}
-.debtHistoryStack{display:grid;gap:14px}
-.debtHistoryKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:12px 10px;border:1px solid #e5eaf2;border-radius:14px;background:#fff}
-.debtHistoryKpi{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:12px 14px;border-right:1px solid rgba(148,163,184,.2)}
+.debtHistoryStack{display:grid;gap:10px;align-content:start}
+.debtHistoryKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:6px 8px;border:1px solid #e5eaf2;border-radius:14px;background:#fff;margin-top:0}
+.debtHistoryKpi{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:8px 12px;border-right:1px solid rgba(148,163,184,.2)}
 .debtHistoryKpi:last-child{border-right:none}
-.debtHistoryKpi .kpiIcon{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;font-size:20px}
+.debtHistoryKpi .kpiIcon{width:34px;height:34px;border-radius:999px;display:grid;place-items:center;font-size:16px}
 .debtHistoryKpi .kpiIcon.green{background:#dcfce7;color:#15803d}
 .debtHistoryKpi .kpiIcon.blue{background:#dbeafe;color:#1d4ed8}
 .debtHistoryKpi .kpiIcon.purple{background:#ede9fe;color:#6d28d9}
 .debtHistoryKpi .kpiIcon.gold{background:#fef3c7;color:#b45309}
-.debtHistoryKpi strong{display:block;margin-top:2px}
+.debtHistoryKpi strong{display:block;margin-top:1px;font-size:18px;line-height:1.1}
 .debtHistoryCard{display:grid;gap:12px;border:1px solid #e5eaf2;border-radius:16px;padding:18px}
 .debtHistoryFilters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px}
 .debtExportBtn{border:1px solid rgba(148,163,184,.24);background:#fff}
