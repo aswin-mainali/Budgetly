@@ -29,7 +29,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey | 'utilities_hub'>('dashboard')
   const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt'>('goals')
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'))
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
@@ -240,14 +240,15 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!event.ctrlKey || event.altKey || event.metaKey) return
+      if (!event.ctrlKey || event.metaKey) return
 
-      if (event.shiftKey && event.key.toLowerCase() === 't' && admin.visibleFeatures.transactions) {
+      if (event.altKey && event.key.toLowerCase() === 't' && admin.visibleFeatures.transactions) {
         event.preventDefault()
         event.stopPropagation()
         handleViewChange('transactions')
         return
       }
+      if (event.altKey) return
 
       const target = event.target as HTMLElement | null
       const tag = target?.tagName?.toLowerCase()
