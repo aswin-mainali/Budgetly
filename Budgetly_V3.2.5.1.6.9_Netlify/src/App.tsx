@@ -242,6 +242,13 @@ export default function App() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!event.ctrlKey || event.altKey || event.metaKey) return
 
+      if (event.shiftKey && event.key.toLowerCase() === 't' && admin.visibleFeatures.transactions) {
+        event.preventDefault()
+        event.stopPropagation()
+        handleViewChange('transactions')
+        return
+      }
+
       const target = event.target as HTMLElement | null
       const tag = target?.tagName?.toLowerCase()
       const isTypingContext =
@@ -258,7 +265,6 @@ export default function App() {
         handleViewChange(nextView)
       }
 
-      if (event.shiftKey && key === 't' && admin.visibleFeatures.transactions) goTo('transactions')
       if (event.shiftKey && key === 'd' && admin.visibleFeatures.dashboard) goTo('dashboard')
       if (event.shiftKey) return
 
