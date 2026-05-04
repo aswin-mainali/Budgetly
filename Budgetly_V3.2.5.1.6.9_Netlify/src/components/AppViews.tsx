@@ -4671,14 +4671,6 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </div>
               <span className="badge">Signed in</span>
             </div>
-            <div className="settingsAccountCard">
-              <div className="row" style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span className="pill">Email</span>
-                <span className="pill">{email || '—'}</span>
-                {isSuperAdmin ? <span className="pill">Super Admin</span> : null}
-              </div>
-            </div>
-
             <div className="settingsAccountGrid">
               <div className="card settingsPanelCard settingsProfileCard">
                 <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
@@ -5153,12 +5145,11 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
     return admin.bugReports.map((item, index) => {
       const hash = Array.from(item.id).reduce((sum, ch) => sum + ch.charCodeAt(0), 0)
       const severityCycle: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'medium', 'low']
-      const priorityCycle: Array<'high' | 'medium' | 'low'> = ['high', 'medium', 'low']
       return {
         ...item,
         ticketCode: `BUG-${new Date(item.created_at || Date.now()).getFullYear()}-${String((hash + index * 19) % 10000).padStart(4, '0')}`,
         severity: parseSeverity(item, severityCycle[(hash + index) % severityCycle.length]),
-        priority: priorityCycle[(hash + index * 2) % priorityCycle.length],
+        priority: parsePriority(item),
       }
     })
   }, [admin.bugReports])
@@ -5186,17 +5177,27 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   )
 
   useEffect(() => {
-    const nextNotes: Record<string, string> = {}
-    const nextStatus: Record<string, WorkflowStatus> = {}
-    const nextPriority: Record<string, BugPriority> = {}
-    admin.bugReports.forEach((item) => {
-      nextNotes[item.id] = stripMetaNotes(item.admin_notes)
-      nextStatus[item.id] = parseWorkflow(item)
-      nextPriority[item.id] = parsePriority(item)
+    setNotesDraft((prev) => {
+      const next: Record<string, string> = {}
+      admin.bugReports.forEach((item) => {
+        next[item.id] = Object.prototype.hasOwnProperty.call(prev, item.id) ? prev[item.id] : stripMetaNotes(item.admin_notes)
+      })
+      return next
     })
-    setNotesDraft(nextNotes)
-    setStatusDraft(nextStatus)
-    setPriorityDraft(nextPriority)
+    setStatusDraft((prev) => {
+      const next: Record<string, WorkflowStatus> = {}
+      admin.bugReports.forEach((item) => {
+        next[item.id] = Object.prototype.hasOwnProperty.call(prev, item.id) ? prev[item.id] : parseWorkflow(item)
+      })
+      return next
+    })
+    setPriorityDraft((prev) => {
+      const next: Record<string, BugPriority> = {}
+      admin.bugReports.forEach((item) => {
+        next[item.id] = Object.prototype.hasOwnProperty.call(prev, item.id) ? prev[item.id] : parsePriority(item)
+      })
+      return next
+    })
   }, [admin.bugReports])
 
   useEffect(() => {
@@ -5370,7 +5371,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = parseSeverity(selectedReport, selectedReport.severity)
+                    const severity = priority
                     admin.updateBugReport(selectedReport.id, {
                       status: workflow === 'resolved' ? 'completed' : 'pending',
                       admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
@@ -5380,7 +5381,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   </button>
                   <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = parseSeverity(selectedReport, selectedReport.severity)
+                    const severity = priority
                     admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
                   }}>
                     Mark Resolved
