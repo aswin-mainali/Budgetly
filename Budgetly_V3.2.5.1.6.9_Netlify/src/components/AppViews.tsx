@@ -2703,17 +2703,11 @@ export function DebtPayoffView({ userId }: { userId: string | null }) {
   const plus100Months = projectedMonths(100)
   return <div className="debtPage">
     <div className="debtHeader"><div><h2>Debt Payoff</h2><p>Track balances, plan smarter payments, and clear debt faster.</p></div><div className="row"><button className="btn">💳 Make Payment</button><button className="btn primary" onClick={() => { setDebtForm(blankDebtForm); setEditingDebtId(null); setShowAddDebt(true) }}>＋ Add Debt</button></div></div>
-    {tab === 'overview' ? <div className="debtKpis">
+    {tab === 'overview' || tab === 'history' ? <div className="debtKpis">
       <div className="card debtKpiCard"><div className="debtKpiIcon green">👛</div><div><small>Total debt remaining</small><strong>CA$18,450</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon blue">🗓️</div><div><small>Monthly minimums</small><strong>CA$720</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon purple">🗓️</div><div><small>Debt-free date</small><strong>Aug 2028</strong></div></div>
       <div className="card debtKpiCard"><div className="debtKpiIcon orange">％</div><div><small>Highest interest debt</small><strong>{debt.highestInterest ? `${debt.highestInterest.name} · ${debt.highestInterest.interest_rate.toFixed(2)}%` : '—'}</strong></div></div>
-    </div> : null}
-    {tab === 'history' ? <div className="card debtHistoryKpis">
-      <div className="debtHistoryKpi"><span className="kpiIcon green">💲</span><div><small>Paid this month</small><strong>CA${debt.payments.filter((p) => p.payment_date.startsWith(new Date().toISOString().slice(0, 7))).reduce((sum, p) => sum + Number(p.amount || 0), 0).toFixed(0)}</strong></div></div>
-      <div className="debtHistoryKpi"><span className="kpiIcon blue">☰</span><div><small>Payments logged</small><strong>{debt.payments.length}</strong></div></div>
-      <div className="debtHistoryKpi"><span className="kpiIcon purple">🗓️</span><div><small>Last payment</small><strong>{debt.payments[0]?.payment_date ? new Date(debt.payments[0].payment_date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</strong></div></div>
-      <div className="debtHistoryKpi"><span className="kpiIcon gold">↗</span><div><small>Largest payment</small><strong>CA${Math.max(0, ...debt.payments.map((p) => Number(p.amount || 0))).toFixed(0)}</strong></div></div>
     </div> : null}
     <div className="debtTabs">{(['overview','history','projection','advice'] as const).map(t=><button key={t} className={tab===t?'active':''} onClick={()=>setTab(t)}>{t==='overview'?'Overview':t==='history'?'Payment History':t==='projection'?'Projection':'Advice'}</button>)}</div>
     {tab === 'overview' ? <div className="card debtRight debtTableWrap">
