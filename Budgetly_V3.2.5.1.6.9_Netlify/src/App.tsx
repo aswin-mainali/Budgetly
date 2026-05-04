@@ -230,25 +230,6 @@ export default function App() {
     }
   }, [view, toolsSection, admin.visibleFeatures])
 
-  if (!sessionChecked) return null
-  if (!userId) return <Auth />
-  if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
-  if (admin.profile && !admin.profile.is_active) {
-    return (
-      <div className="appStatusScreen">
-        <div className="card statusCard">
-          <span className="badge">Access paused</span>
-          <h2>Your account is inactive</h2>
-          <p className="muted">A Super Admin has disabled this account. Contact support or an administrator to restore access.</p>
-          <div className="row gap" style={{ marginTop: 14 }}>
-            <button className="btn" onClick={() => window.location.assign('mailto:codeversesolutions@gmail.com?subject=Budgetly%20Account%20Reactivation')}>Contact support</button>
-            <button className="btn danger" onClick={() => void signOut()}>Sign out</button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   const handleViewChange = (nextView: ViewKey) => {
     setView(nextView)
     if (nextView === 'tools') {
@@ -289,6 +270,25 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [admin.visibleFeatures, isMobile])
+
+  if (!sessionChecked) return null
+  if (!userId) return <Auth />
+  if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
+  if (admin.profile && !admin.profile.is_active) {
+    return (
+      <div className="appStatusScreen">
+        <div className="card statusCard">
+          <span className="badge">Access paused</span>
+          <h2>Your account is inactive</h2>
+          <p className="muted">A Super Admin has disabled this account. Contact support or an administrator to restore access.</p>
+          <div className="row gap" style={{ marginTop: 14 }}>
+            <button className="btn" onClick={() => window.location.assign('mailto:codeversesolutions@gmail.com?subject=Budgetly%20Account%20Reactivation')}>Contact support</button>
+            <button className="btn danger" onClick={() => void signOut()}>Sign out</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const profile = readCachedUserProfile()
   const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0]
