@@ -258,7 +258,10 @@ export default function App() {
         handleViewChange(nextView)
       }
 
-      if (key === 't' && admin.visibleFeatures.transactions) goTo('transactions')
+      if (event.shiftKey && key === 't' && admin.visibleFeatures.transactions) goTo('transactions')
+      if (event.shiftKey && key === 'd' && admin.visibleFeatures.dashboard) goTo('dashboard')
+      if (event.shiftKey) return
+
       if (key === 'c' && admin.visibleFeatures.categories) goTo('categories')
       if (key === 'r' && admin.visibleFeatures.recurring) goTo('recurring')
       if (key === 'a' && admin.visibleFeatures.advice) goTo('advice')
