@@ -256,6 +256,40 @@ export default function App() {
     }
     if (isMobile) setCollapsed(true)
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.metaKey) return
+
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      const isTypingContext =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        !!target?.isContentEditable
+      if (isTypingContext) return
+
+      const key = event.key.toLowerCase()
+      const goTo = (nextView: ViewKey, tools?: 'goals' | 'reports' | 'converter' | 'debt') => {
+        event.preventDefault()
+        if (tools) setToolsSection(tools)
+        handleViewChange(nextView)
+      }
+
+      if (key === 't' && admin.visibleFeatures.transactions) goTo('transactions')
+      if (key === 'c' && admin.visibleFeatures.categories) goTo('categories')
+      if (key === 'r' && admin.visibleFeatures.recurring) goTo('recurring')
+      if (key === 'a' && admin.visibleFeatures.advice) goTo('advice')
+      if (key === 'g' && admin.visibleFeatures.goals) goTo('tools', 'goals')
+      if (key === 's' && admin.visibleFeatures.settings) goTo('settings')
+      if (key === 'h' && admin.visibleFeatures.support) goTo('support')
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [admin.visibleFeatures, isMobile])
+
   const profile = readCachedUserProfile()
   const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0]
   const profileImage = profile.image
