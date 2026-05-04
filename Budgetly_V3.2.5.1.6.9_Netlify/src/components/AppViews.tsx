@@ -4313,7 +4313,49 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
+  const [cropperOpen, setCropperOpen] = useState(false)
+  const [cropSourceImage, setCropSourceImage] = useState('')
+  const [cropX, setCropX] = useState(0)
+  const [cropY, setCropY] = useState(0)
+  const [cropSize, setCropSize] = useState(80)
+  const [cropPreviewDataUrl, setCropPreviewDataUrl] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
+
+  const buildCroppedProfileFile = async (sourceImage: string, x: number, y: number, size: number) => {
+    const image = new Image()
+    image.src = sourceImage
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('Failed to load selected image for cropping.'))
+    })
+    const outputSize = 512
+    const canvas = document.createElement('canvas')
+    canvas.width = outputSize
+    canvas.height = outputSize
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Unable to prepare image crop.')
+
+    const sourceWidth = Math.max((image.width * size) / 100, 1)
+    const sourceHeight = Math.max((image.height * size) / 100, 1)
+    const maxX = Math.max(image.width - sourceWidth, 0)
+    const maxY = Math.max(image.height - sourceHeight, 0)
+    const sourceX = (Math.max(Math.min(x, 100), 0) / 100) * maxX
+    const sourceY = (Math.max(Math.min(y, 100), 0) / 100) * maxY
+
+    context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, outputSize, outputSize)
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((nextBlob) => {
+        if (!nextBlob) {
+          reject(new Error('Failed to finalize cropped image.'))
+          return
+        }
+        resolve(nextBlob)
+      }, 'image/jpeg', 0.92)
+    })
+
+    return new File([blob], `profile-${Date.now()}.jpg`, { type: 'image/jpeg' })
+  }
 
   const passwordStrengthScore = useMemo(() => {
     const value = passwordForm.next || ''
@@ -4405,6 +4447,31 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     }
   }, [pendingProfileImagePreview])
 
+  useEffect(() => {
+    if (!cropperOpen || !cropSourceImage) {
+      setCropPreviewDataUrl('')
+      return
+    }
+
+    let cancelled = false
+    const renderPreview = async () => {
+      try {
+        const file = await buildCroppedProfileFile(cropSourceImage, cropX, cropY, cropSize)
+        if (cancelled) return
+        const reader = new FileReader()
+        reader.onload = () => {
+          if (!cancelled) setCropPreviewDataUrl((reader.result as string) || '')
+        }
+        reader.readAsDataURL(file)
+      } catch {
+        if (!cancelled) setCropPreviewDataUrl('')
+      }
+    }
+    void renderPreview()
+
+    return () => { cancelled = true }
+  }, [cropperOpen, cropSourceImage, cropX, cropY, cropSize])
+
   const handleProfilePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -4420,13 +4487,40 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     }
 
     if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
-    const preview = URL.createObjectURL(file)
-    setPendingProfileImageFile(file)
-    setPendingProfileImagePreview(preview)
-    setProfileImage(preview)
+    const sourcePreview = URL.createObjectURL(file)
+    setCropSourceImage(sourcePreview)
+    setCropX(0)
+    setCropY(0)
+    setCropSize(80)
+    setCropperOpen(true)
     setProfileError('')
-    setProfileSuccess('Profile photo selected. Click save profile to upload and keep changes.')
+    setProfileSuccess('')
     event.currentTarget.value = ''
+  }
+
+  const handleCropCancel = () => {
+    if (cropSourceImage) URL.revokeObjectURL(cropSourceImage)
+    setCropperOpen(false)
+    setCropSourceImage('')
+    setCropPreviewDataUrl('')
+  }
+
+  const handleCropApply = async () => {
+    if (!cropSourceImage) return
+    try {
+      const croppedFile = await buildCroppedProfileFile(cropSourceImage, cropX, cropY, cropSize)
+      if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
+      const preview = URL.createObjectURL(croppedFile)
+      setPendingProfileImageFile(croppedFile)
+      setPendingProfileImagePreview(preview)
+      setProfileImage(preview)
+      setProfileError('')
+      setProfileSuccess('Profile photo cropped. Click save profile to upload and keep changes.')
+      handleCropCancel()
+    } catch (error: any) {
+      setProfileError(error?.message || 'Unable to crop selected image.')
+      setProfileSuccess('')
+    }
   }
 
   const handleProfilePhotoRemove = () => {
@@ -4664,6 +4758,33 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
 
         {settingsSection === 'account' ? (
           <div className="card settingsPanelCard">
+            {cropperOpen ? (
+              <div className="settingsCropperOverlay" role="dialog" aria-modal="true" aria-label="Crop profile photo">
+                <div className="settingsCropperCard">
+                  <div className="h1" style={{ marginBottom: 6 }}>Adjust profile photo</div>
+                  <small>Select the area to upload as your profile picture.</small>
+                  <div className="settingsCropperPreview">
+                    {cropPreviewDataUrl ? <img src={cropPreviewDataUrl} alt="Cropped profile preview" /> : null}
+                  </div>
+                  <label className="settingsCropperField">
+                    <span>Zoom / crop area</span>
+                    <input type="range" min={30} max={100} value={cropSize} onChange={(event) => setCropSize(Number(event.target.value))} />
+                  </label>
+                  <label className="settingsCropperField">
+                    <span>Horizontal position</span>
+                    <input type="range" min={0} max={100} value={cropX} onChange={(event) => setCropX(Number(event.target.value))} />
+                  </label>
+                  <label className="settingsCropperField">
+                    <span>Vertical position</span>
+                    <input type="range" min={0} max={100} value={cropY} onChange={(event) => setCropY(Number(event.target.value))} />
+                  </label>
+                  <div className="row gap" style={{ justifyContent: 'flex-end' }}>
+                    <button className="btn ghost" type="button" onClick={handleCropCancel}>Cancel</button>
+                    <button className="btn primary" type="button" onClick={() => void handleCropApply()}>Use this photo</button>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
                 <div className="h1">Account</div>

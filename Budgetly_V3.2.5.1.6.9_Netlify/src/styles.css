@@ -2507,6 +2507,22 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsProfileField{display:grid;gap:8px}
 .settingsProfileFieldWide{grid-column:1 / -1}
 .settingsProfileField span{font-size:13px;font-weight:600;opacity:.9}
+.settingsCropperOverlay{
+  position:fixed;inset:0;z-index:110;background:rgba(2,6,23,.65);
+  display:flex;align-items:center;justify-content:center;padding:20px
+}
+.settingsCropperCard{
+  width:min(560px,100%);background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:18px;display:grid;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.35)
+}
+.settingsCropperPreview{
+  width:min(360px,100%);aspect-ratio:1/1;border-radius:16px;overflow:hidden;
+  margin:6px auto;border:1px solid var(--line);background:rgba(148,163,184,.14)
+}
+.settingsCropperPreview img{width:100%;height:100%;object-fit:cover}
+.settingsCropperField{display:grid;gap:6px}
+.settingsCropperField span{font-size:13px;font-weight:600;opacity:.9}
+.settingsCropperField input[type='range']{width:100%}
 .settingsAdminSection{display:grid;gap:16px}
 .wrap{flex-wrap:wrap}
 @media (max-width: 960px){.settingsShell{grid-template-columns:1fr}.settingsSidebarCard{position:static}.settingsGridTwo{grid-template-columns:1fr}.settingsAccountGrid{grid-template-columns:1fr}.settingsProfileGrid{grid-template-columns:1fr}}
