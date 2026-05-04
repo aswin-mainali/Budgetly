@@ -29,7 +29,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey>('dashboard')
   const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt_payoff'>('goals')
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark'))
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
@@ -45,6 +45,18 @@ export default function App() {
     document.body.classList.toggle('light', theme === 'light')
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.altKey && (event.key === 't' || event.key === 'T')) {
+        event.preventDefault()
+        setView('transactions')
+        if (isMobile) setCollapsed(true)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isMobile])
 
   useEffect(() => {
     document.body.classList.toggle('mobile-app', isMobile)
