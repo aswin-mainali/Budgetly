@@ -4312,7 +4312,7 @@ const cropProfilePhoto = async (file: File, zoom: number, offsetX: number, offse
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Unable to prepare image canvas.')
   ctx.save()
-  ctx.translate(outputSize / 2 + offsetX * outputSize, outputSize / 2 + offsetY * outputSize)
+  ctx.translate(outputSize / 2 + offsetX, outputSize / 2 + offsetY)
   ctx.rotate((rotation * Math.PI) / 180)
   const scale = Math.max(outputSize / image.width, outputSize / image.height) * zoom
   ctx.scale(scale, scale)
