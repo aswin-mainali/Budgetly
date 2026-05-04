@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { RotateCcw, RotateCw, Search, X } from 'lucide-react'
+import { Info, RotateCcw, RotateCw, Search, X } from 'lucide-react'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
@@ -4354,6 +4354,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [cropZoom, setCropZoom] = useState(1.15)
   const [cropRotate, setCropRotate] = useState(0)
   const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 })
+  const cropPercent = Math.round(cropZoom * 100)
 
   const passwordStrengthScore = useMemo(() => {
     const value = passwordForm.next || ''
@@ -4788,23 +4789,62 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
 
 
                 {cropModalOpen ? (
-                  <div className="modalWrap" role="dialog" aria-modal="true">
-                    <div className="photoCropModal card settingsPanelCard">
-                      <div className="row between"><div><div className="h1" style={{ marginBottom: 4 }}>Adjust profile photo</div><small>Drag, zoom, and reposition your photo to choose what will be used.</small></div><button className="btn ghost" onClick={() => setCropModalOpen(false)}><X size={16} /></button></div>
-                      <div className="photoCropGrid">
-                        <div className="photoCropStage" onPointerDown={(e) => { const sx=e.clientX; const sy=e.clientY; const base={...cropOffset}; const move=(ev:PointerEvent)=>setCropOffset({x: Math.max(-0.5, Math.min(0.5, base.x + (ev.clientX-sx)/400)), y: Math.max(-0.5, Math.min(0.5, base.y + (ev.clientY-sy)/400))}); const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)}; window.addEventListener('pointermove',move);window.addEventListener('pointerup',up); }}>
-                          {cropSourcePreview ? <img src={cropSourcePreview} alt="Crop source" style={{ transform: `translate(${cropOffset.x * 100}%, ${cropOffset.y * 100}%) scale(${cropZoom}) rotate(${cropRotate}deg)` }} /> : null}
+                  <div className="modalWrap photoCropOverlay" role="dialog" aria-modal="true">
+                    <div className="photoCropModal">
+                      <div className="photoCropHeader">
+                        <div>
+                          <div className="photoCropTitle">Adjust profile photo</div>
+                          <div className="photoCropSubtitle">Drag, zoom, and reposition your photo to choose what will be used.</div>
+                        </div>
+                        <button className="photoCropCloseBtn" onClick={() => setCropModalOpen(false)} aria-label="Close">
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      <div className="photoCropBody">
+                        <div
+                          className="photoCropStage"
+                          onPointerDown={(e) => {
+                            const sx = e.clientX
+                            const sy = e.clientY
+                            const base = { ...cropOffset }
+                            const move = (ev: PointerEvent) => setCropOffset({
+                              x: Math.max(-190, Math.min(190, base.x + (ev.clientX - sx))),
+                              y: Math.max(-190, Math.min(190, base.y + (ev.clientY - sy))),
+                            })
+                            const up = () => {
+                              window.removeEventListener('pointermove', move)
+                              window.removeEventListener('pointerup', up)
+                            }
+                            window.addEventListener('pointermove', move)
+                            window.addEventListener('pointerup', up)
+                          }}
+                        >
+                          {cropSourcePreview ? <img src={cropSourcePreview} alt="Crop source" style={{ transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropZoom}) rotate(${cropRotate}deg)` }} /> : null}
+                          <div className="photoCropBounds" />
                           <div className="photoCropCircle" />
                         </div>
-                        <div className="photoCropControls"><div className="settingsProfileSectionTitle">Profile preview</div><div className="photoCropPreview">{cropSourcePreview ? <img src={cropSourcePreview} alt="preview" style={{ transform: `translate(${cropOffset.x * 100}%, ${cropOffset.y * 100}%) scale(${cropZoom}) rotate(${cropRotate}deg)` }} /> : null}</div>
-                          <label>Zoom</label><div className="row" style={{gap:8,alignItems:'center'}}><Search size={15}/><input type="range" min="1" max="2.5" step="0.01" value={cropZoom} onChange={(e)=>setCropZoom(Number(e.target.value))} /></div>
-                          <label>Rotate</label><div className="row" style={{gap:8}}><button className="btn ghost" onClick={()=>setCropRotate((v)=>v-90)}><RotateCcw size={16}/></button><button className="btn ghost" onClick={()=>setCropRotate((v)=>v+90)}><RotateCw size={16}/></button><button className="btn ghost" onClick={()=>{setCropZoom(1.15);setCropRotate(0);setCropOffset({x:0,y:0})}}>Reset</button></div>
+
+                        <div className="photoCropControls">
+                          <div className="photoCropPreviewLabel">Profile preview</div>
+                          <div className="photoCropPreview">{cropSourcePreview ? <img src={cropSourcePreview} alt="Profile preview" style={{ transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropZoom}) rotate(${cropRotate}deg)` }} /> : null}</div>
+                          <div className="photoCropZoomRow"><span>Zoom</span><span className="photoCropPercent">{cropPercent}%</span></div>
+                          <div className="photoCropZoomSlider"><Search size={14} /><input type="range" min="1" max="2.2" step="0.01" value={cropZoom} onChange={(e) => setCropZoom(Number(e.target.value))} /><Search size={14} /></div>
+                          <div className="photoCropRotateLabel">Rotate</div>
+                          <div className="photoCropRotateBtns">
+                            <button className="photoCropIconBtn" onClick={() => setCropRotate((v) => v - 90)}><RotateCcw size={16} /></button>
+                            <button className="photoCropIconBtn" onClick={() => setCropRotate((v) => v + 90)}><RotateCw size={16} /></button>
+                            <button className="photoCropResetBtn" onClick={() => { setCropZoom(1.15); setCropRotate(0); setCropOffset({ x: 0, y: 0 }) }}>Reset</button>
+                          </div>
+                          <div className="photoCropInfo"><Info size={14} /> Only the cropped area inside the circle will be used as your profile photo.</div>
                         </div>
                       </div>
-                      <div className="row" style={{justifyContent:'flex-end', gap:8}}><button className="btn" onClick={()=>setCropModalOpen(false)}>Cancel</button><button className="btn primary" onClick={() => void applyCroppedPhoto()}>Save photo</button></div>
+
+                      <div className="photoCropFooter"><button className="photoCropCancelBtn" onClick={() => setCropModalOpen(false)}>Cancel</button><button className="photoCropSaveBtn" onClick={() => void applyCroppedPhoto()}>Save photo</button></div>
                     </div>
                   </div>
                 ) : null}
+
 
               <div className="card settingsPanelCard settingsPasswordCard">
                 <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>

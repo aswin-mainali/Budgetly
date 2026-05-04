@@ -8203,12 +8203,33 @@ body.light .utilityCard p{
   }
 }
 
-.photoCropModal{width:min(980px,calc(100vw - 24px));display:grid;gap:14px}
-.photoCropGrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:12px}
-.photoCropStage{position:relative;background:#0f172a;border-radius:14px;overflow:hidden;min-height:360px;display:grid;place-items:center;cursor:grab}
-.photoCropStage img,.photoCropPreview img{width:100%;height:100%;object-fit:cover;user-select:none;pointer-events:none;transition:transform .06s linear}
-.photoCropCircle{position:absolute;inset:10%;border:2px solid rgba(255,255,255,.88);border-radius:50%;box-shadow:0 0 0 999px rgba(15,23,42,.45)}
-.photoCropControls{display:grid;gap:10px;border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:14px}
-.photoCropPreview{width:126px;height:126px;border-radius:999px;overflow:hidden;border:4px solid rgba(226,232,240,.9);background:#1e293b}
-.photoCropControls input[type='range']{width:100%}
-@media (max-width: 860px){.photoCropGrid{grid-template-columns:1fr}}
+
+.photoCropOverlay{background:rgba(15,23,42,.22);backdrop-filter:blur(2px)}
+.photoCropModal{width:min(760px,calc(100vw - 18px));background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 18px 45px rgba(15,23,42,.2);overflow:hidden}
+.photoCropHeader{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 20px 12px;border-bottom:1px solid #edf1f5}
+.photoCropTitle{font-size:32px;font-weight:800;color:#1e293b;letter-spacing:-.02em;line-height:1.05}
+.photoCropSubtitle{margin-top:6px;font-size:16px;color:#64748b}
+.photoCropCloseBtn{width:32px;height:32px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;display:grid;place-items:center}
+.photoCropBody{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(250px,1fr);gap:12px;padding:14px 20px 12px}
+.photoCropStage{position:relative;border-radius:10px;overflow:hidden;height:360px;background:linear-gradient(120deg,#334155,#0f172a);cursor:grab;user-select:none}
+.photoCropStage img{position:absolute;inset:-22%;width:144%;height:144%;object-fit:cover;transform-origin:center center;pointer-events:none}
+.photoCropBounds{position:absolute;inset:30px;border:2px solid rgba(255,255,255,.55)}
+.photoCropBounds:before,.photoCropBounds:after{content:'';position:absolute;left:0;right:0;height:1px;border-top:1px dashed rgba(255,255,255,.36);top:33.33%}
+.photoCropBounds:after{top:66.66%}
+.photoCropCircle{position:absolute;inset:30px;border:2px solid rgba(255,255,255,.88);border-radius:999px;box-shadow:0 0 0 999px rgba(15,23,42,.35)}
+.photoCropControls{border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:grid;gap:12px}
+.photoCropPreviewLabel{font-size:14px;font-weight:700;color:#334155}
+.photoCropPreview{width:116px;height:116px;border-radius:999px;border:4px solid #e2e8f0;overflow:hidden;justify-self:center;background:#e2e8f0;box-shadow:inset 0 0 0 1px #cbd5e1}
+.photoCropPreview img{width:170%;height:170%;object-fit:cover;transform-origin:center center}
+.photoCropZoomRow{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:#334155;font-weight:700}
+.photoCropPercent{font-size:13px;color:#64748b;background:#f8fafc;border:1px solid #e2e8f0;border-radius:999px;padding:3px 8px}
+.photoCropZoomSlider{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;color:#475569}
+.photoCropZoomSlider input[type='range']{width:100%}
+.photoCropRotateLabel{font-size:14px;font-weight:700;color:#334155}
+.photoCropRotateBtns{display:flex;gap:8px}
+.photoCropIconBtn,.photoCropResetBtn{height:36px;border-radius:10px;border:1px solid #d7deea;background:#fff;color:#334155;padding:0 12px;display:grid;place-items:center}
+.photoCropInfo{margin-top:4px;border:1px solid #cfe0ff;background:#f1f7ff;color:#4b6285;border-radius:10px;padding:10px;font-size:14px;display:flex;gap:8px;align-items:flex-start}
+.photoCropFooter{padding:12px 20px 14px;border-top:1px solid #edf1f5;display:flex;justify-content:flex-end;gap:10px}
+.photoCropCancelBtn,.photoCropSaveBtn{height:42px;padding:0 24px;border-radius:10px;border:1px solid #dce3ef;background:#fff;font-weight:700;color:#334155}
+.photoCropSaveBtn{background:#2563eb;border-color:#2563eb;color:#fff;min-width:126px}
+@media (max-width: 860px){.photoCropBody{grid-template-columns:1fr}.photoCropStage{height:300px}}
