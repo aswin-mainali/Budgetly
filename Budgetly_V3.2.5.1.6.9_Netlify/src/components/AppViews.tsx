@@ -5371,7 +5371,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = parseSeverity(selectedReport, selectedReport.severity)
+                    const severity = priority
                     admin.updateBugReport(selectedReport.id, {
                       status: workflow === 'resolved' ? 'completed' : 'pending',
                       admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
@@ -5381,7 +5381,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                   </button>
                   <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
                     const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = parseSeverity(selectedReport, selectedReport.severity)
+                    const severity = priority
                     admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
                   }}>
                     Mark Resolved
