@@ -918,7 +918,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, X } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -4318,10 +4318,11 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [cropX, setCropX] = useState(0)
   const [cropY, setCropY] = useState(0)
   const [cropSize, setCropSize] = useState(80)
+  const [cropRotate, setCropRotate] = useState(0)
   const [cropPreviewDataUrl, setCropPreviewDataUrl] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
 
-  const buildCroppedProfileFile = async (sourceImage: string, x: number, y: number, size: number) => {
+  const buildCroppedProfileFile = async (sourceImage: string, x: number, y: number, size: number, rotate = 0) => {
     const image = new Image()
     image.src = sourceImage
     await new Promise<void>((resolve, reject) => {
@@ -4342,7 +4343,11 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     const sourceX = (Math.max(Math.min(x, 100), 0) / 100) * maxX
     const sourceY = (Math.max(Math.min(y, 100), 0) / 100) * maxY
 
-    context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, outputSize, outputSize)
+    context.save()
+    context.translate(outputSize / 2, outputSize / 2)
+    context.rotate((rotate * Math.PI) / 180)
+    context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, -outputSize / 2, -outputSize / 2, outputSize, outputSize)
+    context.restore()
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((nextBlob) => {
@@ -4456,7 +4461,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     let cancelled = false
     const renderPreview = async () => {
       try {
-        const file = await buildCroppedProfileFile(cropSourceImage, cropX, cropY, cropSize)
+        const file = await buildCroppedProfileFile(cropSourceImage, cropX, cropY, cropSize, cropRotate)
         if (cancelled) return
         const reader = new FileReader()
         reader.onload = () => {
@@ -4470,7 +4475,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     void renderPreview()
 
     return () => { cancelled = true }
-  }, [cropperOpen, cropSourceImage, cropX, cropY, cropSize])
+  }, [cropperOpen, cropSourceImage, cropX, cropY, cropSize, cropRotate])
 
   const handleProfilePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -4492,6 +4497,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     setCropX(0)
     setCropY(0)
     setCropSize(80)
+    setCropRotate(0)
     setCropperOpen(true)
     setProfileError('')
     setProfileSuccess('')
@@ -4508,7 +4514,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const handleCropApply = async () => {
     if (!cropSourceImage) return
     try {
-      const croppedFile = await buildCroppedProfileFile(cropSourceImage, cropX, cropY, cropSize)
+      const croppedFile = await buildCroppedProfileFile(cropSourceImage, cropX, cropY, cropSize, cropRotate)
       if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
       const preview = URL.createObjectURL(croppedFile)
       setPendingProfileImageFile(croppedFile)
@@ -4760,27 +4766,47 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
           <div className="card settingsPanelCard">
             {cropperOpen ? (
               <div className="settingsCropperOverlay" role="dialog" aria-modal="true" aria-label="Crop profile photo">
-                <div className="settingsCropperCard">
-                  <div className="h1" style={{ marginBottom: 6 }}>Adjust profile photo</div>
-                  <small>Select the area to upload as your profile picture.</small>
-                  <div className="settingsCropperPreview">
-                    {cropPreviewDataUrl ? <img src={cropPreviewDataUrl} alt="Cropped profile preview" /> : null}
+                <div className="settingsCropperCard settingsCropperCardPro">
+                  <div className="settingsCropperHeader">
+                    <div>
+                      <div className="h1" style={{ marginBottom: 6 }}>Adjust profile photo</div>
+                      <small>Drag, zoom, and reposition your photo to choose what will be used.</small>
+                    </div>
+                    <button className="btn ghost settingsCropperCloseBtn" type="button" onClick={handleCropCancel}><X size={16} /></button>
                   </div>
-                  <label className="settingsCropperField">
-                    <span>Zoom / crop area</span>
-                    <input type="range" min={30} max={100} value={cropSize} onChange={(event) => setCropSize(Number(event.target.value))} />
-                  </label>
-                  <label className="settingsCropperField">
-                    <span>Horizontal position</span>
-                    <input type="range" min={0} max={100} value={cropX} onChange={(event) => setCropX(Number(event.target.value))} />
-                  </label>
-                  <label className="settingsCropperField">
-                    <span>Vertical position</span>
-                    <input type="range" min={0} max={100} value={cropY} onChange={(event) => setCropY(Number(event.target.value))} />
-                  </label>
+                  <div className="settingsCropperBody">
+                    <div className="settingsCropperStageWrap">
+                      <div className="settingsCropperStage">
+                        {cropPreviewDataUrl ? <img src={cropPreviewDataUrl} alt="Editable profile crop" /> : null}
+                        <div className="settingsCropperStageCircle" />
+                      </div>
+                    </div>
+                    <div className="settingsCropperPanel">
+                      <div className="settingsCropperPanelTitle">Profile preview</div>
+                      <div className="settingsCropperPreviewCircle">
+                        {cropPreviewDataUrl ? <img src={cropPreviewDataUrl} alt="Cropped profile preview" /> : null}
+                      </div>
+                      <label className="settingsCropperField">
+                        <span>Zoom</span>
+                        <input type="range" min={30} max={100} value={cropSize} onChange={(event) => setCropSize(Number(event.target.value))} />
+                      </label>
+                      <label className="settingsCropperField">
+                        <span>Horizontal</span>
+                        <input type="range" min={0} max={100} value={cropX} onChange={(event) => setCropX(Number(event.target.value))} />
+                      </label>
+                      <label className="settingsCropperField">
+                        <span>Vertical</span>
+                        <input type="range" min={0} max={100} value={cropY} onChange={(event) => setCropY(Number(event.target.value))} />
+                      </label>
+                      <div className="row gap">
+                        <button className="btn ghost" type="button" onClick={() => setCropRotate((prev) => prev - 90)}><RefreshCw size={14} /> Rotate</button>
+                        <button className="btn ghost" type="button" onClick={() => { setCropX(0); setCropY(0); setCropSize(80); setCropRotate(0) }}>Reset</button>
+                      </div>
+                    </div>
+                  </div>
                   <div className="row gap" style={{ justifyContent: 'flex-end' }}>
                     <button className="btn ghost" type="button" onClick={handleCropCancel}>Cancel</button>
-                    <button className="btn primary" type="button" onClick={() => void handleCropApply()}>Use this photo</button>
+                    <button className="btn primary" type="button" onClick={() => void handleCropApply()}>Save photo</button>
                   </div>
                 </div>
               </div>
