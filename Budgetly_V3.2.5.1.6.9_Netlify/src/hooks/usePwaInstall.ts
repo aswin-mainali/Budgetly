@@ -44,8 +44,16 @@ export function usePwaInstall() {
     if (isStandalone()) setInstalled(true)
   })
 
+  const isIosSafari = useMemo(() => {
+    const ua = window.navigator.userAgent
+    const isiOS = /iPhone|iPad|iPod/i.test(ua)
+    const isWebKit = /WebKit/i.test(ua)
+    const isOtherBrowserOnIOS = /CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua)
+    return isiOS && isWebKit && !isOtherBrowserOnIOS
+  }, [])
+
   const canInstall = useMemo(() => !installed && !!promptEvent, [installed, promptEvent])
-  const showInstallButton = useMemo(() => !installed, [installed])
+  const showInstallButton = useMemo(() => !installed && (!!promptEvent || isIosSafari), [installed, promptEvent, isIosSafari])
 
   const install = useCallback(async () => {
     if (!promptEvent) return false
@@ -59,5 +67,5 @@ export function usePwaInstall() {
     return false
   }, [promptEvent])
 
-  return { canInstall, showInstallButton, install, installed }
+  return { canInstall, showInstallButton, install, installed, isIosSafari }
 }
