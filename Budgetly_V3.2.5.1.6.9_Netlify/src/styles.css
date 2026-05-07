@@ -8208,7 +8208,7 @@ body.light .utilityCard p{
 
 .authInstallRow{display:flex;justify-content:flex-end;margin-top:8px}.authInstallButton{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;line-height:1}.authInstallButton.btn.primary{background:linear-gradient(135deg,#5b63f6,#4a87eb);border:1px solid rgba(117,155,255,.78);color:#fff}
 .authInstallRow{position:relative}
-.authInstallHelp{position:absolute;right:0;top:calc(100% + 8px);width:min(280px,calc(100vw - 48px));padding:10px 12px;border-radius:12px;background:rgba(15,23,42,.94);border:1px solid rgba(148,163,184,.35);box-shadow:0 10px 24px rgba(2,6,23,.4);z-index:6;color:#e2e8f0;font-size:12px;line-height:1.45}
+.authInstallHelp{position:absolute;right:0;bottom:calc(100% + 8px);width:min(280px,calc(100vw - 48px));padding:10px 12px;border-radius:12px;background:rgba(15,23,42,.94);border:1px solid rgba(148,163,184,.35);box-shadow:0 10px 24px rgba(2,6,23,.4);z-index:20;color:#e2e8f0;font-size:12px;line-height:1.45}
 .authInstallHelpTitle{font-weight:700;font-size:12px;margin-bottom:6px;color:#f8fafc}
 .authInstallHelp ol{margin:0 0 8px 18px;padding:0}
 .authInstallHelpClose{border:0;background:transparent;color:#93c5fd;padding:0;font-size:12px;font-weight:600;cursor:pointer}
