@@ -22,7 +22,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const { canInstall, install } = usePwaInstall()
+  const { canInstall, showInstallButton, install } = usePwaInstall()
 
   const title = useMemo(() => {
     if (mode === 'signup') return 'Create your account'
@@ -208,9 +208,9 @@ export default function Auth() {
 
 
 
-            {mode === 'signin' && canInstall ? (
+            {mode === 'signin' && showInstallButton ? (
               <div className="authInstallRow">
-                <button className="btn ghost authInstallButton" type="button" onClick={() => void install()} aria-label="Install Budgetly">
+                <button className="btn primary authInstallButton" type="button" onClick={() => { if (canInstall) void install() }} aria-label="Install Budgetly">
                   <Download size={14} />
                   <span>Install Budgetly</span>
                 </button>

@@ -5,16 +5,15 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
 }
 
-const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+const isStandalone = () =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as Navigator & { standalone?: boolean }).standalone === true
 
 export function usePwaInstall() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
-  const [dismissed, setDismissed] = useState(false)
   const [installed, setInstalled] = useState(() => isStandalone())
 
   useEffect(() => {
-    if (installed) return
-
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
       setPromptEvent(event as BeforeInstallPromptEvent)
@@ -22,7 +21,6 @@ export function usePwaInstall() {
 
     const onInstalled = () => {
       setPromptEvent(null)
-      setDismissed(true)
       setInstalled(true)
     }
 
@@ -32,18 +30,22 @@ export function usePwaInstall() {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       window.removeEventListener('appinstalled', onInstalled)
     }
-  }, [installed])
+  }, [])
 
-  const canInstall = useMemo(() => !!promptEvent && !dismissed && !installed, [promptEvent, dismissed, installed])
+  const canInstall = useMemo(() => !installed && !!promptEvent, [installed, promptEvent])
+  const showInstallButton = useMemo(() => !installed, [installed])
 
   const install = useCallback(async () => {
     if (!promptEvent) return false
     await promptEvent.prompt()
     const choice = await promptEvent.userChoice
-    if (choice.outcome !== 'accepted') setDismissed(true)
-    setPromptEvent(null)
-    return choice.outcome === 'accepted'
+    if (choice.outcome === 'accepted') {
+      setInstalled(true)
+      setPromptEvent(null)
+      return true
+    }
+    return false
   }, [promptEvent])
 
-  return { canInstall, install, dismiss: () => setDismissed(true), installed }
+  return { canInstall, showInstallButton, install, installed }
 }

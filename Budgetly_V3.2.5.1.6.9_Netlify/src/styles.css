@@ -8206,4 +8206,4 @@ body.light .utilityCard p{
 
 .pwaBanner{position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:1200;background:rgba(17,24,39,.95);color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:10px;align-items:center;max-width:min(92vw,640px);font-size:13px}.pwaBanner.offline{top:10px}.pwaBanner:not(.offline){top:56px}.pwaActions{display:flex;gap:8px}.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff}@media (max-width:768px){.pwaBanner{flex-direction:column;align-items:flex-start;top:8px}.pwaBanner:not(.offline){top:72px}}
 
-.authInstallRow{display:flex;justify-content:flex-end;margin-top:8px}.authInstallButton{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;line-height:1}
+.authInstallRow{display:flex;justify-content:flex-end;margin-top:8px}.authInstallButton{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;line-height:1}.authInstallButton.btn.primary{background:linear-gradient(135deg,#5b63f6,#4a87eb);border:1px solid rgba(117,155,255,.78);color:#fff}
