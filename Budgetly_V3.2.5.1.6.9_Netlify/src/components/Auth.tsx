@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   Mail,
@@ -22,7 +22,9 @@ export default function Auth() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
-  const { canInstall, showInstallButton, install } = usePwaInstall()
+  const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
+  const installWrapRef = useRef<HTMLDivElement | null>(null)
+  const { canInstall, showInstallButton, install, isIosSafari } = usePwaInstall()
 
   const title = useMemo(() => {
     if (mode === 'signup') return 'Create your account'
@@ -65,6 +67,18 @@ export default function Auth() {
   }
 
   const modeLabel = mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Sign up' : 'Recovery'
+
+  const onInstallClick = () => {
+    if (canInstall) {
+      setShowIosInstallHelp(false)
+      void install()
+      return
+    }
+
+    if (isIosSafari) {
+      setShowIosInstallHelp((v) => !v)
+    }
+  }
 
   return (
     <div className="authWrap">
@@ -209,11 +223,22 @@ export default function Auth() {
 
 
             {mode === 'signin' && showInstallButton ? (
-              <div className="authInstallRow">
-                <button className="btn primary authInstallButton" type="button" onClick={() => { if (canInstall) void install() }} aria-label="Install Budgetly">
+              <div className="authInstallRow" ref={installWrapRef}>
+                <button className="btn primary authInstallButton" type="button" onClick={onInstallClick} aria-label="Install Budgetly" aria-expanded={showIosInstallHelp}>
                   <Download size={14} />
                   <span>Install Budgetly</span>
                 </button>
+                {showIosInstallHelp && isIosSafari ? (
+                  <div className="authInstallHelp" role="dialog" aria-label="Install Budgetly on iPhone">
+                    <div className="authInstallHelpTitle">Install Budgetly on iPhone</div>
+                    <ol>
+                      <li>Tap the Share button in Safari</li>
+                      <li>Scroll down</li>
+                      <li>Tap "Add to Home Screen"</li>
+                    </ol>
+                    <button className="authInstallHelpClose" type="button" onClick={() => setShowIosInstallHelp(false)}>Close</button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
