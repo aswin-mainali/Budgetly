@@ -14,6 +14,10 @@ export function usePwaInstall() {
   const [installed, setInstalled] = useState(() => isStandalone())
 
   useEffect(() => {
+    const syncInstalledState = () => {
+      if (isStandalone()) setInstalled(true)
+    }
+
     const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
       setPromptEvent(event as BeforeInstallPromptEvent)
@@ -26,11 +30,19 @@ export function usePwaInstall() {
 
     window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
     window.addEventListener('appinstalled', onInstalled)
+    window.addEventListener('focus', syncInstalledState)
+    document.addEventListener('visibilitychange', syncInstalledState)
     return () => {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
       window.removeEventListener('appinstalled', onInstalled)
+      window.removeEventListener('focus', syncInstalledState)
+      document.removeEventListener('visibilitychange', syncInstalledState)
     }
   }, [])
+
+  useEffect(() => {
+    if (isStandalone()) setInstalled(true)
+  })
 
   const canInstall = useMemo(() => !installed && !!promptEvent, [installed, promptEvent])
   const showInstallButton = useMemo(() => !installed, [installed])
