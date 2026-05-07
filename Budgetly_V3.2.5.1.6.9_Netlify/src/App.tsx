@@ -7,6 +7,8 @@ import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfil
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
+import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
+import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -317,6 +319,8 @@ export default function App() {
 
   return (
     <div className="container appWrap">
+      <OfflineStatusBanner />
+      <PwaUpdateBanner />
       {isMobile && !collapsed ? <div className="mobileOverlay" onClick={() => setCollapsed(true)} aria-hidden="true" /> : null}
 
       <div className={`sidebarContainer ${isMobile ? 'mobile' : ''} ${collapsed ? 'closed' : 'open'}`}>
