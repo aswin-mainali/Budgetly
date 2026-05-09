@@ -1462,11 +1462,13 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
     return (
       <div className="mobileDashScreen">
         <section className="mobileDashHero">
-          <div className="mobileDashTitle">Dashboard</div>
+          <div className="mobileDashTitleRow">
+            <div className="mobileDashTitle">Dashboard</div>
+            <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+              {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
+            </select>
+          </div>
           <div className="mobileDashSubtitle">Here’s your financial overview</div>
-          <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
-            {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
-          </select>
         </section>
         <div className="mobileDashKpis">
           <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small></button>
@@ -1478,8 +1480,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           <div style={{ height: 220 }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowSeries}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="label" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={44} tickFormatter={(v:number)=>v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`} /><Legend /><Bar dataKey="income" fill={cashIncome} barSize={14} radius={[7,7,0,0]} /><Bar dataKey="expenses" fill={cashExpense} barSize={14} radius={[7,7,0,0]} /><Line type="monotone" dataKey="net" stroke={cashNet} strokeWidth={3} dot={{r:4}} /></ComposedChart></ResponsiveContainer></div>
         </div>
         <div className="mobileRefTwoCol">
-          <div className="card mobileRefCard"><h3>Share of spending</h3><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68}>{byCategory.map((r)=> <Cell key={r.id} fill={r.color} />)}</Pie></PieChart></ResponsiveContainer></div></div>
-          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid" style={{gap:8}}>{sortedCategories.slice(0,3).map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const pr=b>0?Math.min(1,spent/b):0;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small>{helpers.fmtMoney(spent,data.currency)} / {helpers.fmtMoney(b,data.currency)}</small></div><div className="progress"><div style={{width:`${pr*100}%`}} /></div></div>})}</div></div>
+          <div className="card mobileRefCard"><h3>Share of spending</h3><div className="mobileShareWrap"><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68}>{byCategory.map((r)=> <Cell key={r.id} fill={r.color} />)}</Pie></PieChart></ResponsiveContainer></div><div className="mobileShareLegend">{byCategory.slice(0, 6).map((r) => { const pct = expenses > 0 ? Math.round((r.total / expenses) * 100) : 0; return <div key={r.id} className="mobileShareLegendRow"><span><i style={{ background: r.color }} />{r.name}</span><strong>{pct}%</strong></div> })}</div></div></div>
+          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid" style={{gap:8}}>{sortedCategories.slice(0,3).map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const pr=b>0?Math.min(1,spent/b):0;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small>{helpers.fmtMoney(spent,data.currency)} / {helpers.fmtMoney(b,data.currency)}</small></div><div className="progress"><div style={{width:`${pr*100}%`, background:'#16a34a'}} /></div></div>})}</div></div>
         </div>
         <div className="card mobileRefCard">
           <div className="row space"><h3>Monthly spending trends</h3><div className="row" style={{gap:10}}><small>This year</small><small>Last year</small></div></div>

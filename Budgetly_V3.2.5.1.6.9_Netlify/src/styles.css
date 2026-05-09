@@ -8222,9 +8222,10 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileWordmark small{font-size:12px;color:#64748b}
   body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:110px}
   body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
+  body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
   body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:#0f254f;max-width:100%;word-break:break-word}
   body.mobile-app .mobileDashSubtitle{color:#6b7a93;margin-top:4px}
-  body.mobile-app .mobileDashMonth{justify-self:end;max-width:170px;width:100%;border-radius:16px;background:#fff;padding:10px 14px}
+  body.mobile-app .mobileDashMonth{flex:0 0 146px;max-width:146px;border-radius:16px;background:#fff;padding:10px 12px}
   body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   body.mobile-app .mobileRefKpi{border:1px solid #e5ebf5;background:#fff;border-radius:20px;padding:12px;display:grid;gap:6px;text-align:left}
   body.mobile-app .mobileRefKpi strong{font-size:20px}
@@ -8234,6 +8235,11 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileRefKpi small{color:#74829a}
   body.mobile-app .mobileRefCard{border-radius:22px;background:#fff;border:1px solid #e8edf6;box-shadow:0 10px 24px rgba(15,23,42,.06)}
   body.mobile-app .mobileRefTwoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  body.mobile-app .mobileShareWrap{display:grid;grid-template-columns:1fr;gap:6px}
+  body.mobile-app .mobileShareLegend{display:grid;gap:4px}
+  body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569}
+  body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
+  body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
   body.mobile-app .mobileRecurringRef{max-height:160px;overflow:hidden}
   body.mobile-app .mobileTabBar{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:#ffffff;border-top:1px solid #dfe7f4;border-left:0;border-right:0;border-bottom:0;border-radius:0;box-shadow:0 -6px 20px rgba(15,23,42,.10);backdrop-filter:none;-webkit-backdrop-filter:none;opacity:1}
   body.mobile-app .mobileTabBar button.active{background:#eef4ff;color:#1f64e0}
