@@ -1487,7 +1487,34 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           <div className="row space"><h3>Monthly spending trends</h3><div className="row" style={{gap:10}}><small>This year</small><small>Last year</small></div></div>
           <div style={{height:200}}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={monthlyTrend}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="month" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={38} tickFormatter={(v:number)=>v>=1000?`$${Math.round(v/1000)}K`:`$${Math.round(v)}`} /><Bar dataKey="highlight" fill={trendBar} barSize={18} radius={[8,8,0,0]} /><Line type="monotone" dataKey="thisYear" stroke={trendThisYear} strokeWidth={3} dot={false} /><Line type="monotone" dataKey="lastYear" stroke={trendLastYear} strokeWidth={2} dot={false} /></ComposedChart></ResponsiveContainer></div>
         </div>
-        <div className="card mobileRefCard mobileRecurringRef"><h3>Recurring</h3><div className="grid" style={{gap:8}}>{upcomingRecurringThisMonth.slice(0,2).map((item)=><div key={item.id} className="recurringUpcomingItem"><div className="recurringUpcomingMain"><div className="recurringUpcomingIcon">{item.category?.emoji ?? (item.kind === 'income' ? '💰' : '📆')}</div><div><div className="recurringUpcomingTitle">{item.name}</div><div className="muted">{item.category?.name ?? (item.kind === 'income' ? 'Recurring income' : 'Recurring bill')} • {item.kind === 'income' ? 'Income' : 'Expense'} • {item.recurrenceLabel} • {new Date(`${item.dueDateIso}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div></div></div><div className="recurringUpcomingAmount"><strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong><small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small></div></div>)}</div></div>
+        <div className="card mobileRefCard mobileRecurringRef">
+          <div className="row between" style={{ marginBottom: 10 }}>
+            <div>
+              <h3 style={{ marginBottom: 4 }}>Recurring</h3>
+              <div className="h1" style={{ fontSize: 28, marginBottom: 0 }}>{upcomingRecurringThisMonth.length} Upcoming For Next 7 Days</div>
+            </div>
+            <span className="badge">Next 7 days</span>
+          </div>
+          <div className="grid recurringScrollArea" style={{ gap: 8 }}>
+            {upcomingRecurringThisMonth.length === 0 ? (
+              <div className="muted recurringEmpty">No recurring bills or income are due in the next 7 days.</div>
+            ) : upcomingRecurringThisMonth.map((item) => (
+              <div key={item.id} className="recurringUpcomingItem">
+                <div className="recurringUpcomingMain">
+                  <div className="recurringUpcomingIcon">{item.category?.emoji ?? (item.kind === 'income' ? '💰' : '📆')}</div>
+                  <div>
+                    <div className="recurringUpcomingTitle">{item.name}</div>
+                    <div className="muted">{item.category?.name ?? (item.kind === 'income' ? 'Recurring income' : 'Recurring bill')} • {item.kind === 'income' ? 'Income' : 'Expense'} • {item.recurrenceLabel} • {new Date(`${item.dueDateIso}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                  </div>
+                </div>
+                <div className="recurringUpcomingAmount">
+                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
