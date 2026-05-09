@@ -341,7 +341,9 @@ export default function App() {
         {isMobile ? (
           <header className="mobileTopBar">
             <button className="mobileIconBtn" onClick={() => setCollapsed(false)} aria-label="Open menu"><Menu size={22} /></button>
-            <div className="mobileWordmark">Budgetly</div>
+            <div className="mobileWordmark">
+              <strong>Hi, Aswin 👋</strong><small>Good afternoon</small>
+            </div>
             <button className="mobileAvatarBtn" onClick={() => handleViewChange('settings')} aria-label="Open settings">
               {profileImage ? <img src={profileImage} alt="Profile" /> : <span>{profileName.charAt(0).toUpperCase()}</span>}
             </button>
@@ -382,7 +384,7 @@ export default function App() {
           <nav className="mobileTabBar mobileTabBarPlus" aria-label="Mobile navigation">
             {admin.visibleFeatures.dashboard ? <button className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Dashboard</span></button> : null}
             {admin.visibleFeatures.categories ? <button className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
-            {admin.visibleFeatures.transactions ? <button className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /></button> : null}
+            <button className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /><span>Add</span></button>
             <button className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
             {admin.visibleFeatures.settings ? <button className={view === 'settings' ? 'active' : ''} onClick={() => handleViewChange('settings')}><Settings size={18} /><span>Settings</span></button> : null}
           </nav>

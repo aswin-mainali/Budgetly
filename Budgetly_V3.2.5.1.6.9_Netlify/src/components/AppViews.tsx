@@ -1458,6 +1458,67 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
     })
   }, [activeMonth, data.transactions])
 
+  if (isPhone) {
+    return (
+      <div className="mobileDashScreen">
+        <section className="mobileDashHero">
+          <div className="mobileDashTitleRow">
+            <div className="mobileDashTitle">Dashboard</div>
+            <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+              {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
+            </select>
+          </div>
+          <div className="mobileDashSubtitle">Here’s your financial overview</div>
+        </section>
+        <div className="mobileDashKpis">
+          <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small></button>
+          <button type="button" className="mobileRefKpi expenses" onClick={() => onOpenTransactionsByType?.('expense')}><span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><small>This month</small></button>
+          <div className="mobileRefKpi net"><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><small>This month</small></div>
+        </div>
+        <div className="card mobileRefCard">
+          <div className="row space"><h3>Cash flow trend</h3><span className="badge">Weekly</span></div>
+          <div style={{ height: 220 }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowSeries}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="label" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={44} tickFormatter={(v:number)=>v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`} /><Legend /><Bar dataKey="income" fill={cashIncome} barSize={14} radius={[7,7,0,0]} /><Bar dataKey="expenses" fill={cashExpense} barSize={14} radius={[7,7,0,0]} /><Line type="monotone" dataKey="net" stroke={cashNet} strokeWidth={3} dot={{r:4}} /></ComposedChart></ResponsiveContainer></div>
+        </div>
+        <div className="mobileRefTwoCol">
+          <div className="card mobileRefCard"><h3>Share of spending</h3><div className="mobileShareWrap"><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68}>{byCategory.map((r)=> <Cell key={r.id} fill={r.color} />)}</Pie></PieChart></ResponsiveContainer></div><div className="mobileShareLegend">{byCategory.slice(0, 6).map((r) => { const pct = expenses > 0 ? Math.round((r.total / expenses) * 100) : 0; return <div key={r.id} className="mobileShareLegendRow"><span><i style={{ background: r.color }} />{r.name}</span><strong>{pct}%</strong></div> })}</div></div></div>
+          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{sortedCategories.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const pr=b>0?Math.min(1,spent/b):0;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small>{helpers.fmtMoney(spent,data.currency)} / {helpers.fmtMoney(b,data.currency)}</small></div><div className="progress"><div style={{width:`${pr*100}%`, background:'#16a34a'}} /></div></div>})}</div></div>
+        </div>
+        <div className="card mobileRefCard">
+          <div className="row space"><h3>Monthly spending trends</h3><div className="row" style={{gap:10}}><small>This year</small><small>Last year</small></div></div>
+          <div style={{height:200}}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={monthlyTrend}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="month" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={38} tickFormatter={(v:number)=>v>=1000?`$${Math.round(v/1000)}K`:`$${Math.round(v)}`} /><Bar dataKey="highlight" fill={trendBar} barSize={18} radius={[8,8,0,0]} /><Line type="monotone" dataKey="thisYear" stroke={trendThisYear} strokeWidth={3} dot={false} /><Line type="monotone" dataKey="lastYear" stroke={trendLastYear} strokeWidth={2} dot={false} /></ComposedChart></ResponsiveContainer></div>
+        </div>
+        <div className="card mobileRefCard mobileRecurringRef">
+          <div className="row between" style={{ marginBottom: 10 }}>
+            <div>
+              <h3 style={{ marginBottom: 4 }}>Recurring</h3>
+              <div className="h1" style={{ fontSize: 28, marginBottom: 0 }}>{upcomingRecurringThisMonth.length} Upcoming For Next 7 Days</div>
+            </div>
+            <span className="badge">Next 7 days</span>
+          </div>
+          <div className="grid recurringScrollArea" style={{ gap: 8 }}>
+            {upcomingRecurringThisMonth.length === 0 ? (
+              <div className="muted recurringEmpty">No recurring bills or income are due in the next 7 days.</div>
+            ) : upcomingRecurringThisMonth.map((item) => (
+              <div key={item.id} className="recurringUpcomingItem">
+                <div className="recurringUpcomingMain">
+                  <div className="recurringUpcomingIcon">{item.category?.emoji ?? (item.kind === 'income' ? '💰' : '📆')}</div>
+                  <div>
+                    <div className="recurringUpcomingTitle">{item.name}</div>
+                    <div className="muted">{item.category?.name ?? (item.kind === 'income' ? 'Recurring income' : 'Recurring bill')} • {item.kind === 'income' ? 'Income' : 'Expense'} • {item.recurrenceLabel} • {new Date(`${item.dueDateIso}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                  </div>
+                </div>
+                <div className="recurringUpcomingAmount">
+                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`grid cols2 dashboardView ${isPhone ? 'mobileDashboardView' : ''} ${useCompactDashboard ? 'dashboardCompactView' : ''}`}>
       <div className={`card ${isPhone ? 'mobileDashboardCard' : ''}`}>
