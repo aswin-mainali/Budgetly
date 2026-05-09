@@ -8220,7 +8220,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileTopBar{display:flex;align-items:center;gap:12px;padding:4px 6px 14px}
   body.mobile-app .mobileWordmark{display:flex;flex-direction:column;font-family:inherit;font-size:17px;line-height:1.2}
   body.mobile-app .mobileWordmark small{font-size:12px;color:#64748b}
-  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:110px}
+  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px}
   body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
   body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
   body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:#0f254f;max-width:100%;word-break:break-word}
@@ -8240,7 +8240,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569}
   body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
   body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
-  body.mobile-app .mobileRecurringRef{max-height:160px;overflow:hidden}
+  body.mobile-app .mobileRecurringRef{max-height:none;overflow:visible}
   body.mobile-app .mobileTabBar{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:#ffffff;border-top:1px solid #dfe7f4;border-left:0;border-right:0;border-bottom:0;border-radius:0;box-shadow:0 -6px 20px rgba(15,23,42,.10);backdrop-filter:none;-webkit-backdrop-filter:none;opacity:1}
   body.mobile-app .mobileTabBar button.active{background:#eef4ff;color:#1f64e0}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab{transform:translateY(-16px);width:62px;height:62px;border-radius:999px;background:#1f64e0;color:#fff;justify-self:center;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 26px rgba(31,100,224,.4)}
