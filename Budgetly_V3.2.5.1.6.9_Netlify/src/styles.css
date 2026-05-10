@@ -8223,7 +8223,13 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px}
   body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
   body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:#0f254f;max-width:100%;word-break:break-word}
+  body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:#0f254f;max-width:100%;word-break:normal;white-space:nowrap}
+
+  @media (max-width: 420px){
+    body.mobile-app .mobileDashTitleRow{gap:8px;align-items:center}
+    body.mobile-app .mobileDashTitle{font-size:clamp(34px,10.5vw,42px);line-height:1;flex:1 1 auto;min-width:0}
+    body.mobile-app .mobileDashMonth{flex:0 0 clamp(128px,38vw,146px);max-width:clamp(128px,38vw,146px)}
+  }
   body.mobile-app .mobileDashSubtitle{color:#6b7a93;margin-top:4px}
   body.mobile-app .mobileDashMonth{flex:0 0 146px;max-width:146px;border-radius:16px;background:#fff;padding:10px 12px}
   body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
