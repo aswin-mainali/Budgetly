@@ -8,8 +8,8 @@ export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' 
 
 const NAV_ITEMS: Array<{ key: Exclude<ViewKey, 'super_admin'>; label: string; icon: React.ReactNode; visible: (features: FeatureAccess) => boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={18} />, visible: (features) => features.dashboard },
-  { key: 'transactions', label: 'Transactions', icon: <ListChecks size={18} />, visible: (features) => features.transactions },
   { key: 'categories', label: 'Categories', icon: <Tags size={18} />, visible: (features) => features.categories },
+  { key: 'transactions', label: 'Transactions', icon: <ListChecks size={18} />, visible: (features) => features.transactions },
   { key: 'recurring', label: 'Recurring', icon: <Repeat size={18} />, visible: (features) => features.recurring },
   { key: 'advice', label: 'Advice', icon: <Sparkles size={18} />, visible: (features) => features.advice },
   { key: 'tools', label: 'Utilities', icon: <Wrench size={18} />, visible: () => true },
