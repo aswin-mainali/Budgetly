@@ -18,6 +18,19 @@ const IDLE_WARNING_MS = 60 * 1000
 
 type ToastItem = { id: number; message: string }
 
+const getTimeGreeting = (date = new Date()) => {
+  const hour = date.getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
+const getDisplayName = (firstName: string, lastName: string, email: string | null) => {
+  const fullName = `${firstName} ${lastName}`.trim()
+  if (fullName) return fullName
+  return (email || 'User').split('@')[0]
+}
+
 const showToast = (message: string) => {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message } }))
@@ -303,7 +316,8 @@ export default function App() {
   }
 
   const profile = readCachedUserProfile()
-  const profileName = `${profile.firstName} ${profile.lastName}`.trim() || (email || 'User').split('@')[0]
+  const profileName = getDisplayName(profile.firstName, profile.lastName, email)
+  const timeGreeting = getTimeGreeting()
   const profileImage = profile.image
 
   const handleOpenTransactionsByType = (type: 'income' | 'expense') => {
@@ -342,7 +356,7 @@ export default function App() {
           <header className="mobileTopBar">
             <button className="mobileIconBtn" onClick={() => setCollapsed(false)} aria-label="Open menu"><Menu size={22} /></button>
             <div className="mobileWordmark">
-              <strong>Hi, Aswin 👋</strong><small>Good afternoon</small>
+              <strong>Hi, {profileName} 👋</strong><small>{timeGreeting}</small>
             </div>
             <button className="mobileAvatarBtn" onClick={() => handleViewChange('settings')} aria-label="Open settings">
               {profileImage ? <img src={profileImage} alt="Profile" /> : <span>{profileName.charAt(0).toUpperCase()}</span>}
