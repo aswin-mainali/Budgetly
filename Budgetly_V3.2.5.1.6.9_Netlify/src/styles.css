@@ -8305,9 +8305,6 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   overflow: hidden !important;
   max-height: none !important;
 }
-.txManagePanel .txPageScrollable{
-  padding-bottom: 64px;
-}
 .txManagePanel .txHistoryTable,
 .txManagePanel .txHistoryTable tbody,
 .txManagePanel .txHistoryTable tr{
