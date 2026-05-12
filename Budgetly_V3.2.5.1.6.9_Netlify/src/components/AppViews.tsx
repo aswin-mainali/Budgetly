@@ -1796,7 +1796,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
   const [txAddModalOpen, setTxAddModalOpen] = useState(false)
   const [txPage, setTxPage] = useState(1)
-  const txPageSize = getResponsivePageSize(8, 6, 4)
+  const txPageSize = getResponsivePageSize(7, 5, 4)
   const txPages = Math.max(1, Math.ceil(filteredTx.length / txPageSize))
   const pagedTransactions = useMemo(() => filteredTx.slice((txPage - 1) * txPageSize, txPage * txPageSize), [filteredTx, txPage, txPageSize])
   const pendingDeleteTx = useMemo(() => filteredTx.find((transaction) => transaction.id === pendingDeleteId) ?? null, [filteredTx, pendingDeleteId])
