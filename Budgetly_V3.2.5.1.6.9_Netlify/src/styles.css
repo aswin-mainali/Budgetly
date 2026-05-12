@@ -8302,3 +8302,23 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   width:0;
   height:0;
 }
+
+/* Transactions footer should be solid + pagination pages should not clip rows */
+.txManagePanel .dataPageFooter,
+.txManagePanel .txStickyFooter{
+  background: var(--card) !important;
+  opacity: 1 !important;
+  border-top: 1px solid var(--border) !important;
+  border-radius: 0 0 14px 14px;
+}
+.txManagePanel .txPageScrollable,
+.txManagePanel .transactionsScrollBox,
+.txManagePanel .dataScrollBox{
+  overflow: visible !important;
+  max-height: none !important;
+}
+.txManagePanel .txHistoryTable,
+.txManagePanel .txHistoryTable tbody,
+.txManagePanel .txHistoryTable tr{
+  overflow: visible;
+}
