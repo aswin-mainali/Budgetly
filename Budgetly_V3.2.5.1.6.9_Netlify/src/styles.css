@@ -8289,3 +8289,16 @@ body.light .authInstallHelpClose{color:#1d4ed8}
     justify-self:auto;
   }
 }
+
+/* Transactions pagination mode: remove internal history scrollbars */
+.txManagePanel .txPageScrollable,
+.txManagePanel .transactionsScrollBox{
+  max-height:none !important;
+  min-height:0 !important;
+  overflow:visible !important;
+}
+.txManagePanel .txPageScrollable::-webkit-scrollbar,
+.txManagePanel .transactionsScrollBox::-webkit-scrollbar{
+  width:0;
+  height:0;
+}
