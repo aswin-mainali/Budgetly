@@ -4733,7 +4733,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               <span className="badge">Signed in</span>
             </div>
             <div className="settingsAccountGrid">
-              <div className="card settingsPanelCard settingsProfileCard">
+              <div className="card settingsPanelCard settingsProfileCard" data-tour="settings-account-profile">
                 <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
                   <div>
                     <div className="h1">Profile</div>
@@ -4782,6 +4782,9 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                 {profileSuccess ? <div className="passwordFeedback success">{profileSuccess}</div> : null}
 
                 <div className="row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button className="btn ghost" type="button" onClick={() => window.dispatchEvent(new Event('budgetly:restart-welcome-tour'))}>
+                    <Sparkles size={16} /> Restart Welcome Tour
+                  </button>
                   <button className="btn primary" type="button" onClick={() => void handleProfileSave()} disabled={profileBusy}>
                     <UserCircle2 size={16} /> {profileBusy ? 'Saving…' : 'Save profile'}
                   </button>

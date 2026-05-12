@@ -169,12 +169,12 @@ export default function Sidebar(props: {
                 {toolsExpanded && !collapsed && hasAnyTool && floatingToolsPos ? createPortal(
                   <div className="toolsSubNav floating" id="utilities-submenu" style={{ position: 'fixed', top: floatingToolsPos.top, left: floatingToolsPos.left }}>
                     {features.goals ? (
-                      <button className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals'); setToolsExpanded(false) }}>
+                      <button data-tour="nav-goals" className={toolsSection === 'goals' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('goals'); setToolsExpanded(false) }}>
                         <Target size={16} /> <span className="navLabel">Goals</span>
                       </button>
                     ) : null}
                     {features.reports ? (
-                      <button className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports'); setToolsExpanded(false) }}>
+                      <button data-tour="nav-reports" className={toolsSection === 'reports' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('reports'); setToolsExpanded(false) }}>
                         <BarChart3 size={16} /> <span className="navLabel">Reports</span>
                       </button>
                     ) : null}
@@ -190,7 +190,7 @@ export default function Sidebar(props: {
             )
           }
           return (
-          <button key={item.key} className={isActive ? 'active' : ''} onClick={() => setView(item.key)}>
+          <button key={item.key} data-tour={`nav-${item.key}`} className={isActive ? 'active' : ''} onClick={() => setView(item.key)}>
             {item.icon} <span className="navLabel">{item.label}</span>
           </button>
         )})}
@@ -201,7 +201,7 @@ export default function Sidebar(props: {
           <Cloud size={14} /> {syncLabel}
         </span>
         {features.support ? (
-          <button className={`btn support ${view === 'support' ? 'active' : ''}`} onClick={() => setView('support')}>
+          <button data-tour="nav-support" className={`btn support ${view === 'support' ? 'active' : ''}`} onClick={() => setView('support')}>
             <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}

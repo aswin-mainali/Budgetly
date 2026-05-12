@@ -7,6 +7,8 @@ import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfil
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
+import WelcomeTour from './components/WelcomeTour'
+import { loadWelcomeTourState, saveWelcomeTourState } from './lib/welcomeTour'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 
@@ -48,6 +50,7 @@ export default function App() {
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
+  const [welcomeTourOpen, setWelcomeTourOpen] = useState(false)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -81,6 +84,19 @@ export default function App() {
 
     window.addEventListener('budgetly:toast', handleToast as EventListener)
     return () => window.removeEventListener('budgetly:toast', handleToast as EventListener)
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return
+    void loadWelcomeTourState(userId).then((state) => {
+      if (!state.hasSeen) setWelcomeTourOpen(true)
+    }).catch(() => undefined)
+  }, [userId])
+
+  useEffect(() => {
+    const onRestart = () => setWelcomeTourOpen(true)
+    window.addEventListener('budgetly:restart-welcome-tour', onRestart)
+    return () => window.removeEventListener('budgetly:restart-welcome-tour', onRestart)
   }, [])
 
   useEffect(() => {
@@ -331,6 +347,17 @@ export default function App() {
     handleViewChange('transactions')
   }
 
+  const tourSteps = [
+    { selector: '[data-tour=\"nav-categories\"]', title: 'Create new categories', description: 'Set up your categories to organize spending, budgets, and reports more clearly.', view: 'categories' as ViewKey },
+    { selector: '[data-tour=\"nav-transactions\"]', title: 'Add your first transaction', description: 'Start tracking your money by recording your first income or expense transaction.', view: 'transactions' as ViewKey },
+    { selector: '[data-tour=\"nav-recurring\"]', title: 'Add recurring bills', description: 'Add recurring expenses and income so Budgetly can automatically help you stay on track.', view: 'recurring' as ViewKey },
+    { selector: '[data-tour=\"nav-goals\"]', title: 'Create your goals', description: 'Set savings, debt, or personal finance goals so Budgetly can help you track your progress.', view: 'tools' as ViewKey, tools: 'goals' as const },
+    { selector: '[data-tour=\"nav-reports\"]', title: 'View your reports', description: 'Use reports to understand your income, spending, budget performance, and monthly trends.', view: 'tools' as ViewKey, tools: 'reports' as const },
+    { selector: '.dashboardView', title: 'See your dashboard', description: 'Your dashboard gives you a quick view of income, expenses, budgets, and upcoming activity.', view: 'dashboard' as ViewKey },
+    { selector: '[data-tour=\"settings-account-profile\"]', title: 'Update your profile', description: 'Complete your account details in Settings > Account to personalize your Budgetly experience.', view: 'settings' as ViewKey },
+    { selector: '[data-tour=\"nav-support\"]', title: 'Access Help and Support', description: 'Use Help & Support whenever you need guidance, have questions, or want to report an issue.', view: 'support' as ViewKey },
+  ]
+
   return (
     <div className="container appWrap">
       <OfflineStatusBanner />
@@ -424,6 +451,25 @@ export default function App() {
           </div>
         </div>
       ) : null}
+      <WelcomeTour
+        open={welcomeTourOpen}
+        steps={tourSteps.map(({ selector, title, description }) => ({ selector, title, description }))}
+        onStepChange={(stepIndex) => {
+          const next = tourSteps[stepIndex]
+          if (!next) return
+          if (next.view === 'tools') {
+            setView('tools')
+            if (next.tools) setToolsSection(next.tools)
+          } else {
+            setView(next.view)
+          }
+        }}
+        onClose={(completed) => {
+          setWelcomeTourOpen(false)
+          if (!userId) return
+          void saveWelcomeTourState(userId, { has_seen_welcome_tour: true, welcome_tour_completed: completed })
+        }}
+      />
     </div>
   )
 }
