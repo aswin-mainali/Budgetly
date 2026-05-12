@@ -703,9 +703,8 @@ body.light .btn.danger:hover{
 .budgetOverBudget{display:block; margin-top:6px;}
 
 .recurringScrollArea{
-  max-height: 310px;
-  min-height: 310px;
-  overflow: hidden;
+  min-height: 300px;
+  overflow: visible;
   padding-right: 6px;
   align-content: start;
 }

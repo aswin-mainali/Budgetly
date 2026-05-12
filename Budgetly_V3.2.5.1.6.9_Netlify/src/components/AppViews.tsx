@@ -1453,13 +1453,14 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
   const cashIncome = theme === 'dark' ? '#6ea8ff' : '#3b82f6'
   const cashExpense = theme === 'dark' ? '#fb7185' : '#ef4444'
   const cashNet = theme === 'dark' ? '#4ade80' : '#16a34a'
-  const dashboardPageSize = getResponsivePageSize(4, 3, 2)
+  const budgetPageSize = getResponsivePageSize(4, 3, 2)
+  const recurringPageSize = getResponsivePageSize(3, 3, 2)
   const [budgetPage, setBudgetPage] = useState(1)
   const [recurringPage, setRecurringPage] = useState(1)
-  const budgetPages = Math.max(1, Math.ceil(sortedCategories.length / dashboardPageSize))
-  const recurringPages = Math.max(1, Math.ceil(upcomingRecurringThisMonth.length / dashboardPageSize))
-  const pagedBudgets = useMemo(() => sortedCategories.slice((budgetPage - 1) * dashboardPageSize, budgetPage * dashboardPageSize), [sortedCategories, budgetPage, dashboardPageSize])
-  const pagedRecurring = useMemo(() => upcomingRecurringThisMonth.slice((recurringPage - 1) * dashboardPageSize, recurringPage * dashboardPageSize), [upcomingRecurringThisMonth, recurringPage, dashboardPageSize])
+  const budgetPages = Math.max(1, Math.ceil(sortedCategories.length / budgetPageSize))
+  const recurringPages = Math.max(1, Math.ceil(upcomingRecurringThisMonth.length / recurringPageSize))
+  const pagedBudgets = useMemo(() => sortedCategories.slice((budgetPage - 1) * budgetPageSize, budgetPage * budgetPageSize), [sortedCategories, budgetPage, budgetPageSize])
+  const pagedRecurring = useMemo(() => upcomingRecurringThisMonth.slice((recurringPage - 1) * recurringPageSize, recurringPage * recurringPageSize), [upcomingRecurringThisMonth, recurringPage, recurringPageSize])
   useEffect(() => setBudgetPage((prev) => Math.min(prev, budgetPages)), [budgetPages])
   useEffect(() => setRecurringPage((prev) => Math.min(prev, recurringPages)), [recurringPages])
   const cashFlowSeries = useMemo(() => {
