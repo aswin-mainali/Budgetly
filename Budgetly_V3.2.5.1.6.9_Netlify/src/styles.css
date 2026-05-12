@@ -8264,3 +8264,27 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .paginationLabel{font-size:13px;font-weight:600;color:var(--muted);min-width:64px;text-align:center}
 .budgetScrollArea,.recurringScrollArea,.mobileBudgetScroll,.transactionsScrollBox{transition:opacity .2s ease, transform .2s ease}
 .mobileTxList{min-height:360px}
+
+.txManagePanel .dataPageFooter{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  align-items:center;
+}
+.txManagePanel .dataPageFooter .paginationFooter{
+  justify-self:center;
+}
+.txManagePanel .dataPageFooter .txUpdateButton{
+  justify-self:end;
+}
+@media (max-width: 900px){
+  .txManagePanel .dataPageFooter{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+  }
+  .txManagePanel .dataPageFooter .paginationFooter,
+  .txManagePanel .dataPageFooter .txUpdateButton{
+    justify-self:auto;
+  }
+}

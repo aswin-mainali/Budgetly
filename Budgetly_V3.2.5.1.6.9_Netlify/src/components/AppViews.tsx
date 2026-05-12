@@ -2227,10 +2227,9 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </table>
         </div>
       )}      </div>
-      <PaginationControls page={txPage} totalPages={txPages} onPrev={() => setTxPage((prev) => Math.max(1, prev - 1))} onNext={() => setTxPage((prev) => Math.min(txPages, prev + 1))} />
-
       <div className={`row between dataPageFooter ${isPhone ? 'mobileTxFooter' : 'txStickyFooter'}`} style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
+        <PaginationControls page={txPage} totalPages={txPages} onPrev={() => setTxPage((prev) => Math.max(1, prev - 1))} onNext={() => setTxPage((prev) => Math.min(txPages, prev + 1))} />
         <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
           Update Transactions
         </button>
