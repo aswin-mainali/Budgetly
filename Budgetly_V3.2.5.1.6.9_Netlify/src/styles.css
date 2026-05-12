@@ -8267,7 +8267,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 
 .txManagePanel .dataPageFooter{
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
   align-items:center;
 }
 .txManagePanel .dataPageFooter .paginationFooter{
@@ -8275,6 +8275,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 }
 .txManagePanel .dataPageFooter .txUpdateButton{
   justify-self:end;
+  margin-left:auto;
 }
 @media (max-width: 900px){
   .txManagePanel .dataPageFooter{
