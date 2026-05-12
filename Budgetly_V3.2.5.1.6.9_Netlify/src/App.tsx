@@ -14,6 +14,8 @@ const THEME_KEY = 'raswibudgeting:theme'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 const IDLE_WARNING_MS = 60 * 1000
+const TAB_CLOSE_TIMEOUT_MS = 5 * 60 * 1000
+const LAST_TAB_CLOSED_AT_KEY = 'budgetly:last-tab-closed-at'
 
 
 type ToastItem = { id: number; message: string }
@@ -105,10 +107,25 @@ export default function App() {
   useEffect(() => {
     const boot = async () => {
       const { data: sessionData } = await supabase.auth.getSession()
-      const user = sessionData.session?.user ?? null
+      const session = sessionData.session
+      const lastTabClosedAtRaw = localStorage.getItem(LAST_TAB_CLOSED_AT_KEY)
+      const lastTabClosedAt = lastTabClosedAtRaw ? Number(lastTabClosedAtRaw) : NaN
+      const isSessionExpiredFromTabClose = Number.isFinite(lastTabClosedAt) && Date.now() - lastTabClosedAt > TAB_CLOSE_TIMEOUT_MS
+
+      if (session && isSessionExpiredFromTabClose) {
+        await supabase.auth.signOut()
+        localStorage.removeItem(LAST_TAB_CLOSED_AT_KEY)
+        setUserId(null)
+        setEmail(null)
+        setSessionChecked(true)
+        return
+      }
+
+      const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
       await syncProfileCacheForUser(user)
+      if (user) localStorage.removeItem(LAST_TAB_CLOSED_AT_KEY)
       setSessionChecked(true)
     }
 
@@ -124,8 +141,18 @@ export default function App() {
     return () => subscription.subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    const markTabClosed = () => {
+      localStorage.setItem(LAST_TAB_CLOSED_AT_KEY, String(Date.now()))
+    }
+
+    window.addEventListener('pagehide', markTabClosed)
+    return () => window.removeEventListener('pagehide', markTabClosed)
+  }, [])
+
   const signOut = async () => {
     await supabase.auth.signOut()
+    localStorage.removeItem(LAST_TAB_CLOSED_AT_KEY)
     setUserId(null)
     setEmail(null)
   }
