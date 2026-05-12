@@ -8290,35 +8290,31 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   }
 }
 
-/* Transactions pagination mode: remove internal history scrollbars */
-.txManagePanel .txPageScrollable,
-.txManagePanel .transactionsScrollBox{
-  max-height:none !important;
-  min-height:0 !important;
-  overflow:visible !important;
-}
-.txManagePanel .txPageScrollable::-webkit-scrollbar,
-.txManagePanel .transactionsScrollBox::-webkit-scrollbar{
-  width:0;
-  height:0;
-}
-
-/* Transactions footer should be solid + pagination pages should not clip rows */
+/* Transactions footer should be solid + pagination centered without overlap */
 .txManagePanel .dataPageFooter,
 .txManagePanel .txStickyFooter{
   background: var(--card) !important;
   opacity: 1 !important;
   border-top: 1px solid var(--border) !important;
   border-radius: 0 0 14px 14px;
+  box-shadow: none !important;
 }
 .txManagePanel .txPageScrollable,
 .txManagePanel .transactionsScrollBox,
 .txManagePanel .dataScrollBox{
-  overflow: visible !important;
+  overflow: hidden !important;
   max-height: none !important;
+}
+.txManagePanel .txPageScrollable{
+  padding-bottom: 64px;
 }
 .txManagePanel .txHistoryTable,
 .txManagePanel .txHistoryTable tbody,
 .txManagePanel .txHistoryTable tr{
   overflow: visible;
+}
+.txManagePanel .transactionsScrollBox::-webkit-scrollbar,
+.txManagePanel .txPageScrollable::-webkit-scrollbar{
+  width:0;
+  height:0;
 }
