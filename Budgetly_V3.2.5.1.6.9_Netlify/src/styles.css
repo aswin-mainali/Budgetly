@@ -8259,103 +8259,43 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab span{display:block;font-size:11px;position:absolute;bottom:-20px;color:#334155}
 }
 
-.paginationFooter{display:flex;align-items:center;justify-content:center;gap:18px}
-.paginationArrowBtn{width:30px;height:30px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);transition:all .2s ease}
-.paginationArrowBtn:hover:not(:disabled){background:rgba(148,163,184,.12)}
-.paginationArrowBtn:disabled{opacity:.45;cursor:not-allowed}
-.paginationLabel{font-size:13px;font-weight:600;color:var(--muted);min-width:64px;text-align:center}
-.budgetScrollArea,.recurringScrollArea,.mobileBudgetScroll,.transactionsScrollBox{transition:opacity .2s ease, transform .2s ease}
-.mobileTxList{min-height:360px}
-
-.txManagePanel .dataPageFooter{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
-  align-items:center;
+.universalSearchBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(2px);
+  z-index: 1200;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: clamp(50px, 14vh, 120px);
 }
-.txManagePanel .dataPageFooter .paginationFooter{
-  justify-self:center;
+.universalSearchDialog {
+  width: min(760px, 92vw);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 25px 55px rgba(15, 23, 42, 0.14);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
-.txManagePanel .dataPageFooter .txUpdateButton{
-  justify-self:end;
-  margin-left:auto;
-}
-@media (max-width: 900px){
-  .txManagePanel .dataPageFooter{
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
-  }
-  .txManagePanel .dataPageFooter .paginationFooter,
-  .txManagePanel .dataPageFooter .txUpdateButton{
-    justify-self:auto;
-  }
-}
-
-/* Transactions footer should be solid + pagination centered without overlap */
-.txManagePanel .dataPageFooter,
-.txManagePanel .txStickyFooter{
-  background: var(--card) !important;
-  opacity: 1 !important;
-  border-top: 1px solid var(--border) !important;
-  border-radius: 0 0 14px 14px;
-  box-shadow: none !important;
-}
-.txManagePanel .txPageScrollable,
-.txManagePanel .transactionsScrollBox,
-.txManagePanel .dataScrollBox{
-  overflow: hidden !important;
-  max-height: none !important;
-}
-.txManagePanel .transactionsScrollBox{
-  padding-bottom: 8px;
-}
-.txManagePanel .txHistoryTable,
-.txManagePanel .txHistoryTable tbody,
-.txManagePanel .txHistoryTable tr{
-  overflow: visible;
-}
-.txManagePanel .transactionsScrollBox::-webkit-scrollbar,
-.txManagePanel .txPageScrollable::-webkit-scrollbar{
-  width:0;
-  height:0;
-}
-
-/* Transactions view now uses pagination, so hide page-level scrollbar */
-.transactionsPage,
-.txFullLayout{
-  overflow:hidden !important;
-  scrollbar-width:none;
-}
-.transactionsPage::-webkit-scrollbar,
-.txFullLayout::-webkit-scrollbar{
-  width:0;
-  height:0;
-}
-
-.categoriesManage .paginationFooter{
-  margin-top:10px;
-  padding-bottom:4px;
-}
-
-.categoriesPageCard > .dataPageFooter{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-.categoriesPageCard > .dataPageFooter .btn.primary{
-  margin-left:auto;
-}
-.categoriesManage .categoriesList{min-height:0;}
-
-@media (min-width: 1500px){
-  .categoriesManage{
-    display:flex;
-    flex-direction:column;
-    min-height:560px;
-  }
-  .categoriesManage .paginationFooter{
-    margin-top:auto;
-    padding-top:12px;
-  }
+.universalSearchInputRow { display:flex; align-items:center; gap:10px; border-bottom:1px solid #eceff3; padding:14px 16px; }
+.universalSearchInputRow input { border:0; outline:0; flex:1; font-size:1rem; background:transparent; color:#374151; }
+.universalSearchInputRow input::placeholder { color:#6b7280; }
+.keyPill,.shortcutPill { border:1px solid #d1d5db; background:#f8fafc; border-radius:8px; padding:3px 8px; font-size:14px; color:#4b5563; }
+.universalSearchList { overflow:visible; padding:10px; }
+.universalSearchItem { width:100%; border:0; background:transparent; display:flex; align-items:center; gap:12px; border-radius:12px; padding:10px; text-align:left; }
+.universalSearchItem.active { background:#f1edff; }
+.universalSearchIcon { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; color:#fff; flex-shrink:0; }
+.universalSearchIcon.violet{background:#6d5cf6}.universalSearchIcon.indigo{background:#635bff}.universalSearchIcon.green{background:#16a34a}.universalSearchIcon.blue{background:#2563eb}.universalSearchIcon.purple{background:#7c3aed}.universalSearchIcon.gold{background:#ca8a04}.universalSearchIcon.slate{background:#6b7280}.universalSearchIcon.teal{background:#2563eb}
+.universalSearchCopy { flex:1; display:flex; flex-direction:column; gap:2px; }
+.universalSearchCopy strong { color:#111827; font-size:1.05rem; font-weight:700; }
+.universalSearchCopy small { color:#6b7280; font-size:0.95rem; }
+.universalSearchFooter { border-top:1px solid #eceff3; padding:12px 16px; color:#6b7280; font-size:0.92rem; }
+.universalSearchEmpty { padding:18px; color:#6b7280; }
+@media (max-width: 768px) {
+  .universalSearchInputRow input { font-size:16px; }
+  .universalSearchCopy strong { font-size:18px; }
+  .universalSearchCopy small,.universalSearchFooter,.shortcutPill,.keyPill { font-size:13px; }
 }
