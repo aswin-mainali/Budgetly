@@ -295,9 +295,34 @@ export default function App() {
     return tag === 'input' || tag === 'textarea' || tag === 'select' || node.isContentEditable || !!node.closest('[contenteditable="true"], [role="textbox"], .modal form')
   }
 
+  const getUniversalSearchShortcut = () => {
+    const saved = window.localStorage.getItem('budgetly_universal_search_shortcut')?.trim()
+    return saved || 'Ctrl + Shift + Space'
+  }
+
+  const formatShortcutFromEvent = (event: KeyboardEvent) => {
+    const key = event.key
+    const normalizedKey = key.length === 1 ? key.toUpperCase() : key
+    const displayKey = normalizedKey === ' ' || normalizedKey === 'Spacebar' || event.code === 'Space' ? 'Space'
+      : normalizedKey === '/' || event.code === 'Slash' ? 'Slash'
+      : normalizedKey === '.' || event.code === 'Period' ? 'Period'
+      : normalizedKey === ',' || event.code === 'Comma' ? 'Comma'
+      : normalizedKey === '-' || event.code === 'Minus' ? 'Minus'
+      : normalizedKey === '=' || event.code === 'Equal' ? 'Equal'
+      : normalizedKey
+    const modifiers: string[] = []
+    if (event.ctrlKey) modifiers.push('Ctrl')
+    if (event.metaKey) modifiers.push('Cmd')
+    if (event.altKey) modifiers.push('Alt')
+    if (event.shiftKey) modifiers.push('Shift')
+    return [...modifiers, displayKey].join(' + ')
+  }
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const isOpenSearchShortcut = (event.ctrlKey || event.metaKey) && event.shiftKey && event.code === 'Space'
+      const currentShortcut = getUniversalSearchShortcut()
+      const pressedShortcut = formatShortcutFromEvent(event)
+      const isOpenSearchShortcut = pressedShortcut === currentShortcut
       if (isOpenSearchShortcut && !isEditableTarget(event.target)) {
         event.preventDefault()
         setUniversalSearchOpen(true)

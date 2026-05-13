@@ -4466,6 +4466,8 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
 }
 
 export function SettingsView({ budget, theme, email, userId, onThemeToggle, admin, onSignOut }: SharedProps) {
+  const UNIVERSAL_SHORTCUT_STORAGE_KEY = 'budgetly_universal_search_shortcut'
+  const UNIVERSAL_SHORTCUT_DEFAULT = 'Ctrl + Shift + Space'
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const isSuperAdmin = !!admin?.isSuperAdmin
@@ -4485,7 +4487,41 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
+  const [universalSearchShortcut, setUniversalSearchShortcut] = useState(UNIVERSAL_SHORTCUT_DEFAULT)
+  const [shortcutListening, setShortcutListening] = useState(false)
+  const [shortcutError, setShortcutError] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
+
+  const normalizeShortcut = (value: string) => value.trim()
+  const blockedShortcuts = new Set([
+    'Ctrl + C', 'Ctrl + V', 'Ctrl + X', 'Ctrl + A', 'Ctrl + S', 'Ctrl + D', 'Ctrl + R', 'Ctrl + P', 'Ctrl + F', 'Ctrl + T', 'Ctrl + W', 'Ctrl + N', 'Ctrl + L',
+    'Cmd + C', 'Cmd + V', 'Cmd + X', 'Cmd + A', 'Cmd + S', 'Cmd + D', 'Cmd + R', 'Cmd + P', 'Cmd + F', 'Cmd + T', 'Cmd + W', 'Cmd + N', 'Cmd + L',
+    'F5', 'Alt + F4',
+  ])
+
+  const formatShortcut = (event: KeyboardEvent | React.KeyboardEvent<HTMLInputElement>) => {
+    const key = event.key
+    const normalizedKey = key.length === 1 ? key.toUpperCase() : key
+    const displayKey = normalizedKey === ' ' || normalizedKey === 'Spacebar' || event.code === 'Space' ? 'Space'
+      : normalizedKey === '/' || event.code === 'Slash' ? 'Slash'
+      : normalizedKey === '.' || event.code === 'Period' ? 'Period'
+      : normalizedKey === ',' || event.code === 'Comma' ? 'Comma'
+      : normalizedKey === '-' || event.code === 'Minus' ? 'Minus'
+      : normalizedKey === '=' || event.code === 'Equal' ? 'Equal'
+      : normalizedKey
+    if (['Control', 'Shift', 'Alt', 'Meta'].includes(displayKey)) return ''
+    const modifiers: string[] = []
+    if (event.ctrlKey) modifiers.push('Ctrl')
+    if (event.metaKey) modifiers.push('Cmd')
+    if (event.altKey) modifiers.push('Alt')
+    if (event.shiftKey) modifiers.push('Shift')
+    return [...modifiers, displayKey].join(' + ')
+  }
+
+  useEffect(() => {
+    const saved = normalizeShortcut(window.localStorage.getItem(UNIVERSAL_SHORTCUT_STORAGE_KEY) || '')
+    setUniversalSearchShortcut(saved || UNIVERSAL_SHORTCUT_DEFAULT)
+  }, [])
 
   const passwordStrengthScore = useMemo(() => {
     const value = passwordForm.next || ''
@@ -4787,6 +4823,50 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                     {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
                   </button>
                 </div>
+              </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <div>
+                  <div className="h1" style={{ fontSize: 16, margin: 0 }}>Universal Search Shortcut</div>
+                  <small>Choose the keyboard shortcut used to open universal search anywhere in Budgetly.</small>
+                </div>
+                <div className="settingsShortcutControl">
+                  <input
+                    className="input settingsShortcutInput"
+                    value={shortcutListening ? 'Press keys...' : universalSearchShortcut}
+                    placeholder="Press keys..."
+                    readOnly
+                    onFocus={() => { setShortcutListening(true); setShortcutError('') }}
+                    onBlur={() => setShortcutListening(false)}
+                    onKeyDown={(event) => {
+                      if (!shortcutListening) return
+                      event.preventDefault()
+                      const nextShortcut = formatShortcut(event)
+                      if (!nextShortcut) return
+                      if (blockedShortcuts.has(nextShortcut)) {
+                        setShortcutError('This shortcut is already used by your browser or system. Please choose another one.')
+                        return
+                      }
+                      setShortcutError('')
+                      setUniversalSearchShortcut(nextShortcut)
+                      window.localStorage.setItem(UNIVERSAL_SHORTCUT_STORAGE_KEY, nextShortcut)
+                      setShortcutListening(false)
+                    }}
+                  />
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => {
+                      setShortcutError('')
+                      setUniversalSearchShortcut('')
+                      window.localStorage.removeItem(UNIVERSAL_SHORTCUT_STORAGE_KEY)
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <small>Click the box and press any key combination. The pressed shortcut will appear here, for example: Shift + O.</small>
+                {shortcutError ? <small className="settingsShortcutError">{shortcutError}</small> : null}
               </div>
 
               <div className="settingsFieldCard settingsFieldCardWide">
