@@ -8332,7 +8332,8 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 }
 
 .categoriesManage .paginationFooter{
-  margin-top:10px;
+  margin-top:auto;
+  padding-top:12px;
   padding-bottom:4px;
 }
 
@@ -8343,5 +8344,10 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 }
 .categoriesPageCard > .dataPageFooter .btn.primary{
   margin-left:auto;
+}
+.categoriesManage{
+  display:flex;
+  flex-direction:column;
+  min-height:560px;
 }
 .categoriesManage .categoriesList{min-height:0;}
