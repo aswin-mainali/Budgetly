@@ -9,7 +9,6 @@ import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
-import UniversalSearch from './components/UniversalSearch'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -51,7 +50,6 @@ export default function App() {
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
-  const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -288,23 +286,9 @@ export default function App() {
     if (isMobile) setCollapsed(true)
   }
 
-  const isEditableTarget = (target: EventTarget | null) => {
-    const node = target as HTMLElement | null
-    if (!node) return false
-    const tag = node.tagName?.toLowerCase()
-    return tag === 'input' || tag === 'textarea' || tag === 'select' || node.isContentEditable || !!node.closest('[contenteditable="true"], [role="textbox"], .modal form')
-  }
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const isOpenSearchShortcut = (event.ctrlKey || event.metaKey) && event.shiftKey && event.code === 'Space'
-      if (isOpenSearchShortcut && !isEditableTarget(event.target)) {
-        event.preventDefault()
-        setUniversalSearchOpen(true)
-        return
-      }
-      if (!event.ctrlKey && !event.metaKey) return
-      if (event.shiftKey || event.metaKey) return
+      if (!event.ctrlKey || event.metaKey) return
 
       if (event.altKey && event.key.toLowerCase() === 't' && admin.visibleFeatures.transactions) {
         event.preventDefault()
@@ -314,7 +298,14 @@ export default function App() {
       }
       if (event.altKey) return
 
-      if (isEditableTarget(event.target)) return
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName?.toLowerCase()
+      const isTypingContext =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        !!target?.isContentEditable
+      if (isTypingContext) return
 
       const key = event.key.toLowerCase()
       const goTo = (nextView: ViewKey, tools?: 'goals' | 'reports' | 'converter' | 'debt') => {
@@ -323,7 +314,8 @@ export default function App() {
         handleViewChange(nextView)
       }
 
-      if (key === 'd' && admin.visibleFeatures.dashboard) goTo('dashboard')
+      if (event.shiftKey && key === 'd' && admin.visibleFeatures.dashboard) goTo('dashboard')
+      if (event.shiftKey) return
 
       if (key === 'c' && admin.visibleFeatures.categories) goTo('categories')
       if (key === 'r' && admin.visibleFeatures.recurring) goTo('recurring')
@@ -371,27 +363,6 @@ export default function App() {
     }))
     handleViewChange('transactions')
   }
-
-  const searchPages = [
-    { label: 'Dashboard', description: 'View your financial overview and key insights', shortcut: 'Ctrl + D', onSelect: () => handleViewChange('dashboard'), iconClassName: 'violet', icon: <BarChart3 size={16} /> },
-    { label: 'Transactions', description: 'View and manage your transactions', shortcut: 'Ctrl + Alt + T', onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
-    { label: 'Categories', description: 'Manage your budget categories', shortcut: 'Ctrl + C', onSelect: () => handleViewChange('categories'), iconClassName: 'green', icon: <Tags size={16} /> },
-    { label: 'Recurring', description: 'View and manage recurring transactions', shortcut: 'Ctrl + R', onSelect: () => handleViewChange('recurring'), iconClassName: 'blue', icon: <Repeat size={16} /> },
-    { label: 'Advice', description: 'Get personalized financial insights and tips', shortcut: 'Ctrl + A', onSelect: () => handleViewChange('advice'), iconClassName: 'purple', icon: <Sparkles size={16} /> },
-    { label: 'Goals', description: 'Track and manage your savings goals', shortcut: 'Ctrl + G', onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
-    { label: 'Settings', description: 'Manage account and app preferences', shortcut: 'Ctrl + S', onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
-    { label: 'Help & Support', description: 'Get help and contact support', shortcut: 'Ctrl + H', onSelect: () => handleViewChange('support'), iconClassName: 'teal', icon: <CircleHelp size={16} /> },
-  ].filter((item) => {
-    if (item.label === 'Dashboard') return admin.visibleFeatures.dashboard
-    if (item.label === 'Transactions') return admin.visibleFeatures.transactions
-    if (item.label === 'Categories') return admin.visibleFeatures.categories
-    if (item.label === 'Recurring') return admin.visibleFeatures.recurring
-    if (item.label === 'Advice') return admin.visibleFeatures.advice
-    if (item.label === 'Goals') return admin.visibleFeatures.goals
-    if (item.label === 'Settings') return admin.visibleFeatures.settings
-    if (item.label === 'Help & Support') return admin.visibleFeatures.support
-    return true
-  })
 
   return (
     <div className="container appWrap">
@@ -486,7 +457,6 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} pages={searchPages} />
     </div>
   )
 }
