@@ -9,7 +9,7 @@ import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
-import UniversalSearch from './components/UniversalSearch'
+import UniversalSearch, { CommandItem } from './components/UniversalSearch'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -397,24 +397,38 @@ export default function App() {
     handleViewChange('transactions')
   }
 
-  const searchPages = [
-    { label: 'Dashboard', description: 'View your financial overview and key insights', shortcut: 'Ctrl + D', onSelect: () => handleViewChange('dashboard'), iconClassName: 'violet', icon: <BarChart3 size={16} /> },
-    { label: 'Transactions', description: 'View and manage your transactions', shortcut: 'Ctrl + Alt + T', onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
-    { label: 'Categories', description: 'Manage your budget categories', shortcut: 'Ctrl + C', onSelect: () => handleViewChange('categories'), iconClassName: 'green', icon: <Tags size={16} /> },
-    { label: 'Recurring', description: 'View and manage recurring transactions', shortcut: 'Ctrl + R', onSelect: () => handleViewChange('recurring'), iconClassName: 'blue', icon: <Repeat size={16} /> },
-    { label: 'Advice', description: 'Get personalized financial insights and tips', shortcut: 'Ctrl + A', onSelect: () => handleViewChange('advice'), iconClassName: 'purple', icon: <Sparkles size={16} /> },
-    { label: 'Goals', description: 'Track and manage your savings goals', shortcut: 'Ctrl + G', onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
-    { label: 'Settings', description: 'Manage account and app preferences', shortcut: 'Ctrl + S', onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
-    { label: 'Help & Support', description: 'Get help and contact support', shortcut: 'Ctrl + H', onSelect: () => handleViewChange('support'), iconClassName: 'teal', icon: <CircleHelp size={16} /> },
+  const handleThemeToggle = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(nextTheme)
+    showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled')
+  }
+
+  const commandItems: CommandItem[] = [
+    { id: 'page-dashboard', type: 'page', label: 'Dashboard', description: 'View your financial overview and key insights', keywords: ['home', 'overview', 'summary'], onSelect: () => handleViewChange('dashboard'), iconClassName: 'violet', icon: <BarChart3 size={16} /> },
+    { id: 'page-transactions', type: 'page', label: 'Transactions', description: 'View and manage your transactions', keywords: ['transactions', 'income', 'expense'], onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
+    { id: 'page-categories', type: 'page', label: 'Categories', description: 'Manage your budget categories', keywords: ['budget', 'tags', 'category'], onSelect: () => handleViewChange('categories'), iconClassName: 'green', icon: <Tags size={16} /> },
+    { id: 'page-recurring', type: 'page', label: 'Recurring', description: 'View and manage recurring transactions', keywords: ['recurring', 'schedule', 'repeat'], onSelect: () => handleViewChange('recurring'), iconClassName: 'blue', icon: <Repeat size={16} /> },
+    { id: 'page-advice', type: 'page', label: 'Advice', description: 'Get personalized financial insights and tips', keywords: ['advice', 'tips', 'insights'], onSelect: () => handleViewChange('advice'), iconClassName: 'purple', icon: <Sparkles size={16} /> },
+    { id: 'page-goals', type: 'page', label: 'Goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
+    { id: 'page-reports', type: 'page', label: 'Reports', description: 'View monthly insights and summaries', keywords: ['reports', 'summary', 'analytics'], onSelect: () => { setToolsSection('reports'); handleViewChange('tools') }, iconClassName: 'violet', icon: <BarChart3 size={16} /> },
+    { id: 'page-settings', type: 'page', label: 'Settings', description: 'Manage account and app preferences', keywords: ['settings', 'preferences', 'account', 'general'], onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
+    { id: 'page-support', type: 'page', label: 'Help & Support', description: 'Get help and contact support', keywords: ['help', 'support', 'contact'], onSelect: () => handleViewChange('support'), iconClassName: 'teal', icon: <CircleHelp size={16} /> },
+    { id: 'action-add-transaction', type: 'action', label: 'Add transaction', description: 'Create a new income or expense transaction', keywords: ['add', 'transaction', 'expense', 'income', 'new', 'quick add'], onSelect: () => { handleViewChange('transactions'); window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:focus-add-transaction')), 0) }, iconClassName: 'indigo', icon: <Plus size={16} /> },
+    { id: 'action-theme-toggle', type: 'action', label: theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', description: 'Change Budgetly appearance', keywords: ['theme', 'dark', 'light', 'appearance', 'mode'], onSelect: handleThemeToggle, iconClassName: 'slate', icon: <Settings size={16} /> },
+    { id: 'action-export-report', type: 'action', label: 'Export report', description: 'Open reports export options', keywords: ['export', 'report', 'pdf', 'download', 'summary'], onSelect: () => { setToolsSection('reports'); handleViewChange('tools') }, iconClassName: 'violet', icon: <BarChart3 size={16} /> },
+    { id: 'action-open-settings', type: 'action', label: 'Open settings', description: 'Manage account and app preferences', keywords: ['settings', 'preferences', 'account', 'general'], onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
+    { id: 'action-go-this-month', type: 'action', label: 'Go to this month', description: 'Return Budgetly views to the current month', keywords: ['this month', 'current month', 'today', 'reset month'], onSelect: () => { handleViewChange('dashboard'); window.dispatchEvent(new CustomEvent('budgetly:go-to-current-month')) }, iconClassName: 'violet', icon: <CalendarDays size={16} /> },
+    { id: 'action-view-goals', type: 'action', label: 'View goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
   ].filter((item) => {
-    if (item.label === 'Dashboard') return admin.visibleFeatures.dashboard
-    if (item.label === 'Transactions') return admin.visibleFeatures.transactions
-    if (item.label === 'Categories') return admin.visibleFeatures.categories
-    if (item.label === 'Recurring') return admin.visibleFeatures.recurring
-    if (item.label === 'Advice') return admin.visibleFeatures.advice
-    if (item.label === 'Goals') return admin.visibleFeatures.goals
-    if (item.label === 'Settings') return admin.visibleFeatures.settings
-    if (item.label === 'Help & Support') return admin.visibleFeatures.support
+    if (item.id.includes('dashboard')) return admin.visibleFeatures.dashboard
+    if (item.id.includes('transactions') || item.id.includes('add-transaction')) return admin.visibleFeatures.transactions
+    if (item.id.includes('categories')) return admin.visibleFeatures.categories
+    if (item.id.includes('recurring')) return admin.visibleFeatures.recurring
+    if (item.id.includes('advice')) return admin.visibleFeatures.advice
+    if (item.id.includes('goals') || item.id.includes('view-goals')) return admin.visibleFeatures.goals
+    if (item.id.includes('reports') || item.id.includes('export-report')) return admin.visibleFeatures.reports
+    if (item.id.includes('settings') || item.id.includes('theme-toggle')) return admin.visibleFeatures.settings
+    if (item.id.includes('support')) return admin.visibleFeatures.support
     return true
   })
 
@@ -479,7 +493,7 @@ export default function App() {
           )
         ) : null}
         {view === 'support' && admin.visibleFeatures.support ? <HelpSupportView email={email} userId={userId} admin={admin} /> : null}
-        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} userId={userId} onThemeToggle={() => { const nextTheme = theme === 'dark' ? 'light' : 'dark'; setTheme(nextTheme); showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled') }} admin={admin} onSignOut={() => void signOut()} /> : null}
+        {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} userId={userId} onThemeToggle={handleThemeToggle} admin={admin} onSignOut={() => void signOut()} /> : null}
 
         {isMobile ? (
           <nav className="mobileTabBar mobileTabBarPlus" aria-label="Mobile navigation">
@@ -511,7 +525,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} pages={searchPages} />
+      <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} />
     </div>
   )
 }

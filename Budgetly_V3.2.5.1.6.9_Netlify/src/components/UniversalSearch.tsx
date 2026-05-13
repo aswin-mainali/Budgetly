@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart3, CircleHelp, Cog, Goal, Home, Lightbulb, ListChecks, RefreshCcw, Search, Tags } from 'lucide-react'
 
-export type SearchPage = { label: string; description: string; shortcut: string; onSelect: () => void; icon: React.ReactNode; iconClassName: string }
+export type CommandItem = { id: string; type: 'page' | 'action'; label: string; description: string; keywords: string[]; onSelect: () => void; icon: React.ReactNode; iconClassName: string }
 
 const isEditableTarget = (target: EventTarget | null) => {
   const node = target as HTMLElement | null
@@ -14,17 +14,29 @@ export const UNIVERSAL_SEARCH_PAGES_META = {
   icons: { Home, ListChecks, Tags, RefreshCcw, Lightbulb, Goal, Cog, CircleHelp, BarChart3 },
 }
 
-export default function UniversalSearch({ isOpen, onClose, pages }: { isOpen: boolean; onClose: () => void; pages: SearchPage[] }) {
+export default function UniversalSearch({ isOpen, onClose, commands }: { isOpen: boolean; onClose: () => void; commands: CommandItem[] }) {
   const [query, setQuery] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const prevFocusedRef = useRef<HTMLElement | null>(null)
 
-  const filteredPages = useMemo(() => {
+  const filteredCommands = useMemo(() => {
     const value = query.trim().toLowerCase()
-    if (!value) return pages
-    return pages.filter((page) => page.label.toLowerCase().includes(value) || page.description.toLowerCase().includes(value))
-  }, [pages, query])
+    if (!value) return []
+    const scored = commands.map((command) => {
+      const label = command.label.toLowerCase()
+      const description = command.description.toLowerCase()
+      const keywords = command.keywords.map((keyword) => keyword.toLowerCase())
+      let score = Number.POSITIVE_INFINITY
+      if (label === value) score = 0
+      else if (label.startsWith(value)) score = 1
+      else if (keywords.some((keyword) => keyword.includes(value))) score = 2
+      else if (description.includes(value) || label.includes(value)) score = 3
+      return { command, score }
+    }).filter((item) => Number.isFinite(item.score))
+    scored.sort((a, b) => a.score - b.score || a.command.label.localeCompare(b.command.label))
+    return scored.map((item) => item.command)
+  }, [commands, query])
 
   useEffect(() => {
     if (!isOpen) return
@@ -57,25 +69,25 @@ export default function UniversalSearch({ isOpen, onClose, pages }: { isOpen: bo
         onClose()
         return
       }
-      if (!filteredPages.length) return
+      if (!filteredCommands.length) return
       if (event.key === 'ArrowDown') {
         event.preventDefault()
-        setSelectedIndex((current) => (current + 1) % filteredPages.length)
+        setSelectedIndex((current) => (current + 1) % filteredCommands.length)
       }
       if (event.key === 'ArrowUp') {
         event.preventDefault()
-        setSelectedIndex((current) => (current - 1 + filteredPages.length) % filteredPages.length)
+        setSelectedIndex((current) => (current - 1 + filteredCommands.length) % filteredCommands.length)
       }
       if (event.key === 'Enter') {
         event.preventDefault()
-        filteredPages[selectedIndex]?.onSelect()
+        filteredCommands[selectedIndex]?.onSelect()
         onClose()
       }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [filteredPages, isOpen, onClose, selectedIndex])
+  }, [filteredCommands, isOpen, onClose, selectedIndex])
 
   if (!isOpen) return null
 
@@ -84,19 +96,20 @@ export default function UniversalSearch({ isOpen, onClose, pages }: { isOpen: bo
       <div className="universalSearchDialog" role="dialog" aria-modal="true" aria-label="Universal search" onMouseDown={(event) => event.stopPropagation()}>
         <div className="universalSearchInputRow">
           <Search size={18} className="muted" />
-          <input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search pages. eg. Goals, Report" aria-label="Search pages" />
+          <input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search Pages. Eg. Goals, Report" aria-label="Search pages" />
           <span className="keyPill">esc</span>
         </div>
-        <div className="universalSearchList">
-          {filteredPages.length ? filteredPages.map((page, index) => (
-            <button key={page.label} className={`universalSearchItem ${selectedIndex === index ? 'active' : ''}`} onClick={() => { page.onSelect(); onClose() }}>
-              <span className={`universalSearchIcon ${page.iconClassName}`}>{page.icon}</span>
-              <span className="universalSearchCopy"><strong>{page.label}</strong><small>{page.description}</small></span>
-              <span className="shortcutPill">{page.shortcut}</span>
-            </button>
-          )) : <div className="universalSearchEmpty">No matching page found</div>}
-        </div>
-        <div className="universalSearchFooter">Tip: Press <span className="keyPill">Ctrl</span> + <span className="keyPill">Shift</span> + <span className="keyPill">Space</span> to open this menu anywhere</div>
+        {query.trim() ? (
+          <div className="universalSearchList">
+            {filteredCommands.length ? filteredCommands.map((command, index) => (
+              <button key={command.id} className={`universalSearchItem ${selectedIndex === index ? 'active' : ''}`} onClick={() => { command.onSelect(); onClose() }}>
+                <span className={`universalSearchIcon ${command.iconClassName}`}>{command.icon}</span>
+                <span className="universalSearchCopy"><strong>{command.label}</strong><small>{command.description}</small></span>
+                <span className="resultTypePill">{command.type === 'action' ? 'Action' : 'Page'}</span>
+              </button>
+            )) : <div className="universalSearchEmpty">No matching page or action found</div>}
+          </div>
+        ) : null}
       </div>
     </div>
   )
