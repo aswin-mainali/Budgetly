@@ -1798,6 +1798,13 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [txViewportKey, setTxViewportKey] = useState(0)
   const [txPage, setTxPage] = useState(1)
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [])
+  useEffect(() => {
     const onResize = () => setTxViewportKey((prev) => prev + 1)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
