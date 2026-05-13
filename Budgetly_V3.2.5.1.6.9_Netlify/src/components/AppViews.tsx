@@ -122,6 +122,25 @@ const formatReportMoney = (currency: string, n: number) => {
   }
 }
 
+const getResponsivePageSize = (desktop = 4, tablet = 3, mobile = 2) => {
+  if (typeof window === 'undefined') return desktop
+  const width = window.innerWidth
+  if (width <= 480) return mobile
+  if (width <= 1024) return tablet
+  return desktop
+}
+
+function PaginationControls({ page, totalPages, onPrev, onNext }: { page: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="paginationFooter">
+      <button type="button" className="icon paginationArrowBtn" onClick={onPrev} disabled={page <= 1} aria-label="Previous page">‹</button>
+      <span className="paginationLabel">{page} of {totalPages}</span>
+      <button type="button" className="icon paginationArrowBtn" onClick={onNext} disabled={page >= totalPages} aria-label="Next page">›</button>
+    </div>
+  )
+}
+
 
 
 const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
@@ -1446,6 +1465,16 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
   const cashIncome = theme === 'dark' ? '#6ea8ff' : '#3b82f6'
   const cashExpense = theme === 'dark' ? '#fb7185' : '#ef4444'
   const cashNet = theme === 'dark' ? '#4ade80' : '#16a34a'
+  const budgetPageSize = getResponsivePageSize(4, 3, 2)
+  const recurringPageSize = getResponsivePageSize(3, 3, 2)
+  const [budgetPage, setBudgetPage] = useState(1)
+  const [recurringPage, setRecurringPage] = useState(1)
+  const budgetPages = Math.max(1, Math.ceil(sortedCategories.length / budgetPageSize))
+  const recurringPages = Math.max(1, Math.ceil(upcomingRecurringThisMonth.length / recurringPageSize))
+  const pagedBudgets = useMemo(() => sortedCategories.slice((budgetPage - 1) * budgetPageSize, budgetPage * budgetPageSize), [sortedCategories, budgetPage, budgetPageSize])
+  const pagedRecurring = useMemo(() => upcomingRecurringThisMonth.slice((recurringPage - 1) * recurringPageSize, recurringPage * recurringPageSize), [upcomingRecurringThisMonth, recurringPage, recurringPageSize])
+  useEffect(() => setBudgetPage((prev) => Math.min(prev, budgetPages)), [budgetPages])
+  useEffect(() => setRecurringPage((prev) => Math.min(prev, recurringPages)), [recurringPages])
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -1493,7 +1522,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
         </div>
         <div className="mobileRefTwoCol">
           <div className="card mobileRefCard"><h3>Share of spending</h3><div className="mobileShareWrap"><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68}>{byCategory.map((r)=> <Cell key={r.id} fill={r.color} />)}</Pie></PieChart></ResponsiveContainer></div><div className="mobileShareLegend">{byCategory.slice(0, 6).map((r) => { const pct = expenses > 0 ? Math.round((r.total / expenses) * 100) : 0; return <div key={r.id} className="mobileShareLegendRow"><span><i style={{ background: r.color }} />{r.name}</span><strong>{pct}%</strong></div> })}</div></div></div>
-          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{sortedCategories.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const pr=b>0?Math.min(1,spent/b):0;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small>{helpers.fmtMoney(spent,data.currency)} / {helpers.fmtMoney(b,data.currency)}</small></div><div className="progress"><div style={{width:`${pr*100}%`, background:'#16a34a'}} /></div></div>})}</div></div>
+          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{pagedBudgets.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const pr=b>0?Math.min(1,spent/b):0;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small>{helpers.fmtMoney(spent,data.currency)} / {helpers.fmtMoney(b,data.currency)}</small></div><div className="progress"><div style={{width:`${pr*100}%`, background:'#16a34a'}} /></div></div>})}</div><PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} /></div>
         </div>
         <div className="card mobileRefCard">
           <div className="row space"><h3>Monthly spending trends</h3><div className="row" style={{gap:10}}><small>This year</small><small>Last year</small></div></div>
@@ -1510,7 +1539,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           <div className="grid recurringScrollArea" style={{ gap: 8 }}>
             {upcomingRecurringThisMonth.length === 0 ? (
               <div className="muted recurringEmpty">No recurring bills or income are due in the next 7 days.</div>
-            ) : upcomingRecurringThisMonth.map((item) => (
+            ) : pagedRecurring.map((item) => (
               <div key={item.id} className="recurringUpcomingItem">
                 <div className="recurringUpcomingMain">
                   <div className="recurringUpcomingIcon">{item.category?.emoji ?? (item.kind === 'income' ? '💰' : '📆')}</div>
@@ -1525,7 +1554,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
                 </div>
               </div>
             ))}
-          </div>
+          </div><PaginationControls page={recurringPage} totalPages={recurringPages} onPrev={() => setRecurringPage((prev) => Math.max(1, prev - 1))} onNext={() => setRecurringPage((prev) => Math.min(recurringPages, prev + 1))} />
         </div>
       </div>
     )
@@ -1703,10 +1732,10 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
         <div className="card">
           <div className="row space" style={{ marginBottom: 10 }}>
             <h3 style={{ marginBottom: 0 }}>Budgets (This Month)</h3>
-            <span className="badge">scroll for more</span>
+            {budgetPages > 1 ? null : <span className="badge">This month</span>}
           </div>
           <div className="grid budgetScrollArea" style={{ gap: 10 }}>
-            {sortedCategories.map((category) => {
+            {pagedBudgets.map((category) => {
               const spent = byCategory.find((row) => row.id === category.id)?.total ?? 0
               const budgetAmount = Number(category.budget_monthly ?? 0)
               const progress = budgetAmount > 0 ? Math.min(1, spent / budgetAmount) : 0
@@ -1729,6 +1758,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
               )
             })}
           </div>
+          <PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} />
         </div>
 
         <div className="card">
@@ -1742,7 +1772,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           <div className="grid recurringScrollArea" style={{ gap: 8 }}>
             {upcomingRecurringThisMonth.length === 0 ? (
               <div className="muted recurringEmpty">No recurring bills or income are due in the next 7 days.</div>
-            ) : upcomingRecurringThisMonth.map((item) => (
+            ) : pagedRecurring.map((item) => (
               <div key={item.id} className="recurringUpcomingItem">
                 <div className="recurringUpcomingMain">
                   <div className="recurringUpcomingIcon">{item.category?.emoji ?? (item.kind === 'income' ? '💰' : '📆')}</div>
@@ -1758,6 +1788,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
               </div>
             ))}
           </div>
+          <PaginationControls page={recurringPage} totalPages={recurringPages} onPrev={() => setRecurringPage((prev) => Math.max(1, prev - 1))} onNext={() => setRecurringPage((prev) => Math.min(recurringPages, prev + 1))} />
         </div>
       </div>
     </div>
@@ -1776,7 +1807,36 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
   const [txAddModalOpen, setTxAddModalOpen] = useState(false)
+  const [txViewportKey, setTxViewportKey] = useState(0)
+  const [txPage, setTxPage] = useState(1)
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    const previousRootOverflow = document.documentElement.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.documentElement.style.overflow = previousRootOverflow
+    }
+  }, [])
+  useEffect(() => {
+    const onResize = () => setTxViewportKey((prev) => prev + 1)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  const txPageSize = useMemo(() => {
+    if (typeof window === 'undefined') return 6
+    const width = window.innerWidth
+    const height = window.innerHeight
+    if (width <= 560 || height <= 760) return 3
+    if (width <= 960 || height <= 880) return 4
+    return 6
+  }, [txViewportKey])
+  const txPages = Math.max(1, Math.ceil(filteredTx.length / txPageSize))
+  const pagedTransactions = useMemo(() => filteredTx.slice((txPage - 1) * txPageSize, txPage * txPageSize), [filteredTx, txPage, txPageSize])
   const pendingDeleteTx = useMemo(() => filteredTx.find((transaction) => transaction.id === pendingDeleteId) ?? null, [filteredTx, pendingDeleteId])
+  useEffect(() => setTxPage(1), [txSearch, txType, txActiveMonth])
+  useEffect(() => setTxPage((prev) => Math.min(prev, txPages)), [txPages])
   const activeDuplicateGroup = duplicateGroups[0] ?? null
   const filteredCategoriesForDraft = useMemo(() => {
     const preferred = categories.filter((category) => {
@@ -2145,8 +2205,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       <div className={isPhone ? 'mobileTxListWrap' : 'txPageScrollable'}>
       {isPhone ? (
         <div className="mobileList dataMobileList mobileTxList" style={{ marginTop: 8 }}>
-          {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
-            const categoryName = categoryNameForTransaction(transaction)
+          {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : pagedTransactions.map((transaction) => {
+            const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
             return (
               <div key={transaction.id} className="mobileInfoCard">
                 <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
@@ -2189,8 +2249,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 </tr>
               </thead>
               <tbody>
-                {filteredTx.map((transaction) => {
-                  const categoryName = categoryNameForTransaction(transaction)
+                {pagedTransactions.map((transaction) => {
+                  const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
                   return (
                     <tr key={transaction.id}>
                       <td>{transaction.date}</td>
@@ -2217,9 +2277,9 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           </table>
         </div>
       )}      </div>
-
       <div className={`row between dataPageFooter ${isPhone ? 'mobileTxFooter' : 'txStickyFooter'}`} style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
+        <PaginationControls page={txPage} totalPages={txPages} onPrev={() => setTxPage((prev) => Math.max(1, prev - 1))} onNext={() => setTxPage((prev) => Math.min(txPages, prev + 1))} />
         <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
           Update Transactions
         </button>
@@ -2260,6 +2320,8 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const [draftBudget, setDraftBudget] = useState('')
   const [draftError, setDraftError] = useState('')
   const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
+  const [categoriesPage, setCategoriesPage] = useState(1)
+  const [categoriesViewportKey, setCategoriesViewportKey] = useState(0)
   const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
@@ -2279,6 +2341,22 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     if (sortBy === 'budget-high') return list.sort((a, b) => Number(b.budget_monthly || 0) - Number(a.budget_monthly || 0))
     return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
   }, [filteredCategories, sortBy])
+  useEffect(() => {
+    const onResize = () => setCategoriesViewportKey((prev) => prev + 1)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  const categoriesPageSize = useMemo(() => {
+    if (typeof window === 'undefined') return 7
+    return window.innerWidth <= 1450 ? 3 : 7
+  }, [categoriesViewportKey])
+  const categoriesPages = Math.max(1, Math.ceil(filteredAndSortedCategories.length / categoriesPageSize))
+  const pagedCategories = useMemo(
+    () => filteredAndSortedCategories.slice((categoriesPage - 1) * categoriesPageSize, categoriesPage * categoriesPageSize),
+    [filteredAndSortedCategories, categoriesPage, categoriesPageSize]
+  )
+  useEffect(() => setCategoriesPage(1), [search, sortBy])
+  useEffect(() => setCategoriesPage((prev) => Math.min(prev, categoriesPages)), [categoriesPages])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
   const totalBudget = useMemo(
@@ -2432,7 +2510,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               <div className="muted mobileEmptyCard">
                 {sortedCategories.length === 0 ? 'Create your first category here.' : 'No matching categories.'}
               </div>
-            ) : filteredAndSortedCategories.map((category: Category) => {
+            ) : pagedCategories.map((category: Category) => {
               const isEditing = !!editingCategoryIds[category.id]
               return (
                 <article key={category.id} className="categoriesListItem">
@@ -2473,6 +2551,12 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               )
             })}
           </div>
+          <PaginationControls
+            page={categoriesPage}
+            totalPages={categoriesPages}
+            onPrev={() => setCategoriesPage((prev) => Math.max(1, prev - 1))}
+            onNext={() => setCategoriesPage((prev) => Math.min(categoriesPages, prev + 1))}
+          />
         </section>
       </div>
 

@@ -694,7 +694,8 @@ body.light .btn.danger:hover{
 
 .budgetScrollArea{
   max-height: 346px;
-  overflow-y: auto;
+  min-height: 346px;
+  overflow: hidden;
   padding-right: 6px;
   align-content: start;
 }
@@ -708,8 +709,8 @@ body.light .btn.danger:hover{
 .budgetOverBudget{display:block; margin-top:6px;}
 
 .recurringScrollArea{
-  max-height: 310px;
-  overflow-y: auto;
+  min-height: 300px;
+  overflow: visible;
   padding-right: 6px;
   align-content: start;
 }
@@ -4784,6 +4785,8 @@ body.theme-light .row select {
 
 .transactionsScrollBox{
   max-height:calc(100vh - 360px);
+  min-height:calc(100vh - 360px);
+  overflow-y:hidden;
 }
 
 .categoriesScrollBox{
@@ -7531,11 +7534,11 @@ body.light .bugUploadBox{background:#f8fbff}
 }
 
 .categoriesList{
-  overflow:auto;
+  overflow:visible;
   display:flex;
   flex-direction:column;
   gap:10px;
-  padding-right:4px;
+  padding-right:0;
 }
 
 .categoriesListHeader{
@@ -8248,10 +8251,111 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569}
   body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
   body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
-  body.mobile-app .mobileBudgetScroll{height:242px;overflow:auto;padding-right:4px}
+  body.mobile-app .mobileBudgetScroll{height:242px;min-height:242px;overflow:hidden;padding-right:4px}
   body.mobile-app .mobileRecurringRef{max-height:none;overflow:visible}
   body.mobile-app .mobileTabBar{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:#ffffff;border-top:1px solid #dfe7f4;border-left:0;border-right:0;border-bottom:0;border-radius:0;box-shadow:0 -6px 20px rgba(15,23,42,.10);backdrop-filter:none;-webkit-backdrop-filter:none;opacity:1}
   body.mobile-app .mobileTabBar button.active{background:#eef4ff;color:#1f64e0}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab{transform:translateY(-16px);width:62px;height:62px;border-radius:999px;background:#1f64e0;color:#fff;justify-self:center;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 26px rgba(31,100,224,.4)}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab span{display:block;font-size:11px;position:absolute;bottom:-20px;color:#334155}
+}
+
+.paginationFooter{display:flex;align-items:center;justify-content:center;gap:18px}
+.paginationArrowBtn{width:30px;height:30px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);transition:all .2s ease}
+.paginationArrowBtn:hover:not(:disabled){background:rgba(148,163,184,.12)}
+.paginationArrowBtn:disabled{opacity:.45;cursor:not-allowed}
+.paginationLabel{font-size:13px;font-weight:600;color:var(--muted);min-width:64px;text-align:center}
+.budgetScrollArea,.recurringScrollArea,.mobileBudgetScroll,.transactionsScrollBox{transition:opacity .2s ease, transform .2s ease}
+.mobileTxList{min-height:360px}
+
+.txManagePanel .dataPageFooter{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
+}
+.txManagePanel .dataPageFooter .paginationFooter{
+  justify-self:center;
+}
+.txManagePanel .dataPageFooter .txUpdateButton{
+  justify-self:end;
+  margin-left:auto;
+}
+@media (max-width: 900px){
+  .txManagePanel .dataPageFooter{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:10px;
+  }
+  .txManagePanel .dataPageFooter .paginationFooter,
+  .txManagePanel .dataPageFooter .txUpdateButton{
+    justify-self:auto;
+  }
+}
+
+/* Transactions footer should be solid + pagination centered without overlap */
+.txManagePanel .dataPageFooter,
+.txManagePanel .txStickyFooter{
+  background: var(--card) !important;
+  opacity: 1 !important;
+  border-top: 1px solid var(--border) !important;
+  border-radius: 0 0 14px 14px;
+  box-shadow: none !important;
+}
+.txManagePanel .txPageScrollable,
+.txManagePanel .transactionsScrollBox,
+.txManagePanel .dataScrollBox{
+  overflow: hidden !important;
+  max-height: none !important;
+}
+.txManagePanel .transactionsScrollBox{
+  padding-bottom: 8px;
+}
+.txManagePanel .txHistoryTable,
+.txManagePanel .txHistoryTable tbody,
+.txManagePanel .txHistoryTable tr{
+  overflow: visible;
+}
+.txManagePanel .transactionsScrollBox::-webkit-scrollbar,
+.txManagePanel .txPageScrollable::-webkit-scrollbar{
+  width:0;
+  height:0;
+}
+
+/* Transactions view now uses pagination, so hide page-level scrollbar */
+.transactionsPage,
+.txFullLayout{
+  overflow:hidden !important;
+  scrollbar-width:none;
+}
+.transactionsPage::-webkit-scrollbar,
+.txFullLayout::-webkit-scrollbar{
+  width:0;
+  height:0;
+}
+
+.categoriesManage .paginationFooter{
+  margin-top:10px;
+  padding-bottom:4px;
+}
+
+.categoriesPageCard > .dataPageFooter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.categoriesPageCard > .dataPageFooter .btn.primary{
+  margin-left:auto;
+}
+.categoriesManage .categoriesList{min-height:0;}
+
+@media (min-width: 1500px){
+  .categoriesManage{
+    display:flex;
+    flex-direction:column;
+    min-height:560px;
+  }
+  .categoriesManage .paginationFooter{
+    margin-top:auto;
+    padding-top:12px;
+  }
 }
