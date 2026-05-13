@@ -6,6 +6,17 @@ import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 
+const INCOME_CATEGORY_OPTIONS = [
+  { id: 'income:salary', name: 'Salary' },
+  { id: 'income:tips', name: 'Tips' },
+  { id: 'income:freelance', name: 'Freelance' },
+  { id: 'income:business_income', name: 'Business Income' },
+  { id: 'income:refund', name: 'Refund' },
+  { id: 'income:other_income', name: 'Other Income' },
+] as const
+
+const INCOME_CATEGORY_NAME_BY_ID = new Map<string, string>(INCOME_CATEGORY_OPTIONS.map((category) => [category.id, category.name]))
+
 
 type ReportCanvasOptions = {
   appName: string
@@ -1774,6 +1785,14 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     return preferred.length ? preferred : categories
   }, [categories, data.transactions, sortedRecurring, txDraft.type])
 
+  const categoryNameForTransaction = (transaction: Transaction) => {
+    if (transaction.category_id) {
+      if (transaction.type === 'income') return INCOME_CATEGORY_NAME_BY_ID.get(transaction.category_id) ?? catsById.get(transaction.category_id)?.name ?? 'Income Source'
+      return catsById.get(transaction.category_id)?.name ?? 'Unknown'
+    }
+    return transaction.type === 'income' ? 'Income Source' : 'Uncategorized'
+  }
+
   const confirmDeleteTx = async () => {
     if (!pendingDeleteId) return
     await deleteTx(pendingDeleteId)
@@ -1845,7 +1864,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="mobileTxList">
             {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
-              const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
+              const categoryName = categoryNameForTransaction(transaction)
               return (
                 <div key={transaction.id} className="mobileInfoCard">
                   <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
@@ -1880,20 +1899,20 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               </div>
               <div className="txAddModalGrid">{/* keep existing fields simple */}
                 <div className="field txField"><label>Date</label><input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} /></div>
-                <div className="field txField"><label>Type</label><select value={txDraft.type} onChange={(event) => setTxDraft((current) => ({ ...current, type: event.target.value as TxType, category_id: event.target.value === 'income' ? '' : current.category_id }))}><option value="income">Income</option><option value="expense">Expense</option></select></div>
-                {txDraft.type === 'expense' ? (
-                  <div className="field txField">
-                    <label>Expense category</label>
-                    <select value={txDraft.category_id} onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}>
-                      <option value="">Choose category</option>
-                      {filteredCategoriesForDraft.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {(category.emoji ?? '🏷️')} {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : null}
+                <div className="field txField"><label>Type</label><select value={txDraft.type} onChange={(event) => setTxDraft((current) => ({ ...current, type: event.target.value as TxType, category_id: '' }))}><option value="income">Income</option><option value="expense">Expense</option></select></div>
+                <div className="field txField">
+                  <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
+                  <select value={txDraft.category_id} onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}>
+                    <option value="">{txDraft.type === 'income' ? 'Select income category' : 'Choose category'}</option>
+                    {txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    )) : filteredCategoriesForDraft.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {(category.emoji ?? '🏷️')} {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="field txField"><label>Amount</label><input inputMode="decimal" value={txDraft.amount} onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))} /></div>
                 <div className="field txField txAddModalNote"><label>Note</label><input value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} /></div>
               </div>
@@ -1939,26 +1958,26 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             <label>Type</label>
             <div className="typeToggle" role="tablist" aria-label="Transaction type">
               <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
-              <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense' }))}>Expense</button>
+              <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense', category_id: '' }))}>Expense</button>
             </div>
           </div>
 
-          {txDraft.type === 'expense' ? (
-            <div className="field txField txCategoryField">
-              <label>Expense category</label>
-              <select
-                value={txDraft.category_id}
-                onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
-              >
-                <option value="">Choose category</option>
-                {filteredCategoriesForDraft.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {(category.emoji ?? '🏷️')} {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
+          <div className="field txField txCategoryField">
+            <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
+            <select
+              value={txDraft.category_id}
+              onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
+            >
+              <option value="">{txDraft.type === 'income' ? 'Select income category' : 'Choose category'}</option>
+              {txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              )) : filteredCategoriesForDraft.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {(category.emoji ?? '🏷️')} {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="field txField txAmountField">
             <label>Amount</label>
@@ -1978,8 +1997,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
           <button
             className={`btn primary txAddButton ${txDraft.type}`}
             onClick={() => void handleAddTransaction()}
-            disabled={txDraft.type === 'expense' && !txDraft.category_id}
-            title={txDraft.type === 'expense' && !txDraft.category_id ? 'Choose a category first' : undefined}
+            disabled={!txDraft.category_id}
+            title={!txDraft.category_id ? 'Choose a category first' : undefined}
           >
             <Plus size={16} /> Add
           </button>
@@ -2011,7 +2030,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                     setTxDraft((current) => ({
                       ...current,
                       type: nextType,
-                      category_id: nextType === 'income' ? '' : current.category_id,
+                      category_id: '',
                     }))
                   }}
                 >
@@ -2020,22 +2039,22 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 </select>
               </div>
 
-              {txDraft.type === 'expense' ? (
-                <div className="field txField">
-                  <label>Expense category</label>
-                  <select
-                    value={txDraft.category_id}
-                    onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
-                  >
-                    <option value="">Choose category</option>
-                    {filteredCategoriesForDraft.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {(category.emoji ?? '🏷️')} {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
+              <div className="field txField">
+                <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
+                <select
+                  value={txDraft.category_id}
+                  onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
+                >
+                  <option value="">{txDraft.type === 'income' ? 'Select income category' : 'Choose category'}</option>
+                  {txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  )) : filteredCategoriesForDraft.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {(category.emoji ?? '🏷️')} {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="field txField">
                 <label>Amount</label>
@@ -2056,8 +2075,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               <button
                 className={`btn primary txAddButton ${txDraft.type}`}
                 onClick={() => void handleAddTransaction()}
-                disabled={txDraft.type === 'expense' && !txDraft.category_id}
-                title={txDraft.type === 'expense' && !txDraft.category_id ? 'Choose a category first' : undefined}
+                disabled={!txDraft.category_id}
+                title={!txDraft.category_id ? 'Choose a category first' : undefined}
               >
                 <Plus size={16} /> Save Transaction
               </button>
@@ -2119,7 +2138,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       {isPhone ? (
         <div className="mobileList dataMobileList mobileTxList" style={{ marginTop: 8 }}>
           {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
-            const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
+            const categoryName = categoryNameForTransaction(transaction)
             return (
               <div key={transaction.id} className="mobileInfoCard">
                 <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
@@ -2163,7 +2182,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               </thead>
               <tbody>
                 {filteredTx.map((transaction) => {
-                  const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
+                  const categoryName = categoryNameForTransaction(transaction)
                   return (
                     <tr key={transaction.id}>
                       <td>{transaction.date}</td>
