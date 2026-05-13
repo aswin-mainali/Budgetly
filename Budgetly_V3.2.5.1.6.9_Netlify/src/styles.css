@@ -6941,10 +6941,6 @@ body.light .txPageCard .transactionsScrollBox,
   .txPageCard .txHistoryTable .txColType{width:120px;}
   .txPageCard .txHistoryTable .txColAmount{width:200px;}
   .txPageCard .txHistoryTable .txColNote{width:28%;}
-  .txPageCard .txHistoryTable th,
-  .txPageCard .txHistoryTable td{
-    padding:13px 18px;
-  }
   .txPageCard .txHistoryTable th:nth-child(4),
   .txPageCard .txHistoryTable td:nth-child(4){
     padding-right:30px;
