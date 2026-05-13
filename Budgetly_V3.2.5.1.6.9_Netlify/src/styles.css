@@ -7532,12 +7532,11 @@ body.light .bugUploadBox{background:#f8fbff}
 }
 
 .categoriesList{
-  overflow:auto;
+  overflow:visible;
   display:flex;
   flex-direction:column;
   gap:10px;
-  padding-right:4px;
-  max-height:420px;
+  padding-right:0;
 }
 
 .categoriesListHeader{
@@ -8341,9 +8340,19 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-top:10px;
 }
 .categoriesPageCard > .dataPageFooter .btn.primary{
   margin-left:auto;
 }
 .categoriesManage .categoriesList{min-height:0;}
+
+@media (max-width: 1100px){
+  .categoriesList{
+    overflow:auto;
+    padding-right:4px;
+    max-height:420px;
+  }
+  .categoriesPageCard > .dataPageFooter{
+    margin-top:10px;
+  }
+}

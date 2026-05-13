@@ -2313,7 +2313,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     if (sortBy === 'budget-high') return list.sort((a, b) => Number(b.budget_monthly || 0) - Number(a.budget_monthly || 0))
     return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
   }, [filteredCategories, sortBy])
-  const categoriesPageSize = getResponsivePageSize(7, 5, 4)
+  const categoriesPageSize = getResponsivePageSize(7, 4, 3)
   const categoriesPages = Math.max(1, Math.ceil(filteredAndSortedCategories.length / categoriesPageSize))
   const pagedCategories = useMemo(
     () => filteredAndSortedCategories.slice((categoriesPage - 1) * categoriesPageSize, categoriesPage * categoriesPageSize),
