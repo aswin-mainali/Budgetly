@@ -67,6 +67,12 @@ export default function App() {
     return () => document.body.classList.remove('mobile-app')
   }, [isMobile])
 
+  useEffect(() => {
+    const isAuthPage = !userId
+    document.body.classList.toggle('auth-active', isAuthPage)
+    return () => document.body.classList.remove('auth-active')
+  }, [userId])
+
 
   useEffect(() => {
     let sequence = 0
