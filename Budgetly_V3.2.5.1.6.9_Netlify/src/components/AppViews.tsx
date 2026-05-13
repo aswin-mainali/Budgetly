@@ -7,15 +7,16 @@ import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 
 const INCOME_CATEGORY_OPTIONS = [
-  { id: 'income:salary', name: 'Salary' },
-  { id: 'income:tips', name: 'Tips' },
-  { id: 'income:freelance', name: 'Freelance' },
-  { id: 'income:business_income', name: 'Business Income' },
-  { id: 'income:refund', name: 'Refund' },
-  { id: 'income:other_income', name: 'Other Income' },
+  { id: 'income:salary', name: 'Salary', emoji: '💵' },
+  { id: 'income:tips', name: 'Tips', emoji: '💵' },
+  { id: 'income:freelance', name: 'Freelance', emoji: '💵' },
+  { id: 'income:business_income', name: 'Business Income', emoji: '💵' },
+  { id: 'income:refund', name: 'Refund', emoji: '💵' },
+  { id: 'income:other_income', name: 'Other Income', emoji: '💵' },
 ] as const
 
 const INCOME_CATEGORY_NAME_BY_ID = new Map<string, string>(INCOME_CATEGORY_OPTIONS.map((category) => [category.id, category.name]))
+const INCOME_CATEGORY_EMOJI_BY_ID = new Map<string, string>(INCOME_CATEGORY_OPTIONS.map((category) => [category.id, category.emoji]))
 
 
 type ReportCanvasOptions = {
@@ -1792,6 +1793,13 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     }
     return transaction.type === 'income' ? 'Income Source' : 'Uncategorized'
   }
+  const categoryDisplayForTransaction = (transaction: Transaction) => {
+    const categoryName = categoryNameForTransaction(transaction)
+    const categoryEmoji = transaction.type === 'income'
+      ? INCOME_CATEGORY_EMOJI_BY_ID.get(transaction.category_id ?? '') ?? '💵'
+      : catsById.get(transaction.category_id ?? '')?.emoji
+    return categoryEmoji ? `${categoryEmoji} ${categoryName}` : categoryName
+  }
 
   const confirmDeleteTx = async () => {
     if (!pendingDeleteId) return
@@ -1869,7 +1877,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                 <div key={transaction.id} className="mobileInfoCard">
                   <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
                     <div>
-                      <div className="mobileCardTitle">{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</div>
+                      <div className="mobileCardTitle">{categoryDisplayForTransaction(transaction)}</div>
                       <div className="muted">{transaction.note?.trim() || 'No note'}</div>
                     </div>
                     <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete"><Trash2 size={16} /></button>
@@ -2143,7 +2151,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               <div key={transaction.id} className="mobileInfoCard">
                 <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
                   <div>
-                    <div className="mobileCardTitle">{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</div>
+                    <div className="mobileCardTitle">{categoryDisplayForTransaction(transaction)}</div>
                     <div className="muted">{transaction.note?.trim() || 'No note'}</div>
                   </div>
                   <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete">
@@ -2187,7 +2195,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
                     <tr key={transaction.id}>
                       <td>{transaction.date}</td>
                       <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
-                      <td>{catsById.get(transaction.category_id ?? '')?.emoji ? `${catsById.get(transaction.category_id ?? '')?.emoji} ${categoryName}` : categoryName}</td>
+                      <td>{categoryDisplayForTransaction(transaction)}</td>
                       <td className={`txAmountCell ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
                       <td className="muted">{transaction.note ?? ''}</td>
                       <td>
