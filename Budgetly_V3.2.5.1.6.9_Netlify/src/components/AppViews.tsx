@@ -1852,6 +1852,20 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   useEffect(() => {
     localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ sortKey, sortDirection }))
   }, [sortKey, sortDirection])
+  const categoryNameForTransaction = (transaction: Transaction) => {
+    if (transaction.category_id) {
+      if (transaction.type === 'income') return INCOME_CATEGORY_NAME_BY_ID.get(transaction.category_id) ?? catsById.get(transaction.category_id)?.name ?? 'Income Source'
+      return catsById.get(transaction.category_id)?.name ?? 'Unknown'
+    }
+    return transaction.type === 'income' ? 'Income Source' : 'Uncategorized'
+  }
+  const categoryDisplayForTransaction = (transaction: Transaction) => {
+    const categoryName = categoryNameForTransaction(transaction)
+    const categoryEmoji = transaction.type === 'income'
+      ? INCOME_CATEGORY_EMOJI_BY_ID.get(transaction.category_id ?? '') ?? '💵'
+      : catsById.get(transaction.category_id ?? '')?.emoji
+    return categoryEmoji ? `${categoryEmoji} ${categoryName}` : categoryName
+  }
 
   const sortedTransactions = useMemo(() => {
     const normalizeAmount = (amount: unknown) => {
@@ -1910,21 +1924,6 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     })
     return preferred.length ? preferred : categories
   }, [categories, data.transactions, sortedRecurring, txDraft.type])
-
-  const categoryNameForTransaction = (transaction: Transaction) => {
-    if (transaction.category_id) {
-      if (transaction.type === 'income') return INCOME_CATEGORY_NAME_BY_ID.get(transaction.category_id) ?? catsById.get(transaction.category_id)?.name ?? 'Income Source'
-      return catsById.get(transaction.category_id)?.name ?? 'Unknown'
-    }
-    return transaction.type === 'income' ? 'Income Source' : 'Uncategorized'
-  }
-  const categoryDisplayForTransaction = (transaction: Transaction) => {
-    const categoryName = categoryNameForTransaction(transaction)
-    const categoryEmoji = transaction.type === 'income'
-      ? INCOME_CATEGORY_EMOJI_BY_ID.get(transaction.category_id ?? '') ?? '💵'
-      : catsById.get(transaction.category_id ?? '')?.emoji
-    return categoryEmoji ? `${categoryEmoji} ${categoryName}` : categoryName
-  }
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
       setSortDirection((current) => current === 'desc' ? 'asc' : 'desc')
