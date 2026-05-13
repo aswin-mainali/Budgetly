@@ -8331,23 +8331,19 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   height:0;
 }
 
-.categoriesPageCard > .dataPageFooter{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
-  align-items:center;
-}
-.categoriesPageCard > .dataPageFooter .paginationFooter{justify-self:center}
-.categoriesPageCard > .dataPageFooter .btn.primary{justify-self:end;margin-left:auto}
-@media (max-width: 900px){
-  .categoriesPageCard > .dataPageFooter{
-    display:flex;
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
-  }
-}
-
 .categoriesManage .paginationFooter{
   margin-top:10px;
   padding-bottom:4px;
+}
+
+.categoriesPageCard > .dataPageFooter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.categoriesPageCard > .dataPageFooter .btn.primary{
+  margin-left:auto;
+}
+.categoriesManage .categoriesList{
+  min-height:560px;
 }
