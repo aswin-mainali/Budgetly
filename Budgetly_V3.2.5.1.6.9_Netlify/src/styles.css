@@ -8332,8 +8332,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 }
 
 .categoriesManage .paginationFooter{
-  margin-top:auto;
-  padding-top:12px;
+  margin-top:10px;
   padding-bottom:4px;
 }
 
@@ -8345,9 +8344,16 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .categoriesPageCard > .dataPageFooter .btn.primary{
   margin-left:auto;
 }
-.categoriesManage{
-  display:flex;
-  flex-direction:column;
-  min-height:560px;
-}
 .categoriesManage .categoriesList{min-height:0;}
+
+@media (min-width: 1101px){
+  .categoriesManage{
+    display:flex;
+    flex-direction:column;
+    min-height:560px;
+  }
+  .categoriesManage .paginationFooter{
+    margin-top:auto;
+    padding-top:12px;
+  }
+}
