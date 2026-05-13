@@ -4930,7 +4930,7 @@ body.light .dataScrollBox thead th,
 
 
 .txAddRow.incomeMode{
-  grid-template-columns: 160px 220px 210px minmax(260px,1fr) auto;
+  grid-template-columns: 160px 220px 220px 210px minmax(260px,1fr) auto;
 }
 .txAddRow.expenseMode{
   grid-template-columns: 160px 220px 220px 210px minmax(260px,1fr) auto;
