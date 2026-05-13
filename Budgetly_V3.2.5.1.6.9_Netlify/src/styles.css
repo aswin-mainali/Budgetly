@@ -8318,3 +8318,15 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   width:0;
   height:0;
 }
+
+/* Transactions view now uses pagination, so hide page-level scrollbar */
+.transactionsPage,
+.txFullLayout{
+  overflow:hidden !important;
+  scrollbar-width:none;
+}
+.transactionsPage::-webkit-scrollbar,
+.txFullLayout::-webkit-scrollbar{
+  width:0;
+  height:0;
+}
