@@ -7532,11 +7532,12 @@ body.light .bugUploadBox{background:#f8fbff}
 }
 
 .categoriesList{
-  overflow:visible;
+  overflow:auto;
   display:flex;
   flex-direction:column;
   gap:10px;
-  padding-right:0;
+  padding-right:4px;
+  max-height:420px;
 }
 
 .categoriesListHeader{
@@ -8340,10 +8341,9 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   display:flex;
   align-items:center;
   justify-content:space-between;
+  margin-top:10px;
 }
 .categoriesPageCard > .dataPageFooter .btn.primary{
   margin-left:auto;
 }
-.categoriesManage .categoriesList{
-  min-height:560px;
-}
+.categoriesManage .categoriesList{min-height:0;}
