@@ -2515,17 +2515,17 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               )
             })}
           </div>
+          <PaginationControls
+            page={categoriesPage}
+            totalPages={categoriesPages}
+            onPrev={() => setCategoriesPage((prev) => Math.max(1, prev - 1))}
+            onNext={() => setCategoriesPage((prev) => Math.min(categoriesPages, prev + 1))}
+          />
         </section>
       </div>
 
       <div className="row between dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{categoryDirty ? 'You have unsaved category changes.' : 'All category changes are saved.'}</div>
-        <PaginationControls
-          page={categoriesPage}
-          totalPages={categoriesPages}
-          onPrev={() => setCategoriesPage((prev) => Math.max(1, prev - 1))}
-          onNext={() => setCategoriesPage((prev) => Math.min(categoriesPages, prev + 1))}
-        />
         <button className="btn primary" onClick={() => void saveCategories()} disabled={!categoryDirty}>
           Update Categories
         </button>

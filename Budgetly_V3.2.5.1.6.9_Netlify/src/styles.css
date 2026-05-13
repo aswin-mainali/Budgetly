@@ -8346,3 +8346,8 @@ body.light .authInstallHelpClose{color:#1d4ed8}
     gap:10px;
   }
 }
+
+.categoriesManage .paginationFooter{
+  margin-top:10px;
+  padding-bottom:4px;
+}
