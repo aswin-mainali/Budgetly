@@ -2293,6 +2293,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const [draftBudget, setDraftBudget] = useState('')
   const [draftError, setDraftError] = useState('')
   const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
+  const [categoriesPage, setCategoriesPage] = useState(1)
   const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
@@ -2312,6 +2313,14 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     if (sortBy === 'budget-high') return list.sort((a, b) => Number(b.budget_monthly || 0) - Number(a.budget_monthly || 0))
     return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
   }, [filteredCategories, sortBy])
+  const categoriesPageSize = getResponsivePageSize(7, 5, 4)
+  const categoriesPages = Math.max(1, Math.ceil(filteredAndSortedCategories.length / categoriesPageSize))
+  const pagedCategories = useMemo(
+    () => filteredAndSortedCategories.slice((categoriesPage - 1) * categoriesPageSize, categoriesPage * categoriesPageSize),
+    [filteredAndSortedCategories, categoriesPage, categoriesPageSize]
+  )
+  useEffect(() => setCategoriesPage(1), [search, sortBy])
+  useEffect(() => setCategoriesPage((prev) => Math.min(prev, categoriesPages)), [categoriesPages])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
   const totalBudget = useMemo(
@@ -2465,7 +2474,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               <div className="muted mobileEmptyCard">
                 {sortedCategories.length === 0 ? 'Create your first category here.' : 'No matching categories.'}
               </div>
-            ) : filteredAndSortedCategories.map((category: Category) => {
+            ) : pagedCategories.map((category: Category) => {
               const isEditing = !!editingCategoryIds[category.id]
               return (
                 <article key={category.id} className="categoriesListItem">
@@ -2511,6 +2520,12 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
       <div className="row between dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
         <div className="muted">{categoryDirty ? 'You have unsaved category changes.' : 'All category changes are saved.'}</div>
+        <PaginationControls
+          page={categoriesPage}
+          totalPages={categoriesPages}
+          onPrev={() => setCategoriesPage((prev) => Math.max(1, prev - 1))}
+          onNext={() => setCategoriesPage((prev) => Math.min(categoriesPages, prev + 1))}
+        />
         <button className="btn primary" onClick={() => void saveCategories()} disabled={!categoryDirty}>
           Update Categories
         </button>
