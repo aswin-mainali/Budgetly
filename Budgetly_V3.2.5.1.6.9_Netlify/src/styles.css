@@ -617,6 +617,12 @@ body.light input[type="date"]::-webkit-calendar-picker-indicator{
   filter:none;
 }
 
+body:not(.auth-active) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+body:not(.auth-active) textarea,
+body:not(.auth-active) select{
+  text-transform:capitalize;
+}
+
 body.light .select{
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(15,23,42,.65) 50%),
