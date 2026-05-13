@@ -949,7 +949,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1797,6 +1797,9 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
 
 
 export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
+  type SortKey = 'date' | 'type' | 'category' | 'amount' | 'note'
+  type SortDirection = 'asc' | 'desc'
+  const SORT_STORAGE_KEY = 'budgetly_transactions_column_sort'
   const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, txActiveMonth, setTxActiveMonth, sortedRecurring } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
@@ -1809,6 +1812,8 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [txAddModalOpen, setTxAddModalOpen] = useState(false)
   const [txViewportKey, setTxViewportKey] = useState(0)
   const [txPage, setTxPage] = useState(1)
+  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     const previousRootOverflow = document.documentElement.style.overflow
@@ -1832,20 +1837,21 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
     if (width <= 960 || height <= 880) return 4
     return 6
   }, [txViewportKey])
-  const txPages = Math.max(1, Math.ceil(filteredTx.length / txPageSize))
-  const pagedTransactions = useMemo(() => filteredTx.slice((txPage - 1) * txPageSize, txPage * txPageSize), [filteredTx, txPage, txPageSize])
-  const pendingDeleteTx = useMemo(() => filteredTx.find((transaction) => transaction.id === pendingDeleteId) ?? null, [filteredTx, pendingDeleteId])
-  useEffect(() => setTxPage(1), [txSearch, txType, txActiveMonth])
-  useEffect(() => setTxPage((prev) => Math.min(prev, txPages)), [txPages])
-  const activeDuplicateGroup = duplicateGroups[0] ?? null
-  const filteredCategoriesForDraft = useMemo(() => {
-    const preferred = categories.filter((category) => {
-      const usageType = getCategoryUsageType(category.id, category.name, data.transactions, sortedRecurring)
-      return usageType === 'both' || usageType === txDraft.type
-    })
-    return preferred.length ? preferred : categories
-  }, [categories, data.transactions, sortedRecurring, txDraft.type])
-
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SORT_STORAGE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as { sortKey?: SortKey; sortDirection?: SortDirection }
+      if (parsed?.sortKey && ['date', 'type', 'category', 'amount', 'note'].includes(parsed.sortKey)) setSortKey(parsed.sortKey)
+      if (parsed?.sortDirection && ['asc', 'desc'].includes(parsed.sortDirection)) setSortDirection(parsed.sortDirection)
+    } catch {
+      setSortKey('date')
+      setSortDirection('desc')
+    }
+  }, [])
+  useEffect(() => {
+    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ sortKey, sortDirection }))
+  }, [sortKey, sortDirection])
   const categoryNameForTransaction = (transaction: Transaction) => {
     if (transaction.category_id) {
       if (transaction.type === 'income') return INCOME_CATEGORY_NAME_BY_ID.get(transaction.category_id) ?? catsById.get(transaction.category_id)?.name ?? 'Income Source'
@@ -1859,6 +1865,77 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
       ? INCOME_CATEGORY_EMOJI_BY_ID.get(transaction.category_id ?? '') ?? '💵'
       : catsById.get(transaction.category_id ?? '')?.emoji
     return categoryEmoji ? `${categoryEmoji} ${categoryName}` : categoryName
+  }
+
+  const sortedTransactions = useMemo(() => {
+    const normalizeAmount = (amount: unknown) => {
+      if (typeof amount === 'number' && Number.isFinite(amount)) return Math.abs(amount)
+      const numeric = Number(String(amount ?? '').replace(/[^0-9.-]/g, ''))
+      return Number.isFinite(numeric) ? Math.abs(numeric) : 0
+    }
+    const normalizeTypeRank = (type: unknown) => {
+      const normalized = String(type ?? '').toLowerCase()
+      if (normalized === 'income') return 0
+      if (normalized === 'expense') return 1
+      return 2
+    }
+    const normalizeDate = (date: unknown) => {
+      const parsed = Date.parse(String(date ?? ''))
+      return Number.isFinite(parsed) ? parsed : Number.NaN
+    }
+
+    return [...filteredTx].sort((a, b) => {
+      let compare = 0
+      if (sortKey === 'date') {
+        const aDate = normalizeDate(a.date)
+        const bDate = normalizeDate(b.date)
+        const aInvalid = Number.isNaN(aDate)
+        const bInvalid = Number.isNaN(bDate)
+        if (aInvalid || bInvalid) compare = aInvalid === bInvalid ? 0 : aInvalid ? 1 : -1
+        else compare = aDate - bDate
+      } else if (sortKey === 'type') {
+        compare = normalizeTypeRank(a.type) - normalizeTypeRank(b.type)
+      } else if (sortKey === 'category') {
+        const aCategory = categoryNameForTransaction(a) || 'Uncategorized'
+        const bCategory = categoryNameForTransaction(b) || 'Uncategorized'
+        compare = aCategory.localeCompare(bCategory, undefined, { sensitivity: 'base' })
+      } else if (sortKey === 'amount') {
+        compare = normalizeAmount(a.amount) - normalizeAmount(b.amount)
+      } else if (sortKey === 'note') {
+        const aNote = a.note?.trim() ?? ''
+        const bNote = b.note?.trim() ?? ''
+        if (!aNote || !bNote) compare = !aNote && !bNote ? 0 : !aNote ? 1 : -1
+        else compare = aNote.localeCompare(bNote, undefined, { sensitivity: 'base' })
+      }
+      return sortDirection === 'asc' ? compare : -compare
+    })
+  }, [filteredTx, sortDirection, sortKey])
+
+  const txPages = Math.max(1, Math.ceil(sortedTransactions.length / txPageSize))
+  const pagedTransactions = useMemo(() => sortedTransactions.slice((txPage - 1) * txPageSize, txPage * txPageSize), [sortedTransactions, txPage, txPageSize])
+  const pendingDeleteTx = useMemo(() => sortedTransactions.find((transaction) => transaction.id === pendingDeleteId) ?? null, [sortedTransactions, pendingDeleteId])
+  useEffect(() => setTxPage(1), [txSearch, txType, txActiveMonth])
+  useEffect(() => setTxPage((prev) => Math.min(prev, txPages)), [txPages])
+  const activeDuplicateGroup = duplicateGroups[0] ?? null
+  const filteredCategoriesForDraft = useMemo(() => {
+    const preferred = categories.filter((category) => {
+      const usageType = getCategoryUsageType(category.id, category.name, data.transactions, sortedRecurring)
+      return usageType === 'both' || usageType === txDraft.type
+    })
+    return preferred.length ? preferred : categories
+  }, [categories, data.transactions, sortedRecurring, txDraft.type])
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDirection((current) => current === 'desc' ? 'asc' : 'desc')
+      return
+    }
+    setSortKey(key)
+    setSortDirection(key === 'type' || key === 'category' || key === 'note' ? 'asc' : 'desc')
+  }
+  const getAriaSort = (key: SortKey) => (sortKey !== key ? 'none' : sortDirection === 'asc' ? 'ascending' : 'descending')
+  const SortIcon = ({ keyName }: { keyName: SortKey }) => {
+    if (sortKey !== keyName) return <ArrowUpDown size={13} strokeWidth={1.8} aria-hidden="true" />
+    return sortDirection === 'desc' ? <ArrowDown size={13} strokeWidth={2} aria-hidden="true" /> : <ArrowUp size={13} strokeWidth={2} aria-hidden="true" />
   }
 
   const confirmDeleteTx = async () => {
@@ -2240,11 +2317,31 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               </colgroup>
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Category</th>
-                  <th>Amount</th>
-                  <th>Note</th>
+                  <th aria-sort={getAriaSort('date')}>
+                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'date' ? 'active' : ''}`} onClick={() => toggleSort('date')}>
+                      <span>Date</span><SortIcon keyName="date" />
+                    </button>
+                  </th>
+                  <th aria-sort={getAriaSort('type')}>
+                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'type' ? 'active' : ''}`} onClick={() => toggleSort('type')}>
+                      <span>Type</span><SortIcon keyName="type" />
+                    </button>
+                  </th>
+                  <th aria-sort={getAriaSort('category')}>
+                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'category' ? 'active' : ''}`} onClick={() => toggleSort('category')}>
+                      <span>Category</span><SortIcon keyName="category" />
+                    </button>
+                  </th>
+                  <th aria-sort={getAriaSort('amount')}>
+                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'amount' ? 'active' : ''}`} onClick={() => toggleSort('amount')}>
+                      <span>Amount</span><SortIcon keyName="amount" />
+                    </button>
+                  </th>
+                  <th aria-sort={getAriaSort('note')}>
+                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'note' ? 'active' : ''}`} onClick={() => toggleSort('note')}>
+                      <span>Note</span><SortIcon keyName="note" />
+                    </button>
+                  </th>
                   <th />
                 </tr>
               </thead>
