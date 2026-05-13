@@ -1799,9 +1799,12 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [txPage, setTxPage] = useState(1)
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
+    const previousRootOverflow = document.documentElement.style.overflow
     document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previousOverflow
+      document.documentElement.style.overflow = previousRootOverflow
     }
   }, [])
   useEffect(() => {
