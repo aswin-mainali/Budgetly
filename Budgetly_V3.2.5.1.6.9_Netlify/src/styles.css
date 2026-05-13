@@ -7532,11 +7532,11 @@ body.light .bugUploadBox{background:#f8fbff}
 }
 
 .categoriesList{
-  overflow:auto;
+  overflow:visible;
   display:flex;
   flex-direction:column;
   gap:10px;
-  padding-right:4px;
+  padding-right:0;
 }
 
 .categoriesListHeader{
