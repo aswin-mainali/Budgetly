@@ -8364,43 +8364,28 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   }
 }
 
-.universalSearchBackdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.22);
-  backdrop-filter: blur(2px);
-  z-index: 1200;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: clamp(50px, 14vh, 120px);
-}
+.universalSearchBackdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.22); backdrop-filter: blur(2px); z-index: 1200; display: flex; justify-content: center; align-items: flex-start; padding-top: clamp(78px, 15vh, 130px); }
 .universalSearchDialog {
   width: min(760px, 92vw);
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 18px;
-  box-shadow: 0 25px 55px rgba(15, 23, 42, 0.14);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  display:flex;
+  flex-direction:column;
 }
-.universalSearchInputRow { display:flex; align-items:center; gap:10px; border-bottom:1px solid #eceff3; padding:14px 16px; }
+.universalSearchInputRow { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#fff; border:1px solid #d7dfea; border-radius:14px; box-shadow:0 8px 22px rgba(15,23,42,.12); }
 .universalSearchInputRow input { border:0; outline:0; flex:1; font-size:1rem; background:transparent; color:#374151; }
 .universalSearchInputRow input::placeholder { color:#6b7280; }
-.keyPill,.shortcutPill { border:1px solid #d1d5db; background:#f8fafc; border-radius:8px; padding:3px 8px; font-size:14px; color:#4b5563; }
-.universalSearchList { overflow:visible; padding:10px; }
-.universalSearchItem { width:100%; border:0; background:transparent; display:flex; align-items:center; gap:12px; border-radius:12px; padding:10px; text-align:left; }
+.keyPill { border:1px solid #d1d5db; background:#f8fafc; border-radius:999px; padding:3px 9px; font-size:12px; color:#4b5563; text-transform:lowercase; }
+.universalSearchList { overflow:auto; margin-top:10px; padding:6px; border-radius:14px; border:1px solid #e5e7eb; background:#fff; max-height:min(50vh,420px); box-shadow:0 16px 30px rgba(15,23,42,.12); }
+.universalSearchItem { width:100%; border:0; background:transparent; display:flex; align-items:center; gap:12px; border-radius:10px; padding:8px; text-align:left; }
 .universalSearchItem.active { background:#f1edff; }
 .universalSearchIcon { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; color:#fff; flex-shrink:0; }
 .universalSearchIcon.violet{background:#6d5cf6}.universalSearchIcon.indigo{background:#635bff}.universalSearchIcon.green{background:#16a34a}.universalSearchIcon.blue{background:#2563eb}.universalSearchIcon.purple{background:#7c3aed}.universalSearchIcon.gold{background:#ca8a04}.universalSearchIcon.slate{background:#6b7280}.universalSearchIcon.teal{background:#2563eb}
 .universalSearchCopy { flex:1; display:flex; flex-direction:column; gap:2px; }
-.universalSearchCopy strong { color:#111827; font-size:1.05rem; font-weight:700; }
-.universalSearchCopy small { color:#6b7280; font-size:0.95rem; }
-.universalSearchFooter { border-top:1px solid #eceff3; padding:12px 16px; color:#6b7280; font-size:0.92rem; }
+.universalSearchCopy strong { color:#111827; font-size:0.95rem; font-weight:700; }
+.universalSearchCopy small { color:#6b7280; font-size:0.82rem; }
 .universalSearchEmpty { padding:18px; color:#6b7280; }
+.resultTypePill { border:1px solid #d1d5db; border-radius:999px; padding:2px 8px; font-size:.72rem; color:#475569; background:#f8fafc; }
 @media (max-width: 768px) {
   .universalSearchInputRow input { font-size:16px; }
-  .universalSearchCopy strong { font-size:18px; }
-  .universalSearchCopy small,.universalSearchFooter,.shortcutPill,.keyPill { font-size:13px; }
+  .universalSearchCopy strong { font-size:16px; }
+  .universalSearchCopy small,.keyPill { font-size:12px; }
 }
