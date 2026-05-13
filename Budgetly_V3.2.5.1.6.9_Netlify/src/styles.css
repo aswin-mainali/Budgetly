@@ -8332,7 +8332,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 }
 
 .categoriesManage .paginationFooter{
-  margin-top:10px;
+  margin-top:auto;
   padding-bottom:4px;
 }
 
@@ -8345,3 +8345,10 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   margin-left:auto;
 }
 .categoriesManage .categoriesList{min-height:0;}
+.categoriesManage{
+  display:flex;
+  flex-direction:column;
+}
+.categoriesManage .categoriesList{
+  min-height:360px;
+}
