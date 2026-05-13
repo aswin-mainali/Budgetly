@@ -2294,6 +2294,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const [draftError, setDraftError] = useState('')
   const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
   const [categoriesPage, setCategoriesPage] = useState(1)
+  const [categoriesViewportKey, setCategoriesViewportKey] = useState(0)
   const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
@@ -2313,10 +2314,15 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     if (sortBy === 'budget-high') return list.sort((a, b) => Number(b.budget_monthly || 0) - Number(a.budget_monthly || 0))
     return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
   }, [filteredCategories, sortBy])
+  useEffect(() => {
+    const onResize = () => setCategoriesViewportKey((prev) => prev + 1)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
   const categoriesPageSize = useMemo(() => {
     if (typeof window === 'undefined') return 7
     return window.innerWidth <= 1450 ? 3 : 7
-  }, [])
+  }, [categoriesViewportKey])
   const categoriesPages = Math.max(1, Math.ceil(filteredAndSortedCategories.length / categoriesPageSize))
   const pagedCategories = useMemo(
     () => filteredAndSortedCategories.slice((categoriesPage - 1) * categoriesPageSize, categoriesPage * categoriesPageSize),
