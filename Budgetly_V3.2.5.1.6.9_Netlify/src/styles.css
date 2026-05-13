@@ -8346,7 +8346,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 }
 .categoriesManage .categoriesList{min-height:0;}
 
-@media (min-width: 1101px){
+@media (min-width: 1500px){
   .categoriesManage{
     display:flex;
     flex-direction:column;
