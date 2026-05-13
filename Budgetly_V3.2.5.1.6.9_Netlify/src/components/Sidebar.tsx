@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, LifeBuoy, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
@@ -202,7 +202,7 @@ export default function Sidebar(props: {
         </span>
         {features.support ? (
           <button className={`btn support ${view === 'support' ? 'active' : ''}`} onClick={() => setView('support')}>
-            <LifeBuoy size={18} /> <span className="navLabel">Help & Support</span>
+            <Headset size={18} /> <span className="navLabel">Help & Support</span>
           </button>
         ) : null}
         <button className={`sidebarUserCard ${view === 'settings' ? 'active' : ''}`} onClick={openSettingsGeneral}>
