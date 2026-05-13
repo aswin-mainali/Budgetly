@@ -8345,14 +8345,3 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   margin-left:auto;
 }
 .categoriesManage .categoriesList{min-height:0;}
-
-@media (max-width: 1100px){
-  .categoriesList{
-    overflow:auto;
-    padding-right:4px;
-    max-height:420px;
-  }
-  .categoriesPageCard > .dataPageFooter{
-    margin-top:10px;
-  }
-}
