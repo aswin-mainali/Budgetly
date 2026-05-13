@@ -694,7 +694,8 @@ body.light .btn.danger:hover{
 
 .budgetScrollArea{
   max-height: 346px;
-  overflow-y: auto;
+  min-height: 346px;
+  overflow: hidden;
   padding-right: 6px;
   align-content: start;
 }
@@ -708,8 +709,8 @@ body.light .btn.danger:hover{
 .budgetOverBudget{display:block; margin-top:6px;}
 
 .recurringScrollArea{
-  max-height: 310px;
-  overflow-y: auto;
+  min-height: 300px;
+  overflow: visible;
   padding-right: 6px;
   align-content: start;
 }
@@ -4784,6 +4785,8 @@ body.theme-light .row select {
 
 .transactionsScrollBox{
   max-height:calc(100vh - 360px);
+  min-height:calc(100vh - 360px);
+  overflow-y:hidden;
 }
 
 .categoriesScrollBox{
@@ -7531,11 +7534,11 @@ body.light .bugUploadBox{background:#f8fbff}
 }
 
 .categoriesList{
-  overflow:auto;
+  overflow:visible;
   display:flex;
   flex-direction:column;
   gap:10px;
-  padding-right:4px;
+  padding-right:0;
 }
 
 .categoriesListHeader{
@@ -8248,7 +8251,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#475569}
   body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
   body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
-  body.mobile-app .mobileBudgetScroll{height:242px;overflow:auto;padding-right:4px}
+  body.mobile-app .mobileBudgetScroll{height:242px;min-height:242px;overflow:hidden;padding-right:4px}
   body.mobile-app .mobileRecurringRef{max-height:none;overflow:visible}
   body.mobile-app .mobileTabBar{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:#ffffff;border-top:1px solid #dfe7f4;border-left:0;border-right:0;border-bottom:0;border-radius:0;box-shadow:0 -6px 20px rgba(15,23,42,.10);backdrop-filter:none;-webkit-backdrop-filter:none;opacity:1}
   body.mobile-app .mobileTabBar button.active{background:#eef4ff;color:#1f64e0}
