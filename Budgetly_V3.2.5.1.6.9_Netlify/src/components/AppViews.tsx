@@ -949,7 +949,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1935,7 +1935,7 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
   const getAriaSort = (key: SortKey) => (sortKey !== key ? 'none' : sortDirection === 'asc' ? 'ascending' : 'descending')
   const SortIcon = ({ keyName }: { keyName: SortKey }) => {
     if (sortKey !== keyName) return <ArrowUpDown size={13} strokeWidth={1.8} aria-hidden="true" />
-    return sortDirection === 'desc' ? <ChevronDown size={13} strokeWidth={2} aria-hidden="true" /> : <ChevronUp size={13} strokeWidth={2} aria-hidden="true" />
+    return sortDirection === 'desc' ? <ArrowDown size={13} strokeWidth={2} aria-hidden="true" /> : <ArrowUp size={13} strokeWidth={2} aria-hidden="true" />
   }
 
   const confirmDeleteTx = async () => {
