@@ -660,6 +660,10 @@ export function useBudgetApp(userId: string | null) {
       amount: clampMoney(Number(tx.amount ?? 0)),
       note: tx.note?.trim() || null,
     }))
+    const remoteSanitizedTransactions = sanitizedTransactions.map((tx) => ({
+      ...tx,
+      category_id: tx.category_id === SAFE_TO_SPEND_CATEGORY_ID ? null : tx.category_id,
+    }))
 
     persistLocal((current) => ({ ...current, transactions: sanitizedTransactions }))
     setSync('syncing')
@@ -667,7 +671,7 @@ export function useBudgetApp(userId: string | null) {
     try {
       const deleteIds = pendingTxDeletes.filter((id) => id && !sanitizedTransactions.some((tx) => tx.id === id))
 
-      for (const transaction of sanitizedTransactions) {
+      for (const transaction of remoteSanitizedTransactions) {
         const result = await supabase.from('transactions').upsert(transaction, { onConflict: 'id' })
         throwIfResultError(result)
       }
