@@ -8432,3 +8432,10 @@ body.light .kpi.safeToSpendKpi{background:linear-gradient(180deg, rgba(20,184,16
 .safeToSpendWarning{margin-top:8px;color:#b91c1c;font-size:13px}
 .safeToSpendActions{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 @media (max-width: 768px){.safeToSpendGrid{grid-template-columns:1fr}}
+
+.dashboardKpiVertical{
+  gap: 10px;
+}
+.dashboardKpiVertical .kpi{
+  width: 100%;
+}
