@@ -1617,12 +1617,12 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
 
         <div className={`grid cols4 dashboardKpiRow ${isPhone ? 'mobileKpiGrid' : ''} ${useCompactDashboard ? 'dashboardKpiCompact' : ''}`} style={{ marginBottom: isPhone ? 18 : 14, gridTemplateColumns: isPhone ? undefined : 'repeat(4, minmax(0, 1fr))' }}>
           <button type="button" className={`kpi income clickableKpi ${isPhone ? 'mobileKpiCard' : ''}`} onClick={() => onOpenTransactionsByType?.('income')}>
-            <span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong>
+            <span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small>
           </button>
           <button type="button" className={`kpi expenses clickableKpi ${isPhone ? 'mobileKpiCard' : ''}`} onClick={() => onOpenTransactionsByType?.('expense')}>
-            <span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong>
+            <span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><small>This month</small>
           </button>
-          <div className={`kpi net ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong></div>
+          <div className={`kpi net ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><small>This month</small></div>
           <button ref={safeToSpendTriggerRef} type="button" className="kpi safeToSpendKpi clickableKpi" onClick={() => setSafeToSpendOpen(true)}><span>Safe-To-Spend</span><strong>{helpers.fmtMoney(safeToSpendModel.safeToSpendAvailable, data.currency)}</strong><small>available this month</small></button>
         </div>
 
