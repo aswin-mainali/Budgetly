@@ -8433,3 +8433,19 @@ body.light .kpi.safeToSpendKpi{background:linear-gradient(180deg, rgba(20,184,16
 .safeToSpendActions{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 @media (max-width: 768px){.safeToSpendGrid{grid-template-columns:1fr}}
 
+
+
+.dashboardKpiRow .kpi{
+  min-height: 82px;
+  padding: 10px 12px;
+}
+.dashboardKpiRow .kpi strong{
+  font-size: 16px;
+  line-height: 1.1;
+}
+.dashboardKpiRow .kpi span{
+  font-size: 11px;
+}
+.dashboardKpiRow .kpi small{
+  font-size: 11px;
+}
