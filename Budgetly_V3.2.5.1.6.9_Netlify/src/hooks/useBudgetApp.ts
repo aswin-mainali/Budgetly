@@ -21,6 +21,7 @@ type TransactionDraft = {
 }
 
 const LOCAL_KEY = 'raswibudgeting:cloud:v1'
+const SAFE_TO_SPEND_CATEGORY_ID = 'expense:safe_to_spend'
 
 
 const notify = (message: string) => {
@@ -397,7 +398,9 @@ export function useBudgetApp(userId: string | null) {
   const monthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === activeMonth), [transactions, activeMonth])
   const transactionMonthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === txActiveMonth), [transactions, txActiveMonth])
   const income = useMemo(() => monthTx.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
-  const expenses = useMemo(() => monthTx.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
+  const expenses = useMemo(() => monthTx
+    .filter((tx) => tx.type === 'expense' && tx.category_id !== SAFE_TO_SPEND_CATEGORY_ID)
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
   const net = income - expenses
 
   const byCategory = useMemo(() => {
@@ -649,6 +652,7 @@ export function useBudgetApp(userId: string | null) {
     }
 
     const validCategoryIds = new Set(data.categories.map((category) => category.id))
+    validCategoryIds.add(SAFE_TO_SPEND_CATEGORY_ID)
     const sanitizedTransactions = transactions.map((tx) => ({
       id: tx.id,
       user_id: userId,
@@ -658,6 +662,10 @@ export function useBudgetApp(userId: string | null) {
       amount: clampMoney(Number(tx.amount ?? 0)),
       note: tx.note?.trim() || null,
     }))
+    const remoteSanitizedTransactions = sanitizedTransactions.map((tx) => ({
+      ...tx,
+      category_id: tx.category_id === SAFE_TO_SPEND_CATEGORY_ID ? null : tx.category_id,
+    }))
 
     persistLocal((current) => ({ ...current, transactions: sanitizedTransactions }))
     setSync('syncing')
@@ -665,7 +673,7 @@ export function useBudgetApp(userId: string | null) {
     try {
       const deleteIds = pendingTxDeletes.filter((id) => id && !sanitizedTransactions.some((tx) => tx.id === id))
 
-      for (const transaction of sanitizedTransactions) {
+      for (const transaction of remoteSanitizedTransactions) {
         const result = await supabase.from('transactions').upsert(transaction, { onConflict: 'id' })
         throwIfResultError(result)
       }
