@@ -1615,7 +1615,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           </select>
         </div>
 
-        <div className={`grid cols1 dashboardKpiVertical ${isPhone ? 'mobileKpiGrid' : ''} ${useCompactDashboard ? 'dashboardKpiCompact' : ''}`} style={{ marginBottom: isPhone ? 18 : 14 }}>
+        <div className={`grid cols4 ${isPhone ? 'mobileKpiGrid' : ''} ${useCompactDashboard ? 'dashboardKpiCompact' : ''}`} style={{ marginBottom: isPhone ? 18 : 14 }}>
           <button type="button" className={`kpi income clickableKpi ${isPhone ? 'mobileKpiCard' : ''}`} onClick={() => onOpenTransactionsByType?.('income')}>
             <span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong>
           </button>
