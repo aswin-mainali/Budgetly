@@ -398,7 +398,9 @@ export function useBudgetApp(userId: string | null) {
   const monthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === activeMonth), [transactions, activeMonth])
   const transactionMonthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === txActiveMonth), [transactions, txActiveMonth])
   const income = useMemo(() => monthTx.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
-  const expenses = useMemo(() => monthTx.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
+  const expenses = useMemo(() => monthTx
+    .filter((tx) => tx.type === 'expense' && tx.category_id !== SAFE_TO_SPEND_CATEGORY_ID)
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
   const net = income - expenses
 
   const byCategory = useMemo(() => {
