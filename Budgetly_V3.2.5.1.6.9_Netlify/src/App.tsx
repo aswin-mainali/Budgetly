@@ -20,6 +20,7 @@ const LAST_TAB_CLOSED_AT_KEY = 'budgetly:last-tab-closed-at'
 
 
 type ToastItem = { id: number; message: string }
+type MonthEndSummary = { monthKey: string; monthLabel: string; transactionCount: number; totalIncome: number; totalExpenses: number; netAmount: number; largestExpenseLabel: string; topSpendingCategory: string; recurringItemsProcessed: number; transactionsAddedLast7Days: number }
 
 const getTimeGreeting = (date = new Date()) => {
   const hour = date.getHours()
@@ -52,12 +53,54 @@ export default function App() {
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
+  const [showMonthEndModal, setShowMonthEndModal] = useState(false)
+  const [monthEndSummary, setMonthEndSummary] = useState<MonthEndSummary | null>(null)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
 
   const budget = useBudgetApp(userId)
   const admin = useSuperAdmin(userId, email)
+
+  useEffect(() => {
+    if (!userId) return
+    const now = new Date()
+    if (now.getDate() !== new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) return
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    if (budget.activeMonth !== currentMonth) return
+    if (sessionStorage.getItem(`budgetly_month_end_dismissed_${userId}_${currentMonth}`) === '1') return
+    if (localStorage.getItem(`budgetly_month_closed_${userId}_${currentMonth}`) === '1') return
+
+    const monthTx = budget.data.transactions.filter((tx) => tx.date.slice(0, 7) === currentMonth)
+    const income = monthTx.filter((tx) => tx.type === 'income')
+    const expenses = monthTx.filter((tx) => tx.type === 'expense')
+    const totalIncome = income.reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    const totalExpenses = expenses.reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    const largestExpense = expenses.reduce((best, tx) => (Number(tx.amount || 0) > Number(best?.amount || 0) ? tx : best), expenses[0] ?? null)
+    const topCategoryMap = new Map<string, number>()
+    expenses.forEach((tx) => topCategoryMap.set(tx.category_id || 'uncat', (topCategoryMap.get(tx.category_id || 'uncat') ?? 0) + Number(tx.amount || 0)))
+    const topCategoryKey = [...topCategoryMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+    const last7Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
+    const last7StartIso = `${last7Start.getFullYear()}-${String(last7Start.getMonth() + 1).padStart(2, '0')}-${String(last7Start.getDate()).padStart(2, '0')}`
+    const recurringItemsProcessed = budget.data.recurring.filter((item) => {
+      if ((item.recurrence_type || 'monthly') === 'monthly') return true
+      return (item.anchor_date || '').slice(0, 7) <= currentMonth
+    }).length
+
+    setMonthEndSummary({
+      monthKey: currentMonth,
+      monthLabel: budget.helpers.monthLabel(currentMonth),
+      transactionCount: monthTx.length,
+      totalIncome,
+      totalExpenses,
+      netAmount: totalIncome - totalExpenses,
+      largestExpenseLabel: largestExpense ? `${largestExpense.note?.trim() || budget.catsById.get(largestExpense.category_id || '')?.name || 'Expense'} • ${budget.helpers.fmtMoney(Number(largestExpense.amount || 0), budget.data.currency)}` : 'No data',
+      topSpendingCategory: topCategoryKey ? (topCategoryKey === 'uncat' ? 'Uncategorized' : (budget.catsById.get(topCategoryKey)?.name || 'None')) : 'None',
+      recurringItemsProcessed,
+      transactionsAddedLast7Days: monthTx.filter((tx) => tx.date >= last7StartIso && tx.date <= now.toISOString().slice(0, 10)).length,
+    })
+    setShowMonthEndModal(true)
+  }, [userId, budget.activeMonth, budget.data.transactions, budget.data.recurring, budget.data.currency, budget.helpers, budget.catsById])
 
   useEffect(() => {
     document.body.classList.toggle('light', theme === 'light')
@@ -403,6 +446,33 @@ export default function App() {
     showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled')
   }
 
+  const closeMonthEndModal = () => {
+    if (userId && monthEndSummary) sessionStorage.setItem(`budgetly_month_end_dismissed_${userId}_${monthEndSummary.monthKey}`, '1')
+    setShowMonthEndModal(false)
+  }
+
+  const viewMonthReport = () => {
+    if (!monthEndSummary) return
+    setToolsSection('reports')
+    handleViewChange('tools')
+    window.dispatchEvent(new CustomEvent('budgetly:set-report-month', { detail: { month: monthEndSummary.monthKey } }))
+    setShowMonthEndModal(false)
+  }
+
+  const endThisMonth = () => {
+    if (!userId || !monthEndSummary) return
+    const confirmed = window.confirm(`End this month?\n\nThis will close ${monthEndSummary.monthLabel}, keep its data in history, and move Budgetly to the next month.`)
+    if (!confirmed) return
+    localStorage.setItem(`budgetly_month_closed_${userId}_${monthEndSummary.monthKey}`, '1')
+    const [year, month] = monthEndSummary.monthKey.split('-').map(Number)
+    const next = new Date(year, month, 1)
+    const nextMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`
+    budget.setActiveMonth(nextMonth)
+    budget.setTxActiveMonth(nextMonth)
+    budget.setTxDraft((current) => ({ ...current, date: `${nextMonth}-01` }))
+    setShowMonthEndModal(false)
+  }
+
   const commandItems: CommandItem[] = [
     { id: 'page-dashboard', type: 'page', label: 'Dashboard', description: 'View your financial overview and key insights', keywords: ['home', 'overview', 'summary'], onSelect: () => handleViewChange('dashboard'), iconClassName: 'violet', icon: <BarChart3 size={16} /> },
     { id: 'page-transactions', type: 'page', label: 'Transactions', description: 'View and manage your transactions', keywords: ['transactions', 'income', 'expense'], onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
@@ -511,6 +581,37 @@ export default function App() {
           <div key={toast.id} className="toastMessage">{toast.message}</div>
         ))}
       </div>
+
+      {showMonthEndModal && monthEndSummary ? (
+        <div className="deleteConfirmBackdrop" role="presentation" onClick={closeMonthEndModal}>
+          <div className="card monthEndModal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <span className="badge">Month-end summary</span>
+            <h2>{monthEndSummary.monthLabel} summary</h2>
+            <p className="muted">Here’s a quick view of all activity recorded this month.</p>
+            <div className="grid cols4 monthEndStats">
+              <div className="kpi"><small>Transactions</small><strong>{monthEndSummary.transactionCount}</strong></div>
+              <div className="kpi income"><small>Income</small><strong>{budget.helpers.fmtMoney(monthEndSummary.totalIncome, budget.data.currency)}</strong></div>
+              <div className="kpi expenses"><small>Expenses</small><strong>{budget.helpers.fmtMoney(monthEndSummary.totalExpenses, budget.data.currency)}</strong></div>
+              <div className="kpi"><small>Net</small><strong>{budget.helpers.fmtMoney(monthEndSummary.netAmount, budget.data.currency)}</strong></div>
+            </div>
+            <h3>What happened this month</h3>
+            <div className="monthEndRows">
+              <div><span>Largest expense</span><strong>{monthEndSummary.largestExpenseLabel || 'No data'}</strong></div>
+              <div><span>Top spending category</span><strong>{monthEndSummary.topSpendingCategory || 'None'}</strong></div>
+              <div><span>Recurring items processed</span><strong>{monthEndSummary.recurringItemsProcessed}</strong></div>
+              <div><span>Transactions added in final 7 days</span><strong>{monthEndSummary.transactionsAddedLast7Days}</strong></div>
+            </div>
+            <small className="muted">You can still review and add missing transactions before ending the month.</small>
+            <div className="row between monthEndActions">
+              <button className="btn" onClick={closeMonthEndModal}>Close</button>
+              <div className="row" style={{ gap: 8 }}>
+                <button className="btn success" onClick={viewMonthReport}>View Report</button>
+                <button className="btn primary" onClick={endThisMonth}>End This Month</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {idleWarningOpen ? (
         <div className="idleModalBackdrop" role="presentation">

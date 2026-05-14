@@ -3796,6 +3796,19 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     if (!selectedYear) setSelectedYear((fallbackMonth || currentMonth).slice(0, 4))
   }, [selectedYear, fallbackMonth, currentMonth])
 
+  useEffect(() => {
+    const handleSetReportMonth = (event: Event) => {
+      const custom = event as CustomEvent<{ month?: string }>
+      const month = custom.detail?.month
+      if (month && month.length === 7) {
+        setSelectedMonth(month)
+        setSelectedYear(month.slice(0, 4))
+      }
+    }
+    window.addEventListener('budgetly:set-report-month', handleSetReportMonth as EventListener)
+    return () => window.removeEventListener('budgetly:set-report-month', handleSetReportMonth as EventListener)
+  }, [])
+
   const years = useMemo(() => {
     const fromMonths = availableMonths.filter(Boolean).map((month) => month.slice(0, 4))
     const currentYear = String(new Date().getFullYear())

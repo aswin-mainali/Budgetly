@@ -8414,3 +8414,22 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   .universalSearchCopy strong { font-size:16px; }
   .universalSearchCopy small,.keyPill { font-size:12px; }
 }
+
+.monthEndModal{max-width:760px;width:min(94vw,760px);display:flex;flex-direction:column;gap:12px;padding:20px;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.monthEndModal h2{margin:0;font-size:34px}
+.monthEndModal h3{margin:6px 0 0;font-size:20px}
+.monthEndStats{gap:10px}
+.monthEndStats .kpi{padding:12px}
+.monthEndRows{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.monthEndRows>div{display:flex;justify-content:space-between;gap:14px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.monthEndRows>div:last-child{border-bottom:none}
+.monthEndRows span{color:var(--muted)}
+.monthEndRows strong{text-align:right}
+.monthEndActions{margin-top:6px}
+@media (max-width: 768px){
+  .monthEndModal{padding:16px}
+  .monthEndModal h2{font-size:28px}
+  .monthEndStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .monthEndRows>div{flex-direction:column;align-items:flex-start}
+  .monthEndRows strong{text-align:left}
+}
