@@ -21,6 +21,7 @@ type TransactionDraft = {
 }
 
 const LOCAL_KEY = 'raswibudgeting:cloud:v1'
+const SAFE_TO_SPEND_CATEGORY_ID = 'expense:safe_to_spend'
 
 
 const notify = (message: string) => {
@@ -649,6 +650,7 @@ export function useBudgetApp(userId: string | null) {
     }
 
     const validCategoryIds = new Set(data.categories.map((category) => category.id))
+    validCategoryIds.add(SAFE_TO_SPEND_CATEGORY_ID)
     const sanitizedTransactions = transactions.map((tx) => ({
       id: tx.id,
       user_id: userId,
