@@ -1532,6 +1532,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
     return () => window.removeEventListener('keydown', onEsc)
   }, [safeToSpendOpen])
   useEffect(() => { if (!safeToSpendOpen) safeToSpendTriggerRef.current?.focus() }, [safeToSpendOpen])
+  const netAfterSafeToSpendAllocation = net - safeToSpendModel.allocation
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -1571,7 +1572,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
         <div className="mobileDashKpis">
           <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small></button>
           <button type="button" className="mobileRefKpi expenses" onClick={() => onOpenTransactionsByType?.('expense')}><span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><small>This month</small></button>
-          <div className="mobileRefKpi net"><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><small>This month</small></div>
+          <div className="mobileRefKpi net"><span>Net</span><strong>{helpers.fmtMoney(netAfterSafeToSpendAllocation, data.currency)}</strong><small>This month</small></div>
         </div>
         <div className="card mobileRefCard">
           <div className="row space"><h3>Cash flow trend</h3><span className="badge">Weekly</span></div>
@@ -1638,7 +1639,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
           <button type="button" className={`kpi expenses clickableKpi ${isPhone ? 'mobileKpiCard' : ''}`} onClick={() => onOpenTransactionsByType?.('expense')}>
             <span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><small>This month</small>
           </button>
-          <div className={`kpi net ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><small>This month</small></div>
+          <div className={`kpi net ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(netAfterSafeToSpendAllocation, data.currency)}</strong><small>This month</small></div>
           <button ref={safeToSpendTriggerRef} type="button" className="kpi safeToSpendKpi clickableKpi" onClick={() => setSafeToSpendOpen(true)}><span>Safe-To-Spend</span><strong>{helpers.fmtMoney(safeToSpendModel.safeToSpendAvailable, data.currency)}</strong><small>available this month</small></button>
         </div>
 
