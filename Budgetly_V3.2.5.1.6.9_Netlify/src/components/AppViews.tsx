@@ -1523,7 +1523,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       safeToSpendAvailable: Math.max(totalSafeToSpendAvailable - safeToSpendSpent, 0),
     }
   }, [activeMonth, income, expenses, safeToSpendSavedTick, data.transactions])
-  useEffect(() => { if (safeToSpendOpen) setSafeToSpendDraft('0') }, [safeToSpendOpen])
+  useEffect(() => { if (safeToSpendOpen) setSafeToSpendDraft(String(safeToSpendModel.allocation || 0)) }, [safeToSpendOpen, safeToSpendModel.allocation])
   useEffect(() => {
     if (!safeToSpendOpen) return
     safeToSpendInputRef.current?.focus()
