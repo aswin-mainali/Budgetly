@@ -20,13 +20,15 @@ export default function UniversalSearch({ isOpen, onClose, commands }: { isOpen:
   const inputRef = useRef<HTMLInputElement | null>(null)
   const prevFocusedRef = useRef<HTMLElement | null>(null)
 
+  const safeCommands = Array.isArray(commands) ? commands : []
+
   const filteredCommands = useMemo(() => {
     const value = query.trim().toLowerCase()
     if (!value) return []
-    const scored = commands.map((command) => {
+    const scored = safeCommands.map((command) => {
       const label = command.label.toLowerCase()
       const description = command.description.toLowerCase()
-      const keywords = command.keywords.map((keyword) => keyword.toLowerCase())
+      const keywords = Array.isArray(command.keywords) ? command.keywords.map((keyword) => keyword.toLowerCase()) : []
       let score = Number.POSITIVE_INFINITY
       if (label === value) score = 0
       else if (label.startsWith(value)) score = 1
@@ -36,7 +38,7 @@ export default function UniversalSearch({ isOpen, onClose, commands }: { isOpen:
     }).filter((item) => Number.isFinite(item.score))
     scored.sort((a, b) => a.score - b.score || a.command.label.localeCompare(b.command.label))
     return scored.map((item) => item.command)
-  }, [commands, query])
+  }, [safeCommands, query])
 
   useEffect(() => {
     if (!isOpen) return

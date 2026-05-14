@@ -36,7 +36,8 @@ const mergeFeatureAccess = (value?: Partial<FeatureAccess> | null): FeatureAcces
 
 const getSingleOrNull = async <T,>(query: PromiseLike<{ data: T | null; error: { code?: string; message?: string } | null }>) => {
   const result = await query
-  if (result.error && result.error.code !== 'PGRST116') throw new Error(result.error.message || 'Request failed.')
+  if (result.error && ['PGRST116', '401', '403'].includes(result.error.code || '')) return null
+  if (result.error) throw new Error(result.error.message || 'Request failed.')
   return result.data
 }
 
@@ -62,6 +63,15 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     let currentProfile = await getSingleOrNull(
       supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
     ) as Profile | null
+
+    if (!currentProfile) {
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session?.user?.id) {
+        setProfile(null)
+        setFeatureAccess(DEFAULT_FEATURE_ACCESS)
+        return null
+      }
+    }
 
     if (!currentProfile) {
       const insertResult = await supabase.from('profiles').insert({ id: userId, email: email ?? '', role: 'user', is_active: true })

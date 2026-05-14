@@ -71,7 +71,9 @@ export default function App() {
     if (sessionStorage.getItem(`budgetly_month_end_dismissed_${userId}_${currentMonth}`) === '1') return
     if (localStorage.getItem(`budgetly_month_closed_${userId}_${currentMonth}`) === '1') return
 
-    const monthTx = budget.data.transactions.filter((tx) => tx.date.slice(0, 7) === currentMonth)
+    const safeTransactions = Array.isArray(budget.data?.transactions) ? budget.data.transactions : []
+    const safeRecurring = Array.isArray(budget.data?.recurring) ? budget.data.recurring : []
+    const monthTx = safeTransactions.filter((tx) => tx?.date?.slice(0, 7) === currentMonth)
     const income = monthTx.filter((tx) => tx.type === 'income')
     const expenses = monthTx.filter((tx) => tx.type === 'expense')
     const totalIncome = income.reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
@@ -82,7 +84,7 @@ export default function App() {
     const topCategoryKey = [...topCategoryMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
     const last7Start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
     const last7StartIso = `${last7Start.getFullYear()}-${String(last7Start.getMonth() + 1).padStart(2, '0')}-${String(last7Start.getDate()).padStart(2, '0')}`
-    const recurringItemsProcessed = budget.data.recurring.filter((item) => {
+    const recurringItemsProcessed = safeRecurring.filter((item) => {
       if ((item.recurrence_type || 'monthly') === 'monthly') return true
       return (item.anchor_date || '').slice(0, 7) <= currentMonth
     }).length
@@ -344,8 +346,8 @@ export default function App() {
   }
 
   const formatShortcutFromEvent = (event: KeyboardEvent) => {
-    const key = event.key
-    const normalizedKey = key.length === 1 ? key.toUpperCase() : key
+    const key = typeof event.key === 'string' ? event.key : ''
+    const normalizedKey = key && key.length === 1 ? key.toUpperCase() : (key || 'Unidentified')
     const displayKey = normalizedKey === ' ' || normalizedKey === 'Spacebar' || event.code === 'Space' ? 'Space'
       : normalizedKey === '/' || event.code === 'Slash' ? 'Slash'
       : normalizedKey === '.' || event.code === 'Period' ? 'Period'
