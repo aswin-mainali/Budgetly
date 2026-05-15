@@ -8280,7 +8280,8 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted)}
   body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
   body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
-  body.mobile-app .mobileBudgetScroll{height:242px;min-height:242px;overflow:hidden;padding-right:4px}
+  body.mobile-app .mobileBudgetScroll{height:auto;min-height:0;overflow:visible;padding-right:4px}
+  body.mobile-app .mobileRefCard .mobileBudgetScroll + .paginationFooter{margin-top:12px;padding-bottom:4px}
   body.mobile-app .mobileRecurringRef{max-height:none;overflow:visible}
   body.mobile-app .mobileTabBar{position:fixed;left:0;right:0;bottom:0;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:color-mix(in srgb, var(--panel-elevated) 92%, transparent);border-top:1px solid var(--border);border-left:0;border-right:0;border-bottom:0;border-radius:0;box-shadow:0 -8px 26px rgba(2,6,23,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);opacity:1}
   body.mobile-app .mobileTabBar button.active{background:var(--accent-soft);color:var(--text)}
