@@ -2226,7 +2226,10 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="field txField txTypeField">
             <label>Type</label>
-            <AppDropdown value={txDraft.type} options={[{ value: 'income', label: 'Income', icon: '💵' }, { value: 'expense', label: 'Expense', icon: '💸' }]} placeholder="Select type" onChange={(next) => setTxDraft((current) => ({ ...current, type: next as TxType, category_id: '' }))} />
+            <div className="typeToggle" role="tablist" aria-label="Transaction type">
+              <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
+              <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense', category_id: '' }))}>Expense</button>
+            </div>
           </div>
 
           <div className="field txField txCategoryField">
