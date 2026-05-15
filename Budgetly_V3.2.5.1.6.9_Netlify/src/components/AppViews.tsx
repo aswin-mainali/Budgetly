@@ -719,7 +719,18 @@ const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
 }
 
 
-const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { previousMonthLabel?: string; previousTotals?: { income: number; expenses: number; balance: number } | null }) => {
+const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & {
+  previousMonthLabel?: string
+  previousTotals?: { income: number; expenses: number; balance: number } | null
+  safeToSpend?: {
+    added?: number
+    rollover?: number
+    spent?: number
+    remaining?: number
+    available?: number
+    perDayLeft?: number
+  }
+}) => {
   const LOGICAL_WIDTH = 1240
   const LOGICAL_HEIGHT = 1754
   const canvas = document.createElement('canvas')
@@ -749,7 +760,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
 
   const {
     appName, reportTitle, periodLabel, generatedAt, userEmail, totals, donutRows, comboRows, comboTitle, goalRows = [], recurringRows = [], insights = [],
-    currency, previousMonthLabel, previousTotals,
+    currency, previousMonthLabel, previousTotals, safeToSpend,
   } = options
 
   const fmtMoney = (n: number, withCents = false) => {
@@ -765,6 +776,12 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   const safeNet = Number(totals.balance || 0)
   const savingsRate = safeIncome > 0 ? (safeNet / safeIncome) * 100 : 0
   const statusText = safeNet >= 0 ? 'Good Savings Month' : 'Watch Spending Closely'
+  const safeSpendAdded = Math.max(0, Number(safeToSpend?.added || 0))
+  const safeSpendRollover = Math.max(0, Number(safeToSpend?.rollover || 0))
+  const safeSpendSpent = Math.max(0, Number(safeToSpend?.spent || 0))
+  const safeSpendAvailable = Math.max(0, Number(safeToSpend?.available || (safeSpendAdded + safeSpendRollover)))
+  const safeSpendRemaining = Math.max(0, Number(safeToSpend?.remaining ?? (safeSpendAvailable - safeSpendSpent)))
+  const safeSpendPerDay = Math.max(0, Number(safeToSpend?.perDayLeft || 0))
 
   const M = 36
   const G = 18
@@ -970,6 +987,39 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     y += h + G
   }
 
+  const SafeToSpendRibbon = () => {
+    const x = M + 18
+    const w = pageW - 36
+    const h = 118
+    card(x, y, w, h, 14, '#effcf7', '#b8e3ce')
+    fillRoundedRect(ctx, x + 16, y + 22, 44, 44, 22, colors.green)
+    text('◙', x + 38, y + 49, { size: 15, color: '#ffffff', align: 'center' })
+    text('Safe to Spend', x + 74, y + 32, { size: 15, weight: '700', color: colors.navy })
+    text(fmtMoney(safeSpendAvailable, true), x + 74, y + 56, { size: 18, weight: '700', color: colors.green })
+    text('available this month', x + 214, y + 56, { size: 12, color: '#2f7e59' })
+    const statX = x + 74
+    ;[
+      { value: safeSpendAdded, label: 'added this month' },
+      { value: safeSpendRollover, label: 'rolled over' },
+      { value: safeSpendSpent, label: 'spent' },
+      { value: safeSpendRemaining, label: 'remaining' },
+    ].forEach((row, idx) => {
+      const sx = statX + idx * 112
+      text(fmtMoney(row.value), sx, y + 84, { size: 12, weight: '700', color: '#213761' })
+      text(row.label, sx, y + 102, { size: 11, color: '#60718f' })
+    })
+    card(x + w - 512, y + 58, 96, 30, 10, '#e6f8ee', '#abdabc')
+    text(`${fmtMoney(safeSpendPerDay)}/day left`, x + w - 464, y + 78, { size: 12, weight: '700', color: '#1d8f5d', align: 'center' })
+    text('Spent vs Available', x + w - 396, y + 48, { size: 12, weight: '700', color: '#213761' })
+    fillRoundedRect(ctx, x + w - 396, y + 62, 356, 16, 8, '#d9ece2')
+    const spendRatio = safeSpendAvailable > 0 ? Math.min(1, safeSpendSpent / safeSpendAvailable) : 0
+    fillRoundedRect(ctx, x + w - 396, y + 62, 356 * spendRatio, 16, 8, colors.green)
+    text(`${fmtMoney(safeSpendSpent)} spent`, x + w - 40, y + 95, { size: 11, weight: '700', color: '#2f3f5c', align: 'right' })
+    text(`${fmtMoney(Math.max(safeSpendAvailable - safeSpendSpent, 0))} available`, x + w - 40, y + 112, { size: 11, color: '#516180', align: 'right' })
+    text('Unused amount rolls into next month.', x + 16, y + h - 10, { size: 11, color: '#61708a' })
+    y += h + G
+  }
+
   const GoalsProgressCard = (x: number, yTop: number, w: number, h: number) => {
     card(x, yTop, w, h, 14, '#f8fdfb', '#d4eadf')
     text('◉  Goals Progress', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
@@ -1037,8 +1087,9 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
       `Great job! You saved ${fmtMoney(safeNet)} this month, which is ${fmtPct(savingsRate)} of your income.`,
       `${categoryRows[0]?.label || 'Top category'} is your top expense at ${Math.round(categoryRows[0]?.pct || 0)}% of total spending.`,
       `You're on track to achieve your goals. Keep it up!`,
+      `Safe to Spend: ${fmtMoney(safeSpendAvailable, true)} available this month (${fmtMoney(safeSpendAdded)} allocated + ${fmtMoney(safeSpendRollover)} rollover).`,
     ]
-    ;(insights.length ? insights : defaultInsights).slice(0, 3).forEach((item, idx) => {
+    ;(insights.length ? [...insights, defaultInsights[3]] : defaultInsights).slice(0, 4).forEach((item, idx) => {
       const iy = yTop + 64 + idx * 44
       fillRoundedRect(ctx, x + 16, iy - 14, 26, 26, 13, idx === 1 ? '#e9efff' : '#e7f7ee')
       text(idx === 1 ? '↗' : '✓', x + 29, iy + 4, { size: 13, weight: '700', color: idx === 1 ? colors.blue : colors.green, align: 'center' })
@@ -1065,6 +1116,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     ReportHeader()
     KpiSummaryRow()
     MainChartsRow()
+    SafeToSpendRibbon()
     SupportingInsightsRow()
     BottomInfoRow()
     ReportFooter()
@@ -4132,6 +4184,15 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
       monthlyNet >= 0 ? `Your savings rate improved because your ending balance is ${formatCurrency(monthlyNet)}.` : `You overspent this month by ${formatCurrency(Math.abs(monthlyNet))}.`,
       monthlyByCategory[1] ? `${monthlyByCategory[1].name} spending is trending upward - monitor closely.` : 'Add more transactions to unlock deeper insights.',
     ]
+    const safeToSpendSource = (data as any)?.safeToSpend ?? (data as any)?.safe_to_spend ?? {}
+    const safeSpendPayload = {
+      added: Number(safeToSpendSource.added ?? safeToSpendSource.allocation ?? 0),
+      rollover: Number(safeToSpendSource.rollover ?? 0),
+      spent: Number(safeToSpendSource.spent ?? 0),
+      remaining: Number(safeToSpendSource.remaining ?? 0),
+      available: Number(safeToSpendSource.available ?? safeToSpendSource.totalAvailable ?? 0),
+      perDayLeft: Number(safeToSpendSource.perDayLeft ?? safeToSpendSource.per_day_left ?? 0),
+    }
     const canvas = await createMonthlyFinancialReportPdf({
       appName: 'Budgetly',
       reportTitle: 'Monthly Financial Report',
@@ -4176,6 +4237,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
       recurringRows,
       previousMonthLabel: helpers.monthLabel(previousMonth),
       previousTotals: previousMonthTotals,
+      safeToSpend: safeSpendPayload,
     })
     exportCanvasPdf(`Budgetly-Monthly-Report-${selectedMonth}.pdf`, canvas)
   }
