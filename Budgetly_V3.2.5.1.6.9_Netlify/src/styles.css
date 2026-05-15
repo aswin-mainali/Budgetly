@@ -1020,7 +1020,6 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
 .txFilterInner{ flex-wrap: wrap; align-items: end; }
 .txField{ min-width: 160px; }
 .txGrow{ flex: 1; min-width: 240px; }
-.txAddPanel,.txAddModal,.txAddRow,.txAddModalGrid,.txField{overflow:visible}
 .categoryDropdown{position:relative;width:100%}
 .categoryDropdownTrigger{width:100%;min-height:42px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
 .categoryDropdownTrigger:focus-visible{outline:none;border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.2)}
@@ -1042,6 +1041,7 @@ body.light .categoryDropdownOption.active,body.light .categoryDropdownOption:hov
 body.light .categoryDropdownOption.selected{background:#e9f2ff}
 
 @media (max-width: 960px){
+  .txAddPanel,.txAddModal,.txAddRow,.txAddModalGrid,.txField{overflow:visible}
   .container{
     min-height:100dvh;
   }
