@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
@@ -141,9 +142,9 @@ function PaginationControls({ page, totalPages, onPrev, onNext }: { page: number
   )
 }
 
-type CategorySelectOption = { id: string; name: string; emoji?: string | null }
+type AppSelectOption = { value: string; label: string; icon?: string | null }
 
-function CategoryDropdown({
+function AppDropdown({
   value,
   options,
   placeholder,
@@ -151,7 +152,7 @@ function CategoryDropdown({
   disabled = false,
 }: {
   value: string
-  options: CategorySelectOption[]
+  options: AppSelectOption[]
   placeholder: string
   onChange: (next: string) => void
   disabled?: boolean
@@ -159,8 +160,10 @@ function CategoryDropdown({
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const triggerRef = useRef<HTMLButtonElement | null>(null)
   const listboxIdRef = useRef(`category-listbox-${Math.random().toString(36).slice(2)}`)
-  const selected = options.find((option) => option.id === value) ?? null
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
+  const selected = options.find((option) => option.value === value) ?? null
 
   useEffect(() => {
     if (!open) return
@@ -180,14 +183,39 @@ function CategoryDropdown({
 
   useEffect(() => {
     if (!open) return
-    const selectedIndex = Math.max(0, options.findIndex((option) => option.id === value))
+    const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value))
     setHighlighted(selectedIndex)
   }, [open, options, value])
+  useEffect(() => {
+    if (!open) return
+    const sync = () => {
+      const rect = triggerRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const viewportH = window.innerHeight
+      const menuH = Math.min(260, Math.max(160, viewportH * 0.4))
+      const openUp = rect.bottom + menuH > viewportH - 12 && rect.top > menuH + 12
+      setMenuStyle({
+        position: 'fixed',
+        left: Math.max(10, rect.left),
+        top: openUp ? Math.max(8, rect.top - menuH - 6) : Math.min(viewportH - 8, rect.bottom + 6),
+        width: rect.width,
+        maxHeight: `${menuH}px`,
+      })
+    }
+    sync()
+    window.addEventListener('resize', sync)
+    window.addEventListener('scroll', sync, true)
+    return () => {
+      window.removeEventListener('resize', sync)
+      window.removeEventListener('scroll', sync, true)
+    }
+  }, [open])
 
   return (
     <div className={`categoryDropdown ${open ? 'open' : ''} ${disabled ? 'disabled' : ''}`} ref={rootRef}>
       <button
         type="button"
+        ref={triggerRef}
         className="categoryDropdownTrigger"
         aria-haspopup="listbox"
         aria-expanded={open}
@@ -202,42 +230,42 @@ function CategoryDropdown({
         }}
       >
         <span className="categoryDropdownValue">
-          <span className="categoryDropdownIconBubble">{selected?.emoji ?? '🏷️'}</span>
-          <span className={selected ? '' : 'muted'}>{selected?.name ?? placeholder}</span>
+          <span className="categoryDropdownIconBubble">{selected?.icon ?? '🏷️'}</span>
+          <span className={selected ? '' : 'muted'}>{selected?.label ?? placeholder}</span>
         </span>
         <span className="categoryDropdownChevron" aria-hidden="true">▾</span>
       </button>
-      {open ? (
-        <div className="categoryDropdownMenu" id={listboxIdRef.current} role="listbox" tabIndex={-1}>
+      {open ? createPortal((
+        <div className="categoryDropdownMenu" style={menuStyle} id={listboxIdRef.current} role="listbox" tabIndex={-1}>
           {options.map((option, index) => {
-            const isSelected = option.id === value
+            const isSelected = option.value === value
             const isActive = index === highlighted
             return (
               <button
                 type="button"
                 role="option"
                 aria-selected={isSelected}
-                key={option.id}
+                key={option.value}
                 className={`categoryDropdownOption ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''}`}
                 onMouseEnter={() => setHighlighted(index)}
-                onClick={() => { onChange(option.id); setOpen(false) }}
+                onClick={() => { onChange(option.value); setOpen(false) }}
                 onKeyDown={(event) => {
                   if (event.key === 'ArrowDown') { event.preventDefault(); setHighlighted((prev) => Math.min(options.length - 1, prev + 1)) }
                   if (event.key === 'ArrowUp') { event.preventDefault(); setHighlighted((prev) => Math.max(0, prev - 1)) }
-                  if (event.key === 'Enter') { event.preventDefault(); onChange(option.id); setOpen(false) }
+                  if (event.key === 'Enter') { event.preventDefault(); onChange(option.value); setOpen(false) }
                   if (event.key === 'Escape') { event.preventDefault(); setOpen(false) }
                 }}
               >
                 <span className="categoryDropdownOptionLeft">
-                  <span className="categoryDropdownIconBubble">{option.emoji ?? '🏷️'}</span>
-                  <span>{option.name}</span>
+                  <span className="categoryDropdownIconBubble">{option.icon ?? '🏷️'}</span>
+                  <span>{option.label}</span>
                 </span>
                 {isSelected ? <span className="categoryDropdownCheck">✓</span> : null}
               </button>
             )
           })}
         </div>
-      ) : null}
+      ), document.body) : null}
     </div>
   )
 }
@@ -2145,12 +2173,12 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
               </div>
               <div className="txAddModalGrid">{/* keep existing fields simple */}
                 <div className="field txField"><label>Date</label><input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} /></div>
-                <div className="field txField"><label>Type</label><select value={txDraft.type} onChange={(event) => setTxDraft((current) => ({ ...current, type: event.target.value as TxType, category_id: '' }))}><option value="income">Income</option><option value="expense">Expense</option></select></div>
+                <div className="field txField"><label>Type</label><AppDropdown value={txDraft.type} options={[{ value: 'income', label: 'Income', icon: '💵' }, { value: 'expense', label: 'Expense', icon: '💸' }]} placeholder="Select type" onChange={(next) => setTxDraft((current) => ({ ...current, type: next as TxType, category_id: '' }))} /></div>
                 <div className="field txField">
                   <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-                  <CategoryDropdown
+                  <AppDropdown
                     value={txDraft.category_id}
-                    options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji ?? '🏷️' }))}
+                    options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ value: category.id, label: category.name, icon: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ value: category.id, label: category.name, icon: category.emoji ?? '🏷️' }))}
                     placeholder={txDraft.type === 'income' ? 'Select income category' : 'Choose category'}
                     onChange={(next) => setTxDraft((current) => ({ ...current, category_id: next }))}
                   />
@@ -2198,17 +2226,14 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="field txField txTypeField">
             <label>Type</label>
-            <div className="typeToggle" role="tablist" aria-label="Transaction type">
-              <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
-              <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense', category_id: '' }))}>Expense</button>
-            </div>
+            <AppDropdown value={txDraft.type} options={[{ value: 'income', label: 'Income', icon: '💵' }, { value: 'expense', label: 'Expense', icon: '💸' }]} placeholder="Select type" onChange={(next) => setTxDraft((current) => ({ ...current, type: next as TxType, category_id: '' }))} />
           </div>
 
           <div className="field txField txCategoryField">
             <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-            <CategoryDropdown
+            <AppDropdown
               value={txDraft.category_id}
-              options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji ?? '🏷️' }))}
+              options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ value: category.id, label: category.name, icon: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ value: category.id, label: category.name, icon: category.emoji ?? '🏷️' }))}
               placeholder={txDraft.type === 'income' ? 'Select income category' : 'Choose category'}
               onChange={(next) => setTxDraft((current) => ({ ...current, category_id: next }))}
             />
@@ -2257,28 +2282,26 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
               <div className="field txField">
                 <label>Type</label>
-                <select
-                  aria-label="Transaction type"
+                <AppDropdown
                   value={txDraft.type}
-                  onChange={(event) => {
-                    const nextType = event.target.value as TxType
+                  options={[{ value: 'income', label: 'Income', icon: '💵' }, { value: 'expense', label: 'Expense', icon: '💸' }]}
+                  placeholder="Select type"
+                  onChange={(next) => {
+                    const nextType = next as TxType
                     setTxDraft((current) => ({
                       ...current,
                       type: nextType,
                       category_id: '',
                     }))
                   }}
-                >
-                  <option value="income">Income</option>
-                  <option value="expense">Expense</option>
-                </select>
+                />
               </div>
 
               <div className="field txField">
                 <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-                <CategoryDropdown
+                <AppDropdown
                   value={txDraft.category_id}
-                  options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji ?? '🏷️' }))}
+                  options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ value: category.id, label: category.name, icon: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ value: category.id, label: category.name, icon: category.emoji ?? '🏷️' }))}
                   placeholder={txDraft.type === 'income' ? 'Select income category' : 'Choose category'}
                   onChange={(next) => setTxDraft((current) => ({ ...current, category_id: next }))}
                 />
