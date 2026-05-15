@@ -2100,6 +2100,9 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const handleAddTransaction = async () => {
     await addTransaction()
+    if (isPhone && txDraft.type === 'expense') {
+      setTxDraft((current) => ({ ...current, category_id: '' }))
+    }
     if (useTxAddModal) setTxAddModalOpen(false)
   }
 
