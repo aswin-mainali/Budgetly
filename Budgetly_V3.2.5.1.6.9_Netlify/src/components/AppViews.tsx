@@ -1465,7 +1465,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
   const cashIncome = theme === 'dark' ? '#6ea8ff' : '#3b82f6'
   const cashExpense = theme === 'dark' ? '#fb7185' : '#ef4444'
   const cashNet = theme === 'dark' ? '#4ade80' : '#16a34a'
-  const budgetPageSize = getResponsivePageSize(4, 3, 2)
+  const budgetPageSize = getResponsivePageSize(4, 3, 4)
   const recurringPageSize = getResponsivePageSize(3, 3, 2)
   const [budgetPage, setBudgetPage] = useState(1)
   const [recurringPage, setRecurringPage] = useState(1)
