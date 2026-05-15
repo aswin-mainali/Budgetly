@@ -161,6 +161,7 @@ function AppDropdown({
   const [highlighted, setHighlighted] = useState(0)
   const rootRef = useRef<HTMLDivElement | null>(null)
   const triggerRef = useRef<HTMLButtonElement | null>(null)
+  const menuRef = useRef<HTMLDivElement | null>(null)
   const listboxIdRef = useRef(`category-listbox-${Math.random().toString(36).slice(2)}`)
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({})
   const selected = options.find((option) => option.value === value) ?? null
@@ -168,7 +169,10 @@ function AppDropdown({
   useEffect(() => {
     if (!open) return
     const onPointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      if (rootRef.current?.contains(target)) return
+      if (menuRef.current?.contains(target)) return
+      setOpen(false)
     }
     const onEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false)
@@ -236,7 +240,7 @@ function AppDropdown({
         <span className="categoryDropdownChevron" aria-hidden="true">▾</span>
       </button>
       {open ? createPortal((
-        <div className="categoryDropdownMenu" style={menuStyle} id={listboxIdRef.current} role="listbox" tabIndex={-1}>
+        <div className="categoryDropdownMenu" ref={menuRef} style={menuStyle} id={listboxIdRef.current} role="listbox" tabIndex={-1}>
           {options.map((option, index) => {
             const isSelected = option.value === value
             const isActive = index === highlighted
