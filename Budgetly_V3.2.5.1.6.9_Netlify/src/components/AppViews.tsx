@@ -2199,6 +2199,13 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
             </div>
           </div>
         ) : null}
+
+        <DeleteConfirmModal
+          open={!!pendingDeleteId}
+          itemLabel={pendingDeleteTx?.note?.trim() || (pendingDeleteTx ? `${pendingDeleteTx.type} transaction` : 'this transaction')}
+          onConfirm={() => void confirmDeleteTx()}
+          onCancel={() => setPendingDeleteId(null)}
+        />
       </div>
     )
   }
