@@ -2276,19 +2276,12 @@ export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
 
               <div className="field txField">
                 <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-                <select
+                <CategoryDropdown
                   value={txDraft.category_id}
-                  onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
-                >
-                  <option value="">{txDraft.type === 'income' ? 'Select income category' : 'Choose category'}</option>
-                  {txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => (
-                    <option key={category.id} value={category.id}>{category.name}</option>
-                  )) : filteredCategoriesForDraft.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {(category.emoji ?? '🏷️')} {category.name}
-                    </option>
-                  ))}
-                </select>
+                  options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ id: category.id, name: category.name, emoji: category.emoji ?? '🏷️' }))}
+                  placeholder={txDraft.type === 'income' ? 'Select income category' : 'Choose category'}
+                  onChange={(next) => setTxDraft((current) => ({ ...current, category_id: next }))}
+                />
               </div>
 
               <div className="field txField">

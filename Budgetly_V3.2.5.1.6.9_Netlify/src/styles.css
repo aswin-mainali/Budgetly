@@ -1020,23 +1020,25 @@ body.light .mobileMenuBtn{ background: rgba(197,215,248,.92); color: #0f172a; }
 .txFilterInner{ flex-wrap: wrap; align-items: end; }
 .txField{ min-width: 160px; }
 .txGrow{ flex: 1; min-width: 240px; }
+.txAddPanel,.txAddModal,.txAddRow,.txAddModalGrid,.txField{overflow:visible}
 .categoryDropdown{position:relative;width:100%}
 .categoryDropdownTrigger{width:100%;min-height:42px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
 .categoryDropdownTrigger:focus-visible{outline:none;border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.2)}
 .categoryDropdownValue{display:flex;align-items:center;gap:8px;min-width:0}
 .categoryDropdownIconBubble{width:24px;height:24px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;background:rgba(96,165,250,.14);font-size:13px;flex:0 0 24px}
-.categoryDropdownChevron{font-size:12px;color:var(--muted)}
+.categoryDropdownChevron{font-size:11px;line-height:1;color:var(--muted);margin-right:2px;transition:transform .2s ease}
 .categoryDropdown.open .categoryDropdownChevron{transform:rotate(180deg)}
-.categoryDropdownMenu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:1400;max-height:240px;overflow:auto;padding:6px;border:1px solid var(--border);border-radius:14px;background:var(--panel-elevated);box-shadow:0 18px 40px rgba(2,6,23,.45)}
+.categoryDropdownMenu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:2200;max-height:240px;overflow:auto;padding:6px;border:1px solid color-mix(in srgb, var(--border) 70%, rgba(45,212,191,.35));border-radius:14px;background:var(--panel-elevated);box-shadow:0 18px 40px rgba(2,6,23,.45)}
 .categoryDropdownOption{width:100%;border:0;background:transparent;color:var(--text);border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left}
 .categoryDropdownOptionLeft{display:flex;align-items:center;gap:10px;min-width:0}
-.categoryDropdownOption.active,.categoryDropdownOption:hover{background:rgba(148,163,184,.14)}
+.categoryDropdownOption.active,.categoryDropdownOption:hover{background:rgba(20,184,166,.12)}
 .categoryDropdownOption.selected{background:var(--accent-soft)}
+.categoryDropdownOption:hover .categoryDropdownIconBubble{background:rgba(45,212,191,.2)}
 .categoryDropdownCheck{color:#4ade80;font-weight:700}
 body.light .categoryDropdownTrigger{background:#fff;color:#0f172a;border-color:#dbe4f2}
 body.light .categoryDropdownMenu{background:#fff;border-color:#dbe4f2;box-shadow:0 16px 34px rgba(15,23,42,.14)}
 body.light .categoryDropdownOption{color:#0f172a}
-body.light .categoryDropdownOption.active,body.light .categoryDropdownOption:hover{background:#f1f5f9}
+body.light .categoryDropdownOption.active,body.light .categoryDropdownOption:hover{background:rgba(59,130,246,.08)}
 body.light .categoryDropdownOption.selected{background:#e9f2ff}
 
 @media (max-width: 960px){
