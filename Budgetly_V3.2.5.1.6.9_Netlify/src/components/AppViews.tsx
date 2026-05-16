@@ -4,6 +4,7 @@ import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { getSafeToSpendSetting, migrateLocalSafeToSpendToSupabase, upsertSafeToSpendSetting } from '../lib/safeToSpendService'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 
 const INCOME_CATEGORY_OPTIONS = [
@@ -1487,12 +1488,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
     const parsed = Number(value ?? 0)
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0
   }
-  const getSafeToSpendKey = (month: string) => `budgetly_safe_to_spend_${month.replace('-', '_')}`
-  const getSafeToSpendSetup = (month: string) => {
-    const raw = window.localStorage.getItem(getSafeToSpendKey(month))
-    if (!raw) return null
-    try { return JSON.parse(raw) as { month: string; allocation: number; rolloverFromLastMonth?: number; createdAt?: string } } catch { return null }
-  }
+  const [safeSettingsByMonth, setSafeSettingsByMonth] = useState<Record<string, { allocation: number; notes?: string; rolloverFromLastMonth?: number; spent?: number }>>({})
   const getPrevMonth = (month: string) => {
     const [year, mon] = month.split('-').map(Number)
     const date = new Date(Date.UTC(year, mon - 1, 1))
@@ -1500,9 +1496,9 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
   }
   const safeToSpendModel = useMemo(() => {
-    const allocation = parseSafeValue(String(getSafeToSpendSetup(activeMonth)?.allocation ?? 0))
+    const allocation = parseSafeValue(String(safeSettingsByMonth[activeMonth]?.allocation ?? 0))
     const prevMonth = getPrevMonth(activeMonth)
-    const prev = getSafeToSpendSetup(prevMonth)
+    const prev = safeSettingsByMonth[prevMonth] || null
     const prevAllocation = parseSafeValue(String(prev?.allocation ?? 0))
     const prevRollover = parseSafeValue(String(prev?.rolloverFromLastMonth ?? 0))
     const rolloverFromLastMonth = Math.max(prevAllocation + prevRollover, 0)
@@ -1522,7 +1518,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       safeToSpendSpent,
       safeToSpendAvailable: Math.max(totalSafeToSpendAvailable - safeToSpendSpent, 0),
     }
-  }, [activeMonth, income, expenses, safeToSpendSavedTick, data.transactions])
+  }, [activeMonth, income, expenses, safeToSpendSavedTick, data.transactions, safeSettingsByMonth])
   useEffect(() => { if (safeToSpendOpen) setSafeToSpendDraft(String(safeToSpendModel.allocation || 0)) }, [safeToSpendOpen, safeToSpendModel.allocation])
   useEffect(() => {
     if (!safeToSpendOpen) return
@@ -1533,6 +1529,26 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
   }, [safeToSpendOpen])
   useEffect(() => { if (!safeToSpendOpen) safeToSpendTriggerRef.current?.focus() }, [safeToSpendOpen])
   const netAfterSafeToSpendAllocation = net - safeToSpendModel.allocation
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: auth } = await supabase.auth.getUser()
+      const userId = auth.user?.id
+      if (!userId) return
+      await migrateLocalSafeToSpendToSupabase(userId)
+      const monthsToLoad = Array.from(new Set([activeMonth, getPrevMonth(activeMonth)]))
+      const next: Record<string, { allocation: number; notes?: string; rolloverFromLastMonth?: number; spent?: number }> = {}
+      for (const m of monthsToLoad) {
+        try {
+          const row = await getSafeToSpendSetting(userId, m)
+          if (row) next[m] = { allocation: Number(row.allocation || 0), notes: row.notes || '', rolloverFromLastMonth: Number(row.rollover_from_last_month || 0), spent: Number(row.spent || 0) }
+        } catch {}
+      }
+      if (!cancelled) setSafeSettingsByMonth((cur) => ({ ...cur, ...next }))
+    })()
+    return () => { cancelled = true }
+  }, [activeMonth, safeToSpendSavedTick])
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -1793,7 +1809,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
         const overAllocated = allocation > safeToSpendModel.remainingSavings
         const remainingAmountAfterAllocation = safeToSpendModel.remainingSavings - allocation
         const totalAvailable = safeToSpendModel.safeToSpendAvailable
-        return <div className="safeToSpendModalOverlay" onClick={() => setSafeToSpendOpen(false)}><div className="safeToSpendModal" role="dialog" aria-modal="true" aria-label="Set Up Safe-To-Spend" onClick={(event) => event.stopPropagation()}><button type="button" className="safeToSpendCloseBtn" onClick={() => setSafeToSpendOpen(false)} aria-label="Close">✕</button><h2>Set Up Safe-To-Spend</h2><p>Decide how much of your remaining savings you want to keep available for flexible spending this month.</p><div className="safeToSpendGrid"><label><span>Month</span><input value={helpers.monthLabel(activeMonth)} readOnly tabIndex={-1} /></label><label><span>Rollover from Last Month</span><input value={helpers.fmtMoney(safeToSpendModel.rolloverFromLastMonth, data.currency)} readOnly tabIndex={-1} /></label><label><span>Monthly Income</span><input value={helpers.fmtMoney(income, data.currency)} readOnly tabIndex={-1} /></label><label><span>Safe-To-Spend Allocation</span><input ref={safeToSpendInputRef} value={safeToSpendDraft} onChange={(event) => setSafeToSpendDraft(event.target.value.replace(/[^\d.]/g, ''))} /></label><label><span>Monthly Expenses</span><input value={helpers.fmtMoney(expenses, data.currency)} readOnly tabIndex={-1} /></label><label><span>Protected Savings</span><input value={helpers.fmtMoney(remainingAmountAfterAllocation, data.currency)} readOnly tabIndex={-1} /></label><label><span>Remaining Amount / Savings</span><input value={helpers.fmtMoney(safeToSpendModel.remainingSavings, data.currency)} readOnly tabIndex={-1} /></label><label><span>Total Safe-To-Spend Available</span><input className="safeToSpendTotalInput" value={helpers.fmtMoney(totalAvailable, data.currency)} readOnly tabIndex={-1} /></label></div>{overAllocated ? <div className="safeToSpendWarning">Allocation is higher than your remaining savings.</div> : null}<div className="safeToSpendInfo">Unused Safe-To-Spend will roll over into next month until spent.</div><div className="safeToSpendSummary"><div>💼 This month available: <strong>{helpers.fmtMoney(totalAvailable, data.currency)}</strong></div><div>🔁 Will roll over if unused</div></div><div className="safeToSpendActions"><button type="button" className="btn ghost" onClick={() => setSafeToSpendOpen(false)}>Cancel</button><button type="button" className="btn" onClick={() => { const now = new Date().toISOString(); const saved = getSafeToSpendSetup(activeMonth); window.localStorage.setItem(getSafeToSpendKey(activeMonth), JSON.stringify({ month: activeMonth, allocation, rolloverFromLastMonth: safeToSpendModel.rolloverFromLastMonth, createdAt: saved?.createdAt ?? now, updatedAt: now })); setSafeToSpendSavedTick((tick) => tick + 1); setSafeToSpendDraft('0'); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } })); setSafeToSpendOpen(false) }}>Save Setup</button></div></div></div>
+        return <div className="safeToSpendModalOverlay" onClick={() => setSafeToSpendOpen(false)}><div className="safeToSpendModal" role="dialog" aria-modal="true" aria-label="Set Up Safe-To-Spend" onClick={(event) => event.stopPropagation()}><button type="button" className="safeToSpendCloseBtn" onClick={() => setSafeToSpendOpen(false)} aria-label="Close">✕</button><h2>Set Up Safe-To-Spend</h2><p>Decide how much of your remaining savings you want to keep available for flexible spending this month.</p><div className="safeToSpendGrid"><label><span>Month</span><input value={helpers.monthLabel(activeMonth)} readOnly tabIndex={-1} /></label><label><span>Rollover from Last Month</span><input value={helpers.fmtMoney(safeToSpendModel.rolloverFromLastMonth, data.currency)} readOnly tabIndex={-1} /></label><label><span>Monthly Income</span><input value={helpers.fmtMoney(income, data.currency)} readOnly tabIndex={-1} /></label><label><span>Safe-To-Spend Allocation</span><input ref={safeToSpendInputRef} value={safeToSpendDraft} onChange={(event) => setSafeToSpendDraft(event.target.value.replace(/[^\d.]/g, ''))} /></label><label><span>Monthly Expenses</span><input value={helpers.fmtMoney(expenses, data.currency)} readOnly tabIndex={-1} /></label><label><span>Protected Savings</span><input value={helpers.fmtMoney(remainingAmountAfterAllocation, data.currency)} readOnly tabIndex={-1} /></label><label><span>Remaining Amount / Savings</span><input value={helpers.fmtMoney(safeToSpendModel.remainingSavings, data.currency)} readOnly tabIndex={-1} /></label><label><span>Total Safe-To-Spend Available</span><input className="safeToSpendTotalInput" value={helpers.fmtMoney(totalAvailable, data.currency)} readOnly tabIndex={-1} /></label></div>{overAllocated ? <div className="safeToSpendWarning">Allocation is higher than your remaining savings.</div> : null}<div className="safeToSpendInfo">Unused Safe-To-Spend will roll over into next month until spent.</div><div className="safeToSpendSummary"><div>💼 This month available: <strong>{helpers.fmtMoney(totalAvailable, data.currency)}</strong></div><div>🔁 Will roll over if unused</div></div><div className="safeToSpendActions"><button type="button" className="btn ghost" onClick={() => setSafeToSpendOpen(false)}>Cancel</button><button type="button" className="btn" onClick={() => { const now = new Date().toISOString(); (async()=>{ const { data: auth } = await supabase.auth.getUser(); const userId = auth.user?.id; if (!userId) return; await upsertSafeToSpendSetting({ user_id:userId, month_key: activeMonth, allocation, notes: null, rollover_from_last_month: safeToSpendModel.rolloverFromLastMonth, spent: safeToSpendModel.safeToSpendSpent, updated_at: now }); setSafeToSpendSavedTick((tick) => tick + 1); })(); setSafeToSpendDraft('0'); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } })); setSafeToSpendOpen(false) }}>Save Setup</button></div></div></div>
       })() : null}
       <div className={`grid dashboardRightCol ${useCompactDashboard ? 'dashboardRightColCompact' : ''}`} style={{ gap: 14 }}>
         <div className="card">
@@ -3127,8 +3143,8 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
   const [draft, setDraft] = useState('0')
   const [notes, setNotes] = useState('')
   const [page, setPage] = useState(1)
-  const keyFor = (m: string) => `budgetly_safe_to_spend_${m.replace('-', '_')}`
-  const read = (m: string) => { try { return JSON.parse(window.localStorage.getItem(keyFor(m)) || 'null') } catch { return null } }
+  const [settingsByMonth, setSettingsByMonth] = useState<Record<string, any>>({})
+  const read = (m: string) => settingsByMonth[m] || null
   const prevMonth = (m: string) => { const [y, mm] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mm - 1, 1)); d.setUTCMonth(d.getUTCMonth() - 1); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` }
   const saved = read(activeMonth)
   const prev = read(prevMonth(activeMonth))
@@ -3140,11 +3156,41 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
   const spent = spentTx.reduce((s, tx) => s + Number(tx.amount || 0), 0)
   const remaining = Math.max(available - spent, 0)
   const daysLeft = Math.max(1, new Date(new Date(`${activeMonth}-01`).getFullYear(), new Date(`${activeMonth}-01`).getMonth() + 1, 0).getDate() - new Date().getDate())
-  useEffect(() => { setDraft(String(saved?.allocation ?? 0)); setNotes(String(saved?.notes ?? '')) }, [activeMonth])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: auth } = await supabase.auth.getUser()
+      const userId = auth.user?.id
+      if (!userId) return
+      await migrateLocalSafeToSpendToSupabase(userId)
+      const ms = [activeMonth, prevMonth(activeMonth), prevMonth(prevMonth(activeMonth)), prevMonth(prevMonth(prevMonth(activeMonth)))]
+      const next: Record<string, any> = {}
+      for (const m of ms) {
+        try {
+          const row = await getSafeToSpendSetting(userId, m)
+          if (row) next[m] = { allocation: Number(row.allocation || 0), notes: row.notes || '', rolloverFromLastMonth: Number(row.rollover_from_last_month || 0), spent: Number(row.spent || 0) }
+        } catch {}
+      }
+      if (!cancelled) setSettingsByMonth((cur) => ({ ...cur, ...next }))
+    })()
+    return () => { cancelled = true }
+  }, [activeMonth])
+  useEffect(() => { setDraft(String(saved?.allocation ?? 0)); setNotes(String(saved?.notes ?? '')) }, [activeMonth, saved?.allocation, saved?.notes])
   const save = () => {
     const now = new Date().toISOString()
-    window.localStorage.setItem(keyFor(activeMonth), JSON.stringify({ month: activeMonth, allocation, notes, rolloverFromLastMonth: rollover, spent, createdAt: saved?.createdAt ?? now, updatedAt: now }))
-    window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } }))
+    ;(async () => {
+      const { data: auth } = await supabase.auth.getUser()
+      const userId = auth.user?.id
+      if (!userId) return
+      try {
+        await upsertSafeToSpendSetting({ user_id: userId, month_key: activeMonth, allocation, notes, rollover_from_last_month: rollover, spent, updated_at: now })
+        setSettingsByMonth((cur) => ({ ...cur, [activeMonth]: { allocation, notes, rolloverFromLastMonth: rollover, spent } }))
+        window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } }))
+      } catch {
+        window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup could not be saved.' } }))
+      }
+    })()
   }
   const activity = [{ date: `${activeMonth}-01`, type: 'Added', amount: allocation, note: 'Added to safe-to-spend' }, ...spentTx.map((tx) => ({ date: tx.date, type: 'Spent', amount: Number(tx.amount || 0), note: tx.note || 'Safe-to-spend expense' }))]
   const pageSize = 8
