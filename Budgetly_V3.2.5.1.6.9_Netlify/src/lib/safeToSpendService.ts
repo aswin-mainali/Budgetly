@@ -5,8 +5,6 @@ export type SafeToSpendSettingRow = {
   month_key: string
   allocation: number
   notes: string | null
-  rollover_from_last_month?: number | null
-  spent?: number | null
   created_at?: string
   updated_at?: string
 }
@@ -31,8 +29,6 @@ export async function upsertSafeToSpendSetting(row: SafeToSpendSettingRow) {
     month_key: row.month_key,
     allocation: row.allocation,
     notes: row.notes,
-    rollover_from_last_month: row.rollover_from_last_month ?? 0,
-    spent: row.spent ?? 0,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,month_key' })
   if (error) throw error
@@ -52,8 +48,6 @@ export async function migrateLocalSafeToSpendToSupabase(userId: string) {
         month_key: parsed.month || month,
         allocation: Number(parsed.allocation || 0),
         notes: parsed.notes || null,
-        rollover_from_last_month: Number(parsed.rolloverFromLastMonth || 0),
-        spent: Number(parsed.spent || 0),
       })
     }
     localStorage.setItem(MIGRATION_KEY, 'true')

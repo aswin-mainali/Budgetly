@@ -4,8 +4,6 @@ create table if not exists public.safe_to_spend_settings (
   month_key text not null,
   allocation numeric not null default 0,
   notes text null,
-  rollover_from_last_month numeric not null default 0,
-  spent numeric not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(user_id, month_key)
@@ -13,10 +11,14 @@ create table if not exists public.safe_to_spend_settings (
 
 alter table public.safe_to_spend_settings enable row level security;
 
-create policy if not exists "safe_to_spend_select_own" on public.safe_to_spend_settings for select using (auth.uid() = user_id);
-create policy if not exists "safe_to_spend_insert_own" on public.safe_to_spend_settings for insert with check (auth.uid() = user_id);
-create policy if not exists "safe_to_spend_update_own" on public.safe_to_spend_settings for update using (auth.uid() = user_id);
-create policy if not exists "safe_to_spend_delete_own" on public.safe_to_spend_settings for delete using (auth.uid() = user_id);
+drop policy if exists "safe_to_spend_select_own" on public.safe_to_spend_settings;
+drop policy if exists "safe_to_spend_insert_own" on public.safe_to_spend_settings;
+drop policy if exists "safe_to_spend_update_own" on public.safe_to_spend_settings;
+drop policy if exists "safe_to_spend_delete_own" on public.safe_to_spend_settings;
+create policy "safe_to_spend_select_own" on public.safe_to_spend_settings for select using (auth.uid() = user_id);
+create policy "safe_to_spend_insert_own" on public.safe_to_spend_settings for insert with check (auth.uid() = user_id);
+create policy "safe_to_spend_update_own" on public.safe_to_spend_settings for update using (auth.uid() = user_id);
+create policy "safe_to_spend_delete_own" on public.safe_to_spend_settings for delete using (auth.uid() = user_id);
 
 create or replace function public.update_updated_at_column()
 returns trigger as $$

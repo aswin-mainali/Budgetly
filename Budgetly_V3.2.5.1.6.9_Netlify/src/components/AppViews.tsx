@@ -1542,7 +1542,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       for (const m of monthsToLoad) {
         try {
           const row = await getSafeToSpendSetting(userId, m)
-          if (row) next[m] = { allocation: Number(row.allocation || 0), notes: row.notes || '', rolloverFromLastMonth: Number(row.rollover_from_last_month || 0), spent: Number(row.spent || 0) }
+          if (row) next[m] = { allocation: Number(row.allocation || 0), notes: row.notes || '', rolloverFromLastMonth: 0, spent: 0 }
         } catch {}
       }
       if (!cancelled) setSafeSettingsByMonth((cur) => ({ ...cur, ...next }))
@@ -1809,7 +1809,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
         const overAllocated = allocation > safeToSpendModel.remainingSavings
         const remainingAmountAfterAllocation = safeToSpendModel.remainingSavings - allocation
         const totalAvailable = safeToSpendModel.safeToSpendAvailable
-        return <div className="safeToSpendModalOverlay" onClick={() => setSafeToSpendOpen(false)}><div className="safeToSpendModal" role="dialog" aria-modal="true" aria-label="Set Up Safe-To-Spend" onClick={(event) => event.stopPropagation()}><button type="button" className="safeToSpendCloseBtn" onClick={() => setSafeToSpendOpen(false)} aria-label="Close">✕</button><h2>Set Up Safe-To-Spend</h2><p>Decide how much of your remaining savings you want to keep available for flexible spending this month.</p><div className="safeToSpendGrid"><label><span>Month</span><input value={helpers.monthLabel(activeMonth)} readOnly tabIndex={-1} /></label><label><span>Rollover from Last Month</span><input value={helpers.fmtMoney(safeToSpendModel.rolloverFromLastMonth, data.currency)} readOnly tabIndex={-1} /></label><label><span>Monthly Income</span><input value={helpers.fmtMoney(income, data.currency)} readOnly tabIndex={-1} /></label><label><span>Safe-To-Spend Allocation</span><input ref={safeToSpendInputRef} value={safeToSpendDraft} onChange={(event) => setSafeToSpendDraft(event.target.value.replace(/[^\d.]/g, ''))} /></label><label><span>Monthly Expenses</span><input value={helpers.fmtMoney(expenses, data.currency)} readOnly tabIndex={-1} /></label><label><span>Protected Savings</span><input value={helpers.fmtMoney(remainingAmountAfterAllocation, data.currency)} readOnly tabIndex={-1} /></label><label><span>Remaining Amount / Savings</span><input value={helpers.fmtMoney(safeToSpendModel.remainingSavings, data.currency)} readOnly tabIndex={-1} /></label><label><span>Total Safe-To-Spend Available</span><input className="safeToSpendTotalInput" value={helpers.fmtMoney(totalAvailable, data.currency)} readOnly tabIndex={-1} /></label></div>{overAllocated ? <div className="safeToSpendWarning">Allocation is higher than your remaining savings.</div> : null}<div className="safeToSpendInfo">Unused Safe-To-Spend will roll over into next month until spent.</div><div className="safeToSpendSummary"><div>💼 This month available: <strong>{helpers.fmtMoney(totalAvailable, data.currency)}</strong></div><div>🔁 Will roll over if unused</div></div><div className="safeToSpendActions"><button type="button" className="btn ghost" onClick={() => setSafeToSpendOpen(false)}>Cancel</button><button type="button" className="btn" onClick={() => { const now = new Date().toISOString(); (async()=>{ const { data: auth } = await supabase.auth.getUser(); const userId = auth.user?.id; if (!userId) return; await upsertSafeToSpendSetting({ user_id:userId, month_key: activeMonth, allocation, notes: null, rollover_from_last_month: safeToSpendModel.rolloverFromLastMonth, spent: safeToSpendModel.safeToSpendSpent, updated_at: now }); setSafeToSpendSavedTick((tick) => tick + 1); })(); setSafeToSpendDraft('0'); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } })); setSafeToSpendOpen(false) }}>Save Setup</button></div></div></div>
+        return <div className="safeToSpendModalOverlay" onClick={() => setSafeToSpendOpen(false)}><div className="safeToSpendModal" role="dialog" aria-modal="true" aria-label="Set Up Safe-To-Spend" onClick={(event) => event.stopPropagation()}><button type="button" className="safeToSpendCloseBtn" onClick={() => setSafeToSpendOpen(false)} aria-label="Close">✕</button><h2>Set Up Safe-To-Spend</h2><p>Decide how much of your remaining savings you want to keep available for flexible spending this month.</p><div className="safeToSpendGrid"><label><span>Month</span><input value={helpers.monthLabel(activeMonth)} readOnly tabIndex={-1} /></label><label><span>Rollover from Last Month</span><input value={helpers.fmtMoney(safeToSpendModel.rolloverFromLastMonth, data.currency)} readOnly tabIndex={-1} /></label><label><span>Monthly Income</span><input value={helpers.fmtMoney(income, data.currency)} readOnly tabIndex={-1} /></label><label><span>Safe-To-Spend Allocation</span><input ref={safeToSpendInputRef} value={safeToSpendDraft} onChange={(event) => setSafeToSpendDraft(event.target.value.replace(/[^\d.]/g, ''))} /></label><label><span>Monthly Expenses</span><input value={helpers.fmtMoney(expenses, data.currency)} readOnly tabIndex={-1} /></label><label><span>Protected Savings</span><input value={helpers.fmtMoney(remainingAmountAfterAllocation, data.currency)} readOnly tabIndex={-1} /></label><label><span>Remaining Amount / Savings</span><input value={helpers.fmtMoney(safeToSpendModel.remainingSavings, data.currency)} readOnly tabIndex={-1} /></label><label><span>Total Safe-To-Spend Available</span><input className="safeToSpendTotalInput" value={helpers.fmtMoney(totalAvailable, data.currency)} readOnly tabIndex={-1} /></label></div>{overAllocated ? <div className="safeToSpendWarning">Allocation is higher than your remaining savings.</div> : null}<div className="safeToSpendInfo">Unused Safe-To-Spend will roll over into next month until spent.</div><div className="safeToSpendSummary"><div>💼 This month available: <strong>{helpers.fmtMoney(totalAvailable, data.currency)}</strong></div><div>🔁 Will roll over if unused</div></div><div className="safeToSpendActions"><button type="button" className="btn ghost" onClick={() => setSafeToSpendOpen(false)}>Cancel</button><button type="button" className="btn" onClick={() => { const now = new Date().toISOString(); (async()=>{ const { data: auth } = await supabase.auth.getUser(); const userId = auth.user?.id; if (!userId) return; await upsertSafeToSpendSetting({ user_id:userId, month_key: activeMonth, allocation, notes: null, updated_at: now }); setSafeToSpendSavedTick((tick) => tick + 1); })(); setSafeToSpendDraft('0'); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } })); setSafeToSpendOpen(false) }}>Save Setup</button></div></div></div>
       })() : null}
       <div className={`grid dashboardRightCol ${useCompactDashboard ? 'dashboardRightColCompact' : ''}`} style={{ gap: 14 }}>
         <div className="card">
@@ -3162,14 +3162,17 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
     ;(async () => {
       const { data: auth } = await supabase.auth.getUser()
       const userId = auth.user?.id
-      if (!userId) return
+      if (!userId) {
+        window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Please sign in again to save Safe-To-Spend setup.' } }))
+        return
+      }
       await migrateLocalSafeToSpendToSupabase(userId)
       const ms = [activeMonth, prevMonth(activeMonth), prevMonth(prevMonth(activeMonth)), prevMonth(prevMonth(prevMonth(activeMonth)))]
       const next: Record<string, any> = {}
       for (const m of ms) {
         try {
           const row = await getSafeToSpendSetting(userId, m)
-          if (row) next[m] = { allocation: Number(row.allocation || 0), notes: row.notes || '', rolloverFromLastMonth: Number(row.rollover_from_last_month || 0), spent: Number(row.spent || 0) }
+          if (row) next[m] = { allocation: Number(row.allocation || 0), notes: row.notes || '', rolloverFromLastMonth: 0, spent: 0 }
         } catch {}
       }
       if (!cancelled) setSettingsByMonth((cur) => ({ ...cur, ...next }))
@@ -3182,12 +3185,21 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
     ;(async () => {
       const { data: auth } = await supabase.auth.getUser()
       const userId = auth.user?.id
-      if (!userId) return
+      if (!userId) {
+        window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Please sign in again to save Safe-To-Spend setup.' } }))
+        return
+      }
       try {
-        await upsertSafeToSpendSetting({ user_id: userId, month_key: activeMonth, allocation, notes, rollover_from_last_month: rollover, spent, updated_at: now })
+        const allocationNumber = Number(String(draft || '0').replace(/[^0-9.-]/g, ''))
+        if (!Number.isFinite(allocationNumber) || allocationNumber < 0) {
+          window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup could not be saved.' } }))
+          return
+        }
+        await upsertSafeToSpendSetting({ user_id: userId, month_key: activeMonth, allocation: allocationNumber, notes: notes || null, updated_at: now })
         setSettingsByMonth((cur) => ({ ...cur, [activeMonth]: { allocation, notes, rolloverFromLastMonth: rollover, spent } }))
         window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } }))
-      } catch {
+      } catch (error: any) {
+        if (import.meta.env.DEV) console.error('Safe-To-Spend save failed', { message: error?.message, details: error?.details, hint: error?.hint, code: error?.code })
         window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup could not be saved.' } }))
       }
     })()
