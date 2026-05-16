@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Shield } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
@@ -21,8 +21,8 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
-  toolsSection: 'goals' | 'reports' | 'converter' | 'debt'
-  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt') => void
+  toolsSection: 'goals' | 'reports' | 'converter' | 'safe_to_spend' | 'debt'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'safe_to_spend' | 'debt') => void
   sync: SyncState
   email?: string | null
   features: FeatureAccess
@@ -183,6 +183,9 @@ export default function Sidebar(props: {
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
+                    <button className={toolsSection === 'safe_to_spend' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('safe_to_spend'); setToolsExpanded(false) }}>
+                      <Shield size={16} /> <span className="navLabel">Safe-To-Spend</span>
+                    </button>
                   </div>,
                   document.body
                 ) : null}

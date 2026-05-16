@@ -1640,7 +1640,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
             <span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><small>This month</small>
           </button>
           <div className={`kpi net ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(netAfterSafeToSpendAllocation, data.currency)}</strong><small>This month</small></div>
-          <button ref={safeToSpendTriggerRef} type="button" className="kpi safeToSpendKpi clickableKpi" onClick={() => setSafeToSpendOpen(true)}><span>Safe-To-Spend</span><strong>{helpers.fmtMoney(safeToSpendModel.safeToSpendAvailable, data.currency)}</strong><small>available this month</small></button>
+          <button ref={safeToSpendTriggerRef} type="button" className="kpi safeToSpendKpi clickableKpi" onClick={() => { window.dispatchEvent(new CustomEvent('budgetly:navigate-safe-to-spend')) }}><span>Safe-To-Spend</span><strong>{helpers.fmtMoney(safeToSpendModel.safeToSpendAvailable, data.currency)}</strong><small>available this month</small></button>
         </div>
 
         <div className={`grid cols2 dashboardSecondaryGrid ${useCompactDashboard ? 'dashboardSecondaryGridCompact' : ''}`}>
@@ -1788,7 +1788,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       </div>
 
 
-      {safeToSpendOpen ? (() => {
+      {false && safeToSpendOpen ? (() => {
         const allocation = Math.max(0, Number(safeToSpendDraft || 0))
         const overAllocated = allocation > safeToSpendModel.remainingSavings
         const remainingAmountAfterAllocation = safeToSpendModel.remainingSavings - allocation
@@ -3120,6 +3120,45 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       ) : null}
     </div>
   )
+}
+
+export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
+  const { data, months, activeMonth, setActiveMonth, income, expenses, helpers } = budget
+  const [draft, setDraft] = useState('0')
+  const [notes, setNotes] = useState('')
+  const [page, setPage] = useState(1)
+  const keyFor = (m: string) => `budgetly_safe_to_spend_${m.replace('-', '_')}`
+  const read = (m: string) => { try { return JSON.parse(window.localStorage.getItem(keyFor(m)) || 'null') } catch { return null } }
+  const prevMonth = (m: string) => { const [y, mm] = m.split('-').map(Number); const d = new Date(Date.UTC(y, mm - 1, 1)); d.setUTCMonth(d.getUTCMonth() - 1); return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}` }
+  const saved = read(activeMonth)
+  const prev = read(prevMonth(activeMonth))
+  const allocation = Math.max(0, Number(draft || 0))
+  const remainingSavings = income - expenses
+  const rollover = Math.max(0, Number(prev?.allocation || 0) + Number(prev?.rolloverFromLastMonth || 0) - Number(prev?.spent || 0))
+  const available = allocation + rollover
+  const spentTx = data.transactions.filter((tx) => tx.type === 'expense' && tx.category_id === SAFE_TO_SPEND_CATEGORY_ID && tx.date?.startsWith(`${activeMonth}-`))
+  const spent = spentTx.reduce((s, tx) => s + Number(tx.amount || 0), 0)
+  const remaining = Math.max(available - spent, 0)
+  const daysLeft = Math.max(1, new Date(new Date(`${activeMonth}-01`).getFullYear(), new Date(`${activeMonth}-01`).getMonth() + 1, 0).getDate() - new Date().getDate())
+  useEffect(() => { setDraft(String(saved?.allocation ?? 0)); setNotes(String(saved?.notes ?? '')) }, [activeMonth])
+  const save = () => {
+    const now = new Date().toISOString()
+    window.localStorage.setItem(keyFor(activeMonth), JSON.stringify({ month: activeMonth, allocation, notes, rolloverFromLastMonth: rollover, spent, createdAt: saved?.createdAt ?? now, updatedAt: now }))
+    window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Safe-To-Spend setup saved.' } }))
+  }
+  const activity = [{ date: `${activeMonth}-01`, type: 'Added', amount: allocation, note: 'Added to safe-to-spend' }, ...spentTx.map((tx) => ({ date: tx.date, type: 'Spent', amount: Number(tx.amount || 0), note: tx.note || 'Safe-to-spend expense' }))]
+  const pageSize = 8
+  const totalPages = Math.max(1, Math.ceil(activity.length / pageSize))
+  const rows = activity.slice((page - 1) * pageSize, page * pageSize)
+  return <div className="grid" style={{ gap: 14 }}>
+    <div className="row space"><div><div className="h1">Safe-To-Spend</div><div className="muted">Plan how much of your remaining savings stays available for flexible spending each month. Unused amounts roll over automatically.</div></div><div className="row" style={{ gap: 8 }}><select className="select" value={activeMonth} onChange={(e) => setActiveMonth(e.target.value)}>{months.map((m) => <option key={m} value={m}>{helpers.monthLabel(m)}</option>)}</select><button className="btn" onClick={save}>Save changes</button></div></div>
+    <div className="card safeToSpendPageRibbon"><div className="row space"><div><strong>{helpers.fmtMoney(available, data.currency)}</strong><div className="muted">available this month</div></div><div className="row" style={{ gap: 12 }}><span>{helpers.fmtMoney(allocation, data.currency)} added this month</span><span>{helpers.fmtMoney(rollover, data.currency)} rolled over</span><span>{helpers.fmtMoney(spent, data.currency)} spent</span><span>{helpers.fmtMoney(remaining, data.currency)} remaining</span></div><span className="badge">{helpers.fmtMoney(remaining / daysLeft, data.currency)}/day left</span></div></div>
+    <div className="grid cols2">
+      <div className="card"><h3>Setup & Allocation</h3><div className="safeToSpendGrid"><label><span>Month</span><input value={helpers.monthLabel(activeMonth)} readOnly /></label><label><span>Rollover from Last Month</span><input value={helpers.fmtMoney(rollover, data.currency)} readOnly /></label><label><span>Monthly Income</span><input value={helpers.fmtMoney(income, data.currency)} readOnly /></label><label><span>Safe-To-Spend Allocation</span><input value={draft} onChange={(e) => setDraft(e.target.value.replace(/[^\d.]/g, ''))} /></label><label><span>Monthly Expenses</span><input value={helpers.fmtMoney(expenses, data.currency)} readOnly /></label><label><span>Protected Savings</span><input value={helpers.fmtMoney(remainingSavings - allocation, data.currency)} readOnly /></label><label><span>Remaining Amount / Savings</span><input value={helpers.fmtMoney(remainingSavings, data.currency)} readOnly /></label><label><span>Total Safe-To-Spend Available</span><input value={helpers.fmtMoney(available, data.currency)} readOnly /></label><label style={{ gridColumn: '1 / -1' }}><span>Notes</span><textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any notes about your Safe-To-Spend plan..." /></label></div><div className="safeToSpendInfo">Unused Safe-To-Spend will roll over into next month until spent.</div><div className="row" style={{ justifyContent: 'flex-end', gap: 8, marginTop: 10 }}><button className="btn ghost" onClick={() => { setDraft(String(saved?.allocation ?? 0)); setNotes(String(saved?.notes ?? '')) }}>Reset</button><button className="btn" onClick={save}>Save Setup</button></div></div>
+      <div className="card"><h3>Safe-To-Spend Activity</h3><table className="txTable"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Notes</th></tr></thead><tbody>{rows.map((r, i) => <tr key={i}><td>{new Date(`${r.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td><td><span className={`badge ${r.type === 'Added' ? 'good' : 'warn'}`}>{r.type}</span></td><td className={r.type === 'Added' ? 'reportsGood' : 'reportsBad'}>{r.type === 'Added' ? '+' : '-'}{helpers.fmtMoney(Math.abs(r.amount), data.currency)}</td><td>{r.note}</td></tr>)}</tbody></table><PaginationControls page={page} totalPages={totalPages} onPrev={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} /><div className="muted">Total spent from Safe-To-Spend: {helpers.fmtMoney(spent, data.currency)}</div></div>
+    </div>
+    <div className="grid cols2"><div className="card"><h3>Rollover History</h3><div className="muted">Unused amounts continue until spent.</div><div className="grid" style={{ gap: 8, marginTop: 8 }}>{[2, 1, 0].map((n) => { const d = new Date(Date.UTC(Number(activeMonth.slice(0, 4)), Number(activeMonth.slice(5)) - 1 - n, 1)); const m = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`; const rr = read(m); return <div key={m} className="row space"><span>{helpers.monthLabel(m)}</span><span>{helpers.fmtMoney(Number(rr?.rolloverFromLastMonth || 0), data.currency)} {m === activeMonth ? <span className="badge">Current</span> : null}</span></div> })}</div></div><div className="card"><h3>How it works</h3><div className="grid" style={{ gap: 10 }}><div>🧮 <strong>Income - Expenses = Remaining savings</strong><div className="muted">We calculate how much you have left each month.</div></div><div>🛡️ <strong>Choose how much to allocate to Safe-To-Spend</strong><div className="muted">Set your monthly flexible spending allocation.</div></div><div>🔁 <strong>Unused amounts roll into next month</strong><div className="muted">Your unused allocation keeps rolling over until you spend it.</div></div></div></div></div>
+  </div>
 }
 
 type GoalDraft = {
