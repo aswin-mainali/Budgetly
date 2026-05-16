@@ -8476,3 +8476,31 @@ body.light .kpi.safeToSpendKpi{background:linear-gradient(180deg, rgba(20,184,16
 .safeToSpendMainGrid.grid.cols2{
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
+
+.safeToSpendPage{padding:6px 4px 28px}
+.safeToSpendHeader{align-items:flex-start;gap:14px}
+.safeToSpendTitle{font-size:34px;font-weight:800;letter-spacing:-.02em}
+.safeToSpendSub{max-width:760px;line-height:1.45}
+.safeToSpendTopActions .btn.primary{border-radius:12px;min-height:42px;padding:0 16px}
+.safeToSpendPage .card{border:1px solid var(--border);box-shadow:0 12px 26px rgba(15,23,42,.08);border-radius:18px}
+.safeToSpendPageRibbon{background:linear-gradient(180deg,rgba(16,185,129,.12),rgba(20,184,166,.08));border-color:rgba(16,185,129,.35);padding:18px}
+.safeToSpendHero{display:flex;align-items:center;gap:12px}
+.safeToSpendHeroIcon{width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,.2);display:grid;place-items:center;font-size:20px}
+.safeToSpendHero strong{font-size:30px;line-height:1.1}
+.safeToSpendRibbonStats span{display:grid;gap:2px;font-weight:700}
+.safeToSpendRibbonStats span small{font-size:11px;font-weight:500;color:var(--muted)}
+.safeToSpendRibbonStats .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.safeToSpendRibbonStats .dot.good{background:#16a34a}.safeToSpendRibbonStats .dot.info{background:#0ea5e9}.safeToSpendRibbonStats .dot.warn{background:#ef4444}.safeToSpendRibbonStats .dot.teal{background:#14b8a6}
+.safeToSpendDailyPill{background:rgba(22,163,74,.16);border-color:rgba(22,163,74,.35);color:#15803d}
+.safeToSpendRibbonProgress{margin-top:12px;display:grid;gap:8px}
+.safeToSpendRibbonFoot{font-size:12px}
+.safeToSpendPanel h3,.safeToSpendPage h3{font-size:22px;margin-bottom:12px}
+.safeToSpendGrid{gap:12px 16px}
+.safeToSpendGrid label span{font-size:12px;font-weight:600;color:var(--muted)}
+.safeToSpendGrid input,.safeToSpendGrid textarea{border-radius:12px;border:1px solid var(--border);background:rgba(148,163,184,.12)}
+.safeToSpendGrid input[readonly]{opacity:.85}
+.safeToSpendEditable{background:var(--panel-strong)!important}
+.safeToSpendActivityTableWrap .txTable thead tr{background:rgba(148,163,184,.12)}
+.safeToSpendActivityTableWrap .txTable th{font-weight:700;padding:12px 14px}
+.safeToSpendActivityTableWrap .txTable td{padding:12px 14px;vertical-align:middle}
+@media (max-width: 900px){.safeToSpendRibbonTop{flex-direction:column;align-items:flex-start}.safeToSpendTopActions{width:100%}.safeToSpendTopActions .select,.safeToSpendTopActions .btn{flex:1}}
