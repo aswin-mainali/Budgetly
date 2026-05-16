@@ -3155,6 +3155,27 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
   const spentTx = data.transactions.filter((tx) => tx.type === 'expense' && tx.category_id === SAFE_TO_SPEND_CATEGORY_ID && tx.date?.startsWith(`${activeMonth}-`))
   const spent = spentTx.reduce((s, tx) => s + Number(tx.amount || 0), 0)
   const remaining = Math.max(available - spent, 0)
+  const toNumber = (value: unknown) => {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+    const parsed = Number(String(value ?? '').replace(/[^0-9.-]/g, ''))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  const getSafeToSpendProgress = (spentValue: unknown, availableValue: unknown) => {
+    const safeSpent = Math.max(0, toNumber(spentValue))
+    const safeAvailable = Math.max(0, toNumber(availableValue))
+    const rawPercent = safeAvailable > 0 ? (safeSpent / safeAvailable) * 100 : 0
+    const progressPercent = Math.min(rawPercent, 100)
+    const visibleProgress = progressPercent > 0 ? Math.max(progressPercent, 2) : 0
+    return {
+      spent: safeSpent,
+      available: safeAvailable,
+      progressPercent,
+      visibleProgress,
+      isOverspent: safeSpent > safeAvailable && safeAvailable > 0,
+      remaining: Math.max(safeAvailable - safeSpent, 0),
+    }
+  }
+  const progress = getSafeToSpendProgress(spent, available)
   const daysLeft = Math.max(1, new Date(new Date(`${activeMonth}-01`).getFullYear(), new Date(`${activeMonth}-01`).getMonth() + 1, 0).getDate() - new Date().getDate())
 
   useEffect(() => {
@@ -3232,8 +3253,8 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
         <span className="safeToSpendDaily">{helpers.fmtMoney(remaining / daysLeft, data.currency)}/day left</span>
       </div>
       <div className="safeToSpendRibbonProgress">
-        <div className="row space"><small>Spent vs Available</small><small>{helpers.fmtMoney(spent, data.currency)} / {helpers.fmtMoney(available, data.currency)}</small></div>
-        <div className="progress"><div style={{ width: `${available > 0 ? Math.min(100, (spent / available) * 100) : 0}%` }} /></div>
+        <div className="row space"><small>Spent vs Available</small><small>{helpers.fmtMoney(progress.spent, data.currency)} / {helpers.fmtMoney(progress.available, data.currency)}</small></div>
+        <div className="progress safeSpendProgressTrack"><div className={`safeSpendProgressFill ${progress.isOverspent ? 'over' : ''}`} style={{ width: `${progress.visibleProgress}%` }} /></div>
       </div>
       <div className="safeToSpendRibbonNote">Unused amount rolls into next month.</div>
     </div>
