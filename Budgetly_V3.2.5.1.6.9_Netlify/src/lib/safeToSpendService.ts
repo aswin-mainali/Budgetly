@@ -19,7 +19,10 @@ export async function getSafeToSpendSetting(userId: string, monthKey: string) {
     .eq('user_id', userId)
     .eq('month_key', monthKey)
     .maybeSingle()
-  if (error) throw error
+  if (error) {
+    if (import.meta.env.DEV) console.error('Safe-To-Spend load failed', { message: error.message, details: error.details, hint: error.hint, code: error.code, monthKey, userId })
+    throw error
+  }
   return data as SafeToSpendSettingRow | null
 }
 
@@ -31,7 +34,10 @@ export async function upsertSafeToSpendSetting(row: SafeToSpendSettingRow) {
     notes: row.notes,
     updated_at: new Date().toISOString(),
   }, { onConflict: 'user_id,month_key' })
-  if (error) throw error
+  if (error) {
+    if (import.meta.env.DEV) console.error('Safe-To-Spend upsert failed', { message: error.message, details: error.details, hint: error.hint, code: error.code, row })
+    throw error
+  }
 }
 
 export async function migrateLocalSafeToSpendToSupabase(userId: string) {
