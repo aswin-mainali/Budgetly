@@ -8457,3 +8457,18 @@ body.light .kpi.safeToSpendKpi{background:linear-gradient(180deg, rgba(20,184,16
   font-size: 12px;
   line-height:1.2;
 }
+
+.safeToSpendPage{
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 20px;
+}
+.safeToSpendActivityTableWrap{
+  width: 100%;
+  overflow-x: auto;
+}
+@media (max-width: 1024px){
+  .safeToSpendPage .cols2{
+    grid-template-columns: 1fr;
+  }
+}
