@@ -8472,3 +8472,7 @@ body.light .kpi.safeToSpendKpi{background:linear-gradient(180deg, rgba(20,184,16
     grid-template-columns: 1fr;
   }
 }
+
+.safeToSpendMainGrid.grid.cols2{
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
