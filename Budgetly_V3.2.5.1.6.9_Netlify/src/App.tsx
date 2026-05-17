@@ -10,6 +10,7 @@ import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, Goals
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
+import { authenticateBiometricCredential, isBiometricEnabledForUser } from './lib/biometricUnlock'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -52,6 +53,8 @@ export default function App() {
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
+  const [appLocked, setAppLocked] = useState(false)
+  const [unlockError, setUnlockError] = useState<string | null>(null)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -132,6 +135,7 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      setAppLocked(Boolean(user?.id && isBiometricEnabledForUser(user.id)))
       await syncProfileCacheForUser(user)
       if (user) localStorage.removeItem(LAST_TAB_CLOSED_AT_KEY)
       setSessionChecked(true)
@@ -143,6 +147,7 @@ export default function App() {
       const user = session?.user ?? null
       setUserId(user?.id ?? null)
       setEmail(user?.email ?? null)
+      setAppLocked(Boolean(user?.id && isBiometricEnabledForUser(user.id)))
       void syncProfileCacheForUser(user)
     })
 
@@ -159,6 +164,7 @@ export default function App() {
   }, [])
 
   const signOut = async () => {
+    setAppLocked(false)
     await supabase.auth.signOut()
     localStorage.removeItem(LAST_TAB_CLOSED_AT_KEY)
     setUserId(null)
@@ -217,6 +223,21 @@ export default function App() {
       if (countdownTimerRef.current) window.clearInterval(countdownTimerRef.current)
     }
   }, [userId])
+
+
+
+  const handleBiometricUnlock = async () => {
+    if (!userId) return
+    try {
+      setUnlockError(null)
+      await authenticateBiometricCredential(userId)
+      setAppLocked(false)
+    } catch (error: any) {
+      const message = String(error?.message || '')
+      if (message.toLowerCase().includes('cancel')) setUnlockError('Unlock cancelled.')
+      else setUnlockError('Biometric unlock failed. Try again or use password.')
+    }
+  }
 
   const staySignedIn = () => {
     if (warningTimerRef.current) window.clearTimeout(warningTimerRef.current)
@@ -433,7 +454,7 @@ export default function App() {
   })
 
   return (
-    <div className="container appWrap">
+    <div className={`container appWrap ${appLocked ? 'appLocked' : ''}`}>
       <OfflineStatusBanner />
       <PwaUpdateBanner />
       {isMobile && !collapsed ? <div className="mobileOverlay" onClick={() => setCollapsed(true)} aria-hidden="true" /> : null}
@@ -504,6 +525,22 @@ export default function App() {
           </nav>
         ) : null}
       </main>
+
+      {appLocked ? (
+        <div className="appLockBackdrop" role="dialog" aria-modal="true" aria-labelledby="budgetly-lock-title">
+          <div className="card appLockCard">
+            <span className="badge">Budgetly</span>
+            <h2 id="budgetly-lock-title">Your workspace is locked</h2>
+            <p className="muted">Unlock with your device biometrics or passkey.</p>
+            {unlockError ? <div className="passwordFeedback error" style={{ marginTop: 8 }}>{unlockError}</div> : null}
+            <div className="row gap" style={{ marginTop: 14, justifyContent: 'center' }}>
+              <button className="btn" onClick={() => void handleBiometricUnlock()}>Unlock with Face ID / Fingerprint</button>
+              <button className="btn ghost" onClick={() => void signOut()}>Use password instead</button>
+            </div>
+            <small>Biometric unlock works only on this device.</small>
+          </div>
+        </div>
+      ) : null}
 
       <div className="toastStack" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (

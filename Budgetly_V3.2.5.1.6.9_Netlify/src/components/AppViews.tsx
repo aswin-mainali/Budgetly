@@ -6,6 +6,7 @@ import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
+import { biometricSupported, isBiometricEnabledForUser, registerBiometricCredential, removeBiometricCredential, setBiometricEnabledForUser } from '../lib/biometricUnlock'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -4717,6 +4718,9 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [universalSearchShortcut, setUniversalSearchShortcut] = useState(UNIVERSAL_SHORTCUT_DEFAULT)
   const [shortcutListening, setShortcutListening] = useState(false)
   const [shortcutError, setShortcutError] = useState('')
+  const [biometricEnabled, setBiometricEnabled] = useState(false)
+  const [biometricBusy, setBiometricBusy] = useState(false)
+  const [biometricStatus, setBiometricStatus] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
 
   const normalizeShortcut = (value: string) => value.trim()
@@ -4750,6 +4754,11 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     setUniversalSearchShortcut(saved || UNIVERSAL_SHORTCUT_DEFAULT)
   }, [])
 
+  useEffect(() => {
+    if (!userId) return
+    setBiometricEnabled(isBiometricEnabledForUser(userId))
+  }, [userId])
+
   const passwordStrengthScore = useMemo(() => {
     const value = passwordForm.next || ''
     let score = 0
@@ -4779,6 +4788,52 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     setPasswordForm((prev) => ({ ...prev, [field]: value }))
     if (passwordError) setPasswordError('')
     if (passwordSuccess) setPasswordSuccess('')
+  }
+
+
+  const handleBiometricSetup = async () => {
+    if (!userId) return
+    if (!biometricSupported()) {
+      setBiometricStatus('Biometric unlock is not supported on this device/browser.')
+      return
+    }
+    setBiometricBusy(true)
+    try {
+      await registerBiometricCredential({ id: userId, email })
+      setBiometricEnabled(true)
+      setBiometricEnabledForUser(userId, true)
+      setBiometricStatus('Biometric unlock is enabled on this device.')
+    } catch (error: any) {
+      setBiometricStatus(error?.message || 'Biometric unlock failed. Try again or use password.')
+    } finally {
+      setBiometricBusy(false)
+    }
+  }
+
+  const handleBiometricToggle = async (enabled: boolean) => {
+    if (!userId) return
+    if (!enabled) {
+      setBiometricEnabled(false)
+      setBiometricEnabledForUser(userId, false)
+      setBiometricStatus('Biometric unlock disabled on this device.')
+      return
+    }
+    await handleBiometricSetup()
+  }
+
+  const handleBiometricRemove = async () => {
+    if (!userId) return
+    setBiometricBusy(true)
+    try {
+      await removeBiometricCredential(userId)
+      setBiometricEnabled(false)
+      setBiometricEnabledForUser(userId, false)
+      setBiometricStatus('Biometric unlock disabled on this device.')
+    } catch (error: any) {
+      setBiometricStatus(error?.message || 'Could not remove this device.')
+    } finally {
+      setBiometricBusy(false)
+    }
   }
 
   const handleProfileField = (field: 'firstName' | 'lastName', value: string) => {
@@ -5290,6 +5345,26 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                   <button className="btn" onClick={() => void handlePasswordChange()} disabled={passwordBusy}>
                     <Lock size={16} /> {passwordBusy ? 'Updating...' : 'Update password'}
                   </button>
+                </div>
+              </div>
+
+              <div className="card settingsPanelCard settingsPasswordCard">
+                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div className="h1">Biometric Unlock</div>
+                    <small>Use Face ID, fingerprint, or your device passkey to unlock Budgetly on this device.</small>
+                  </div>
+                  <span className="badge">Device security</span>
+                </div>
+                <label className="settingsToggleRow" style={{ marginBottom: 12 }}>
+                  <span>Enable Biometric Unlock</span>
+                  <input type="checkbox" checked={biometricEnabled} onChange={(e) => void handleBiometricToggle(e.target.checked)} disabled={biometricBusy || !biometricSupported()} />
+                </label>
+                {!biometricSupported() ? <div className="passwordFeedback error">This device or browser does not support biometric unlock.</div> : null}
+                {biometricStatus ? <div className="passwordFeedback success">{biometricStatus}</div> : null}
+                <div className="row gap wrap" style={{ marginTop: 12 }}>
+                  <button className="btn" onClick={() => void handleBiometricSetup()} disabled={biometricBusy || !biometricSupported()}>Set up biometric unlock</button>
+                  <button className="btn ghost" onClick={() => void handleBiometricRemove()} disabled={biometricBusy}>Remove this device</button>
                 </div>
               </div>
             </div>
