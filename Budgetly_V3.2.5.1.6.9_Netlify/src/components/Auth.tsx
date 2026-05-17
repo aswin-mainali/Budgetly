@@ -84,8 +84,7 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
       await authenticateBiometricCredential(pendingBiometricUser.id)
       onBiometricUnlockSuccess?.(pendingBiometricUser)
     } catch {
-      setShowPasswordForm(true)
-      setMsg('Biometric sign-in cancelled or failed. Try again or use password.')
+      setMsg('Biometric sign-in failed. Try again or use password.')
     } finally {
       setBusy(false)
     }
