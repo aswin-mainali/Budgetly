@@ -8467,8 +8467,10 @@ body.light .appLockBackdrop{background:rgba(15,23,42,.26)}
 .authBiometricHeader{display:grid;gap:2px}
 .authBiometricIcon{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;margin:0 auto;background:rgba(99,102,241,.18);color:#c7d2fe}
 body.light .authBiometricCard{background:#f8fbff;border-color:#dbe7f7}
-.authBiometricInlineBtn{width:100%;display:flex;align-items:center;justify-content:center;position:relative;border:1px solid rgba(148,163,184,.38);background:transparent;color:inherit;border-radius:12px;padding:12px 46px 12px 14px}
-.authBiometricInlineBtn img{position:absolute;right:12px;width:26px;height:26px;object-fit:contain}
+.authBiometricInlineBtn{width:100%;display:flex;align-items:center;justify-content:center;position:relative;border:1px solid rgba(99,102,241,.55);background:linear-gradient(180deg, rgba(99,102,241,.22), rgba(79,70,229,.18));color:#e0e7ff;border-radius:12px;padding:12px 46px 12px 14px;font-size:15px;font-weight:700;line-height:1.2;min-height:48px;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;box-shadow:0 10px 24px rgba(79,70,229,.2)}
+.authBiometricInlineIcon{position:absolute;right:14px;width:24px;height:24px;color:currentColor}
 .authBiometricInlineError{display:block;color:#fca5a5;margin-top:6px}
-body.light .authBiometricInlineBtn{border-color:#c7d2fe;background:#f8faff}
+.authBiometricInlineBtn:hover{transform:translateY(-1px);border-color:rgba(129,140,248,.85)}
+.authBiometricInlineBtn:disabled{opacity:.72;cursor:not-allowed;transform:none}
+body.light .authBiometricInlineBtn{border-color:#c7d2fe;background:linear-gradient(180deg,#eef4ff,#e2eaff);color:#1e3a8a;box-shadow:0 10px 22px rgba(59,130,246,.16)}
 body.light .authBiometricInlineError{color:#b91c1c}

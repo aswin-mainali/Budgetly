@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { authenticateBiometricCredential, biometricSupported } from '../lib/biometricUnlock'
+import { authenticateBiometricCredential, biometricSupported, PASSKEY_LOGIN_ENABLED_KEY, PASSKEY_LOGIN_USER_EMAIL_KEY, PASSKEY_LOGIN_USER_ID_KEY } from '../lib/biometricUnlock'
 import { supabase } from '../lib/supabase'
 import {
   Mail,
@@ -14,7 +14,19 @@ import {
   Download,
 } from 'lucide-react'
 import { usePwaInstall } from '../hooks/usePwaInstall'
-import biometricFaceIdIcon from '../assets/biometric-face-id.svg'
+
+
+function FaceIdIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="4" width="16" height="16" rx="5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 11h6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M8.8 14.5c.8 1.1 1.9 1.7 3.2 1.7 1.3 0 2.4-.6 3.2-1.7" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <circle cx="9" cy="9" r="1" fill="currentColor" />
+      <circle cx="15" cy="9" r="1" fill="currentColor" />
+    </svg>
+  )
+}
 
 type AuthProps = {
   pendingBiometricUser?: { id: string; email: string | null } | null
@@ -30,6 +42,10 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
   const [showPassword, setShowPassword] = useState(false)
   const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
   const [biometricError, setBiometricError] = useState('')
+  const biometricEnabled = typeof window !== 'undefined' && localStorage.getItem(PASSKEY_LOGIN_ENABLED_KEY) === 'true'
+  const markerUserId = typeof window !== 'undefined' ? localStorage.getItem(PASSKEY_LOGIN_USER_ID_KEY) : null
+  const markerEmail = typeof window !== 'undefined' ? localStorage.getItem(PASSKEY_LOGIN_USER_EMAIL_KEY) : null
+  const biometricTargetUser = pendingBiometricUser ?? (markerUserId ? { id: markerUserId, email: markerEmail } : null)
   const installWrapRef = useRef<HTMLDivElement | null>(null)
   const { canInstall, showInstallButton, install, isIosSafari } = usePwaInstall()
 
@@ -77,13 +93,13 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
 
 
   const handleBiometricSignIn = async () => {
-    if (!pendingBiometricUser) return
+    if (!biometricTargetUser) return
     setBiometricError('')
     setBusy(true)
     try {
       if (!biometricSupported()) throw new Error('unsupported')
-      await authenticateBiometricCredential(pendingBiometricUser.id)
-      onBiometricUnlockSuccess?.(pendingBiometricUser)
+      await authenticateBiometricCredential(biometricTargetUser.id)
+      onBiometricUnlockSuccess?.(biometricTargetUser)
     } catch (error) {
       console.error('Biometric sign-in failed', error)
       setBiometricError('Biometric sign-in cancelled or failed. You can still sign in with password.')
@@ -246,13 +262,13 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
               {busy ? 'Please wait…' : mode === 'forgot' ? 'Send reset email' : mode === 'signup' ? 'Create account' : 'Sign in'}
             </button>
 
-            {mode === 'signin' && pendingBiometricUser ? (
+            {mode === 'signin' && biometricEnabled ? (
               <button className="btn authBiometricInlineBtn" type="button" onClick={() => void handleBiometricSignIn()} disabled={busy}>
-                <span>Use Biometrics</span>
-                <img src={biometricFaceIdIcon} alt="Biometric icon" />
+                <span>{busy ? 'Checking…' : 'Use Biometrics'}</span>
+                <FaceIdIcon className="authBiometricInlineIcon" />
               </button>
             ) : null}
-            {mode === 'signin' && pendingBiometricUser && biometricError ? <small className="authBiometricInlineError">{biometricError}</small> : null}
+            {mode === 'signin' && biometricEnabled && biometricError ? <small className="authBiometricInlineError">{biometricError}</small> : null}
 
             {mode === 'signin' && showInstallButton ? (
               <div className="authInstallRow" ref={installWrapRef}>
