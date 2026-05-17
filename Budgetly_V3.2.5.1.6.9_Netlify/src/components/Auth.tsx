@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
+import { authenticateBiometricCredential, biometricSupported } from '../lib/biometricUnlock'
 import { supabase } from '../lib/supabase'
 import {
   Mail,
@@ -15,7 +16,12 @@ import {
 } from 'lucide-react'
 import { usePwaInstall } from '../hooks/usePwaInstall'
 
-export default function Auth() {
+type AuthProps = {
+  pendingBiometricUser?: { id: string; email: string | null } | null
+  onBiometricUnlockSuccess?: (user: { id: string; email: string | null }) => void
+}
+
+export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuccess }: AuthProps) {
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,6 +29,7 @@ export default function Auth() {
   const [msg, setMsg] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
   const installWrapRef = useRef<HTMLDivElement | null>(null)
   const { canInstall, showInstallButton, install, isIosSafari } = usePwaInstall()
 
@@ -61,6 +68,24 @@ export default function Auth() {
       }
     } catch (err: any) {
       setMsg(err?.message ?? 'Auth failed.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+
+
+  const handleBiometricSignIn = async () => {
+    if (!pendingBiometricUser) return
+    setMsg(null)
+    setBusy(true)
+    try {
+      if (!biometricSupported()) throw new Error('Biometric unlock is not supported on this device/browser.')
+      await authenticateBiometricCredential(pendingBiometricUser.id)
+      onBiometricUnlockSuccess?.(pendingBiometricUser)
+    } catch {
+      setShowPasswordForm(true)
+      setMsg('Biometric sign-in cancelled or failed. Try again or use password.')
     } finally {
       setBusy(false)
     }
@@ -159,6 +184,20 @@ export default function Auth() {
             </button>
           </div>
 
+          {mode === 'signin' && pendingBiometricUser ? (
+            <div className="authBiometricCard">
+              <div className="authBiometricHeader">
+                <strong>Budgetly</strong>
+                <small>Welcome back</small>
+              </div>
+              <div className="authBiometricIcon"><Smartphone size={22} /></div>
+              <button className="btn primary authPrimaryButton" type="button" onClick={() => void handleBiometricSignIn()} disabled={busy}>Sign in with Face ID / Fingerprint</button>
+              <button className="authTextButton" type="button" onClick={() => setShowPasswordForm(true)} disabled={busy}>Use password</button>
+              <small className="muted">Biometric unlock works only on this device.</small>
+            </div>
+          ) : null}
+
+          {(mode !== 'signin' || !pendingBiometricUser || showPasswordForm) ? (
           <form onSubmit={onSubmit} className="authFormModern authFormEnhanced">
             <label className="authField">
               <small>Email</small>
@@ -260,6 +299,7 @@ export default function Auth() {
 
             {msg ? <div className="authMessage">{msg}</div> : null}
           </form>
+          ) : null}
         </section>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
-import { biometricSupported, isBiometricEnabledForUser, registerBiometricCredential, removeBiometricCredential, setBiometricEnabledForUser } from '../lib/biometricUnlock'
+import { biometricSupported, clearPasskeyLoginMarker, isBiometricEnabledForUser, registerBiometricCredential, removeBiometricCredential, setBiometricEnabledForUser, setPasskeyLoginMarker } from '../lib/biometricUnlock'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -4802,7 +4802,8 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
       await registerBiometricCredential({ id: userId, email })
       setBiometricEnabled(true)
       setBiometricEnabledForUser(userId, true)
-      setBiometricStatus('Biometric unlock is enabled on this device.')
+      setPasskeyLoginMarker(userId, email)
+      setBiometricStatus('Biometric login is enabled on this device.')
     } catch (error: any) {
       setBiometricStatus(error?.message || 'Biometric unlock failed. Try again or use password.')
     } finally {
@@ -4815,6 +4816,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     if (!enabled) {
       setBiometricEnabled(false)
       setBiometricEnabledForUser(userId, false)
+      clearPasskeyLoginMarker()
       setBiometricStatus('Biometric unlock disabled on this device.')
       return
     }
@@ -4828,6 +4830,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
       await removeBiometricCredential(userId)
       setBiometricEnabled(false)
       setBiometricEnabledForUser(userId, false)
+      clearPasskeyLoginMarker()
       setBiometricStatus('Biometric unlock disabled on this device.')
     } catch (error: any) {
       setBiometricStatus(error?.message || 'Could not remove this device.')

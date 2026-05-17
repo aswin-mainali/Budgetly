@@ -10,7 +10,7 @@ import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, Goals
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
-import { authenticateBiometricCredential, isBiometricEnabledForUser } from './lib/biometricUnlock'
+import { authenticateBiometricCredential, isBiometricEnabledForUser, PASSKEY_LOGIN_ENABLED_KEY, PASSKEY_LOGIN_USER_EMAIL_KEY, PASSKEY_LOGIN_USER_ID_KEY } from './lib/biometricUnlock'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -55,6 +55,7 @@ export default function App() {
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [appLocked, setAppLocked] = useState(false)
   const [unlockError, setUnlockError] = useState<string | null>(null)
+  const [pendingBiometricUser, setPendingBiometricUser] = useState<{ id: string; email: string | null } | null>(null)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -133,8 +134,16 @@ export default function App() {
       }
 
       const user = session?.user ?? null
-      setUserId(user?.id ?? null)
-      setEmail(user?.email ?? null)
+      const shouldGateAtLogin = Boolean(user?.id && isBiometricEnabledForUser(user.id))
+      if (user && shouldGateAtLogin) {
+        setPendingBiometricUser({ id: user.id, email: user.email ?? null })
+        setUserId(null)
+        setEmail(null)
+      } else {
+        setPendingBiometricUser(null)
+        setUserId(user?.id ?? null)
+        setEmail(user?.email ?? null)
+      }
       setAppLocked(Boolean(user?.id && isBiometricEnabledForUser(user.id)))
       await syncProfileCacheForUser(user)
       if (user) localStorage.removeItem(LAST_TAB_CLOSED_AT_KEY)
@@ -145,8 +154,16 @@ export default function App() {
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       const user = session?.user ?? null
-      setUserId(user?.id ?? null)
-      setEmail(user?.email ?? null)
+      const shouldGateAtLogin = Boolean(user?.id && isBiometricEnabledForUser(user.id))
+      if (user && shouldGateAtLogin) {
+        setPendingBiometricUser({ id: user.id, email: user.email ?? null })
+        setUserId(null)
+        setEmail(null)
+      } else {
+        setPendingBiometricUser(null)
+        setUserId(user?.id ?? null)
+        setEmail(user?.email ?? null)
+      }
       setAppLocked(Boolean(user?.id && isBiometricEnabledForUser(user.id)))
       void syncProfileCacheForUser(user)
     })
@@ -384,7 +401,7 @@ export default function App() {
   }, [admin.visibleFeatures, isMobile])
 
   if (!sessionChecked) return null
-  if (!userId) return <Auth />
+  if (!userId) return <Auth pendingBiometricUser={pendingBiometricUser} onBiometricUnlockSuccess={(nextUser) => { setUserId(nextUser.id); setEmail(nextUser.email ?? null); setPendingBiometricUser(null); setAppLocked(false) }} />
   if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
   if (admin.profile && !admin.profile.is_active) {
     return (

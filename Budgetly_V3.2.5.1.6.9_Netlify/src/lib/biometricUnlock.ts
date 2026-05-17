@@ -111,3 +111,19 @@ export const removeBiometricCredential = async (userId: string) => {
   const { error } = await supabase.from('user_passkeys').delete().eq('user_id', userId)
   if (error) throw new Error(error.message)
 }
+
+export const PASSKEY_LOGIN_ENABLED_KEY = 'budgetly_passkey_login_enabled'
+export const PASSKEY_LOGIN_USER_ID_KEY = 'budgetly_passkey_user_id'
+export const PASSKEY_LOGIN_USER_EMAIL_KEY = 'budgetly_passkey_user_email'
+
+export const setPasskeyLoginMarker = (userId: string, email?: string | null) => {
+  localStorage.setItem(PASSKEY_LOGIN_ENABLED_KEY, 'true')
+  localStorage.setItem(PASSKEY_LOGIN_USER_ID_KEY, userId)
+  localStorage.setItem(PASSKEY_LOGIN_USER_EMAIL_KEY, email ?? '')
+}
+
+export const clearPasskeyLoginMarker = () => {
+  localStorage.removeItem(PASSKEY_LOGIN_ENABLED_KEY)
+  localStorage.removeItem(PASSKEY_LOGIN_USER_ID_KEY)
+  localStorage.removeItem(PASSKEY_LOGIN_USER_EMAIL_KEY)
+}

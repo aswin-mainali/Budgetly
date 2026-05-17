@@ -8463,3 +8463,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .settingsToggleRow{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .settingsToggleRow input{width:18px;height:18px}
 body.light .appLockBackdrop{background:rgba(15,23,42,.26)}
+.authBiometricCard{display:grid;gap:10px;padding:14px;border:1px solid rgba(148,163,184,.25);border-radius:14px;background:rgba(15,23,42,.24);margin-bottom:12px;text-align:center}
+.authBiometricHeader{display:grid;gap:2px}
+.authBiometricIcon{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;margin:0 auto;background:rgba(99,102,241,.18);color:#c7d2fe}
+body.light .authBiometricCard{background:#f8fbff;border-color:#dbe7f7}
