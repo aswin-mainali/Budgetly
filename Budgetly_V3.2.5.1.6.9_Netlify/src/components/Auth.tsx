@@ -92,17 +92,38 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
 
 
 
-  const handleBiometricSignIn = async () => {
-    if (!biometricTargetUser) return
+  const handleBiometricSignIn = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault()
+    event?.stopPropagation()
+
+    if (!biometricTargetUser?.id) {
+      setBiometricError('Biometric setup was not found on this device. Please sign in with password and set it up again.')
+      return
+    }
+
     setBiometricError('')
     setBusy(true)
     try {
       if (!biometricSupported()) throw new Error('unsupported')
+
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData.session) {
+        setBiometricError('Please sign in with password once to refresh your session.')
+        return
+      }
+
       await authenticateBiometricCredential(biometricTargetUser.id)
       onBiometricUnlockSuccess?.(biometricTargetUser)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Biometric sign-in failed', error)
-      setBiometricError('Biometric sign-in cancelled or failed. You can still sign in with password.')
+      const errorName = String(error?.name || '').toLowerCase()
+      if (errorName.includes('notallowed')) {
+        setBiometricError('Biometric sign-in cancelled. You can still sign in with password.')
+      } else if (String(error?.message || '').toLowerCase().includes('no passkey')) {
+        setBiometricError('Biometric setup was not found on this device. Please sign in with password and set it up again.')
+      } else {
+        setBiometricError('Biometric sign-in cancelled or failed. You can still sign in with password.')
+      }
     } finally {
       setBusy(false)
     }
@@ -263,7 +284,7 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
             </button>
 
             {mode === 'signin' && biometricEnabled ? (
-              <button className="btn authBiometricInlineBtn" type="button" onClick={() => void handleBiometricSignIn()} disabled={busy}>
+              <button className="btn authBiometricInlineBtn" type="button" onClick={(event) => void handleBiometricSignIn(event)} disabled={busy}>
                 <span>{busy ? 'Checking…' : 'Use Biometrics'}</span>
                 <FaceIdIcon className="authBiometricInlineIcon" />
               </button>
