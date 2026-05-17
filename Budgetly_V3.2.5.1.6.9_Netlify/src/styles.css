@@ -8467,3 +8467,8 @@ body.light .appLockBackdrop{background:rgba(15,23,42,.26)}
 .authBiometricHeader{display:grid;gap:2px}
 .authBiometricIcon{width:48px;height:48px;border-radius:999px;display:grid;place-items:center;margin:0 auto;background:rgba(99,102,241,.18);color:#c7d2fe}
 body.light .authBiometricCard{background:#f8fbff;border-color:#dbe7f7}
+.authBiometricInlineBtn{width:100%;display:flex;align-items:center;justify-content:center;position:relative;border:1px solid rgba(148,163,184,.38);background:transparent;color:inherit;border-radius:12px;padding:12px 46px 12px 14px}
+.authBiometricInlineBtn img{position:absolute;right:12px;width:26px;height:26px;object-fit:contain}
+.authBiometricInlineError{display:block;color:#fca5a5;margin-top:6px}
+body.light .authBiometricInlineBtn{border-color:#c7d2fe;background:#f8faff}
+body.light .authBiometricInlineError{color:#b91c1c}

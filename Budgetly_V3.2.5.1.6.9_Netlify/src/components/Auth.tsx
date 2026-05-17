@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState } from 'react'
 import { authenticateBiometricCredential, biometricSupported } from '../lib/biometricUnlock'
 import { supabase } from '../lib/supabase'
 import {
@@ -10,11 +10,11 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
-  Smartphone,
   BadgeCheck,
   Download,
 } from 'lucide-react'
 import { usePwaInstall } from '../hooks/usePwaInstall'
+import biometricFaceIdIcon from '../assets/biometric-face-id.svg'
 
 type AuthProps = {
   pendingBiometricUser?: { id: string; email: string | null } | null
@@ -29,29 +29,7 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
   const [msg, setMsg] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
-  const [loginMode, setLoginMode] = useState<'biometric' | 'password'>(pendingBiometricUser ? 'biometric' : 'password')
   const [biometricError, setBiometricError] = useState('')
-  const installWrapRef = useRef<HTMLDivElement | null>(null)
-  const { canInstall, showInstallButton, install, isIosSafari } = usePwaInstall()
-
-
-  useEffect(() => {
-    if (mode !== 'signin') {
-      setLoginMode('password')
-      setBiometricError('')
-      return
-    }
-    if (!pendingBiometricUser) {
-      setLoginMode('password')
-      setBiometricError('')
-      return
-    }
-    setLoginMode('biometric')
-    setBiometricError('')
-  }, [mode, pendingBiometricUser])
-
-  const showBiometricCard = mode === 'signin' && !!pendingBiometricUser && loginMode === 'biometric'
-  const showPasswordLoginForm = !showBiometricCard
 
   const title = useMemo(() => {
     if (mode === 'signup') return 'Create your account'
@@ -98,14 +76,15 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
 
   const handleBiometricSignIn = async () => {
     if (!pendingBiometricUser) return
-    setMsg(null)
+    setBiometricError('')
     setBusy(true)
     try {
-      if (!biometricSupported()) throw new Error('Biometric unlock is not supported on this device/browser.')
+      if (!biometricSupported()) throw new Error('unsupported')
       await authenticateBiometricCredential(pendingBiometricUser.id)
       onBiometricUnlockSuccess?.(pendingBiometricUser)
-    } catch {
-      setBiometricError('Biometric sign-in cancelled or failed. Try again or use password.')
+    } catch (error) {
+      console.error('Biometric sign-in failed', error)
+      setBiometricError('Biometric sign-in cancelled or failed. You can still sign in with password.')
     } finally {
       setBusy(false)
     }
@@ -204,21 +183,6 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
             </button>
           </div>
 
-          {showBiometricCard ? (
-            <div className="authBiometricCard">
-              <div className="authBiometricHeader">
-                <strong>Budgetly</strong>
-                <small>Welcome back</small>
-              </div>
-              <div className="authBiometricIcon"><Smartphone size={22} /></div>
-              <button className="btn primary authPrimaryButton" type="button" onClick={() => void handleBiometricSignIn()} disabled={busy}>Sign in with Face ID / Fingerprint</button>
-              <button className="authTextButton" type="button" onClick={() => { setLoginMode('password'); setBiometricError('') }} disabled={busy}>Use password</button>
-              <small className="muted">Biometric unlock works only on this device.</small>
-              {biometricError ? <div className="authMessage">{biometricError}</div> : null}
-            </div>
-          ) : null}
-
-          {showPasswordLoginForm ? (
           <form onSubmit={onSubmit} className="authFormModern authFormEnhanced">
             <label className="authField">
               <small>Email</small>
@@ -280,7 +244,13 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
               {busy ? 'Please wait…' : mode === 'forgot' ? 'Send reset email' : mode === 'signup' ? 'Create account' : 'Sign in'}
             </button>
 
-
+            {mode === 'signin' && pendingBiometricUser ? (
+              <button className="btn authBiometricInlineBtn" type="button" onClick={() => void handleBiometricSignIn()} disabled={busy}>
+                <span>Use Biometrics</span>
+                <img src={biometricFaceIdIcon} alt="Biometric icon" />
+              </button>
+            ) : null}
+            {mode === 'signin' && pendingBiometricUser && biometricError ? <small className="authBiometricInlineError">{biometricError}</small> : null}
 
             {mode === 'signin' && showInstallButton ? (
               <div className="authInstallRow" ref={installWrapRef}>
@@ -320,7 +290,6 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
 
             {msg ? <div className="authMessage">{msg}</div> : null}
           </form>
-          ) : null}
         </section>
       </div>
     </div>
