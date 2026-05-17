@@ -30,6 +30,8 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
   const [showPassword, setShowPassword] = useState(false)
   const [showIosInstallHelp, setShowIosInstallHelp] = useState(false)
   const [biometricError, setBiometricError] = useState('')
+  const installWrapRef = useRef<HTMLDivElement | null>(null)
+  const { canInstall, showInstallButton, install, isIosSafari } = usePwaInstall()
 
   const title = useMemo(() => {
     if (mode === 'signup') return 'Create your account'
@@ -46,7 +48,7 @@ export default function Auth({ pendingBiometricUser = null, onBiometricUnlockSuc
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBiometricError('')
-    setBiometricError('')
+    setMsg(null)
     setBusy(true)
     try {
       if (!email) throw new Error('Email required.')
