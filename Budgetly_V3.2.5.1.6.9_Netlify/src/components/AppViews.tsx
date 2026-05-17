@@ -5155,6 +5155,26 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </div>
 
               <div className="settingsFieldCard settingsFieldCardWide">
+                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Biometric Unlock</div>
+                    <small>Use Face ID, fingerprint, or your device passkey to unlock Budgetly on this device.</small>
+                  </div>
+                  <span className="badge">Device security</span>
+                </div>
+                <label className="settingsToggleRow" style={{ marginBottom: 12 }}>
+                  <span>Enable Biometric Unlock</span>
+                  <input type="checkbox" checked={biometricEnabled} onChange={(e) => void handleBiometricToggle(e.target.checked)} disabled={biometricBusy || !biometricSupported()} />
+                </label>
+                {!biometricSupported() ? <div className="passwordFeedback error">This device or browser does not support biometric unlock.</div> : null}
+                {biometricStatus ? <div className="passwordFeedback success">{biometricStatus}</div> : null}
+                <div className="row gap wrap" style={{ marginTop: 12 }}>
+                  <button className="btn" onClick={() => void handleBiometricSetup()} disabled={biometricBusy || !biometricSupported()}>Set up biometric unlock</button>
+                  <button className="btn ghost" onClick={() => void handleBiometricRemove()} disabled={biometricBusy}>Remove this device</button>
+                </div>
+              </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
                 <div className="row between wrap" style={{ alignItems: 'center', gap: 12 }}>
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>Session</div>
@@ -5351,25 +5371,6 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                 </div>
               </div>
 
-              <div className="card settingsPanelCard settingsPasswordCard">
-                <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
-                  <div>
-                    <div className="h1">Biometric Unlock</div>
-                    <small>Use Face ID, fingerprint, or your device passkey to unlock Budgetly on this device.</small>
-                  </div>
-                  <span className="badge">Device security</span>
-                </div>
-                <label className="settingsToggleRow" style={{ marginBottom: 12 }}>
-                  <span>Enable Biometric Unlock</span>
-                  <input type="checkbox" checked={biometricEnabled} onChange={(e) => void handleBiometricToggle(e.target.checked)} disabled={biometricBusy || !biometricSupported()} />
-                </label>
-                {!biometricSupported() ? <div className="passwordFeedback error">This device or browser does not support biometric unlock.</div> : null}
-                {biometricStatus ? <div className="passwordFeedback success">{biometricStatus}</div> : null}
-                <div className="row gap wrap" style={{ marginTop: 12 }}>
-                  <button className="btn" onClick={() => void handleBiometricSetup()} disabled={biometricBusy || !biometricSupported()}>Set up biometric unlock</button>
-                  <button className="btn ghost" onClick={() => void handleBiometricRemove()} disabled={biometricBusy}>Remove this device</button>
-                </div>
-              </div>
             </div>
           </div>
         ) : null}
