@@ -258,6 +258,8 @@ body.light .toolsSubNav.floating button.active{
   display:flex;
   flex-direction:column;
   gap:8px;
+  position:relative;
+  overflow:visible;
 }
 
 @media (max-height: 900px){
@@ -1932,6 +1934,43 @@ body.light .mobileInfoCard{background: rgba(255,255,255,.86);}
 .sidebarUserMeta strong{font-size:14px;line-height:1.15}
 .sidebarUserMeta small{font-size:12px}
 .sidebarUserCard svg{margin-left:auto;opacity:.75;flex:0 0 auto}
+.sidebarUserCard .profileChevron{transition:transform .18s ease}
+.sidebarUserCard .profileChevron.open{transform:rotate(180deg)}
+.profileMenuPopup{
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--card);
+  box-shadow:0 14px 32px rgba(0,0,0,.28);
+  padding:8px;
+  z-index:90;
+  display:grid;
+  gap:4px;
+  max-width:calc(100vw - 20px);
+}
+.profileMenuItem{
+  width:100%;
+  border:none;
+  background:transparent;
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  font-size:14px;
+  text-align:left;
+  cursor:pointer;
+}
+.profileMenuItem:hover{background:rgba(148,163,184,.16)}
+.profileMenuItem.danger{color:#ef4444}
+.profileMenuItem.danger:hover{background:rgba(239,68,68,.12)}
+@media (max-width: 768px){
+  .profileMenuPopup{padding:6px}
+  .profileMenuItem{
+    padding:9px 10px;
+    font-size:13px;
+  }
+}
 .sidebar.collapsed .sidebarUserMeta,
 .sidebar.collapsed .sidebarUserCard svg{display:none}
 .sidebar.collapsed .sidebarUserCard{justify-content:center;padding:9px 6px}
@@ -1999,6 +2038,7 @@ body.light .sidebarFooter .btn.support.active{
 body.light .sidebarUserCard{
   background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(246,249,255,.88));
 }
+body.light .profileMenuPopup{box-shadow:0 12px 28px rgba(15,23,42,.14)}
 body.light .sidebarUserAvatar{
   background: linear-gradient(160deg, rgba(191,219,254,.92), rgba(226,232,240,.95));
   color:#1e3a8a;
