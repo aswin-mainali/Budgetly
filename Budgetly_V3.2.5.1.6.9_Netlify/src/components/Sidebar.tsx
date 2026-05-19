@@ -257,6 +257,7 @@ export default function Sidebar(props: {
             ref={profileMenuRef}
             role="menu"
             aria-label="User profile menu"
+            // Keep this menu rendered in a portal to avoid clipping inside sidebar containers.
             style={{ position: 'fixed', top: profileMenuPos.top, left: profileMenuPos.left, width: profileMenuPos.width }}
           >
             <button type="button" className="profileMenuItem" onClick={onThemeToggle}>
