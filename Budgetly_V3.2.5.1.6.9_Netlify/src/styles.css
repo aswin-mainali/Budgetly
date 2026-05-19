@@ -1937,18 +1937,25 @@ body.light .mobileInfoCard{background: rgba(255,255,255,.86);}
 .sidebarUserCard .profileChevron{transition:transform .18s ease}
 .sidebarUserCard .profileChevron.open{transform:rotate(180deg)}
 .profileMenuPopup{
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--card);
+  padding:8px;
+  display:grid;
+  gap:4px;
+}
+.profileMenuPopup.floating{
   position:absolute;
   left:0;
   right:0;
   bottom:calc(100% + 8px);
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:var(--card);
-  box-shadow:0 14px 32px rgba(0,0,0,.28);
-  padding:8px;
   z-index:75;
-  display:grid;
-  gap:4px;
+  box-shadow:0 14px 32px rgba(0,0,0,.28);
+}
+.profileMenuPopup.inline{
+  position:static;
+  margin-bottom:8px;
+  box-shadow:0 8px 18px rgba(0,0,0,.14);
 }
 .profileMenuItem{
   width:100%;
@@ -2035,6 +2042,7 @@ body.light .sidebarUserCard{
   background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(246,249,255,.88));
 }
 body.light .profileMenuPopup{box-shadow:0 12px 28px rgba(15,23,42,.14)}
+body.light .profileMenuPopup.inline{box-shadow:0 6px 16px rgba(15,23,42,.10)}
 body.light .sidebarUserAvatar{
   background: linear-gradient(160deg, rgba(191,219,254,.92), rgba(226,232,240,.95));
   color:#1e3a8a;

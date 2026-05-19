@@ -39,6 +39,14 @@ export default function Sidebar(props: {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const profileButtonRef = useRef<HTMLButtonElement | null>(null)
+  const [isMobileViewport, setIsMobileViewport] = useState(() => window.innerWidth < 768)
+
+  useEffect(() => {
+    const onResize = () => setIsMobileViewport(window.innerWidth < 768)
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -130,6 +138,7 @@ export default function Sidebar(props: {
 
   useEffect(() => {
     if (!profileMenuOpen) return
+    if (isMobileViewport) return
     const onPointerDown = (event: MouseEvent) => {
       const targetNode = event.target as Node | null
       const inButton = !!(targetNode && profileButtonRef.current?.contains(targetNode))
@@ -145,7 +154,13 @@ export default function Sidebar(props: {
       window.removeEventListener('mousedown', onPointerDown)
       window.removeEventListener('keydown', onEsc)
     }
-  }, [profileMenuOpen])
+  }, [profileMenuOpen, isMobileViewport])
+
+  const openSettingsGeneral = () => {
+    window.dispatchEvent(new Event('budgetly:open-settings-general'))
+    setView('settings')
+    closeProfileMenu()
+  }
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -226,10 +241,13 @@ export default function Sidebar(props: {
           null
         ) : null}
         {profileMenuOpen ? (
-          <div className="profileMenuPopup" ref={profileMenuRef} role="menu" aria-label="User profile menu">
-            <button type="button" className="profileMenuItem" onClick={onThemeToggle}>
+          <div className={`profileMenuPopup ${isMobileViewport ? 'inline' : 'floating'}`} ref={profileMenuRef} role="menu" aria-label="User profile menu">
+            <button type="button" className="profileMenuItem" onClick={() => { onThemeToggle(); closeProfileMenu() }}>
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </button>
+            <button type="button" className="profileMenuItem" onClick={openSettingsGeneral}>
+              <Settings size={16} /> <span>Settings</span>
             </button>
             {features.support ? (
               <button type="button" className="profileMenuItem" onClick={() => { setView('support'); closeProfileMenu() }}>
