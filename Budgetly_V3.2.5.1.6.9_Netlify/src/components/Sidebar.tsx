@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
@@ -26,13 +26,19 @@ export default function Sidebar(props: {
   sync: SyncState
   email?: string | null
   features: FeatureAccess
+  theme: 'light' | 'dark'
+  onThemeToggle: () => void
+  onSignOut: () => void | Promise<void>
 }) {
-  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, features } = props
+  const { collapsed, setCollapsed, view, setView, toolsSection, setToolsSection, sync, email, features, theme, onThemeToggle, onSignOut } = props
   const [now, setNow] = useState(() => new Date())
   const [toolsExpanded, setToolsExpanded] = useState(view === 'tools')
   const [floatingToolsPos, setFloatingToolsPos] = useState<{ top: number; left: number } | null>(null)
   const toolsButtonRef = useRef<HTMLButtonElement | null>(null)
   const [storedProfile, setStoredProfile] = useState<{ firstName: string; lastName: string; image: string }>({ firstName: '', lastName: '', image: '' })
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef<HTMLDivElement | null>(null)
+  const profileButtonRef = useRef<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -124,6 +130,26 @@ export default function Sidebar(props: {
     window.dispatchEvent(new Event('budgetly:open-settings-general'))
     setView('settings')
   }
+  const closeProfileMenu = () => setProfileMenuOpen(false)
+
+  useEffect(() => {
+    if (!profileMenuOpen) return
+    const onPointerDown = (event: MouseEvent) => {
+      const targetNode = event.target as Node | null
+      const inButton = !!(targetNode && profileButtonRef.current?.contains(targetNode))
+      const inMenu = !!(targetNode && profileMenuRef.current?.contains(targetNode))
+      if (!inButton && !inMenu) closeProfileMenu()
+    }
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeProfileMenu()
+    }
+    window.addEventListener('mousedown', onPointerDown)
+    window.addEventListener('keydown', onEsc)
+    return () => {
+      window.removeEventListener('mousedown', onPointerDown)
+      window.removeEventListener('keydown', onEsc)
+    }
+  }, [profileMenuOpen])
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -201,11 +227,35 @@ export default function Sidebar(props: {
           <Cloud size={14} /> {syncLabel}
         </span>
         {features.support ? (
-          <button className={`btn support ${view === 'support' ? 'active' : ''}`} onClick={() => setView('support')}>
-            <Headset size={18} /> <span className="navLabel">Help & Support</span>
-          </button>
+          null
         ) : null}
-        <button className={`sidebarUserCard ${view === 'settings' ? 'active' : ''}`} onClick={openSettingsGeneral}>
+        {profileMenuOpen ? (
+          <div className="profileMenuPopup" ref={profileMenuRef} role="menu" aria-label="User profile menu">
+            <button type="button" className="profileMenuItem" onClick={onThemeToggle}>
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+            </button>
+            <button type="button" className="profileMenuItem" onClick={() => { openSettingsGeneral(); closeProfileMenu() }}>
+              <Settings size={16} /> <span>Settings</span>
+            </button>
+            {features.support ? (
+              <button type="button" className="profileMenuItem" onClick={() => { setView('support'); closeProfileMenu() }}>
+                <Headset size={16} /> <span>Help & Support</span>
+              </button>
+            ) : null}
+            <button type="button" className="profileMenuItem danger" onClick={() => { closeProfileMenu(); void onSignOut() }}>
+              <LogOut size={16} /> <span>Sign out</span>
+            </button>
+          </div>
+        ) : null}
+        <button
+          ref={profileButtonRef}
+          className={`sidebarUserCard ${profileMenuOpen ? 'active' : ''}`}
+          onClick={() => setProfileMenuOpen((current) => !current)}
+          aria-haspopup="menu"
+          aria-expanded={profileMenuOpen}
+          type="button"
+        >
           <div className="sidebarUserAvatar">
             {storedProfile.image ? <img src={storedProfile.image} alt="User profile" /> : <span>{profileInitials}</span>}
           </div>
@@ -213,7 +263,7 @@ export default function Sidebar(props: {
             <strong>{name}</strong>
             <small>{email || 'No email'}</small>
           </div>
-          <ChevronDown size={16} />
+          <ChevronDown size={16} className={`profileChevron ${profileMenuOpen ? 'open' : ''}`} />
         </button>
       </div>
     </aside>

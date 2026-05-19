@@ -449,6 +449,9 @@ export default function App() {
           sync={budget.sync}
           email={email}
           features={admin.visibleFeatures}
+          theme={theme}
+          onThemeToggle={handleThemeToggle}
+          onSignOut={() => void signOut()}
         />
       </div>
 
