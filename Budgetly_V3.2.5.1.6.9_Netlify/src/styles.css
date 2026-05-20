@@ -8642,7 +8642,8 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .mobileSearch{margin:0 24px 14px;min-height:56px;border-radius:10px;border:1px solid color-mix(in srgb, var(--line) 68%, transparent);background:transparent}
 .investSearchWrap svg{opacity:.65}
 .popularLabel{padding:8px 22px;background:color-mix(in srgb, var(--panel) 88%, var(--line) 12%);font-size:14px;color:var(--muted);font-weight:700}
-.mobileSuggestions{margin:0 8px;overflow:auto;background:transparent;border:none;border-radius:8px}
+.mobileSuggestions{margin:0 8px;overflow:auto;background:transparent;border:none;border-radius:8px;scrollbar-width:none;-ms-overflow-style:none}
+.mobileSuggestions::-webkit-scrollbar{display:none}
 .pickerRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;min-height:74px;border:none;border-bottom:1px solid color-mix(in srgb, var(--line) 62%, transparent);border-radius:0;box-shadow:none;background:transparent;color:var(--text);appearance:none;-webkit-appearance:none}
 .pickerRow:last-child{border-bottom:none}
 .pickerLeft{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
