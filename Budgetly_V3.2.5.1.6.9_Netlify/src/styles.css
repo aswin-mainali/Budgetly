@@ -8635,14 +8635,14 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 
 /* Premium Add Holding modal redesign */
 .idleModalBackdrop{backdrop-filter:blur(10px);background:rgba(10,16,30,.55)}
-.mobileAddModal{max-width:520px!important;width:min(520px,92vw)!important;max-height:90vh;border-radius:28px!important;border:1px solid #e6ebf3;box-shadow:0 30px 70px rgba(2,8,23,.30)!important;background:#fff!important;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none}
+.mobileAddModal{max-width:520px!important;width:min(520px,92vw)!important;max-height:90vh;border-radius:28px!important;border:1px solid #e6ebf3;box-shadow:0 30px 70px rgba(2,8,23,.30)!important;background:#fff!important;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding:8px}
 .mobileAddModal::-webkit-scrollbar{display:none}
 .addHoldTop{padding:22px 24px 4px}.iconPlain{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;font-size:26px;color:#0f172a}
 .addHoldTitle{text-align:center;font-size:26px;font-weight:800;padding:0 24px 18px;color:#0f172a}
 .mobileSearch{margin:0 24px 14px;min-height:56px;border-radius:10px;border:1px solid color-mix(in srgb, var(--line) 68%, transparent);background:transparent}
 .investSearchWrap svg{opacity:.65}
 .popularLabel{padding:8px 22px;background:color-mix(in srgb, var(--panel) 88%, var(--line) 12%);font-size:14px;color:var(--muted);font-weight:700}
-.mobileSuggestions{margin:0 8px 0;overflow:auto;max-height:340px;background:transparent;border:none;border-radius:8px}
+.mobileSuggestions{margin:0 8px;overflow:auto;background:transparent;border:none;border-radius:8px}
 .pickerRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;min-height:74px;border:none;border-bottom:1px solid color-mix(in srgb, var(--line) 62%, transparent);border-radius:0;box-shadow:none;background:transparent;color:var(--text);appearance:none;-webkit-appearance:none}
 .pickerRow:last-child{border-bottom:none}
 .pickerLeft{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
