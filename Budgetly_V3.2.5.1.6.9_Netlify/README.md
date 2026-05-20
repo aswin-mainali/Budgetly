@@ -53,3 +53,7 @@ Additional migrations are included for goals, recurring items, category emojis, 
 ## Notes
 - `node_modules` and build output are intentionally excluded from the GitHub-ready package.
 - This package is cleaned for pushing to GitHub.
+
+
+### Logo configuration for Investments
+Set `VITE_LOGO_DEV_TOKEN=your_logo_dev_token` in Netlify for automatic domain-based logos. Without it, Budgetly uses static symbol logo fallbacks and initials.
