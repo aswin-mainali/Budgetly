@@ -7,6 +7,7 @@ import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfil
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
+import { InvestmentsView } from './components/InvestmentsView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
@@ -46,7 +47,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey | 'utilities_hub'>('dashboard')
-  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt'>('goals')
+  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt' | 'investments'>('goals')
   const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
@@ -480,6 +481,7 @@ export default function App() {
               <button className="utilityCard" onClick={() => { setToolsSection('goals'); setView('tools') }}><Target size={22} /><div><strong>Goals</strong><p>Set financial goals and track your progress.</p></div><ChevronRight size={18} /></button>
               <button className="utilityCard" onClick={() => { setToolsSection('reports'); setView('tools') }}><BarChart3 size={22} /><div><strong>Reports</strong><p>View insights and reports for this month.</p></div><ChevronRight size={18} /></button>
               <button className="utilityCard" onClick={() => { setToolsSection('converter'); setView('tools') }}><ArrowLeftRight size={22} /><div><strong>Currency Converter</strong><p>Convert currencies with live exchange rates.</p></div><ChevronRight size={18} /></button>
+              <button className="utilityCard" onClick={() => { setToolsSection('investments'); setView('tools') }}><BarChart3 size={22} /><div><strong>Investments</strong><p>Track manual holdings and portfolio performance.</p></div><ChevronRight size={18} /></button>
             </section>
           ) : (
           <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
@@ -487,6 +489,7 @@ export default function App() {
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}
+              {toolsSection === 'investments' ? <InvestmentsView /> : null}
             </div>
           </div>
           )
