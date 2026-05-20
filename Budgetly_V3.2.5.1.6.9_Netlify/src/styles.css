@@ -8516,3 +8516,29 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 @media (max-width:520px){
   .investHeaderButtons{grid-template-columns:1fr}
 }
+
+/* Reference-style investments overhaul */
+.investRef{gap:16px}
+.investTop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.investTop h2{font-size:46px;line-height:1.1;margin:0 0 6px}
+.investTopActions{display:flex;align-items:center;gap:10px}
+.refCard{border:1px solid #e3e8f2;border-radius:14px;box-shadow:0 4px 18px rgba(15,23,42,.06);padding:16px;background:var(--card)}
+.investKpis{grid-template-columns:repeat(5,1fr);gap:10px}
+.investKpiValue{font-size:36px;font-weight:800}
+.investKpiBubble{background:#eaf1ff;color:#1f64e0}
+.investDesktop th,.investDesktop td{padding:12px 10px}
+.investDesktop tbody tr{border-bottom:1px solid #eef2f8}
+.allocWrap{grid-template-columns:1.2fr 1fr;align-items:center}
+.investGridTop{grid-template-columns:2.2fr 1fr}
+.investGridBottom{grid-template-columns:1.1fr 1.9fr}
+.refModal{width:min(430px,94vw);border-radius:16px;box-shadow:0 22px 48px rgba(2,8,23,.25)}
+.investModalBody{padding:4px 2px 0}
+.investSuggestion{background:#fff;border:1px solid #e5ebf5}
+.investTop .investControl{width:190px;min-height:42px}
+.investTop .investBtnSecondary,.investTop .investBtnPrimary{min-height:42px;padding:0 16px;border-radius:10px}
+.investBtnPrimary{background:#1d67f0;border-color:#1d67f0;color:#fff}
+@media (max-width:1200px){.investTop h2{font-size:36px}.investKpiValue{font-size:30px}}
+@media (max-width:900px){.investTop{flex-direction:column}.investTopActions{width:100%;display:grid;grid-template-columns:1fr 1fr}.investTopActions .investControl{grid-column:1/-1;width:100%}.investGridTop,.investGridBottom,.allocWrap{grid-template-columns:1fr}.investKpis{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.investTopActions{grid-template-columns:1fr}.investKpis{grid-template-columns:1fr}}
+body:not(.light) .refCard{border-color:#2a3344;box-shadow:none}
+body:not(.light) .investSuggestion{background:#172032;border-color:#2a3344}
