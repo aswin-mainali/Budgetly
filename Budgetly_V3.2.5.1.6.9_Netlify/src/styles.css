@@ -8455,3 +8455,20 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app.light .mobileTabBar{background:#ffffff;border-top:1px solid #dfe7f4;box-shadow:0 -6px 20px rgba(15,23,42,.10);backdrop-filter:none;-webkit-backdrop-filter:none}
   body.mobile-app.light .mobileTabBar button.active{background:#eef4ff;color:#1f64e0}
   body.mobile-app.light .mobileTabBarPlus .mobilePlusTab span{color:#334155}
+
+.investmentsPage{display:grid;gap:14px}
+.investmentsHeader{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.investmentsHeaderActions{display:flex;gap:8px;flex-wrap:wrap}
+.investKpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.investKpi strong{font-size:22px}
+.pos{color:#16a34a}.neg{color:#dc2626}
+.investGridTop,.investGridBottom{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.investDesktop{width:100%}.investMobileCards{display:none}
+.legendRow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:6px}.legendRow span{display:inline-block;width:10px;height:10px;border-radius:50%}
+.allocWrap{display:grid;grid-template-columns:1fr;gap:8px}.allocChart{position:relative}.allocCenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.investModal{width:min(720px,95vw);max-height:90vh;overflow:auto}
+.investSuggestionList{display:grid;gap:6px;max-height:210px;overflow:auto;margin-top:8px}
+.investSuggestion{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
+.investFormGrid{display:grid;gap:8px;margin-top:10px}
+@media (max-width:1100px){.investKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.investGridTop,.investGridBottom{grid-template-columns:1fr}.investDesktop{display:none}.investMobileCards{display:grid;gap:8px}}
+@media (max-width:768px){.investmentsHeader{flex-direction:column}.investmentsHeaderActions{width:100%}.investmentsHeaderActions .input,.investmentsHeaderActions .btn{width:100%}}
