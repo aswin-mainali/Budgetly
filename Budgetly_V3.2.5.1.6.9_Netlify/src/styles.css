@@ -8535,8 +8535,9 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .investModalBody{padding:4px 2px 0}
 .investSuggestion{background:#fff;border:1px solid #e5ebf5}
 .investTop .investControl{width:190px;min-height:42px}
-.investTop .investBtnSecondary,.investTop .investBtnPrimary{min-height:42px;padding:0 16px;border-radius:10px}
+.investTop .investBtnSecondary,.investTop .investBtnPrimary{min-height:42px;padding:0 16px;border-radius:10px;color:#fff}
 .investBtnPrimary{background:#1d67f0;border-color:#1d67f0;color:#fff}
+.investBtnSecondary{background:#16a34a;border-color:#16a34a;color:#fff}
 @media (max-width:1200px){.investTop h2{font-size:36px}.investKpiValue{font-size:30px}}
 @media (max-width:900px){.investTop{flex-direction:column}.investTopActions{width:100%;display:grid;grid-template-columns:1fr 1fr}.investTopActions .investControl{grid-column:1/-1;width:100%}.investGridTop,.investGridBottom,.allocWrap{grid-template-columns:1fr}.investKpis{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:520px){.investTopActions{grid-template-columns:1fr}.investKpis{grid-template-columns:1fr}}
