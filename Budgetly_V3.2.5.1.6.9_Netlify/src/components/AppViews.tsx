@@ -1508,7 +1508,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       if (transaction.type !== 'expense') return sum
       if (transaction.category_id !== SAFE_TO_SPEND_CATEGORY_ID) return sum
       if (!transaction.date?.startsWith(monthPrefix)) return sum
-      return sum + Math.max(0, Number(transaction.amount || 0))
+      return sum + Math.abs(Number(transaction.amount || 0))
     }, 0)
     const totalSafeToSpendAvailable = allocation + rolloverFromLastMonth
     return {
@@ -3153,7 +3153,7 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
   const rollover = Math.max(0, Number(prev?.allocation || 0) + Number(prev?.rolloverFromLastMonth || 0) - Number(prev?.spent || 0))
   const available = allocation + rollover
   const spentTx = data.transactions.filter((tx) => tx.type === 'expense' && tx.category_id === SAFE_TO_SPEND_CATEGORY_ID && tx.date?.startsWith(`${activeMonth}-`))
-  const spent = spentTx.reduce((s, tx) => s + Number(tx.amount || 0), 0)
+  const spent = spentTx.reduce((sum, tx) => sum + Math.abs(Number(tx.amount || 0)), 0)
   const remaining = Math.max(available - spent, 0)
   const toNumber = (value: unknown) => {
     if (typeof value === 'number') return Number.isFinite(value) ? value : 0
@@ -3225,7 +3225,7 @@ export function SafeToSpendView({ budget }: Pick<SharedProps, 'budget'>) {
       }
     })()
   }
-  const activity = [{ date: `${activeMonth}-01`, type: 'Added', amount: allocation, note: 'Added to safe-to-spend' }, ...spentTx.map((tx) => ({ date: tx.date, type: 'Spent', amount: Number(tx.amount || 0), note: tx.note || 'Safe-to-spend expense' }))]
+  const activity = [{ date: `${activeMonth}-01`, type: 'Added', amount: allocation, note: 'Added to safe-to-spend' }, ...spentTx.map((tx) => ({ date: tx.date, type: 'Spent', amount: Math.abs(Number(tx.amount || 0)), note: tx.note || 'Safe-to-spend expense' }))]
   const pageSize = 8
   const totalPages = Math.max(1, Math.ceil(activity.length / pageSize))
   const rows = activity.slice((page - 1) * pageSize, page * pageSize)
