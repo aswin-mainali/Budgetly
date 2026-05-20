@@ -39,7 +39,7 @@ export default function Sidebar(props: {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const profileMenuRef = useRef<HTMLDivElement | null>(null)
   const profileButtonRef = useRef<HTMLButtonElement | null>(null)
-  const [profileMenuPos, setProfileMenuPos] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null)
+  const [profileMenuPos, setProfileMenuPos] = useState<{ bottom: number; left: number; width: number; maxHeight: number } | null>(null)
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -141,14 +141,10 @@ export default function Sidebar(props: {
       const width = Math.min(rawWidth, maxWidth)
       const left = Math.min(Math.max(rect.left, viewportPadding), window.innerWidth - width - viewportPadding)
       const availableAbove = Math.max(120, rect.top - gap - viewportPadding)
-      const fallbackHeight = 250
-      const actualHeight = profileMenuRef.current?.offsetHeight ?? fallbackHeight
-      const preferredTop = rect.top - actualHeight - gap
-      const top = Math.max(viewportPadding, preferredTop)
-      setProfileMenuPos({ top, left, width, maxHeight: availableAbove })
+      const bottom = Math.max(viewportPadding, window.innerHeight - rect.top + gap)
+      setProfileMenuPos({ bottom, left, width, maxHeight: availableAbove })
     }
     updateProfileMenuPosition()
-    const frame = window.requestAnimationFrame(updateProfileMenuPosition)
     const onPointerDown = (event: MouseEvent) => {
       const targetNode = event.target as Node | null
       const inButton = !!(targetNode && profileButtonRef.current?.contains(targetNode))
@@ -163,7 +159,6 @@ export default function Sidebar(props: {
     window.addEventListener('resize', updateProfileMenuPosition)
     window.addEventListener('scroll', updateProfileMenuPosition, true)
     return () => {
-      window.cancelAnimationFrame(frame)
       window.removeEventListener('mousedown', onPointerDown)
       window.removeEventListener('keydown', onEsc)
       window.removeEventListener('resize', updateProfileMenuPosition)
@@ -255,7 +250,7 @@ export default function Sidebar(props: {
             ref={profileMenuRef}
             role="menu"
             aria-label="User profile menu"
-            style={{ position: 'fixed', top: profileMenuPos.top, left: profileMenuPos.left, width: profileMenuPos.width, maxHeight: profileMenuPos.maxHeight }}
+            style={{ position: 'fixed', bottom: profileMenuPos.bottom, left: profileMenuPos.left, width: profileMenuPos.width, maxHeight: profileMenuPos.maxHeight }}
           >
             <button type="button" className="profileMenuItem" onClick={onThemeToggle}>
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
