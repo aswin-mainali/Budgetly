@@ -8655,6 +8655,15 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 
 .acctGlyph{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:1;color:#2563eb}
 .accountSelectWrap .input{padding-left:34px}
+
+.newManualAccountWrap{margin:10px 24px 0}
+.newManualAccountToggle{width:100%;display:flex;align-items:center;justify-content:space-between;border:none;background:transparent;color:#2563eb;font-weight:700;padding:0 0 8px;cursor:pointer}
+.investManualAccountCard{padding:12px;border-radius:12px;background:#f8fbff;border:1px solid #dbe7ff;display:grid;gap:8px}
+.investManualAccountCard .fieldLabel{margin:0;color:#0f172a;font-size:12px}
+.investManualAccountCard .input{margin:0!important;min-height:42px!important;border-radius:8px!important}
+.newManualAccountActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px}
+.newManualAccountCancel{background:#fff;color:#2563eb;border-color:#9fb8ff}
+.newManualAccountSave{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
 .mobileFooter{position:sticky;bottom:0;background:#fff;padding:18px 24px 22px;border-top:1px solid #e6ebf3}
 .mobileFooter .btn{height:52px;border-radius:14px;padding:0 16px;min-width:88px;flex:0 0 auto}
 .mobileFooter .btn:first-child{background:#f1f5f9;color:#0f172a;border-color:transparent}
