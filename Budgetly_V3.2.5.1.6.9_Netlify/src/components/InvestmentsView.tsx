@@ -15,6 +15,15 @@ const COLORS = ['#2563eb', '#22c55e', '#7c3aed', '#f59e0b', '#36c2d6']
 const money = (v: number, c = 'CAD') => new Intl.NumberFormat(undefined, { style: 'currency', currency: c === 'USD' ? 'USD' : 'CAD' }).format(Number.isFinite(v) ? v : 0)
 const pct = (v: number) => `${v >= 0 ? '+' : ''}${(Number.isFinite(v) ? v : 0).toFixed(2)}%`
 
+type ModalSecurityRow = SecuritySuggestion & { changeText?: string; changeValue?: number | null }
+const POPULAR_SECURITY_PRESETS: ModalSecurityRow[] = [
+  { symbol: 'USD-USD', companyName: 'U S Dollar', exchange: 'FOREX', currency: 'USD', fallbackPrice: 1, changeText: 'N/A', domain: undefined, logo_url: '' },
+  { symbol: 'SPAXX', companyName: 'Fidelity Hereford Street Trust - Fidelity Government Money Market', exchange: 'MUTF', currency: 'USD', fallbackPrice: 1, changeText: 'N/A', domain: undefined, logo_url: '' },
+  { symbol: 'VTI', companyName: 'Vanguard Total Stock Market ETF', exchange: 'NYSEARCA', currency: 'USD', fallbackPrice: 363.63, changeText: '0.99%', changeValue: 0.99, domain: 'vanguard.com', logo_url: '' },
+  { symbol: 'VOO', companyName: 'Vanguard S&P 500 ETF', exchange: 'NYSEARCA', currency: 'USD', fallbackPrice: 680.62, changeText: '0.89%', changeValue: 0.89, domain: 'vanguard.com', logo_url: '' },
+  { symbol: 'VMFXX', companyName: 'Vanguard Federal Money Market Fund', exchange: 'MUTF', currency: 'USD', fallbackPrice: 1, changeText: 'N/A', domain: undefined, logo_url: '' },
+]
+
 export function InvestmentsView() {
   const [accounts, setAccounts] = useState<Account[]>([]); const [holdings, setHoldings] = useState<Holding[]>([]); const [snapshots, setSnapshots] = useState<Snapshot[]>([])
   const [accountFilter, setAccountFilter] = useState('all'); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Holding | null>(null); const [refreshing, setRefreshing] = useState(false)
@@ -22,6 +31,17 @@ export function InvestmentsView() {
   const [showNewAccount, setShowNewAccount] = useState(false); const [note, setNote] = useState(''); const [quantity, setQuantity] = useState(''); const [averageCost, setAverageCost] = useState(''); const [accountId, setAccountId] = useState('')
   const [range, setRange] = useState<'1M'|'3M'|'6M'|'YTD'|'1Y'|'All'>('1Y'); const [newAccount, setNewAccount] = useState({ type: 'TFSA', name: '', provider: '' }); const [userId, setUserId] = useState<string | null>(null); const [openActionId, setOpenActionId] = useState<string | null>(null)
   const safeHoldings = Array.isArray(holdings) ? holdings : []; const safeAccounts = Array.isArray(accounts) ? accounts : []; const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
+  const popularRows = useMemo(() => {
+    const fromPresets = POPULAR_SECURITY_PRESETS.map((item) => ({ ...item, logo_url: getCompanyLogoUrl(item) || item.logo_url || '' }))
+    const symbols = new Set(fromPresets.map((x) => x.symbol))
+    const fromStatic = STATIC_SECURITIES.filter((item) => ['AAPL','MSFT','GOOGL','TSLA','NVDA','SHOP.TO','RY.TO','TD.TO','BNS.TO','VFV.TO','XEQT.TO'].includes(item.symbol) && !symbols.has(item.symbol))
+      .map((item) => ({ ...item, changeText: 'N/A', changeValue: null, logo_url: getCompanyLogoUrl(item) || item.logo_url || '' }))
+    return [...fromPresets, ...fromStatic]
+  }, [])
+  const modalRows = useMemo(() => {
+    if (!search.trim()) return popularRows
+    return suggestions.map((sec) => ({ ...sec, changeText: 'N/A', changeValue: null, logo_url: sec.logo_url || sec.logoUrl || getCompanyLogoUrl(sec) || '' }))
+  }, [search, suggestions, popularRows])
 
   const resolveMeta = (symbol?: string | null) => {
     const match = STATIC_SECURITIES.find((x) => x.symbol === (symbol || '').toUpperCase())
@@ -71,8 +91,8 @@ export function InvestmentsView() {
       <div className='addHoldTitle'>Add holding</div>
       {!selected ? <>
         <div className='investSearchWrap mobileSearch'><Search size={16}/><input className='input investSearchInput' placeholder='Search for a company or ticker symbol...' value={search} onChange={(e)=>setSearch(e.target.value)}/></div>
-        <div className='popularLabel'>Popular holdings</div>
-        <div className='mobileSuggestions'>{suggestions.map((sec)=>{const isSel=selected?.symbol===sec.symbol; return <button key={sec.symbol} className={`mobileSugRow ${isSel?'isSelected':''}`} onClick={()=>setSelected(sec)}><div className='holdingCell'><HoldingLogo symbol={sec.symbol} companyName={sec.companyName} logoUrl={sec.logo_url || sec.logoUrl} domain={sec.domain} size={38} /><div><strong>{sec.symbol}</strong><div className='muted'>{sec.companyName}</div></div></div><div className='row gap'>{isSel?<span className='selectedCheck'>✓</span>:<span className='chevron'>›</span>}</div></button>})}</div>
+        <div className='popularLabel'>{search.trim() ? 'Search results' : 'Popular holdings'}</div>
+        <div className='mobileSuggestions'>{modalRows.length===0 ? <div className='investNoResults'><strong>No holdings found.</strong><span>Try searching by ticker symbol or company name.</span></div> : modalRows.map((sec)=>{const isSel=selected?.symbol===sec.symbol; const changeClass=sec.changeText==='N/A'?'na':(Number(sec.changeValue||0)>=0?'pos':'neg'); return <button key={sec.symbol} className={`mobileSugRow pickerRow ${isSel?'isSelected':''}`} onClick={()=>setSelected(sec)}><div className='pickerLeft'><HoldingLogo symbol={sec.symbol} companyName={sec.companyName} logoUrl={sec.logo_url || sec.logoUrl} domain={sec.domain} size={38} /><div className='pickerText'><strong>{sec.symbol}</strong><div className='pickerName'>{sec.companyName}</div></div></div><div className='pickerRight'><div className='pickerPrice'>{money(sec.fallbackPrice, sec.currency)}</div><div className={`pickerChange ${changeClass}`}>{sec.changeText || 'N/A'}</div></div></button>})}</div>
       </> : <>
         <div className='selectedCompact'><div className='holdingCell'><HoldingLogo symbol={selected.symbol} companyName={selected.companyName} logoUrl={selected.logo_url || selected.logoUrl} domain={selected.domain} size={38} /><div><strong>{selected.symbol}</strong><div className='muted'>{selected.companyName}</div></div></div><div style={{textAlign:'right'}}><strong>{money(selected.fallbackPrice,selected.currency)}</strong><div className='dayGain'>+1.32 (0.81%)</div><div className='muted'>1 share</div></div></div>
         <label className='fieldLabel'>Quantity</label><div className='inputWithSuffix'><input className='input' placeholder='0.00' value={quantity} onChange={(e)=>setQuantity(e.target.value)}/><span>shares</span></div><label className='fieldLabel'>Average Cost / Purchase Price</label><div className='currencyWrap'><input className='input' placeholder='Use current price if left blank' value={averageCost} onChange={(e)=>setAverageCost(e.target.value)}/></div><div className='fieldHelp'>Leave blank to use the current price as your average cost.</div>

@@ -8642,7 +8642,21 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .mobileSearch{margin:0 24px 14px;min-height:56px;border-radius:16px;border:1px solid #d5dce9;background:#fff}
 .investSearchWrap svg{opacity:.65}
 .popularLabel{padding:6px 24px 12px;background:transparent;font-size:14px;color:#4b5565;font-weight:700}
-.mobileSuggestions{margin:0 24px;border:1px solid #e2e8f2;border-radius:16px;overflow:hidden;max-height:240px;background:#fff}
+.mobileSuggestions{margin:0 24px;border:1px solid color-mix(in srgb, var(--line) 72%, transparent);border-radius:16px;overflow:auto;max-height:340px;background:var(--panel)}
+.pickerRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;min-height:74px;border-bottom:1px solid color-mix(in srgb, var(--line) 78%, transparent);background:transparent;color:var(--text)}
+.pickerRow:last-child{border-bottom:none}
+.pickerLeft{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.pickerText{min-width:0}
+.pickerText strong{font-size:16px;line-height:1.2;color:var(--text)}
+.pickerName{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;margin-top:4px}
+.pickerRight{display:grid;grid-template-columns:auto auto;gap:10px;align-items:center;flex:0 0 auto}
+.pickerPrice{font-size:28px;color:var(--text);text-align:right;white-space:nowrap}
+.pickerChange{font-size:24px;font-weight:700;padding:6px 10px;border-radius:999px;min-width:68px;text-align:center}
+.pickerChange.pos{color:#0f8a44;background:rgba(34,197,94,.16)}
+.pickerChange.neg{color:#b42318;background:rgba(239,68,68,.15)}
+.pickerChange.na{color:var(--muted);background:rgba(148,163,184,.18)}
+.investNoResults{padding:16px;color:var(--muted);display:grid;gap:4px}
+@media (max-width:640px){.pickerRight{grid-template-columns:1fr}.pickerPrice{font-size:18px}.pickerChange{font-size:13px;justify-self:end}}
 .mobileSugRow{padding:14px 14px;background:var(--card)}
 .mobileSugRow.isSelected{background:rgba(37,99,235,.08)}
 .chevron{font-size:30px;color:var(--muted)}
