@@ -33,23 +33,45 @@ export function InvestmentsView() {
   const [range, setRange] = useState<'1M' | '3M' | '6M' | 'YTD' | '1Y' | 'All'>('1M')
   const [isEstimated, setIsEstimated] = useState(false)
   const [newAccount, setNewAccount] = useState({ type: 'TFSA', name: '', provider: '' })
+  const [userId, setUserId] = useState<string | null>(null)
 
   const safeHoldings = Array.isArray(holdings) ? holdings : []
   const safeAccounts = Array.isArray(accounts) ? accounts : []
   const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
 
-  const load = async () => {
+  const load = async (uid: string | null = userId) => {
+    if (!uid) {
+      setAccounts([])
+      setHoldings([])
+      setSnapshots([])
+      return
+    }
     const [a, h, s] = await Promise.all([
-      supabase.from('investment_accounts').select('*').order('created_at', { ascending: true }),
-      supabase.from('investment_holdings').select('*').order('created_at', { ascending: true }),
-      supabase.from('investment_value_snapshots').select('*').order('date_key', { ascending: true }),
+      supabase.from('investment_accounts').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
+      supabase.from('investment_holdings').select('*, investment_accounts(id, name, type, provider)').eq('user_id', uid).order('created_at', { ascending: false }),
+      supabase.from('investment_value_snapshots').select('*').eq('user_id', uid).order('date_key', { ascending: true }),
     ])
     setAccounts((a.data ?? []) as Account[])
     setHoldings((h.data ?? []) as Holding[])
     setSnapshots((s.data ?? []) as Snapshot[])
   }
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    const boot = async () => {
+      const { data } = await supabase.auth.getUser()
+      const uid = data.user?.id ?? null
+      setUserId(uid)
+      if (!uid) {
+        setAccounts([])
+        setHoldings([])
+        setSnapshots([])
+        return
+      }
+      await load(uid)
+    }
+    void boot()
+  }, [])
+
   useEffect(() => { void searchSecurities(search).then(setSuggestions) }, [search])
 
   const merged = useMemo(() => safeHoldings.map((h) => {
@@ -81,15 +103,16 @@ export function InvestmentsView() {
 
   const saveAccount = async () => {
     if (!newAccount.name.trim()) return
-    const { data, error } = await supabase.from('investment_accounts').insert({ name: newAccount.name.trim(), type: newAccount.type, provider: newAccount.provider || null }).select('*').single()
-    if (error || !data) return window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Failed to save account.' } }))
-    setAccounts((cur) => [...cur, data as Account]); setAccountId((data as Account).id); setShowNewAccount(false); setNewAccount({ type: 'TFSA', name: '', provider: '' })
+    if (!userId) return
+    const { data, error } = await supabase.from('investment_accounts').insert({ user_id: userId, name: newAccount.name.trim(), type: newAccount.type, provider: newAccount.provider?.trim() || null, notes: null }).select('*').single()
+    if (error || !data) { console.error('Investment account save failed:', error); return window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: error?.message || 'Failed to save account.' } })) }
+    setAccounts((cur) => [data as Account, ...cur]); setAccountId((data as Account).id); setShowNewAccount(false); setNewAccount({ type: 'TFSA', name: '', provider: '' })
     window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Account added.' } }))
   }
 
   const saveHolding = async () => {
-    if (!selected || !accountId || Number(quantity) <= 0 || Number(averageCost) < 0) return
-    const payload = { account_id: accountId, symbol: selected.symbol, company_name: selected.companyName, exchange: selected.exchange || null, quantity: Number(quantity), average_cost: Number(averageCost), current_price: selected.fallbackPrice, previous_close: null, currency: selected.currency, notes: note || null, last_price_updated_at: new Date().toISOString() }
+    if (!userId || !selected || !accountId || Number(quantity) <= 0 || Number(averageCost) < 0) return
+    const payload = { user_id: userId, account_id: accountId, symbol: selected.symbol, company_name: selected.companyName, exchange: selected.exchange || null, quantity: Number(quantity), average_cost: Number(averageCost), current_price: Number(selected.fallbackPrice || 0), previous_close: 0, currency: selected.currency || 'CAD', notes: note?.trim() || null, last_price_updated_at: new Date().toISOString() }
     const action = editing ? supabase.from('investment_holdings').update(payload).eq('id', editing.id) : supabase.from('investment_holdings').insert(payload)
     const { error } = await action
     if (error) return window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Failed to save holding.' } }))
@@ -134,6 +157,6 @@ export function InvestmentsView() {
     <div className="investGridBottom"><div className='card'><h3>Accounts Summary</h3>{safeAccounts.length === 0 ? <div className='muted'>No investment accounts yet.<br />Create one when adding your first holding.</div> : <table className='table'><thead><tr><th>Account</th><th>Type</th><th>Total Value</th><th># of Holdings</th></tr></thead><tbody>{safeAccounts.map((a) => { const hs = safeHoldings.filter((h) => h.account_id === a.id); return <tr key={a.id}><td>{a.name}</td><td>{a.type}</td><td>{money(hs.reduce((sum, h) => sum + h.quantity * h.current_price, 0))}</td><td>{hs.length}</td></tr> })}</tbody></table>}</div>
       <div className='card'><h3>Portfolio Value Over Time</h3><div className='row gap'>{(['1M', '3M', '6M', 'YTD', '1Y', 'All'] as const).map((r) => <button key={r} className={`btn tiny ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}</button>)}</div>{chartData.length === 0 ? <div className='muted' style={{ marginTop: 12 }}>Portfolio history will appear after you refresh prices over time.</div> : <div style={{ height: 260 }}><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><XAxis dataKey='date_key' /><YAxis /><Tooltip /><Line type='monotone' dataKey='total_value' stroke='#2563eb' strokeWidth={2} dot={false} /><Line type='monotone' dataKey='total_cost' stroke='#94a3b8' strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer></div>}</div></div>
 
-    {open ? <div className='idleModalBackdrop'><div className='card investModal'><div className='row' style={{ justifyContent: 'space-between' }}><h3>{editing ? 'Edit holding' : 'Add holding'}</h3><button className='btn tiny' onClick={() => { setOpen(false); resetModal() }}>✕</button></div>{!selected ? <><input className='input' placeholder='Search for a company or ticker symbol...' value={search} onChange={(e) => setSearch(e.target.value)} /><div className='investSuggestionList'>{suggestions.map((s) => <button key={s.symbol} className='investSuggestion' onClick={() => setSelected(s)}><div><strong>{s.symbol}</strong> — {s.companyName}<div className='muted'>{s.exchange} · {s.currency}</div></div><strong>{money(s.fallbackPrice, s.currency)}</strong></button>)}</div></> : <><div className='investSelected'><strong>{selected.symbol}</strong><div className='muted'>{selected.companyName}</div><div>{money(selected.fallbackPrice, selected.currency)} {selected.exchange ? <span className='muted'>Estimated/manual price</span> : null}</div></div><div className='investFormGrid'><input className='input' placeholder='Quantity' value={quantity} onChange={(e) => setQuantity(e.target.value)} /><input className='input' placeholder='Average Cost / Purchase Price' value={averageCost} onChange={(e) => setAverageCost(e.target.value)} /><select className='input' value={accountId} onChange={(e) => e.target.value === '__new__' ? setShowNewAccount(true) : setAccountId(e.target.value)}><option value=''>Select an account</option>{safeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}<option value='__new__'>+ New Manual Account</option></select><textarea className='input' placeholder='Optional notes...' value={note} onChange={(e) => setNote(e.target.value)} /></div>{showNewAccount ? <div className='card'><h4>New Manual Account</h4><select className='input' value={newAccount.type} onChange={(e) => setNewAccount((c) => ({ ...c, type: e.target.value }))}>{ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}</select><input className='input' placeholder='My Investments Account' value={newAccount.name} onChange={(e) => setNewAccount((c) => ({ ...c, name: e.target.value }))} /><input className='input' placeholder='Wealthsimple, Questrade, Bank, Other' value={newAccount.provider} onChange={(e) => setNewAccount((c) => ({ ...c, provider: e.target.value }))} /><div className='row gap'><button className='btn' onClick={() => setShowNewAccount(false)}>Cancel</button><button className='btn' onClick={() => void saveAccount()}>Save Account</button></div></div> : null}<div className='row gap' style={{ justifyContent: 'flex-end', marginTop: 12 }}><button className='btn' onClick={() => { setOpen(false); resetModal() }}>Cancel</button><button className='btn' disabled={!selected || !accountId || Number(quantity) <= 0 || Number(averageCost) < 0} onClick={() => void saveHolding()}>{editing ? 'Save Changes' : 'Save Holding'}</button></div></>}</div></div> : null}
+    {open ? <div className='idleModalBackdrop'><div className='card investModal'><div className='row' style={{ justifyContent: 'space-between' }}><h3>{editing ? 'Edit holding' : 'Add holding'}</h3><button className='btn tiny' onClick={() => { setOpen(false); resetModal() }}>✕</button></div>{!selected ? <><input className='input' placeholder='Search for a company or ticker symbol...' value={search} onChange={(e) => setSearch(e.target.value)} /><div className='investSuggestionList'>{suggestions.map((s) => <button key={s.symbol} className='investSuggestion' onClick={() => setSelected(s)}><div><strong>{s.symbol}</strong> — {s.companyName}<div className='muted'>{s.exchange} · {s.currency}</div></div><strong>{money(s.fallbackPrice, s.currency)}</strong></button>)}</div></> : <><div className='investSelected'><strong>{selected.symbol}</strong><div className='muted'>{selected.companyName}</div><div>{money(selected.fallbackPrice, selected.currency)} {selected.exchange ? <span className='muted'>Estimated/manual price</span> : null}</div></div><div className='investFormGrid'><input className='input' placeholder='Quantity' value={quantity} onChange={(e) => setQuantity(e.target.value)} /><input className='input' placeholder='Average Cost / Purchase Price' value={averageCost} onChange={(e) => setAverageCost(e.target.value)} /><select className='input' value={accountId} onChange={(e) => e.target.value === '__new__' ? setShowNewAccount(true) : setAccountId(e.target.value)}><option value=''>Select an account</option>{safeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}<option value='__new__'>+ New Manual Account</option></select><textarea className='input' placeholder='Optional notes...' value={note} onChange={(e) => setNote(e.target.value)} /></div>{showNewAccount ? <div className='card'><h4>New Manual Account</h4><select className='input' value={newAccount.type} onChange={(e) => setNewAccount((c) => ({ ...c, type: e.target.value }))}>{ACCOUNT_TYPES.map((t) => <option key={t}>{t}</option>)}</select><input className='input' placeholder='My Investments Account' value={newAccount.name} onChange={(e) => setNewAccount((c) => ({ ...c, name: e.target.value }))} /><input className='input' placeholder='Wealthsimple, Questrade, Bank, Other' value={newAccount.provider} onChange={(e) => setNewAccount((c) => ({ ...c, provider: e.target.value }))} /><div className='row gap'><button className='btn' onClick={() => setShowNewAccount(false)}>Cancel</button><button className='btn' onClick={() => void saveAccount()}>Save Account</button></div></div> : null}<div className='row gap investModalFooter' style={{ justifyContent: 'flex-end', marginTop: 12 }}><button className='btn' onClick={() => { setOpen(false); resetModal() }}>Cancel</button><button className='btn' disabled={!selected || !accountId || Number(quantity) <= 0 || Number(averageCost) < 0} onClick={() => void saveHolding()}>{editing ? 'Save Changes' : 'Save Holding'}</button></div></>}</div></div> : null}
   </section>
 }

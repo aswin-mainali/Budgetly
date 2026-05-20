@@ -8466,9 +8466,12 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .investDesktop{width:100%}.investMobileCards{display:none}
 .legendRow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:6px}.legendRow span{display:inline-block;width:10px;height:10px;border-radius:50%}
 .allocWrap{display:grid;grid-template-columns:1fr;gap:8px}.allocChart{position:relative}.allocCenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.investModal{width:min(720px,95vw);max-height:90vh;overflow:auto}
+.investModal{width:min(720px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
 .investSuggestionList{display:grid;gap:6px;max-height:210px;overflow:auto;margin-top:8px}
 .investSuggestion{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
 .investFormGrid{display:grid;gap:8px;margin-top:10px}
 @media (max-width:1100px){.investKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.investGridTop,.investGridBottom{grid-template-columns:1fr}.investDesktop{display:none}.investMobileCards{display:grid;gap:8px}}
 @media (max-width:768px){.investmentsHeader{flex-direction:column}.investmentsHeaderActions{width:100%}.investmentsHeaderActions .input,.investmentsHeaderActions .btn{width:100%}}
+
+.investModal > .row:first-child{position:sticky;top:0;background:var(--card);z-index:2;padding-bottom:8px}
+.investModalFooter{position:sticky;bottom:0;background:var(--card);padding-top:8px;border-top:1px solid var(--border)}
