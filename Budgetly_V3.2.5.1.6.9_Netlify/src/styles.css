@@ -8493,3 +8493,26 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .investModalFooter{justify-content:space-between}
 .investRange.active{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:#93c5fd}
 @media (max-width:900px){.investGridTop,.investGridBottom,.investFormGrid.twoCol,.investFormGrid.threeCol{grid-template-columns:1fr}.investKpiValue{font-size:28px}}
+
+
+/* Investments header polish */
+.investmentsHeader{padding:28px 32px; border-radius:20px; margin-bottom:22px; align-items:center; gap:28px}
+.investmentsHeaderIntro h2{font-size:30px; line-height:1.1; margin:0; color:var(--text)}
+.investmentsHeaderIntro .muted{margin-top:8px; font-size:14px}
+.investmentsHeaderActions{display:flex; flex-direction:column; align-items:stretch; gap:10px; min-width:380px; max-width:420px; width:100%}
+.investControl{width:100%; min-height:44px; border-radius:12px}
+.investHeaderButtons{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.investHeaderButtons .btn{min-height:40px; border-radius:12px; justify-content:center}
+.investBtnSecondary{background:var(--card)}
+@media (max-width:1024px){
+  .investmentsHeader{padding:22px; align-items:flex-start}
+  .investmentsHeaderActions{min-width:320px}
+}
+@media (max-width:768px){
+  .investmentsHeader{padding:20px; margin-bottom:18px}
+  .investmentsHeaderActions{min-width:100%; max-width:100%}
+  .investHeaderButtons{grid-template-columns:1fr 1fr}
+}
+@media (max-width:520px){
+  .investHeaderButtons{grid-template-columns:1fr}
+}
