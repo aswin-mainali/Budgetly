@@ -8475,3 +8475,21 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 
 .investModal > .row:first-child{position:sticky;top:0;background:var(--card);z-index:2;padding-bottom:8px}
 .investModalFooter{position:sticky;bottom:0;background:var(--card);padding-top:8px;border-top:1px solid var(--border)}
+.investmentsPage.polished{gap:18px;padding:2px}
+.polishedCard{border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.investKpi{display:flex;justify-content:space-between;align-items:flex-start;padding:18px}.investKpiLabel{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}.investKpiValue{display:block;font-size:34px;line-height:1.1;margin-bottom:6px}.investKpiBubble{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(59,130,246,.12);color:#2563eb}
+.investGridTop{grid-template-columns:2.1fr 1fr}.investGridBottom{grid-template-columns:1fr 2.1fr}
+.investmentsHeader{padding:20px}
+.investBtnPrimary{background:#1f64e0;color:#fff;border-color:#1f64e0}.investBtnSecondary{background:transparent;border:1px solid var(--line)}
+.investControl{min-width:170px}
+.holdingCell{display:flex;align-items:center;gap:10px}.holdingLogo{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:rgba(148,163,184,.12);font-weight:700;overflow:hidden}.holdingLogo img{width:100%;height:100%;object-fit:cover}
+.investDesktop tbody tr{height:64px}.investDesktop tbody tr:hover{background:rgba(59,130,246,.06)}.investAction{width:32px;height:32px;padding:0;display:inline-grid;place-items:center}
+.allocLegendItem{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}.allocLegendItem .dot{width:9px;height:9px;border-radius:50%;margin-top:6px}
+.acctCell{display:flex;align-items:center;gap:8px}.acctIcon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(34,197,94,.12);color:#16a34a;font-size:12px}.totalRow td{font-weight:700;border-top:2px solid var(--line)}
+.chartEmpty{height:260px;border:1px dashed var(--line);border-radius:12px;display:grid;place-items:center;text-align:center;color:var(--muted)}.chartGrid{width:90%;height:120px;background:repeating-linear-gradient(to bottom, transparent 0 22px, rgba(148,163,184,.14) 22px 23px)}
+.investModal{max-width:460px}.investModalBody{overflow:auto;padding-right:2px}.investModalHead{position:sticky;top:0;background:var(--card);z-index:3;padding-bottom:8px}.investSearchWrap{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:0 10px}.investSearchInput{border:0;background:transparent}
+.investSuggestion{border-radius:12px;padding:10px 12px}.investSuggestion:hover{background:rgba(59,130,246,.07)}.investInnerCard{padding:10px;border-radius:12px}
+.investFormGrid.twoCol{grid-template-columns:1fr 1fr}.investFormGrid.threeCol{grid-template-columns:1fr 1fr 1fr}
+.investModalFooter{justify-content:space-between}
+.investRange.active{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:#93c5fd}
+@media (max-width:900px){.investGridTop,.investGridBottom,.investFormGrid.twoCol,.investFormGrid.threeCol{grid-template-columns:1fr}.investKpiValue{font-size:28px}}
