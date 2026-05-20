@@ -1,28 +1,44 @@
-const KNOWN_LOGO_URLS: Record<string, string> = {
-  AAPL: 'https://logo.clearbit.com/apple.com',
-  MSFT: 'https://logo.clearbit.com/microsoft.com',
-  TSLA: 'https://logo.clearbit.com/tesla.com',
-  NVDA: 'https://logo.clearbit.com/nvidia.com',
-  'SHOP.TO': 'https://logo.clearbit.com/shopify.com',
-  'RY.TO': 'https://logo.clearbit.com/rbc.com',
-  'TD.TO': 'https://logo.clearbit.com/td.com',
-  'BMO.TO': 'https://logo.clearbit.com/bmo.com',
-  'BNS.TO': 'https://logo.clearbit.com/scotiabank.com',
-  'VFV.TO': 'https://logo.clearbit.com/vanguard.ca',
-  'XEQT.TO': 'https://logo.clearbit.com/blackrock.com',
+const SYMBOL_DOMAIN_MAP: Record<string, string> = {
+  AAPL: 'apple.com',
+  MSFT: 'microsoft.com',
+  GOOGL: 'abc.xyz',
+  GOOG: 'abc.xyz',
+  TSLA: 'tesla.com',
+  NVDA: 'nvidia.com',
+  AMZN: 'amazon.com',
+  META: 'meta.com',
+  'SHOP.TO': 'shopify.com',
+  'RY.TO': 'rbc.com',
+  'TD.TO': 'td.com',
+  'BMO.TO': 'bmo.com',
+  'BNS.TO': 'scotiabank.com',
+  'VFV.TO': 'vanguard.ca',
+  'XEQT.TO': 'blackrock.com',
+}
+
+export function getDomainForSymbol(symbol?: string | null) {
+  if (!symbol) return null
+  return SYMBOL_DOMAIN_MAP[symbol.toUpperCase()] || null
+}
+
+export function getLogoDevUrl(domain?: string | null) {
+  const token = import.meta.env.VITE_LOGO_DEV_TOKEN as string | undefined
+  if (!domain || !token) return null
+  return `https://img.logo.dev/${domain}?token=${token}&size=128&format=png`
 }
 
 export function getCompanyLogoUrl(item?: { symbol?: string | null; logo_url?: string | null; domain?: string | null }) {
   if (!item) return null
   if (item.logo_url) return item.logo_url
-  const symbol = item.symbol?.toUpperCase() || ''
-  const token = import.meta.env.VITE_LOGO_DEV_TOKEN as string | undefined
-  if (item.domain && token) return `https://img.logo.dev/${item.domain}?token=${token}`
-  return KNOWN_LOGO_URLS[symbol] || null
+  const domain = item.domain || getDomainForSymbol(item.symbol)
+  return getLogoDevUrl(domain)
 }
 
 export function getFallbackInitials(symbol?: string | null, companyName?: string | null) {
   const s = (symbol || '').toUpperCase()
+  if (s === 'SHOP.TO') return 'SHOP'
+  if (s === 'VFV.TO') return 'VFV'
+  if (s === 'XEQT.TO') return 'XEQT'
   if (s.includes('.')) return s.split('.')[0]
   if (s.length <= 4) return s
   const words = (companyName || '').split(' ').filter(Boolean)
