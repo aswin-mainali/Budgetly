@@ -8543,14 +8543,6 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 @media (max-width:520px){.investTopActions{grid-template-columns:1fr}.investKpis{grid-template-columns:1fr}}
 body:not(.light) .refCard{border-color:#2a3344;box-shadow:none}
 body:not(.light) .investSuggestion{background:#172032;border-color:#2a3344}
-
-.investmentsPage,.investRef{min-width:0;width:100%}
-.investGridTop,.investGridBottom,.investKpis,.refCard{min-width:0}
-.investDesktop{display:block;width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.investDesktop table,.investDesktop{max-width:100%}
-@media (max-width:1280px){.investKpis{grid-template-columns:repeat(3,minmax(0,1fr))}.investTop{flex-wrap:wrap}.investTopActions{width:100%;flex-wrap:wrap}}
-@media (max-width:1100px){.investKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.investGridTop,.investGridBottom{grid-template-columns:1fr}}
-@media (max-width:700px){.investKpis{grid-template-columns:1fr}.investTopActions{display:grid;grid-template-columns:1fr}.refCard{padding:12px}}
 .mobileAddModal{max-width:535px;width:100%;padding:0;border-radius:0;overflow:hidden;background:#fff}
 .addHoldTop{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 2px}.iconPlain{background:transparent;border:0;font-size:34px;line-height:1;color:#222;padding:2px 4px}
 .addHoldTitle{font-size:38px;font-weight:800;padding:8px 24px 16px;color:#222}
