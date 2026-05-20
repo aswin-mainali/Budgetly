@@ -8553,3 +8553,5 @@ body:not(.light) .investSuggestion{background:#172032;border-color:#2a3344}
 .fieldLabel{display:block;padding:14px 24px 8px;font-size:30px;font-weight:700}.mobileAddModal .input,.mobileAddModal select{margin:0 24px;width:calc(100% - 48px);min-height:50px;border-radius:12px}
 .mobileFooter{display:flex;justify-content:flex-end;gap:10px;padding:20px 24px;border-top:1px solid var(--line);margin-top:18px}.savePeach{background:#f4a889;border-color:#f4a889;color:white}
 @media (max-width:700px){.mobileAddModal{max-width:100vw;height:100vh}.addHoldTitle{font-size:36px}}
+
+.fieldHelp{padding:6px 24px 2px;font-size:12px;color:var(--muted)}
