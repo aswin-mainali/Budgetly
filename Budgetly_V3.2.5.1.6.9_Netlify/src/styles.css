@@ -8635,7 +8635,8 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 
 /* Premium Add Holding modal redesign */
 .idleModalBackdrop{backdrop-filter:blur(10px);background:rgba(10,16,30,.55)}
-.mobileAddModal{max-width:520px!important;width:min(520px,92vw)!important;max-height:90vh;border-radius:28px!important;border:1px solid #e6ebf3;box-shadow:0 30px 70px rgba(2,8,23,.30)!important;background:#fff!important;display:flex;flex-direction:column}
+.mobileAddModal{max-width:520px!important;width:min(520px,92vw)!important;max-height:90vh;border-radius:28px!important;border:1px solid #e6ebf3;box-shadow:0 30px 70px rgba(2,8,23,.30)!important;background:#fff!important;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none}
+.mobileAddModal::-webkit-scrollbar{display:none}
 .addHoldTop{padding:22px 24px 4px}.iconPlain{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;font-size:26px;color:#0f172a}
 .addHoldTitle{text-align:center;font-size:26px;font-weight:800;padding:0 24px 18px;color:#0f172a}
 .mobileSearch{margin:0 24px 14px;min-height:56px;border-radius:16px;border:1px solid #d5dce9;background:#fff}
