@@ -8571,3 +8571,28 @@ body:not(.light) .investSuggestion{background:#172032;border-color:#2a3344}
 .logoBadgeVfv{background:linear-gradient(135deg,#1e3a8a,#38bdf8);color:#fff}
 .logoBadgeXeqt{background:linear-gradient(135deg,#111827,#6b7280);color:#fff}
 body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#334155);color:#f8fafc}
+
+/* Investments page should scroll fully inside Utilities shell */
+.toolsPageBody > .investmentsPage,
+.toolsPageBody .investmentsPage {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  padding-bottom: 28px;
+}
+
+.toolsPageBody .investmentsPage::-webkit-scrollbar { width: 10px; }
+.toolsPageBody .investmentsPage::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 999px; }
+.toolsPageBody .investmentsPage::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 960px) {
+  .toolsPageBody > .investmentsPage,
+  .toolsPageBody .investmentsPage {
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+    padding-bottom: 14px;
+  }
+}
