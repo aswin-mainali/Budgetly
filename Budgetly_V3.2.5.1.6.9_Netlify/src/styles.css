@@ -8652,12 +8652,11 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .inputWithSuffix,.currencyWrap,.accountSelectWrap{margin:0 24px;position:relative}
 .inputWithSuffix .input,.currencyWrap .input,.accountSelectWrap .input{margin:0!important;width:100%!important;min-height:54px!important;border-radius:14px!important}
 .inputWithSuffix span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
-.currencyWrap span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:32px;color:var(--muted);z-index:1}
-.currencyWrap .input{padding-left:34px}
+
 .acctGlyph{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:1;color:#2563eb}
 .accountSelectWrap .input{padding-left:34px}
 .mobileFooter{position:sticky;bottom:0;background:#fff;padding:18px 24px 22px;border-top:1px solid #e6ebf3}
-.mobileFooter .btn{flex:1;height:52px;border-radius:14px}
+.mobileFooter .btn{height:52px;border-radius:14px;padding:0 16px;min-width:88px;flex:0 0 auto}
 .mobileFooter .btn:first-child{background:#f1f5f9;color:#0f172a;border-color:transparent}
 .mobileFooter .btn:last-child{background:#1d67f0;border-color:#1d67f0;color:#fff}
 @media (max-width:640px){.mobileAddModal{width:94vw!important;max-height:92vh}.addHoldTitle{font-size:24px}}
