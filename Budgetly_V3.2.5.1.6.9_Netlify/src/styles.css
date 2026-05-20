@@ -8606,3 +8606,29 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .actionsMenu button{width:100%;background:transparent;border:0;color:inherit;text-align:left;padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:8px}
 .actionsMenu button:hover{background:rgba(148,163,184,.14)}
 .actionsMenu .dangerText{color:#dc2626}
+
+/* Stabilize Investments header button hover states */
+.investTop .investBtnPrimary,
+.investTop .investBtnSecondary {
+  transition: background-color .15s ease, border-color .15s ease, filter .15s ease;
+}
+.investTop .investBtnPrimary:hover,
+.investTop .investBtnPrimary:focus-visible,
+.investTop .investBtnPrimary:active {
+  background:#1c5dd8;
+  border-color:#1c5dd8;
+  color:#fff;
+}
+.investTop .investBtnSecondary:hover,
+.investTop .investBtnSecondary:focus-visible,
+.investTop .investBtnSecondary:active {
+  background:#15803d;
+  border-color:#15803d;
+  color:#fff;
+}
+.investTop .investBtnPrimary:disabled,
+.investTop .investBtnSecondary:disabled {
+  opacity:.6;
+  cursor:not-allowed;
+  filter:none;
+}
