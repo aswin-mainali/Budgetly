@@ -127,10 +127,6 @@ export default function Sidebar(props: {
     .slice(0, 2)
     .map((part) => part.charAt(0).toUpperCase())
     .join('') || 'U'
-  const openSettingsGeneral = () => {
-    window.dispatchEvent(new Event('budgetly:open-settings-general'))
-    setView('settings')
-  }
   const closeProfileMenu = () => setProfileMenuOpen(false)
 
   useEffect(() => {
@@ -264,9 +260,6 @@ export default function Sidebar(props: {
             <button type="button" className="profileMenuItem" onClick={onThemeToggle}>
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
-            </button>
-            <button type="button" className="profileMenuItem" onClick={() => { openSettingsGeneral(); closeProfileMenu() }}>
-              <Settings size={16} /> <span>Settings</span>
             </button>
             {features.support ? (
               <button type="button" className="profileMenuItem" onClick={() => { setView('support'); closeProfileMenu() }}>
