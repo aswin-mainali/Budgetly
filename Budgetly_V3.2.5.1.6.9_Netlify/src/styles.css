@@ -729,7 +729,7 @@ body.light .btn.danger:hover{
 }
 
 
-/* Login page background image (Auth only) */
+/* Login page backdrop (image removed) */
 .authWrap{
   min-height: 100vh;
   position: relative;
@@ -742,12 +742,7 @@ body.light .btn.danger:hover{
   content:"";
   position:absolute;
   inset:0;
-  background-image: url("./assets/login-bg.jpeg");
-  background-size: cover;
-  background-position: center;
-  opacity: 0.18; /* reduced opacity */
-  filter: saturate(1.05) contrast(1.05);
-  transform: scale(1.02);
+  background: linear-gradient(180deg, rgba(8,22,44,.88), rgba(8,22,44,.82));
   z-index:0;
 }
 
@@ -802,7 +797,7 @@ body.light .kpi.expenses{ background: rgba(239,68,68,.10); }
 body.light .kpi.net{ background: rgba(59,130,246,.10); }
 
 
-/* Subtle background image on app pages (not just login) */
+/* App surface backdrop (image removed) */
 .appWrap{
   position: relative;
 }
@@ -810,11 +805,7 @@ body.light .kpi.net{ background: rgba(59,130,246,.10); }
   content:"";
   position: fixed;
   inset: 0;
-  background-image: url("./assets/login-bg.jpeg");
-  background-size: cover;
-  background-position: center;
-  opacity: 0.05; /* very subtle so charts stay readable */
-  filter: saturate(1.05) contrast(1.05);
+  background: linear-gradient(180deg, rgba(8,22,44,.34), rgba(8,22,44,.24));
   z-index: 0;
   pointer-events: none;
 }
@@ -915,8 +906,7 @@ body.light{
   color: #0f172a;
 }
 body.light .appWrap::before{
-  opacity: 0.08; /* show image a bit more */
-  filter: saturate(1.05) contrast(1.05);
+  background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,.34));
 }
 body.light .appWrap::after{
   background:
