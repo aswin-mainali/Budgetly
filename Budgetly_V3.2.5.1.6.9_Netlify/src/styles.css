@@ -7242,6 +7242,33 @@ body.light .nav button.active::before{
   background: #2563eb;
 }
 
+/* Sidebar chrome cleanup: make brand/clock/synced/profile match flat nav treatment */
+.brand,
+.sidebarClock,
+.pill,
+.sidebarFooter .btn,
+.sidebarUserCard{
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+.brand:hover,
+.sidebarClock:hover,
+.pill:hover,
+.sidebarFooter .btn:hover,
+.sidebarUserCard:hover{
+  background: rgba(148,163,184,.10) !important;
+}
+
+body.light .brand:hover,
+body.light .sidebarClock:hover,
+body.light .pill:hover,
+body.light .sidebarFooter .btn:hover,
+body.light .sidebarUserCard:hover{
+  background: rgba(15,23,42,.06) !important;
+}
+
 .txPageCard .transactionsScrollBox,
 .txPageCard .dataStickyTable,
 .txPageCard .dataStickyTable thead,
