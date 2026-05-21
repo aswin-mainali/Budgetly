@@ -7138,17 +7138,22 @@ body.light .nav button.active::after,
 .dashboardView .dashboardRightCol > .card,
 .dashboardView .budgetItemCard{
   background: transparent !important;
-  border: 1px solid rgba(148,163,184,.14);
+  border: 1px solid rgba(148,163,184,.10);
   box-shadow: none !important;
 }
 
+.dashboardView > .card{
+  border-color: rgba(148,163,184,.08);
+}
+
 .dashboardView .budgetItemCard{
-  border-color: rgba(148,163,184,.10);
+  border-color: rgba(148,163,184,.08);
+  border-radius: 14px;
 }
 
 .dashboardView .kpi{
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(148,163,184,.16);
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(148,163,184,.11);
   box-shadow: none;
 }
 
@@ -7156,17 +7161,34 @@ body.light .nav button.active::after,
   display: none;
 }
 
+.dashboardView .recurringUpcomingItem,
+.dashboardView .recurringEmpty{
+  border: 1px solid rgba(148,163,184,.10);
+  box-shadow: none;
+  background: rgba(255,255,255,.02);
+}
+
+.dashboardView .recurringEmpty{
+  border-style: solid;
+}
+
 body.light .dashboardView > .card,
 body.light .dashboardView .dashboardSecondaryGrid > .card,
 body.light .dashboardView .dashboardRightCol > .card,
 body.light .dashboardView .budgetItemCard{
-  background: rgba(255,255,255,.62) !important;
-  border-color: rgba(148,163,184,.20);
+  background: rgba(255,255,255,.56) !important;
+  border-color: rgba(148,163,184,.16);
 }
 
 body.light .dashboardView .kpi{
-  background: rgba(255,255,255,.70);
-  border-color: rgba(148,163,184,.24);
+  background: rgba(255,255,255,.58);
+  border-color: rgba(148,163,184,.18);
+}
+
+body.light .dashboardView .recurringUpcomingItem,
+body.light .dashboardView .recurringEmpty{
+  background: rgba(255,255,255,.52);
+  border-color: rgba(148,163,184,.16);
 }
 
 /* Sidebar nav buttons: flatter treatment (keep active state clear, no boxed pills) */
