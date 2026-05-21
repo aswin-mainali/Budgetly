@@ -8794,3 +8794,13 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .mobileFooter .btn:first-child{background:#f1f5f9;color:#0f172a;border-color:transparent}
 .mobileFooter .btn:last-child{background:#1d67f0;border-color:#1d67f0;color:#fff}
 @media (max-width:640px){.mobileAddModal{width:94vw!important;max-height:92vh}.addHoldTitle{font-size:24px}}
+.investTrendCard{border-radius:24px;padding:28px;box-shadow:0 16px 40px rgba(15,23,42,.08)}
+.investTrendHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:10px}
+.investTrendTitle{font-size:34px;display:flex;align-items:center;gap:8px}
+.investTrendBadge{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;border-radius:999px;width:fit-content}
+.investTrendBadge.pos{background:rgba(22,163,74,.12);color:#15803d}.investTrendBadge.neg{background:rgba(220,38,38,.12);color:#b91c1c}
+.investTrendBadge span{color:var(--muted);font-weight:500}
+.investTrendLegend{display:flex;justify-content:center;gap:30px;margin-top:8px}.investTrendLegend i{display:inline-block;width:36px;height:0;border-top:3px solid #1d4ed8;margin-right:8px;vertical-align:middle}.investTrendLegend i.dash{border-top:2px dashed #94a3b8}
+.investTrendSummary{margin-top:16px;background:rgba(148,163,184,.1);border-radius:16px;padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.investTrendSummary div{padding:0 10px}.investTrendSummary small{color:var(--muted);display:block}.investTrendSummary strong{font-size:30px}
+.investChartTooltip{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,.16);padding:12px 14px;min-width:240px}.investChartTooltipDate{font-weight:700;margin-bottom:8px}.investChartTooltipRow{display:flex;justify-content:space-between;gap:12px;margin:4px 0}.investChartTooltipDivider{height:1px;background:var(--line);margin:8px 0}
+@media (max-width:900px){.investTrendHead{flex-direction:column}.investTrendRanges{flex-wrap:wrap}.investTrendTitle{font-size:26px}.investTrendSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}
