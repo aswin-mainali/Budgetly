@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp, Info, Layers, Pencil, Plus, RefreshCw, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
 import { Area, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { supabase } from '../lib/supabase'
@@ -29,7 +29,7 @@ export function InvestmentsView() {
   const [accountFilter, setAccountFilter] = useState('all'); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Holding | null>(null); const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState(''); const [suggestions, setSuggestions] = useState<SecuritySuggestion[]>([]); const [selected, setSelected] = useState<SecuritySuggestion | null>(null)
   const [showNewAccount, setShowNewAccount] = useState(false); const [note, setNote] = useState(''); const [quantity, setQuantity] = useState(''); const [averageCost, setAverageCost] = useState(''); const [accountId, setAccountId] = useState('')
-  const [range, setRange] = useState<'1M'|'3M'|'6M'|'YTD'|'1Y'|'All'>('1Y'); const [newAccount, setNewAccount] = useState({ type: 'TFSA', name: '', provider: '' }); const [userId, setUserId] = useState<string | null>(null); const [openActionId, setOpenActionId] = useState<string | null>(null); const [holdingToDelete, setHoldingToDelete] = useState<Holding | null>(null); const [isDeletingHolding, setIsDeletingHolding] = useState(false)
+  const [range, setRange] = useState<'1M'|'3M'|'6M'|'YTD'|'1Y'|'All'>('1Y'); const [newAccount, setNewAccount] = useState({ type: 'TFSA', name: '', provider: '' }); const [userId, setUserId] = useState<string | null>(null); const [openActionId, setOpenActionId] = useState<string | null>(null); const [holdingToDelete, setHoldingToDelete] = useState<Holding | null>(null); const [isDeletingHolding, setIsDeletingHolding] = useState(false); const [isLoadingInvestments, setIsLoadingInvestments] = useState(false); const [investmentError, setInvestmentError] = useState<string | null>(null); const [authInvalid, setAuthInvalid] = useState(false)
   const safeHoldings = Array.isArray(holdings) ? holdings : []; const safeAccounts = Array.isArray(accounts) ? accounts : []; const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
   const popularRows = useMemo(() => {
     const fromPresets = POPULAR_SECURITY_PRESETS.map((item) => ({ ...item, logo_url: getCompanyLogoUrl(item) || item.logo_url || '' }))
@@ -48,20 +48,66 @@ export function InvestmentsView() {
     return { domain: match?.domain || null, logo_url: match?.logo_url || null }
   }
 
-  const upsertSnapshot = async (uid: string, nextHoldings: Holding[]) => {
-    const total_value = nextHoldings.reduce((sum, h) => sum + Number(h.quantity || 0) * Number(h.current_price || 0), 0)
-    const total_cost = nextHoldings.reduce((sum, h) => sum + (Number(h.average_cost || 0) > 0 ? Number(h.quantity || 0) * Number(h.average_cost || 0) : 0), 0)
-    const gain_loss = total_value - total_cost
-    const return_percent = total_cost > 0 ? (gain_loss / total_cost) * 100 : 0
+  const isInvalidRefreshTokenError = (error: unknown) => /invalid refresh token|refresh token not found/i.test(String((error as { message?: string })?.message || error || ''))
+
+  const handleInvalidSession = useCallback(async () => {
+    setAuthInvalid(true)
+    setAccounts([])
+    setHoldings([])
+    setSnapshots([])
+    setInvestmentError('Your session expired. Please sign in again.')
+    try { await supabase.auth.signOut({ scope: 'local' }) } catch {}
+    window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Your session expired. Please sign in again.' } }))
+  }, [])
+
+  const upsertSnapshot = async (uid: string | null, nextHoldings: Holding[]) => {
+    if (!uid || authInvalid) return
+    const total_value = Number(nextHoldings.reduce((sum, h) => sum + Number(h.quantity || 0) * Number(h.current_price || 0), 0) || 0)
+    const total_cost = Number(nextHoldings.reduce((sum, h) => sum + (Number(h.average_cost || 0) > 0 ? Number(h.quantity || 0) * Number(h.average_cost || 0) : 0), 0) || 0)
+    const gain_loss = Number(total_value - total_cost || 0)
+    const return_percent = Number(total_cost > 0 ? (gain_loss / total_cost) * 100 : 0)
     const snapshotPayload = { user_id: uid, date_key: new Date().toISOString().slice(0, 10), total_value, total_cost, gain_loss, return_percent, updated_at: new Date().toISOString() }
-    console.log('Upserting investment snapshot:', snapshotPayload)
+    if (import.meta.env.DEV) console.log('Upserting investment snapshot:', snapshotPayload)
     await supabase.from('investment_value_snapshots').upsert(snapshotPayload, { onConflict: 'user_id,date_key' })
   }
 
-  const load = async (uid: string | null = userId) => { if (!uid) return setAccounts([]), setHoldings([]), setSnapshots([]); const [a,h,s] = await Promise.all([supabase.from('investment_accounts').select('*').eq('user_id', uid).order('created_at', { ascending: false }),supabase.from('investment_holdings').select('*, investment_accounts(id, name, type, provider)').eq('user_id', uid).order('created_at', { ascending: false }),supabase.from('investment_value_snapshots').select('*').eq('user_id', uid).order('date_key', { ascending: true })]); setAccounts((a.data??[]) as Account[]); setHoldings((h.data??[]) as Holding[]); setSnapshots((s.data??[]) as Snapshot[])
-    console.log('Investment snapshots loaded:', (s.data ?? []))
-    if ((h.data ?? []).length > 0 && (s.data ?? []).length === 0) await upsertSnapshot(uid, (h.data ?? []) as Holding[]) }
-  useEffect(() => { void supabase.auth.getUser().then(({ data }) => { const id = data.user?.id ?? null; setUserId(id); void load(id) }) }, [])
+  const load = async (uid: string | null = userId) => {
+    if (!uid || authInvalid) { setAccounts([]); setHoldings([]); setSnapshots([]); return }
+    setIsLoadingInvestments(true)
+    setInvestmentError(null)
+    const [a,h,s] = await Promise.all([supabase.from('investment_accounts').select('*').eq('user_id', uid).order('created_at', { ascending: false }),supabase.from('investment_holdings').select('*, investment_accounts(id, name, type, provider)').eq('user_id', uid).order('created_at', { ascending: false }),supabase.from('investment_value_snapshots').select('*').eq('user_id', uid).order('date_key', { ascending: true })])
+    if (a.error || h.error || s.error) {
+      const firstError = a.error || h.error || s.error
+      if (isInvalidRefreshTokenError(firstError)) { await handleInvalidSession(); setIsLoadingInvestments(false); return }
+      console.error('Failed to load investments:', firstError)
+      setAccounts([]); setHoldings([]); setSnapshots([]); setInvestmentError('Failed to load investments. Please refresh.')
+      setIsLoadingInvestments(false)
+      return
+    }
+    const safeAccountsData = Array.isArray(a.data) ? (a.data as Account[]) : []
+    const safeHoldingsData = Array.isArray(h.data) ? (h.data as Holding[]) : []
+    const safeSnapshotsData = Array.isArray(s.data) ? (s.data as Snapshot[]) : []
+    setAccounts(safeAccountsData); setHoldings(safeHoldingsData); setSnapshots(safeSnapshotsData)
+    if (import.meta.env.DEV) console.log('Investment snapshots loaded:', safeSnapshotsData)
+    if (safeHoldingsData.length > 0 && safeSnapshotsData.length === 0) await upsertSnapshot(uid, safeHoldingsData)
+    setIsLoadingInvestments(false)
+  }
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser()
+        if (error) throw error
+        const id = data.user?.id ?? null
+        setUserId(id)
+        if (!id) { setAccounts([]); setHoldings([]); setSnapshots([]); return }
+        await load(id)
+      } catch (error) {
+        if (isInvalidRefreshTokenError(error)) { await handleInvalidSession(); return }
+        console.error('Failed to initialize investments auth:', error)
+      }
+    }
+    void init()
+  }, [handleInvalidSession])
   useEffect(() => { void searchSecurities(search).then(setSuggestions) }, [search])
   const merged = useMemo(() => safeHoldings.map((h) => { const hasCostBasis = Number(h.average_cost) > 0; const totalCost = hasCostBasis ? h.quantity * h.average_cost : 0; const marketValue = h.quantity * h.current_price; const gainLoss = hasCostBasis ? (marketValue - totalCost) : null; const returnPercent = hasCostBasis && totalCost > 0 ? ((marketValue - totalCost) / totalCost) * 100 : null; return { ...h, hasCostBasis, totalCost, marketValue, gainLoss, returnPercent, account: safeAccounts.find((a) => a.id === h.account_id) || null, logo_url: getCompanyLogoUrl({ symbol: h.symbol, logo_url: h.logo_url, domain: h.domain || resolveMeta(h.symbol).domain }), domain: h.domain || resolveMeta(h.symbol).domain } }), [safeHoldings, safeAccounts])
   const filtered = useMemo(() => merged.filter((h) => accountFilter === 'all' || h.account_id === accountFilter), [merged, accountFilter])
@@ -149,7 +195,7 @@ export function InvestmentsView() {
     await upsertSnapshot(userId, nextHoldings)
     setOpen(false); resetModal(); void load(); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: editing ? 'Holding updated.' : 'Holding added.' } })) }
   const deleteHolding = async () => { if (!holdingToDelete || !userId || isDeletingHolding) return; setIsDeletingHolding(true); const { error } = await supabase.from('investment_holdings').delete().eq('id', holdingToDelete.id).eq('user_id', userId); if (error) { console.error('Failed to delete holding:', error); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Failed to delete holding.' } })); setIsDeletingHolding(false); return } await upsertSnapshot(userId, safeHoldings.filter((h) => h.id !== holdingToDelete.id)); setHoldingToDelete(null); setIsDeletingHolding(false); void load(); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Holding deleted.' } })) }
-  const refreshPrices = async () => { if (!safeHoldings.length) return; const apiKey = import.meta.env.VITE_TWELVE_DATA_API_KEY; if (import.meta.env.DEV) console.log('Twelve Data key configured:', Boolean(import.meta.env.VITE_TWELVE_DATA_API_KEY)); if (!apiKey || !String(apiKey).trim()) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } setRefreshing(true); try { const symbols = [...new Set(safeHoldings.map((h) => h.symbol))]; const result = await getBatchQuotes(symbols); const realQuotes = result.quotes.filter((q) => !q.isEstimated); const quoteBy = new Map(realQuotes.map((q) => [q.symbol, q])); if (!realQuotes.length) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } const updates = await Promise.all(safeHoldings.map((h) => { const q = quoteBy.get(h.symbol); if (!q) return Promise.resolve({ error: null, updated: false }); return supabase.from('investment_holdings').update({ current_price: q.price, previous_close: q.previousClose, currency: q.currency, last_price_updated_at: q.timestamp }).eq('id', h.id).eq('user_id', userId).select('id').limit(1) })); const updatedCount = updates.reduce((count, res) => count + ((res as any)?.data?.length ? 1 : 0), 0); if (updatedCount === 0) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } const pValue = merged.reduce((sum,h)=>sum + (quoteBy.get(h.symbol)?.price ?? h.current_price) * h.quantity, 0); const pCost = merged.reduce((sum,h)=>sum + h.totalCost,0); if (userId) { const snapshotPayload = { user_id: userId, date_key: new Date().toISOString().slice(0,10), total_value: pValue, total_cost: pCost, gain_loss: pValue-pCost, return_percent: pCost>0?((pValue-pCost)/pCost)*100:0, updated_at: new Date().toISOString() }; console.log('Upserting investment snapshot:', snapshotPayload); await supabase.from('investment_value_snapshots').upsert(snapshotPayload, { onConflict: 'user_id,date_key' }); } await load(); window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Prices updated.'}})) } catch { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Could not update prices.'}})) } finally { setRefreshing(false) } }
+  const refreshPrices = async () => { if (!userId || authInvalid || !safeHoldings.length) return; const apiKey = import.meta.env.VITE_TWELVE_DATA_API_KEY; if (import.meta.env.DEV) console.log('Twelve Data key configured:', Boolean(import.meta.env.VITE_TWELVE_DATA_API_KEY)); if (!apiKey || !String(apiKey).trim()) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } setRefreshing(true); try { const symbols = [...new Set(safeHoldings.map((h) => h.symbol))]; const result = await getBatchQuotes(symbols); const realQuotes = result.quotes.filter((q) => !q.isEstimated); const quoteBy = new Map(realQuotes.map((q) => [q.symbol, q])); if (!realQuotes.length) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } const updates = await Promise.all(safeHoldings.map((h) => { const q = quoteBy.get(h.symbol); if (!q) return Promise.resolve({ error: null, updated: false }); return supabase.from('investment_holdings').update({ current_price: q.price, previous_close: q.previousClose, currency: q.currency, last_price_updated_at: q.timestamp }).eq('id', h.id).eq('user_id', userId).select('id').limit(1) })); const updatedCount = updates.reduce((count, res) => count + ((res as any)?.data?.length ? 1 : 0), 0); if (updatedCount === 0) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } const pValue = merged.reduce((sum,h)=>sum + (quoteBy.get(h.symbol)?.price ?? h.current_price) * h.quantity, 0); const pCost = merged.reduce((sum,h)=>sum + h.totalCost,0); if (userId) { const safeValue = Number(pValue || 0); const safeCost = Number(pCost || 0); const safeGain = Number(safeValue - safeCost || 0); const safeReturn = Number(safeCost>0?((safeGain)/safeCost)*100:0); const snapshotPayload = { user_id: userId, date_key: new Date().toISOString().slice(0,10), total_value: safeValue, total_cost: safeCost, gain_loss: safeGain, return_percent: safeReturn, updated_at: new Date().toISOString() }; if (import.meta.env.DEV) console.log('Upserting investment snapshot:', snapshotPayload); await supabase.from('investment_value_snapshots').upsert(snapshotPayload, { onConflict: 'user_id,date_key' }); } await load(); window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Prices updated.'}})) } catch { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Could not update prices.'}})) } finally { setRefreshing(false) } }
 
   return <section className='investmentsPage investRef'>
     <header className='investTop'><div><h2>Investments</h2><p className='muted'>Track your holdings, accounts, and portfolio performance manually.</p></div><div className='investTopActions'><select className='input investControl' value={accountFilter} onChange={(e)=>setAccountFilter(e.target.value)}><option value='all'>All Accounts</option>{safeAccounts.map((a)=><option key={a.id} value={a.id}>{a.name}</option>)}</select><button className='btn investBtnSecondary' onClick={()=>void refreshPrices()} disabled={refreshing}><RefreshCw size={16}/>{refreshing?'Refreshing...':'Refresh Prices'}</button><button className='btn investBtnPrimary' onClick={()=>{resetModal();setOpen(true)}}><Plus size={16}/>Add Holding</button></div></header>
