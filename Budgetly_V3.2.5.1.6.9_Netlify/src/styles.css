@@ -8543,6 +8543,34 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 @media (max-width:520px){.investTopActions{grid-template-columns:1fr}.investKpis{grid-template-columns:1fr}}
 body:not(.light) .refCard{border-color:#2a3344;box-shadow:none}
 body:not(.light) .investSuggestion{background:#172032;border-color:#2a3344}
+
+/* Investments responsive layout safeguards */
+.investRef,.investmentsPage{width:100%;max-width:100%;min-width:0;overflow-x:hidden;box-sizing:border-box}
+.investRef .card,.investRef .refCard{max-width:100%;min-width:0;box-sizing:border-box}
+.investKpis,.investGridTop,.investGridBottom{min-width:0}
+.investGridTop{grid-template-columns:minmax(0,2.2fr) minmax(320px,1fr)}
+.investGridBottom{grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr)}
+.investTopActions{flex-wrap:wrap}
+.investDesktop{display:block;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+
+@media (max-width:1279px){
+  .investTop{align-items:flex-start}
+  .investTopActions{width:100%;justify-content:flex-start}
+  .investTopActions .investControl{min-width:220px}
+  .investKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .investGridTop,.investGridBottom{grid-template-columns:1fr}
+  .allocWrap{grid-template-columns:minmax(260px,360px) minmax(0,1fr);align-items:center}
+}
+
+@media (max-width:900px){
+  .investKpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .allocWrap{grid-template-columns:1fr}
+  .allocChart{margin:0 auto}
+}
+
+@media (max-width:520px){
+  .investKpis{grid-template-columns:1fr}
+}
 .mobileAddModal{max-width:535px;width:100%;padding:0;border-radius:0;overflow:hidden;background:#fff}
 .addHoldTop{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 2px}.iconPlain{background:transparent;border:0;font-size:34px;line-height:1;color:#222;padding:2px 4px}
 .addHoldTitle{font-size:38px;font-weight:800;padding:8px 24px 16px;color:#222}
