@@ -8661,6 +8661,87 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
   filter:none;
 }
 
+
+/* Investments full responsive pass */
+.investmentsPage,
+.investRef,
+.investGridTop,
+.investGridBottom{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.investRef .card,
+.investRef .refCard{
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.investKpis{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  width:100%;
+  max-width:100%;
+}
+
+.investKpi,
+.investKpiValue,
+.investKpiLabel{
+  min-width:0;
+}
+
+.investKpiValue{
+  overflow-wrap:anywhere;
+}
+
+.investTopActions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.investDesktop{
+  display:block;
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (max-width:1439px){
+  .investTop{align-items:flex-start}
+  .investTopActions{width:100%;justify-content:flex-start}
+  .investTopActions .investControl{min-width:220px;max-width:100%}
+
+  .investKpis{grid-template-columns:repeat(3,minmax(0,1fr)) !important}
+
+  .investGridTop,
+  .investGridBottom{grid-template-columns:1fr !important}
+
+  .allocWrap{
+    grid-template-columns:minmax(260px,380px) minmax(0,1fr);
+    gap:24px;
+    align-items:center;
+  }
+}
+
+@media (max-width:1099px){
+  .investKpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+
+@media (max-width:900px){
+  .allocWrap{grid-template-columns:1fr !important}
+  .allocChart{display:flex;justify-content:center;width:100%;max-width:100%;overflow:hidden}
+}
+
+@media (max-width:767px){
+  .investKpis{grid-template-columns:1fr !important}
+}
+
 /* Premium Add Holding modal redesign */
 .idleModalBackdrop{backdrop-filter:blur(10px);background:rgba(10,16,30,.55)}
 .mobileAddModal{max-width:520px!important;width:min(520px,92vw)!important;max-height:90vh;border-radius:28px!important;border:1px solid #e6ebf3;box-shadow:0 30px 70px rgba(2,8,23,.30)!important;background:#fff!important;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding:8px}
