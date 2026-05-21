@@ -8508,3 +8508,359 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app.light .mobileTabBar{background:#ffffff;border-top:1px solid #dfe7f4;box-shadow:0 -6px 20px rgba(15,23,42,.10);backdrop-filter:none;-webkit-backdrop-filter:none}
   body.mobile-app.light .mobileTabBar button.active{background:#eef4ff;color:#1f64e0}
   body.mobile-app.light .mobileTabBarPlus .mobilePlusTab span{color:#334155}
+
+.investmentsPage{display:grid;gap:14px}
+.investmentsHeader{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.investmentsHeaderActions{display:flex;gap:8px;flex-wrap:wrap}
+.investKpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.investKpi strong{font-size:22px}
+.pos{color:#16a34a}.neg{color:#dc2626}
+.investGridTop,.investGridBottom{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.investDesktop{width:100%}.investMobileCards{display:none}
+.legendRow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:6px}.legendRow span{display:inline-block;width:10px;height:10px;border-radius:50%}
+.allocWrap{display:grid;grid-template-columns:1fr;gap:8px}.allocChart{position:relative}.allocCenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.investModal{width:min(720px,95vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+.investSuggestionList{display:grid;gap:6px;max-height:210px;overflow:auto;margin-top:8px}
+.investSuggestion{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
+.investFormGrid{display:grid;gap:8px;margin-top:10px}
+@media (max-width:1100px){.investKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.investGridTop,.investGridBottom{grid-template-columns:1fr}.investDesktop{display:none}.investMobileCards{display:grid;gap:8px}}
+@media (max-width:768px){.investmentsHeader{flex-direction:column}.investmentsHeaderActions{width:100%}.investmentsHeaderActions .input,.investmentsHeaderActions .btn{width:100%}}
+
+.investModal > .row:first-child{position:sticky;top:0;background:var(--card);z-index:2;padding-bottom:8px}
+.investModalFooter{position:sticky;bottom:0;background:var(--card);padding-top:8px;border-top:1px solid var(--border)}
+.investmentsPage.polished{gap:18px;padding:2px}
+.polishedCard{border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.investKpi{display:flex;justify-content:space-between;align-items:flex-start;padding:18px}.investKpiLabel{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}.investKpiValue{display:block;font-size:34px;line-height:1.1;margin-bottom:6px}.investKpiBubble{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(59,130,246,.12);color:#2563eb}
+.investGridTop{grid-template-columns:2.1fr 1fr}.investGridBottom{grid-template-columns:1fr 2.1fr}
+.investmentsHeader{padding:20px}
+.investBtnPrimary{background:#1f64e0;color:#fff;border-color:#1f64e0}.investBtnSecondary{background:transparent;border:1px solid var(--line)}
+.investControl{min-width:170px}
+.holdingCell{display:flex;align-items:center;gap:10px}.holdingLogo{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:rgba(148,163,184,.12);font-weight:700;overflow:hidden}.holdingLogo img{width:100%;height:100%;object-fit:cover}
+.investDesktop tbody tr{height:64px}.investDesktop tbody tr:hover{background:rgba(59,130,246,.06)}.investAction{width:32px;height:32px;padding:0;display:inline-grid;place-items:center}
+.allocLegendItem{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}.allocLegendItem .dot{width:9px;height:9px;border-radius:50%;margin-top:6px}
+.acctCell{display:flex;align-items:center;gap:8px}.acctIcon{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(34,197,94,.12);color:#16a34a;font-size:12px}.totalRow td{font-weight:700;border-top:2px solid var(--line)}
+.chartEmpty{height:260px;border:1px dashed var(--line);border-radius:12px;display:grid;place-items:center;text-align:center;color:var(--muted)}.chartGrid{width:90%;height:120px;background:repeating-linear-gradient(to bottom, transparent 0 22px, rgba(148,163,184,.14) 22px 23px)}
+.investModal{max-width:460px}.investModalBody{overflow:auto;padding-right:2px}.investModalHead{position:sticky;top:0;background:var(--card);z-index:3;padding-bottom:8px}.investSearchWrap{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:0 10px}.investSearchInput{border:0;background:transparent}
+.investSuggestion{border-radius:12px;padding:10px 12px}.investSuggestion:hover{background:rgba(59,130,246,.07)}.investInnerCard{padding:10px;border-radius:12px}
+.investFormGrid.twoCol{grid-template-columns:1fr 1fr}.investFormGrid.threeCol{grid-template-columns:1fr 1fr 1fr}
+.investModalFooter{justify-content:space-between}
+.investRange.active{background:rgba(37,99,235,.14);color:#1d4ed8;border-color:#93c5fd}
+@media (max-width:900px){.investGridTop,.investGridBottom,.investFormGrid.twoCol,.investFormGrid.threeCol{grid-template-columns:1fr}.investKpiValue{font-size:28px}}
+
+
+/* Investments header polish */
+.investmentsHeader{padding:28px 32px; border-radius:20px; margin-bottom:22px; align-items:center; gap:28px}
+.investmentsHeaderIntro h2{font-size:30px; line-height:1.1; margin:0; color:var(--text)}
+.investmentsHeaderIntro .muted{margin-top:8px; font-size:14px}
+.investmentsHeaderActions{display:flex; flex-direction:column; align-items:stretch; gap:10px; min-width:380px; max-width:420px; width:100%}
+.investControl{width:100%; min-height:44px; border-radius:12px}
+.investHeaderButtons{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.investHeaderButtons .btn{min-height:40px; border-radius:12px; justify-content:center}
+.investBtnSecondary{background:var(--card)}
+@media (max-width:1024px){
+  .investmentsHeader{padding:22px; align-items:flex-start}
+  .investmentsHeaderActions{min-width:320px}
+}
+@media (max-width:768px){
+  .investmentsHeader{padding:20px; margin-bottom:18px}
+  .investmentsHeaderActions{min-width:100%; max-width:100%}
+  .investHeaderButtons{grid-template-columns:1fr 1fr}
+}
+@media (max-width:520px){
+  .investHeaderButtons{grid-template-columns:1fr}
+}
+
+/* Reference-style investments overhaul */
+.investRef{gap:16px}
+.investTop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.investTop h2{font-size:46px;line-height:1.1;margin:0 0 6px}
+.investTopActions{display:flex;align-items:center;gap:10px}
+.refCard{border:1px solid #e3e8f2;border-radius:14px;box-shadow:0 4px 18px rgba(15,23,42,.06);padding:16px;background:var(--card)}
+.investKpis{grid-template-columns:repeat(5,1fr);gap:10px}
+.investKpiValue{font-size:36px;font-weight:800}
+.investKpiBubble{background:#eaf1ff;color:#1f64e0}
+.investDesktop th,.investDesktop td{padding:12px 10px}
+.investDesktop tbody tr{border-bottom:1px solid #eef2f8}
+.allocWrap{grid-template-columns:1.2fr 1fr;align-items:center}
+.investGridTop{grid-template-columns:2.2fr 1fr}
+.investGridBottom{grid-template-columns:1.1fr 1.9fr}
+.refModal{width:min(430px,94vw);border-radius:16px;box-shadow:0 22px 48px rgba(2,8,23,.25)}
+.investModalBody{padding:4px 2px 0}
+.investSuggestion{background:#fff;border:1px solid #e5ebf5}
+.investTop .investControl{width:190px;min-height:42px}
+.investTop .investBtnSecondary,.investTop .investBtnPrimary{min-height:42px;padding:0 16px;border-radius:10px;color:#fff}
+.investBtnPrimary{background:#1d67f0;border-color:#1d67f0;color:#fff}
+.investBtnSecondary{background:#16a34a;border-color:#16a34a;color:#fff}
+@media (max-width:1200px){.investTop h2{font-size:36px}.investKpiValue{font-size:30px}}
+@media (max-width:900px){.investTop{flex-direction:column}.investTopActions{width:100%;display:grid;grid-template-columns:1fr 1fr}.investTopActions .investControl{grid-column:1/-1;width:100%}.investGridTop,.investGridBottom,.allocWrap{grid-template-columns:1fr}.investKpis{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:520px){.investTopActions{grid-template-columns:1fr}.investKpis{grid-template-columns:1fr}}
+body:not(.light) .refCard{border-color:#2a3344;box-shadow:none}
+body:not(.light) .investSuggestion{background:#172032;border-color:#2a3344}
+
+/* Investments responsive layout safeguards */
+.investRef,.investmentsPage{width:100%;max-width:100%;min-width:0;overflow-x:hidden;box-sizing:border-box}
+.investRef .card,.investRef .refCard{max-width:100%;min-width:0;box-sizing:border-box}
+.investKpis,.investGridTop,.investGridBottom{min-width:0}
+.investGridTop{grid-template-columns:minmax(0,2.2fr) minmax(320px,1fr)}
+.investGridBottom{grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr)}
+.investTopActions{flex-wrap:wrap}
+.investDesktop{display:block;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+
+@media (max-width:1279px){
+  .investTop{align-items:flex-start}
+  .investTopActions{width:100%;justify-content:flex-start}
+  .investTopActions .investControl{min-width:220px}
+  .investKpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .investGridTop,.investGridBottom{grid-template-columns:1fr}
+  .allocWrap{grid-template-columns:minmax(260px,360px) minmax(0,1fr);align-items:center}
+}
+
+@media (max-width:900px){
+  .investKpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .allocWrap{grid-template-columns:1fr}
+  .allocChart{margin:0 auto}
+}
+
+@media (max-width:520px){
+  .investKpis{grid-template-columns:1fr}
+}
+.mobileAddModal{max-width:535px;width:100%;padding:0;border-radius:0;overflow:hidden;background:#fff}
+.addHoldTop{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 2px}.iconPlain{background:transparent;border:0;font-size:34px;line-height:1;color:#222;padding:2px 4px}
+.addHoldTitle{font-size:38px;font-weight:800;padding:8px 24px 16px;color:#222}
+.mobileSearch{margin:0 22px 12px;background:#fff;border:1px solid #dedede;border-radius:10px;min-height:40px}
+.popularLabel{padding:10px 22px;background:#f2f2f2;font-weight:700;color:#727272;font-size:30px}
+.mobileSuggestions{max-height:360px;overflow:auto}.mobileSugRow{width:100%;display:flex;justify-content:space-between;align-items:center;padding:18px 14px;border-bottom:1px solid #ececec;background:#fff;color:#202020}
+.pillNeutral{background:#f6e5e7;color:#d54a50;padding:6px 14px;border-radius:999px;font-weight:600}
+.selectedCompact{display:flex;justify-content:space-between;align-items:center;padding:10px 24px 14px;border-bottom:1px solid #e8e8e8}
+.fieldLabel{display:block;padding:14px 24px 8px;font-size:35px;font-weight:700;color:#222}.mobileAddModal .input,.mobileAddModal select{margin:0 24px;width:calc(100% - 48px);min-height:44px;border-radius:10px;border:1px solid #d8d8d8;background:#fff}
+.mobileFooter{display:flex;justify-content:flex-end;gap:12px;padding:18px 18px 16px;border-top:1px solid #ececec;margin-top:16px}.mobileFooter .btn{height:36px;border-radius:12px}.savePeach{background:#f4a889;border-color:#f4a889;color:white}
+@media (max-width:700px){.mobileAddModal{max-width:100vw;height:100vh}.addHoldTitle{font-size:34px}.fieldLabel{font-size:32px}.popularLabel{font-size:26px}}
+
+.fieldHelp{padding:6px 24px 2px;font-size:12px;color:#657184}
+
+
+.holdingLogo{box-shadow:0 1px 3px rgba(15,23,42,.12)}
+.holdingLogo span{font-size:12px;font-weight:800;letter-spacing:.2px}
+.logoBadgeDefault{background:linear-gradient(135deg,#eef2ff,#e2e8f0);color:#1f2937}
+.logoBadgeAapl{background:linear-gradient(135deg,#111827,#374151);color:#fff}
+.logoBadgeMsft{background:conic-gradient(from 0deg,#f35325 0 25%,#81bc06 25% 50%,#05a6f0 50% 75%,#ffba08 75% 100%);color:#111}
+.logoBadgeGoog{background:linear-gradient(135deg,#4285f4,#34a853);color:#fff}
+.logoBadgeTsla{background:linear-gradient(135deg,#7f1d1d,#ef4444);color:#fff}
+.logoBadgeNvda{background:linear-gradient(135deg,#14532d,#22c55e);color:#fff}
+.logoBadgeShop{background:linear-gradient(135deg,#166534,#4ade80);color:#fff}
+.logoBadgeRy{background:linear-gradient(135deg,#1d4ed8,#f59e0b);color:#fff}
+.logoBadgeTd{background:linear-gradient(135deg,#166534,#22c55e);color:#fff}
+.logoBadgeVfv{background:linear-gradient(135deg,#1e3a8a,#38bdf8);color:#fff}
+.logoBadgeXeqt{background:linear-gradient(135deg,#111827,#6b7280);color:#fff}
+body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#334155);color:#f8fafc}
+
+/* Investments page should scroll fully inside Utilities shell */
+.toolsPageBody > .investmentsPage,
+.toolsPageBody .investmentsPage {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  padding-bottom: 28px;
+}
+
+.toolsPageBody .investmentsPage::-webkit-scrollbar { width: 10px; }
+.toolsPageBody .investmentsPage::-webkit-scrollbar-thumb { background: rgba(148,163,184,.35); border-radius: 999px; }
+.toolsPageBody .investmentsPage::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 960px) {
+  .toolsPageBody > .investmentsPage,
+  .toolsPageBody .investmentsPage {
+    height: auto;
+    overflow: visible;
+    padding-right: 0;
+    padding-bottom: 14px;
+  }
+}
+
+.holdingCellAlign{justify-content:flex-start;text-align:left}
+.holdingCellAlign > div{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.actionsMenuWrap{position:relative;display:flex;justify-content:flex-end}
+.menuDots{font-size:20px;line-height:1;min-width:32px}
+.actionsMenu{position:absolute;top:36px;right:0;z-index:20;background:color-mix(in srgb, var(--card) 96%, #ffffff 4%);opacity:1;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 22px rgba(15,23,42,.18);min-width:130px;padding:6px}
+.actionsMenu button{width:100%;background:transparent;border:0;color:inherit;text-align:left;padding:8px 10px;border-radius:8px;display:flex;align-items:center;gap:8px}
+.actionsMenu button:hover{background:rgba(148,163,184,.14)}
+.actionsMenu .dangerText{color:#dc2626}
+
+/* Stabilize Investments header button hover states */
+.investTop .investBtnPrimary,
+.investTop .investBtnSecondary {
+  transition: background-color .15s ease, border-color .15s ease, filter .15s ease;
+}
+.investTop .investBtnPrimary:hover,
+.investTop .investBtnPrimary:focus-visible,
+.investTop .investBtnPrimary:active {
+  background:#1c5dd8;
+  border-color:#1c5dd8;
+  color:#fff;
+}
+.investTop .investBtnSecondary:hover,
+.investTop .investBtnSecondary:focus-visible,
+.investTop .investBtnSecondary:active {
+  background:#15803d;
+  border-color:#15803d;
+  color:#fff;
+}
+.investTop .investBtnPrimary:disabled,
+.investTop .investBtnSecondary:disabled {
+  opacity:.6;
+  cursor:not-allowed;
+  filter:none;
+}
+
+
+/* Investments full responsive pass */
+.investmentsPage,
+.investRef,
+.investGridTop,
+.investGridBottom{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.investRef .card,
+.investRef .refCard{
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.investKpis{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  width:100%;
+  max-width:100%;
+}
+
+.investKpi,
+.investKpiValue,
+.investKpiLabel{
+  min-width:0;
+}
+
+.investKpiValue{
+  overflow-wrap:anywhere;
+}
+
+.investTopActions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.investDesktop{
+  display:block;
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+
+@media (max-width:1439px){
+  .investTop{align-items:flex-start}
+  .investTopActions{width:100%;justify-content:flex-start}
+  .investTopActions .investControl{min-width:220px;max-width:100%}
+
+  .investKpis{grid-template-columns:repeat(3,minmax(0,1fr)) !important}
+
+  .investGridTop,
+  .investGridBottom{grid-template-columns:1fr !important}
+
+  .investGridTop > .card.refCard:nth-child(1),
+  .investGridTop > .card.refCard:nth-child(2){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+
+  .allocWrap{
+    grid-template-columns:minmax(260px,380px) minmax(0,1fr);
+    gap:24px;
+    align-items:center;
+  }
+}
+
+@media (max-width:1099px){
+  .investKpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+
+@media (max-width:900px){
+  .allocWrap{grid-template-columns:1fr !important}
+  .allocChart{display:flex;justify-content:center;width:100%;max-width:100%;overflow:hidden}
+}
+
+@media (max-width:767px){
+  .investKpis{grid-template-columns:1fr !important}
+}
+
+/* Premium Add Holding modal redesign */
+.idleModalBackdrop{backdrop-filter:blur(10px);background:rgba(10,16,30,.55)}
+.mobileAddModal{max-width:520px!important;width:min(520px,92vw)!important;max-height:90vh;border-radius:28px!important;border:1px solid #e6ebf3;box-shadow:0 30px 70px rgba(2,8,23,.30)!important;background:#fff!important;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none;padding:8px}
+.mobileAddModal::-webkit-scrollbar{display:none}
+.addHoldTop{padding:22px 24px 4px}.iconPlain{width:42px;height:42px;border-radius:999px;display:grid;place-items:center;font-size:26px;color:#0f172a}
+.addHoldTitle{text-align:center;font-size:26px;font-weight:800;padding:0 24px 18px;color:#0f172a}
+.mobileSearch{margin:0 24px 14px;min-height:56px;border-radius:10px;border:1px solid color-mix(in srgb, var(--line) 68%, transparent);background:transparent}
+.investSearchWrap svg{opacity:.65}
+.popularLabel{padding:8px 22px;background:color-mix(in srgb, var(--panel) 88%, var(--line) 12%);font-size:14px;color:var(--muted);font-weight:700}
+.mobileSuggestions{margin:0 8px;overflow:auto;background:transparent;border:none;border-radius:8px;scrollbar-width:none;-ms-overflow-style:none}
+.mobileSuggestions::-webkit-scrollbar{display:none}
+.pickerRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;min-height:74px;border:none;border-bottom:1px solid color-mix(in srgb, var(--line) 62%, transparent);border-radius:0;box-shadow:none;background:transparent;color:var(--text);appearance:none;-webkit-appearance:none}
+.pickerRow:last-child{border-bottom:none}
+.pickerLeft{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.pickerText{min-width:0}
+.pickerText strong{display:block;text-align:left;font-size:16px;line-height:1.2;color:var(--text)}
+.pickerName{text-align:left;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;margin-top:4px}
+.pickerRight{display:grid;grid-template-columns:auto auto;gap:10px;align-items:center;flex:0 0 auto}
+.pickerPrice{font-size:15px;color:var(--text);text-align:right;white-space:nowrap}
+.pickerChange{font-size:13px;font-weight:700;padding:6px 10px;border-radius:999px;min-width:68px;text-align:center}
+.pickerChange.pos{color:#0f8a44;background:rgba(34,197,94,.16)}
+.pickerChange.neg{color:#b42318;background:rgba(239,68,68,.15)}
+.pickerChange.na{color:var(--muted);background:rgba(148,163,184,.18)}
+.investNoResults{padding:16px;color:var(--muted);display:grid;gap:4px}
+@media (max-width:640px){.pickerRight{grid-template-columns:1fr}.pickerPrice{font-size:15px}.pickerChange{font-size:13px;justify-self:end}}
+.mobileSugRow{padding:0;border:none;outline:none;box-shadow:none;background:transparent}
+.mobileSugRow.isSelected{background:color-mix(in srgb, var(--panel) 86%, #dbeafe 14%)}
+.chevron{font-size:30px;color:var(--muted)}
+.selectedCheck{width:36px;height:36px;border-radius:999px;background:#2563eb;color:#fff;display:grid;place-items:center;font-size:20px}
+.selectedCompact{margin:16px 24px 0;border:1px solid #e2e8f2;border-radius:20px;padding:16px 18px;box-shadow:0 6px 14px rgba(2,8,23,.08);background:#fff}
+.dayGain{color:#16a34a;font-weight:700}
+.fieldLabel{font-size:13px!important;padding:14px 24px 8px!important;color:#0f172a}
+.inputWithSuffix,.currencyWrap,.accountSelectWrap{margin:0 24px;position:relative}
+.inputWithSuffix .input,.currencyWrap .input,.accountSelectWrap .input{margin:0!important;width:100%!important;min-height:54px!important;border-radius:14px!important}
+.inputWithSuffix span{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+
+.acctGlyph{position:absolute;left:14px;top:50%;transform:translateY(-50%);z-index:1;color:#2563eb}
+.accountSelectWrap .input{padding-left:34px}
+
+.newManualAccountWrap{margin:10px 24px 0}
+.newManualAccountToggle{width:100%;display:flex;align-items:center;justify-content:space-between;border:none;background:transparent;color:#2563eb;font-weight:700;padding:0 0 8px;cursor:pointer}
+.investManualAccountCard{padding:12px;border-radius:12px;background:#f8fbff;border:1px solid #dbe7ff;display:grid;gap:8px}
+.investManualAccountCard .fieldLabel{margin:0;color:#0f172a;font-size:12px}
+.investManualAccountCard .input{margin:0!important;min-height:42px!important;border-radius:8px!important}
+.newManualAccountActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px}
+.newManualAccountCancel{background:#fff;color:#2563eb;border-color:#9fb8ff}
+.newManualAccountSave{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
+.mobileFooter{position:sticky;bottom:0;background:#fff;padding:18px 24px 22px;border-top:1px solid #e6ebf3}
+.mobileFooter .btn{height:52px;border-radius:14px;padding:0 16px;min-width:88px;flex:0 0 auto}
+.mobileFooter .btn:first-child{background:#f1f5f9;color:#0f172a;border-color:transparent}
+.mobileFooter .btn:last-child{background:#1d67f0;border-color:#1d67f0;color:#fff}
+@media (max-width:640px){.mobileAddModal{width:94vw!important;max-height:92vh}.addHoldTitle{font-size:24px}}
+.investTrendCard{border-radius:24px;padding:28px;box-shadow:0 16px 40px rgba(15,23,42,.08)}
+.investTrendHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:10px}
+.investTrendTitle{font-size:34px;display:flex;align-items:center;gap:8px}
+.investTrendBadge{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;border-radius:999px;width:fit-content}
+.investTrendBadge.pos{background:rgba(22,163,74,.12);color:#15803d}.investTrendBadge.neg{background:rgba(220,38,38,.12);color:#b91c1c}
+.investTrendBadge span{color:var(--muted);font-weight:500}
+.investTrendLegend{display:flex;justify-content:center;gap:30px;margin-top:8px}.investTrendLegend i{display:inline-block;width:36px;height:0;border-top:3px solid #1d4ed8;margin-right:8px;vertical-align:middle}.investTrendLegend i.dash{border-top:2px dashed #94a3b8}
+.investTrendSummary{margin-top:16px;background:rgba(148,163,184,.1);border-radius:16px;padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.investTrendSummary div{padding:0 10px}.investTrendSummary small{color:var(--muted);display:block}.investTrendSummary strong{font-size:30px}
+.investChartTooltip{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,.16);padding:12px 14px;min-width:240px}.investChartTooltipDate{font-weight:700;margin-bottom:8px}.investChartTooltipRow{display:flex;justify-content:space-between;gap:12px;margin:4px 0}.investChartTooltipDivider{height:1px;background:var(--line);margin:8px 0}
+@media (max-width:900px){.investTrendHead{flex-direction:column}.investTrendRanges{flex-wrap:wrap}.investTrendTitle{font-size:26px}.investTrendSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}

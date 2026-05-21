@@ -1,0 +1,241 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { ChevronDown, ChevronUp, Info, Layers, Pencil, Plus, RefreshCw, Search, Trash2, TrendingUp, Wallet } from 'lucide-react'
+import { Area, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { supabase } from '../lib/supabase'
+import { getBatchQuotes, searchSecurities, STATIC_SECURITIES, type SecuritySuggestion } from '../services/marketData'
+import { HoldingLogo } from './investments/HoldingLogo'
+import { getCompanyLogoUrl } from '../utils/companyLogos'
+
+type Account = { id: string; name: string; type: string; provider: string | null }
+type Holding = { id: string; account_id: string | null; symbol: string; company_name: string; exchange: string | null; quantity: number; average_cost: number; current_price: number; previous_close: number | null; currency: string; notes: string | null; last_price_updated_at: string | null; logo_url?: string | null; domain?: string | null }
+type Snapshot = { date_key: string; total_value: number; total_cost: number; gain_loss?: number; return_percent?: number }
+const RANGE = { '1M': 31, '3M': 92, '6M': 183, '1Y': 366 }
+const ACCOUNT_TYPES = ['TFSA', 'RRSP', 'FHSA', 'RESP', 'Non-Registered', 'Crypto', 'Other']
+const COLORS = ['#2563eb', '#22c55e', '#7c3aed', '#f59e0b', '#36c2d6']
+const money = (v: number, c = 'CAD') => new Intl.NumberFormat(undefined, { style: 'currency', currency: c === 'USD' ? 'USD' : 'CAD' }).format(Number.isFinite(v) ? v : 0)
+const pct = (v: number) => `${v >= 0 ? '+' : ''}${(Number.isFinite(v) ? v : 0).toFixed(2)}%`
+
+type ModalSecurityRow = SecuritySuggestion & { changeText?: string; changeValue?: number | null }
+const POPULAR_SECURITY_PRESETS: ModalSecurityRow[] = [
+  { symbol: 'USD-USD', companyName: 'U S Dollar', exchange: 'FOREX', currency: 'USD', fallbackPrice: 1, changeText: 'N/A', domain: undefined, logo_url: '' },
+  { symbol: 'SPAXX', companyName: 'Fidelity Hereford Street Trust - Fidelity Government Money Market', exchange: 'MUTF', currency: 'USD', fallbackPrice: 1, changeText: 'N/A', domain: undefined, logo_url: '' },
+  { symbol: 'VTI', companyName: 'Vanguard Total Stock Market ETF', exchange: 'NYSEARCA', currency: 'USD', fallbackPrice: 363.63, changeText: '0.99%', changeValue: 0.99, domain: 'vanguard.com', logo_url: '' },
+  { symbol: 'VOO', companyName: 'Vanguard S&P 500 ETF', exchange: 'NYSEARCA', currency: 'USD', fallbackPrice: 680.62, changeText: '0.89%', changeValue: 0.89, domain: 'vanguard.com', logo_url: '' },
+  { symbol: 'VMFXX', companyName: 'Vanguard Federal Money Market Fund', exchange: 'MUTF', currency: 'USD', fallbackPrice: 1, changeText: 'N/A', domain: undefined, logo_url: '' },
+]
+
+export function InvestmentsView() {
+  const [accounts, setAccounts] = useState<Account[]>([]); const [holdings, setHoldings] = useState<Holding[]>([]); const [snapshots, setSnapshots] = useState<Snapshot[]>([])
+  const [accountFilter, setAccountFilter] = useState('all'); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Holding | null>(null); const [refreshing, setRefreshing] = useState(false)
+  const [search, setSearch] = useState(''); const [suggestions, setSuggestions] = useState<SecuritySuggestion[]>([]); const [selected, setSelected] = useState<SecuritySuggestion | null>(null)
+  const [showNewAccount, setShowNewAccount] = useState(false); const [note, setNote] = useState(''); const [quantity, setQuantity] = useState(''); const [averageCost, setAverageCost] = useState(''); const [accountId, setAccountId] = useState('')
+  const [range, setRange] = useState<'1M'|'3M'|'6M'|'YTD'|'1Y'|'All'>('1Y'); const [newAccount, setNewAccount] = useState({ type: 'TFSA', name: '', provider: '' }); const [userId, setUserId] = useState<string | null>(null); const [openActionId, setOpenActionId] = useState<string | null>(null); const [holdingToDelete, setHoldingToDelete] = useState<Holding | null>(null); const [isDeletingHolding, setIsDeletingHolding] = useState(false); const [isLoadingInvestments, setIsLoadingInvestments] = useState(false); const [investmentError, setInvestmentError] = useState<string | null>(null); const [authInvalid, setAuthInvalid] = useState(false)
+  const safeHoldings = Array.isArray(holdings) ? holdings : []; const safeAccounts = Array.isArray(accounts) ? accounts : []; const safeSnapshots = Array.isArray(snapshots) ? snapshots : []
+  const popularRows = useMemo(() => {
+    const fromPresets = POPULAR_SECURITY_PRESETS.map((item) => ({ ...item, logo_url: getCompanyLogoUrl(item) || item.logo_url || '' }))
+    const symbols = new Set(fromPresets.map((x) => x.symbol))
+    const fromStatic = STATIC_SECURITIES.filter((item) => ['AAPL','MSFT','GOOGL','TSLA','NVDA','SHOP.TO','RY.TO','TD.TO','BNS.TO','VFV.TO','XEQT.TO'].includes(item.symbol) && !symbols.has(item.symbol))
+      .map((item) => ({ ...item, changeText: 'N/A', changeValue: null, logo_url: getCompanyLogoUrl(item) || item.logo_url || '' }))
+    return [...fromPresets, ...fromStatic]
+  }, [])
+  const modalRows = useMemo(() => {
+    if (!search.trim()) return popularRows
+    return suggestions.map((sec) => ({ ...sec, changeText: 'N/A', changeValue: null, logo_url: sec.logo_url || sec.logoUrl || getCompanyLogoUrl(sec) || '' }))
+  }, [search, suggestions, popularRows])
+
+  const resolveMeta = (symbol?: string | null) => {
+    const match = STATIC_SECURITIES.find((x) => x.symbol === (symbol || '').toUpperCase())
+    return { domain: match?.domain || null, logo_url: match?.logo_url || null }
+  }
+
+  const isInvalidRefreshTokenError = (error: unknown) => /invalid refresh token|refresh token not found/i.test(String((error as { message?: string })?.message || error || ''))
+
+  const handleInvalidSession = useCallback(async () => {
+    setAuthInvalid(true)
+    setAccounts([])
+    setHoldings([])
+    setSnapshots([])
+    setInvestmentError('Your session expired. Please sign in again.')
+    try { await supabase.auth.signOut({ scope: 'local' }) } catch {}
+    window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Your session expired. Please sign in again.' } }))
+  }, [])
+
+  const upsertSnapshot = async (uid: string | null, nextHoldings: Holding[]) => {
+    if (!uid || authInvalid) return
+    const total_value = Number(nextHoldings.reduce((sum, h) => sum + Number(h.quantity || 0) * Number(h.current_price || 0), 0) || 0)
+    const total_cost = Number(nextHoldings.reduce((sum, h) => sum + (Number(h.average_cost || 0) > 0 ? Number(h.quantity || 0) * Number(h.average_cost || 0) : 0), 0) || 0)
+    const gain_loss = Number(total_value - total_cost || 0)
+    const return_percent = Number(total_cost > 0 ? (gain_loss / total_cost) * 100 : 0)
+    const snapshotPayload = { user_id: uid, date_key: new Date().toISOString().slice(0, 10), total_value, total_cost, gain_loss, return_percent, updated_at: new Date().toISOString() }
+    if (import.meta.env.DEV) console.log('Upserting investment snapshot:', snapshotPayload)
+    await supabase.from('investment_value_snapshots').upsert(snapshotPayload, { onConflict: 'user_id,date_key' })
+  }
+
+  const load = async (uid: string | null = userId) => {
+    if (!uid || authInvalid) { setAccounts([]); setHoldings([]); setSnapshots([]); return }
+    setIsLoadingInvestments(true)
+    setInvestmentError(null)
+    const [a,h,s] = await Promise.all([supabase.from('investment_accounts').select('*').eq('user_id', uid).order('created_at', { ascending: false }),supabase.from('investment_holdings').select('*, investment_accounts(id, name, type, provider)').eq('user_id', uid).order('created_at', { ascending: false }),supabase.from('investment_value_snapshots').select('*').eq('user_id', uid).order('date_key', { ascending: true })])
+    if (a.error || h.error || s.error) {
+      const firstError = a.error || h.error || s.error
+      if (isInvalidRefreshTokenError(firstError)) { await handleInvalidSession(); setIsLoadingInvestments(false); return }
+      console.error('Failed to load investments:', firstError)
+      setAccounts([]); setHoldings([]); setSnapshots([]); setInvestmentError('Failed to load investments. Please refresh.')
+      setIsLoadingInvestments(false)
+      return
+    }
+    const safeAccountsData = Array.isArray(a.data) ? (a.data as Account[]) : []
+    const safeHoldingsData = Array.isArray(h.data) ? (h.data as Holding[]) : []
+    const safeSnapshotsData = Array.isArray(s.data) ? (s.data as Snapshot[]) : []
+    setAccounts(safeAccountsData); setHoldings(safeHoldingsData); setSnapshots(safeSnapshotsData)
+    if (import.meta.env.DEV) console.log('Investment snapshots loaded:', safeSnapshotsData)
+    if (safeHoldingsData.length > 0 && safeSnapshotsData.length === 0) await upsertSnapshot(uid, safeHoldingsData)
+    setIsLoadingInvestments(false)
+  }
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser()
+        if (error) throw error
+        const id = data.user?.id ?? null
+        setUserId(id)
+        if (!id) { setAccounts([]); setHoldings([]); setSnapshots([]); return }
+        await load(id)
+      } catch (error) {
+        if (isInvalidRefreshTokenError(error)) { await handleInvalidSession(); return }
+        console.error('Failed to initialize investments auth:', error)
+      }
+    }
+    void init()
+  }, [handleInvalidSession])
+  useEffect(() => { void searchSecurities(search).then(setSuggestions) }, [search])
+  const merged = useMemo(() => safeHoldings.map((h) => { const hasCostBasis = Number(h.average_cost) > 0; const totalCost = hasCostBasis ? h.quantity * h.average_cost : 0; const marketValue = h.quantity * h.current_price; const gainLoss = hasCostBasis ? (marketValue - totalCost) : null; const returnPercent = hasCostBasis && totalCost > 0 ? ((marketValue - totalCost) / totalCost) * 100 : null; return { ...h, hasCostBasis, totalCost, marketValue, gainLoss, returnPercent, account: safeAccounts.find((a) => a.id === h.account_id) || null, logo_url: getCompanyLogoUrl({ symbol: h.symbol, logo_url: h.logo_url, domain: h.domain || resolveMeta(h.symbol).domain }), domain: h.domain || resolveMeta(h.symbol).domain } }), [safeHoldings, safeAccounts])
+  const filtered = useMemo(() => merged.filter((h) => accountFilter === 'all' || h.account_id === accountFilter), [merged, accountFilter])
+  const totals = useMemo(() => { const portfolioValue = filtered.reduce((s, h) => s + h.marketValue, 0); const portfolioCost = filtered.reduce((s, h) => s + h.totalCost, 0); const portfolioGainLoss = portfolioValue - portfolioCost; const portfolioReturnPercent = portfolioCost > 0 ? portfolioGainLoss / portfolioCost * 100 : 0; return { portfolioValue, portfolioCost, portfolioGainLoss, portfolioReturnPercent } }, [filtered])
+  const normalizedSnapshots = useMemo(() => safeSnapshots.map((s) => ({ date: s.date_key, value: Number(s.total_value || 0), cost: Number(s.total_cost || 0), gainLoss: Number((s as any).gain_loss || 0), returnPercent: Number((s as any).return_percent || 0) })), [safeSnapshots])
+  const chartData = useMemo(() => { if (range === 'All') return normalizedSnapshots; const now = new Date(); const start = new Date(now); if (range === 'YTD') start.setMonth(0,1); else start.setDate(start.getDate() - RANGE[range]); return normalizedSnapshots.filter((x) => new Date(x.date) >= start) }, [range, normalizedSnapshots])
+
+  const chartSeriesData = useMemo(() => {
+    if (range !== '1Y') return chartData.map((point) => ({ ...point, label: point.date }))
+    const now = new Date()
+    const year = now.getFullYear()
+    const byMonth = new Map<number, { value: number; cost: number }>()
+    chartData.forEach((point) => {
+      const d = new Date(point.date)
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === year) byMonth.set(d.getMonth(), { value: Number(point.value || 0), cost: Number(point.cost || 0) })
+    })
+    let carryValue = 0
+    let carryCost = 0
+    return Array.from({ length: 12 }).map((_, month) => {
+      const found = byMonth.get(month)
+      if (found) { carryValue = found.value; carryCost = found.cost }
+      const date = new Date(year, month, 1).toISOString().slice(0, 10)
+      return { date, label: date, value: carryValue, cost: carryCost }
+    })
+  }, [chartData, range])
+
+  const periodStats = useMemo(() => {
+    if (chartSeriesData.length < 2) return null
+    const first = chartSeriesData[0]
+    const last = chartSeriesData[chartSeriesData.length - 1]
+    const beginningValue = Number(first.value || 0)
+    const endingValue = Number(last.value || 0)
+    const netGain = endingValue - beginningValue
+    const totalReturn = beginningValue > 0 ? (netGain / beginningValue) * 100 : 0
+    return { beginningValue, endingValue, netGain, totalReturn }
+  }, [chartSeriesData])
+
+
+
+  const chartXAxisTicks = useMemo(() => {
+    if (!chartSeriesData.length) return undefined
+    if (range === '1M') return undefined
+    const seen = new Set<string>()
+    const ticks: string[] = []
+    for (const point of chartSeriesData) {
+      const d = new Date(point.date)
+      if (Number.isNaN(d.getTime())) continue
+      const key = `${d.getFullYear()}-${d.getMonth()}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        ticks.push(point.date)
+      }
+    }
+    return ticks.length ? ticks : undefined
+  }, [chartSeriesData, range])
+
+  const formatChartDate = (dateKey: string) => {
+    const d = new Date(dateKey)
+    if (Number.isNaN(d.getTime())) return dateKey
+    if (range === '1M') return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    return d.toLocaleDateString(undefined, { month: 'short' })
+  }
+
+  const PortfolioTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null
+    const value = Number(payload.find((p: any) => p.dataKey === 'value')?.value || 0)
+    const cost = Number(payload.find((p: any) => p.dataKey === 'cost')?.value || 0)
+    const gain = value - cost
+    const ret = cost > 0 ? (gain / cost) * 100 : 0
+    return <div className='investChartTooltip'>
+      <div className='investChartTooltipDate'>{formatChartDate(String(label))}</div>
+      <div className='investChartTooltipRow'><span>Portfolio Value</span><strong>{money(value)}</strong></div>
+      <div className='investChartTooltipRow'><span>Total Cost</span><strong>{money(cost)}</strong></div>
+      <div className='investChartTooltipDivider' />
+      <div className='investChartTooltipRow'><span>Gain / Loss</span><strong className={gain>=0?'pos':'neg'}>{money(gain)}</strong></div>
+      <div className='investChartTooltipRow'><span>Return %</span><strong className={ret>=0?'pos':'neg'}>{pct(ret)}</strong></div>
+    </div>
+  }
+  const resetModal = () => { setSearch(''); setSuggestions([]); setSelected(null); setQuantity(''); setAverageCost(''); setAccountId(''); setNote(''); setShowNewAccount(false); setEditing(null) }
+  const openEdit = (h: Holding) => { setEditing(h); setSelected({ symbol: h.symbol, companyName: h.company_name, exchange: h.exchange || '', currency: (h.currency as 'CAD'|'USD') || 'CAD', fallbackPrice: h.current_price, logoUrl: getCompanyLogoUrl({ symbol: h.symbol, logo_url: h.logo_url, domain: h.domain || resolveMeta(h.symbol).domain }), domain: h.domain || resolveMeta(h.symbol).domain || undefined }); setQuantity(String(h.quantity)); setAverageCost(String(h.average_cost)); setAccountId(h.account_id || ''); setNote(h.notes || ''); setOpen(true) }
+  const saveAccount = async () => { if (!newAccount.name.trim() || !userId) return; const { data, error } = await supabase.from('investment_accounts').insert({ user_id: userId, name: newAccount.name.trim(), type: newAccount.type, provider: newAccount.provider?.trim() || null, notes: null }).select('*').single(); if (error || !data) { console.error('Investment account save failed:', error); return window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: error?.message || 'Failed to save account.' } })) } setAccounts((cur) => [data as Account, ...cur]); setAccountId((data as Account).id); setShowNewAccount(false); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Account added.' } })) }
+  const saveHolding = async () => { if (!userId || !selected || !accountId || Number(quantity) <= 0) return; const fallbackPrice = Number(selected.fallbackPrice || 0); const resolvedAverageCost = averageCost.trim() === '' ? fallbackPrice : Number(averageCost); if (averageCost.trim() === '' && fallbackPrice <= 0) { window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Enter average cost or refresh/select a holding with a valid current price.' } })); return } if (!Number.isFinite(resolvedAverageCost) || resolvedAverageCost <= 0) { window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Average cost must be greater than 0.' } })); return } const payload = { user_id: userId, account_id: accountId, symbol: selected.symbol, company_name: selected.companyName, exchange: selected.exchange || null, quantity: Number(quantity), average_cost: resolvedAverageCost, current_price: fallbackPrice, previous_close: 0, currency: selected.currency || 'CAD', notes: note?.trim() || null, last_price_updated_at: new Date().toISOString(), logo_url: selected.logo_url || selected.logoUrl || getCompanyLogoUrl({ symbol: selected.symbol, logo_url: selected.logoUrl, domain: selected.domain }), domain: selected.domain || resolveMeta(selected.symbol).domain || null }; const save = async (body: Record<string, unknown>) => editing ? supabase.from('investment_holdings').update(body).eq('id', editing.id) : supabase.from('investment_holdings').insert(body); let { error } = await save(payload); if (error && /column .*domain|column .*logo_url|schema cache/i.test(error.message || '')) { const { domain, logo_url, ...fallbackPayload } = payload; ({ error } = await save(fallbackPayload)) } if (error) { console.error('Failed to save holding:', error); return window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: error.message || 'Failed to save holding.' } })) }
+    const nextHolding = { ...payload, id: editing?.id || 'temp' } as unknown as Holding
+    const nextHoldings = editing ? safeHoldings.map((h) => h.id === editing.id ? nextHolding : h) : [...safeHoldings, nextHolding]
+    await upsertSnapshot(userId, nextHoldings)
+    setOpen(false); resetModal(); void load(); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: editing ? 'Holding updated.' : 'Holding added.' } })) }
+  const deleteHolding = async () => { if (!holdingToDelete || !userId || isDeletingHolding) return; setIsDeletingHolding(true); const { error } = await supabase.from('investment_holdings').delete().eq('id', holdingToDelete.id).eq('user_id', userId); if (error) { console.error('Failed to delete holding:', error); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Failed to delete holding.' } })); setIsDeletingHolding(false); return } await upsertSnapshot(userId, safeHoldings.filter((h) => h.id !== holdingToDelete.id)); setHoldingToDelete(null); setIsDeletingHolding(false); void load(); window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Holding deleted.' } })) }
+  const refreshPrices = async () => { if (!userId || authInvalid || !safeHoldings.length) return; const apiKey = import.meta.env.VITE_TWELVE_DATA_API_KEY; if (import.meta.env.DEV) console.log('Twelve Data key configured:', Boolean(import.meta.env.VITE_TWELVE_DATA_API_KEY)); if (!apiKey || !String(apiKey).trim()) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } setRefreshing(true); try { const symbols = [...new Set(safeHoldings.map((h) => h.symbol))]; const result = await getBatchQuotes(symbols); const realQuotes = result.quotes.filter((q) => !q.isEstimated); const quoteBy = new Map(realQuotes.map((q) => [q.symbol, q])); if (!realQuotes.length) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } const updates = await Promise.all(safeHoldings.map((h) => { const q = quoteBy.get(h.symbol); if (!q) return Promise.resolve({ error: null, updated: false }); return supabase.from('investment_holdings').update({ current_price: q.price, previous_close: q.previousClose, currency: q.currency, last_price_updated_at: q.timestamp }).eq('id', h.id).eq('user_id', userId).select('id').limit(1) })); const updatedCount = updates.reduce((count, res) => count + ((res as any)?.data?.length ? 1 : 0), 0); if (updatedCount === 0) { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Price refresh is not configured yet.'}})); return } const pValue = merged.reduce((sum,h)=>sum + (quoteBy.get(h.symbol)?.price ?? h.current_price) * h.quantity, 0); const pCost = merged.reduce((sum,h)=>sum + h.totalCost,0); if (userId) { const safeValue = Number(pValue || 0); const safeCost = Number(pCost || 0); const safeGain = Number(safeValue - safeCost || 0); const safeReturn = Number(safeCost>0?((safeGain)/safeCost)*100:0); const snapshotPayload = { user_id: userId, date_key: new Date().toISOString().slice(0,10), total_value: safeValue, total_cost: safeCost, gain_loss: safeGain, return_percent: safeReturn, updated_at: new Date().toISOString() }; if (import.meta.env.DEV) console.log('Upserting investment snapshot:', snapshotPayload); await supabase.from('investment_value_snapshots').upsert(snapshotPayload, { onConflict: 'user_id,date_key' }); } await load(); window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Prices updated.'}})) } catch { window.dispatchEvent(new CustomEvent('budgetly:toast',{detail:{message:'Could not update prices.'}})) } finally { setRefreshing(false) } }
+
+  return <section className='investmentsPage investRef'>
+    <header className='investTop'><div><h2>Investments</h2><p className='muted'>Track your holdings, accounts, and portfolio performance manually.</p></div><div className='investTopActions'><select className='input investControl' value={accountFilter} onChange={(e)=>setAccountFilter(e.target.value)}><option value='all'>All Accounts</option>{safeAccounts.map((a)=><option key={a.id} value={a.id}>{a.name}</option>)}</select><button className='btn investBtnSecondary' onClick={()=>void refreshPrices()} disabled={refreshing}><RefreshCw size={16}/>{refreshing?'Refreshing...':'Refresh Prices'}</button><button className='btn investBtnPrimary' onClick={()=>{resetModal();setOpen(true)}}><Plus size={16}/>Add Holding</button></div></header>
+    <div className='investKpis'>{[['Portfolio Value', money(totals.portfolioValue), 'As of ' + new Date().toLocaleDateString(), <TrendingUp size={16}/>], ['Total Cost', money(totals.portfolioCost), '', <Wallet size={16}/>], ['Total Gain / Loss', money(totals.portfolioGainLoss), pct(totals.portfolioReturnPercent), <TrendingUp size={16}/>], ['Return %', pct(totals.portfolioReturnPercent), 'Total return', <Info size={16}/>], ['Holdings', String(filtered.length), `Across ${new Set(filtered.map((h)=>h.account_id).filter(Boolean)).size} accounts`, <Layers size={16}/>]].map((k,i)=><div className='card investKpi refCard' key={String(k[0])}><div><div className='investKpiLabel'>{k[0]}</div><div className={`investKpiValue ${(i===2||i===3)?(totals.portfolioGainLoss>0?'pos':totals.portfolioGainLoss<0?'neg':''):''}`}>{k[1]}</div><div className='muted'>{k[2]}</div></div><div className='investKpiBubble'>{k[3]}</div></div>)}</div>
+    <div className='investGridTop'><div className='card refCard'><h3>Holdings List</h3>{filtered.length===0?<div className='investEmpty'>No holdings yet.<br/>Add your first holding to start tracking your portfolio.</div>:<table className='table investDesktop'><thead><tr><th>Holding</th><th>Account</th><th>Quantity</th><th>Avg Cost</th><th>Current Price</th><th>Market Value</th><th>Gain/Loss</th><th>Return %</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody>{filtered.map((h)=><tr key={h.id}><td><div className='holdingCell holdingCellAlign'><HoldingLogo symbol={h.symbol} companyName={h.company_name} logoUrl={h.logo_url} domain={h.domain} size={38} /><div><strong>{h.symbol}</strong><div className='muted'>{h.company_name}</div></div></div></td><td>{h.account?.name||'—'}</td><td>{h.quantity}</td><td>{money(h.average_cost,h.currency)}</td><td>{money(h.current_price,h.currency)}</td><td>{money(h.marketValue,h.currency)}</td><td className={h.gainLoss!==null?(h.gainLoss>0?'pos':h.gainLoss<0?'neg':''):''}>{h.gainLoss===null?'—':money(h.gainLoss,h.currency)}</td><td className={h.returnPercent!==null?(h.returnPercent>0?'pos':h.returnPercent<0?'neg':''):''}>{h.returnPercent===null?'—':pct(h.returnPercent)}</td><td>{h.last_price_updated_at?new Date(h.last_price_updated_at).toLocaleDateString():'—'}</td><td><div className='actionsMenuWrap'><button className='btn tiny investAction menuDots' onClick={()=>setOpenActionId((c)=>c===h.id?null:h.id)}>⋯</button>{openActionId===h.id?<div className='actionsMenu'><button onClick={()=>{setOpenActionId(null);openEdit(h as Holding)}}><Pencil size={14}/> Edit</button><button className='dangerText' onClick={()=>{setOpenActionId(null);setHoldingToDelete(h as Holding)}}><Trash2 size={14}/> Delete</button></div>:null}</div></td></tr>)}</tbody></table>}</div>
+      <div className='card refCard'><h3>Portfolio Allocation</h3>{filtered.length===0?<div className='investEmpty'>Portfolio allocation will appear after you add holdings.</div>:<div className='allocWrap'><div className='allocChart'><ResponsiveContainer width='100%' height={260}><PieChart><Pie data={filtered} dataKey='marketValue' innerRadius={72} outerRadius={102}>{filtered.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie></PieChart></ResponsiveContainer><div className='allocCenter'><strong>{money(totals.portfolioValue)}</strong><small>Total Value</small></div></div><div>{filtered.map((h,i)=><div className='allocLegendItem' key={h.id}><span className='dot' style={{background:COLORS[i%COLORS.length]}}/><div><div>{h.symbol} <span className='muted'>({h.company_name})</span></div><small>{money(h.marketValue,h.currency)}</small></div><strong>{((h.marketValue/Math.max(1,totals.portfolioValue))*100).toFixed(1)}%</strong></div>)}</div></div>}</div></div>
+    <div className='investGridBottom'><div className='card refCard'><h3>Accounts Summary</h3><table className='table'><thead><tr><th>Account</th><th>Type</th><th>Total Value</th><th># of Holdings</th></tr></thead><tbody>{safeAccounts.map((a)=>{const hs=safeHoldings.filter((h)=>h.account_id===a.id); return <tr key={a.id}><td><div className='acctCell'><span className='acctIcon'>{a.type[0]}</span>{a.name}</div></td><td>{a.type}</td><td>{money(hs.reduce((s,h)=>s+h.current_price*h.quantity,0))}</td><td>{hs.length}</td></tr>})}<tr className='totalRow'><td>Total</td><td>—</td><td>{money(totals.portfolioValue)}</td><td>{filtered.length}</td></tr></tbody></table></div>
+      <div className='card refCard investTrendCard'><div className='investTrendHead'><div><h3 className='investTrendTitle'>Portfolio Value Over Time <Info size={14}/></h3>{periodStats?<div className={`investTrendBadge ${periodStats.netGain>=0?'pos':'neg'}`}><TrendingUp size={14}/><strong>{money(periodStats.netGain)} ({pct(periodStats.totalReturn)})</strong><span>over selected period</span></div>:null}</div><div className='row gap investTrendRanges'>{(['1M','3M','6M','YTD','1Y','All'] as const).map((r)=><button key={r} className={`btn tiny investRange ${range===r?'active':''}`} onClick={()=>setRange(r)}>{r}</button>)}</div></div>{chartSeriesData.length<2?<div className='chartEmpty'><div className='chartGrid'/><p>{chartSeriesData.length===0?'No portfolio history for this range yet.':'Not enough portfolio history yet. Refresh prices over time to build your trend.'}</p></div>:<><div style={{height:360}}><ResponsiveContainer width='100%' height='100%'><ComposedChart data={chartSeriesData}><defs><linearGradient id='investValueArea' x1='0' y1='0' x2='0' y2='1'><stop offset='5%' stopColor='#2563eb' stopOpacity={0.28}/><stop offset='95%' stopColor='#2563eb' stopOpacity={0.04}/></linearGradient></defs><CartesianGrid strokeDasharray='4 4' stroke='rgba(148,163,184,.35)'/><XAxis dataKey='label' ticks={chartXAxisTicks} tickFormatter={(v)=>formatChartDate(String(v))} minTickGap={20} interval={0}/><YAxis tickFormatter={(v)=>money(Number(v))} width={92}/><Tooltip content={<PortfolioTooltip />}/><Area type='monotone' dataKey='value' stroke='none' fill='url(#investValueArea)'/><Line type='monotone' dataKey='value' stroke='#1d4ed8' strokeWidth={3} dot={false}/><Line type='monotone' dataKey='cost' stroke='#94a3b8' strokeWidth={2} strokeDasharray='6 6' dot={false}/></ComposedChart></ResponsiveContainer></div><div className='investTrendLegend'><span><i className='solid'/>Portfolio Value</span><span><i className='dash'/>Total Cost (Cost Basis)</span></div></>}</div></div>
+    {open ? <div className='idleModalBackdrop'><div className='card investModal refModal mobileAddModal'>
+      <div className='addHoldTop'><button className='iconPlain' onClick={()=> selected ? setSelected(null) : (setOpen(false), resetModal())}>←</button><button className='iconPlain' onClick={()=>{setOpen(false);resetModal()}}>✕</button></div>
+      <div className='addHoldTitle'>Add holding</div>
+      {!selected ? <>
+        <div className='investSearchWrap mobileSearch'><Search size={16}/><input className='input investSearchInput' placeholder='Search for a company or ticker symbol...' value={search} onChange={(e)=>setSearch(e.target.value)}/></div>
+        <div className='popularLabel'>{search.trim() ? 'Search results' : 'Popular holdings'}</div>
+        <div className='mobileSuggestions'>{modalRows.length===0 ? <div className='investNoResults'><strong>No holdings found.</strong><span>Try searching by ticker symbol or company name.</span></div> : modalRows.map((sec)=>{const isSel=selected?.symbol===sec.symbol; const changeClass=sec.changeText==='N/A'?'na':(Number(sec.changeValue||0)>=0?'pos':'neg'); return <button key={sec.symbol} className={`mobileSugRow pickerRow ${isSel?'isSelected':''}`} onClick={()=>setSelected(sec)}><div className='pickerLeft'><HoldingLogo symbol={sec.symbol} companyName={sec.companyName} logoUrl={sec.logo_url || sec.logoUrl} domain={sec.domain} size={38} /><div className='pickerText'><strong>{sec.symbol}</strong><div className='pickerName'>{sec.companyName}</div></div></div><div className='pickerRight'><div className='pickerPrice'>{money(sec.fallbackPrice, sec.currency)}</div><div className={`pickerChange ${changeClass}`}>{sec.changeText || 'N/A'}</div></div></button>})}</div>
+      </> : <>
+        <div className='selectedCompact'><div className='holdingCell'><HoldingLogo symbol={selected.symbol} companyName={selected.companyName} logoUrl={selected.logo_url || selected.logoUrl} domain={selected.domain} size={38} /><div><strong>{selected.symbol}</strong><div className='muted'>{selected.companyName}</div></div></div><div style={{textAlign:'right'}}><strong>{money(selected.fallbackPrice,selected.currency)}</strong><div className='dayGain'>+1.32 (0.81%)</div><div className='muted'>1 share</div></div></div>
+        <label className='fieldLabel'>Quantity</label><div className='inputWithSuffix'><input className='input' placeholder='0.00' value={quantity} onChange={(e)=>setQuantity(e.target.value)}/><span>shares</span></div><label className='fieldLabel'>Average Cost / Purchase Price</label><div className='currencyWrap'><input className='input' placeholder='Use current price if left blank' value={averageCost} onChange={(e)=>setAverageCost(e.target.value)}/></div><div className='fieldHelp'>Leave blank to use the current price as your average cost.</div>
+        <label className='fieldLabel'>Account</label><div className='accountSelectWrap'><span className='acctGlyph'>▥</span><select className='input' value={accountId} onChange={(e)=>e.target.value==='__new__'?setShowNewAccount(true):setAccountId(e.target.value)}><option value=''>Select an account</option>{safeAccounts.map((a)=><option key={a.id} value={a.id}>{a.name}</option>)}<option value='__new__'>+ New Manual Account</option></select></div>
+        <div className='newManualAccountWrap'>
+          <button className='newManualAccountToggle' type='button' onClick={()=>setShowNewAccount((c)=>!c)}>
+            <span>+ New Manual Account</span>
+            {showNewAccount ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {showNewAccount ? <div className='card investInnerCard investManualAccountCard'><label className='fieldLabel'>Type</label><select className='input' value={newAccount.type} onChange={(e)=>setNewAccount((c)=>({...c,type:e.target.value}))}>{ACCOUNT_TYPES.map((t)=><option key={t}>{t}</option>)}</select><label className='fieldLabel'>Account Name</label><input className='input' placeholder='e.g., My TFSA Account' value={newAccount.name} onChange={(e)=>setNewAccount((c)=>({...c,name:e.target.value}))}/><label className='fieldLabel'>Provider (Optional)</label><input className='input' placeholder='e.g., Wealthsimple, Questrade, RBC Direct Investing' value={newAccount.provider} onChange={(e)=>setNewAccount((c)=>({...c,provider:e.target.value}))}/><div className='newManualAccountActions'><button className='btn newManualAccountCancel' type='button' onClick={()=>setShowNewAccount(false)}>Cancel</button><button className='btn newManualAccountSave' type='button' onClick={()=>void saveAccount()}>Save Account</button></div></div> : null}
+        </div>
+        <div className='mobileFooter'><button className='btn' onClick={()=>{setOpen(false);resetModal()}}>Cancel</button><button className='btn savePeach' disabled={!selected||!accountId||Number(quantity)<=0} onClick={()=>void saveHolding()}>Save</button></div>
+      </>}
+    </div></div>:null}
+    {holdingToDelete ? <div className='deleteConfirmBackdrop' role='presentation'>
+      <div className='card deleteConfirmModal' role='dialog' aria-modal='true' aria-labelledby='invest-delete-holding-title'>
+        <div className='deleteConfirmIcon' aria-hidden='true'>!</div>
+        <h3 id='invest-delete-holding-title'>Delete holding?</h3>
+        <p className='muted'>This will permanently remove this holding from your investment tracker. This cannot be undone.</p>
+        <p className='muted'><strong>{holdingToDelete.symbol} — {holdingToDelete.company_name}</strong></p>
+        <div className='deleteConfirmActions'>
+          <button className='btn' onClick={()=>!isDeletingHolding && setHoldingToDelete(null)} disabled={isDeletingHolding}>Cancel</button>
+          <button className='btn danger' onClick={()=>void deleteHolding()} disabled={isDeletingHolding}>{isDeletingHolding ? 'Deleting...' : 'Delete'}</button>
+        </div>
+      </div>
+    </div> : null}
+  </section>
+}

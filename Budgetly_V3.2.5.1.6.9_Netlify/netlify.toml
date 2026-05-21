@@ -15,7 +15,16 @@
   to = "/reset-password.html"
   status = 200
 
+
+[[redirects]]
+  from = "/api/market-quotes"
+  to = "/.netlify/functions/market-quotes"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[functions]
+  directory = "netlify/functions"
