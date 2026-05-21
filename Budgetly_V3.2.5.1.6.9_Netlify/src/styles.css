@@ -8722,6 +8722,13 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
   .investGridTop,
   .investGridBottom{grid-template-columns:1fr !important}
 
+  .investGridTop > .card.refCard:nth-child(1),
+  .investGridTop > .card.refCard:nth-child(2){
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    max-width:100% !important;
+  }
+
   .allocWrap{
     grid-template-columns:minmax(260px,380px) minmax(0,1fr);
     gap:24px;
