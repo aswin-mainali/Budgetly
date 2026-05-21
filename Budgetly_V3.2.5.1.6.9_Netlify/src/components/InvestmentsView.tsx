@@ -69,25 +69,44 @@ export function InvestmentsView() {
   const normalizedSnapshots = useMemo(() => safeSnapshots.map((s) => ({ date: s.date_key, value: Number(s.total_value || 0), cost: Number(s.total_cost || 0), gainLoss: Number((s as any).gain_loss || 0), returnPercent: Number((s as any).return_percent || 0) })), [safeSnapshots])
   const chartData = useMemo(() => { if (range === 'All') return normalizedSnapshots; const now = new Date(); const start = new Date(now); if (range === 'YTD') start.setMonth(0,1); else start.setDate(start.getDate() - RANGE[range]); return normalizedSnapshots.filter((x) => new Date(x.date) >= start) }, [range, normalizedSnapshots])
 
+  const chartSeriesData = useMemo(() => {
+    if (range !== '1Y') return chartData.map((point) => ({ ...point, label: point.date }))
+    const now = new Date()
+    const year = now.getFullYear()
+    const byMonth = new Map<number, { value: number; cost: number }>()
+    chartData.forEach((point) => {
+      const d = new Date(point.date)
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === year) byMonth.set(d.getMonth(), { value: Number(point.value || 0), cost: Number(point.cost || 0) })
+    })
+    let carryValue = 0
+    let carryCost = 0
+    return Array.from({ length: 12 }).map((_, month) => {
+      const found = byMonth.get(month)
+      if (found) { carryValue = found.value; carryCost = found.cost }
+      const date = new Date(year, month, 1).toISOString().slice(0, 10)
+      return { date, label: date, value: carryValue, cost: carryCost }
+    })
+  }, [chartData, range])
+
   const periodStats = useMemo(() => {
-    if (chartData.length < 2) return null
-    const first = chartData[0]
-    const last = chartData[chartData.length - 1]
+    if (chartSeriesData.length < 2) return null
+    const first = chartSeriesData[0]
+    const last = chartSeriesData[chartSeriesData.length - 1]
     const beginningValue = Number(first.value || 0)
     const endingValue = Number(last.value || 0)
     const netGain = endingValue - beginningValue
     const totalReturn = beginningValue > 0 ? (netGain / beginningValue) * 100 : 0
     return { beginningValue, endingValue, netGain, totalReturn }
-  }, [chartData])
+  }, [chartSeriesData])
 
 
 
   const chartXAxisTicks = useMemo(() => {
-    if (!chartData.length) return undefined
+    if (!chartSeriesData.length) return undefined
     if (range === '1M') return undefined
     const seen = new Set<string>()
     const ticks: string[] = []
-    for (const point of chartData) {
+    for (const point of chartSeriesData) {
       const d = new Date(point.date)
       if (Number.isNaN(d.getTime())) continue
       const key = `${d.getFullYear()}-${d.getMonth()}`
@@ -97,7 +116,7 @@ export function InvestmentsView() {
       }
     }
     return ticks.length ? ticks : undefined
-  }, [chartData, range])
+  }, [chartSeriesData, range])
 
   const formatChartDate = (dateKey: string) => {
     const d = new Date(dateKey)
@@ -138,7 +157,7 @@ export function InvestmentsView() {
     <div className='investGridTop'><div className='card refCard'><h3>Holdings List</h3>{filtered.length===0?<div className='investEmpty'>No holdings yet.<br/>Add your first holding to start tracking your portfolio.</div>:<table className='table investDesktop'><thead><tr><th>Holding</th><th>Account</th><th>Quantity</th><th>Avg Cost</th><th>Current Price</th><th>Market Value</th><th>Gain/Loss</th><th>Return %</th><th>Last Updated</th><th>Actions</th></tr></thead><tbody>{filtered.map((h)=><tr key={h.id}><td><div className='holdingCell holdingCellAlign'><HoldingLogo symbol={h.symbol} companyName={h.company_name} logoUrl={h.logo_url} domain={h.domain} size={38} /><div><strong>{h.symbol}</strong><div className='muted'>{h.company_name}</div></div></div></td><td>{h.account?.name||'—'}</td><td>{h.quantity}</td><td>{money(h.average_cost,h.currency)}</td><td>{money(h.current_price,h.currency)}</td><td>{money(h.marketValue,h.currency)}</td><td className={h.gainLoss!==null?(h.gainLoss>0?'pos':h.gainLoss<0?'neg':''):''}>{h.gainLoss===null?'—':money(h.gainLoss,h.currency)}</td><td className={h.returnPercent!==null?(h.returnPercent>0?'pos':h.returnPercent<0?'neg':''):''}>{h.returnPercent===null?'—':pct(h.returnPercent)}</td><td>{h.last_price_updated_at?new Date(h.last_price_updated_at).toLocaleDateString():'—'}</td><td><div className='actionsMenuWrap'><button className='btn tiny investAction menuDots' onClick={()=>setOpenActionId((c)=>c===h.id?null:h.id)}>⋯</button>{openActionId===h.id?<div className='actionsMenu'><button onClick={()=>{setOpenActionId(null);openEdit(h as Holding)}}><Pencil size={14}/> Edit</button><button className='dangerText' onClick={()=>{setOpenActionId(null);setHoldingToDelete(h as Holding)}}><Trash2 size={14}/> Delete</button></div>:null}</div></td></tr>)}</tbody></table>}</div>
       <div className='card refCard'><h3>Portfolio Allocation</h3>{filtered.length===0?<div className='investEmpty'>Portfolio allocation will appear after you add holdings.</div>:<div className='allocWrap'><div className='allocChart'><ResponsiveContainer width='100%' height={260}><PieChart><Pie data={filtered} dataKey='marketValue' innerRadius={72} outerRadius={102}>{filtered.map((_,i)=><Cell key={i} fill={COLORS[i%COLORS.length]}/>)}</Pie></PieChart></ResponsiveContainer><div className='allocCenter'><strong>{money(totals.portfolioValue)}</strong><small>Total Value</small></div></div><div>{filtered.map((h,i)=><div className='allocLegendItem' key={h.id}><span className='dot' style={{background:COLORS[i%COLORS.length]}}/><div><div>{h.symbol} <span className='muted'>({h.company_name})</span></div><small>{money(h.marketValue,h.currency)}</small></div><strong>{((h.marketValue/Math.max(1,totals.portfolioValue))*100).toFixed(1)}%</strong></div>)}</div></div>}</div></div>
     <div className='investGridBottom'><div className='card refCard'><h3>Accounts Summary</h3><table className='table'><thead><tr><th>Account</th><th>Type</th><th>Total Value</th><th># of Holdings</th></tr></thead><tbody>{safeAccounts.map((a)=>{const hs=safeHoldings.filter((h)=>h.account_id===a.id); return <tr key={a.id}><td><div className='acctCell'><span className='acctIcon'>{a.type[0]}</span>{a.name}</div></td><td>{a.type}</td><td>{money(hs.reduce((s,h)=>s+h.current_price*h.quantity,0))}</td><td>{hs.length}</td></tr>})}<tr className='totalRow'><td>Total</td><td>—</td><td>{money(totals.portfolioValue)}</td><td>{filtered.length}</td></tr></tbody></table></div>
-      <div className='card refCard investTrendCard'><div className='investTrendHead'><div><h3 className='investTrendTitle'>Portfolio Value Over Time <Info size={14}/></h3>{periodStats?<div className={`investTrendBadge ${periodStats.netGain>=0?'pos':'neg'}`}><TrendingUp size={14}/><strong>{money(periodStats.netGain)} ({pct(periodStats.totalReturn)})</strong><span>over selected period</span></div>:null}</div><div className='row gap investTrendRanges'>{(['1M','3M','6M','YTD','1Y','All'] as const).map((r)=><button key={r} className={`btn tiny investRange ${range===r?'active':''}`} onClick={()=>setRange(r)}>{r}</button>)}</div></div>{chartData.length<2?<div className='chartEmpty'><div className='chartGrid'/><p>{chartData.length===0?'No portfolio history for this range yet.':'Not enough portfolio history yet. Refresh prices over time to build your trend.'}</p></div>:<><div style={{height:360}}><ResponsiveContainer width='100%' height='100%'><ComposedChart data={chartData}><defs><linearGradient id='investValueArea' x1='0' y1='0' x2='0' y2='1'><stop offset='5%' stopColor='#2563eb' stopOpacity={0.28}/><stop offset='95%' stopColor='#2563eb' stopOpacity={0.04}/></linearGradient></defs><CartesianGrid strokeDasharray='4 4' stroke='rgba(148,163,184,.35)'/><XAxis dataKey='date' ticks={chartXAxisTicks} tickFormatter={(v)=>formatChartDate(String(v))} minTickGap={20} interval={0}/><YAxis tickFormatter={(v)=>money(Number(v))} width={92}/><Tooltip content={<PortfolioTooltip />}/><Area type='monotone' dataKey='value' stroke='none' fill='url(#investValueArea)'/><Line type='monotone' dataKey='value' stroke='#1d4ed8' strokeWidth={3} dot={false}/><Line type='monotone' dataKey='cost' stroke='#94a3b8' strokeWidth={2} strokeDasharray='6 6' dot={false}/></ComposedChart></ResponsiveContainer></div><div className='investTrendLegend'><span><i className='solid'/>Portfolio Value</span><span><i className='dash'/>Total Cost (Cost Basis)</span></div></>}</div></div>
+      <div className='card refCard investTrendCard'><div className='investTrendHead'><div><h3 className='investTrendTitle'>Portfolio Value Over Time <Info size={14}/></h3>{periodStats?<div className={`investTrendBadge ${periodStats.netGain>=0?'pos':'neg'}`}><TrendingUp size={14}/><strong>{money(periodStats.netGain)} ({pct(periodStats.totalReturn)})</strong><span>over selected period</span></div>:null}</div><div className='row gap investTrendRanges'>{(['1M','3M','6M','YTD','1Y','All'] as const).map((r)=><button key={r} className={`btn tiny investRange ${range===r?'active':''}`} onClick={()=>setRange(r)}>{r}</button>)}</div></div>{chartSeriesData.length<2?<div className='chartEmpty'><div className='chartGrid'/><p>{chartSeriesData.length===0?'No portfolio history for this range yet.':'Not enough portfolio history yet. Refresh prices over time to build your trend.'}</p></div>:<><div style={{height:360}}><ResponsiveContainer width='100%' height='100%'><ComposedChart data={chartSeriesData}><defs><linearGradient id='investValueArea' x1='0' y1='0' x2='0' y2='1'><stop offset='5%' stopColor='#2563eb' stopOpacity={0.28}/><stop offset='95%' stopColor='#2563eb' stopOpacity={0.04}/></linearGradient></defs><CartesianGrid strokeDasharray='4 4' stroke='rgba(148,163,184,.35)'/><XAxis dataKey='label' ticks={chartXAxisTicks} tickFormatter={(v)=>formatChartDate(String(v))} minTickGap={20} interval={0}/><YAxis tickFormatter={(v)=>money(Number(v))} width={92}/><Tooltip content={<PortfolioTooltip />}/><Area type='monotone' dataKey='value' stroke='none' fill='url(#investValueArea)'/><Line type='monotone' dataKey='value' stroke='#1d4ed8' strokeWidth={3} dot={false}/><Line type='monotone' dataKey='cost' stroke='#94a3b8' strokeWidth={2} strokeDasharray='6 6' dot={false}/></ComposedChart></ResponsiveContainer></div><div className='investTrendLegend'><span><i className='solid'/>Portfolio Value</span><span><i className='dash'/>Total Cost (Cost Basis)</span></div></>}</div></div>
     {open ? <div className='idleModalBackdrop'><div className='card investModal refModal mobileAddModal'>
       <div className='addHoldTop'><button className='iconPlain' onClick={()=> selected ? setSelected(null) : (setOpen(false), resetModal())}>←</button><button className='iconPlain' onClick={()=>{setOpen(false);resetModal()}}>✕</button></div>
       <div className='addHoldTitle'>Add holding</div>
