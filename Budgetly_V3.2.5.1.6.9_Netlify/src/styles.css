@@ -7142,6 +7142,94 @@ body.light .nav button.active::after,
   background: linear-gradient(180deg, rgba(255,255,255,.72), transparent);
 }
 
+/* Dashboard-only: remove heavy boxed card look while preserving layout/content */
+.dashboardView > .card,
+.dashboardView .dashboardSecondaryGrid > .card,
+.dashboardView .dashboardRightCol > .card,
+.dashboardView .budgetItemCard{
+  background: transparent !important;
+  border: 1px solid rgba(148,163,184,.14);
+  box-shadow: none !important;
+}
+
+.dashboardView .budgetItemCard{
+  border-color: rgba(148,163,184,.10);
+}
+
+.dashboardView .kpi{
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(148,163,184,.16);
+  box-shadow: none;
+}
+
+.dashboardView .kpi::after{
+  display: none;
+}
+
+body.light .dashboardView > .card,
+body.light .dashboardView .dashboardSecondaryGrid > .card,
+body.light .dashboardView .dashboardRightCol > .card,
+body.light .dashboardView .budgetItemCard{
+  background: rgba(255,255,255,.62) !important;
+  border-color: rgba(148,163,184,.20);
+}
+
+body.light .dashboardView .kpi{
+  background: rgba(255,255,255,.70);
+  border-color: rgba(148,163,184,.24);
+}
+
+/* Sidebar nav buttons: flatter treatment (keep active state clear, no boxed pills) */
+.nav button{
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  border-radius: 12px;
+  position: relative;
+}
+
+.nav button::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.nav button:hover{
+  background: rgba(148,163,184,.10) !important;
+  transform: none !important;
+}
+
+.nav button.active{
+  background: rgba(59,130,246,.10) !important;
+  color: #60a5fa;
+}
+
+.nav button.active::before{
+  background: #60a5fa;
+}
+
+.nav button.active::after{
+  display: none;
+}
+
+body.light .nav button:hover{
+  background: rgba(15,23,42,.06) !important;
+}
+
+body.light .nav button.active{
+  background: rgba(37,99,235,.10) !important;
+  color: #2563eb;
+}
+
+body.light .nav button.active::before{
+  background: #2563eb;
+}
+
 .txPageCard .transactionsScrollBox,
 .txPageCard .dataStickyTable,
 .txPageCard .dataStickyTable thead,
