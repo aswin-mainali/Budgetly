@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus } from 'lucide-react'
 import Auth from './components/Auth'
+import LandingPage from './components/LandingPage'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
@@ -364,7 +365,12 @@ export default function App() {
   }, [admin.visibleFeatures, isMobile])
 
   if (!sessionChecked) return null
-  if (!userId) return <Auth />
+  if (!userId) {
+    const path = window.location.pathname
+    const authMode = path.includes('signup') ? 'signup' : 'signin'
+    if (path.includes('login') || path.includes('signup') || path.includes('auth')) return <Auth initialMode={authMode} />
+    return <LandingPage onLogin={() => window.location.assign('/login')} onSignup={() => window.location.assign('/signup')} />
+  }
   if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
   if (admin.profile && !admin.profile.is_active) {
     return (
