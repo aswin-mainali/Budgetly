@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus } from 'lucide-react'
 import Auth from './components/Auth'
+import { LandingPage } from './components/LandingPage'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
@@ -59,6 +60,13 @@ export default function App() {
 
   const budget = useBudgetApp(userId)
   const admin = useSuperAdmin(userId, email)
+
+  const authMode = useMemo(() => {
+    const qp = new URLSearchParams(window.location.search)
+    const mode = qp.get('auth')
+    if (mode === 'signup' || mode === 'forgot') return mode
+    return 'signin'
+  }, [])
 
   useEffect(() => {
     document.body.classList.toggle('light', theme === 'light')

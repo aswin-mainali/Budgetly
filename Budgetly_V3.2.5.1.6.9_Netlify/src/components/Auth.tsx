@@ -15,8 +15,8 @@ import {
 } from 'lucide-react'
 import { usePwaInstall } from '../hooks/usePwaInstall'
 
-export default function Auth() {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
+export default function Auth({ initialMode = 'signin' }: { initialMode?: 'signin' | 'signup' | 'forgot' }) {
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
