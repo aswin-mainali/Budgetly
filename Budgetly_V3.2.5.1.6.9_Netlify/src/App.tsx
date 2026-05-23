@@ -61,12 +61,6 @@ export default function App() {
   const budget = useBudgetApp(userId)
   const admin = useSuperAdmin(userId, email)
 
-  const authMode = useMemo(() => {
-    const qp = new URLSearchParams(window.location.search)
-    const mode = qp.get('auth')
-    if (mode === 'signup' || mode === 'forgot') return mode
-    return 'signin'
-  }, [])
 
   useEffect(() => {
     document.body.classList.toggle('light', theme === 'light')
@@ -372,7 +366,19 @@ export default function App() {
   }, [admin.visibleFeatures, isMobile])
 
   if (!sessionChecked) return null
-  if (!userId) return <Auth />
+  if (!userId) {
+    const path = window.location.pathname
+    const qp = new URLSearchParams(window.location.search)
+    const isAuthRoute = path === '/auth' || path === '/login'
+    const isSignupRoute = path === '/signup'
+    if (path === '/') return <LandingPage />
+    if (isAuthRoute || isSignupRoute) {
+      const mode = isSignupRoute ? 'signup' : (qp.get('mode') === 'signup' ? 'signup' : qp.get('mode') === 'forgot' ? 'forgot' : 'signin')
+      return <Auth initialMode={mode} />
+    }
+    window.history.replaceState({}, '', '/auth')
+    return <Auth initialMode='signin' />
+  }
   if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
   if (admin.profile && !admin.profile.is_active) {
     return (

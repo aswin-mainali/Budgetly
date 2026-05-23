@@ -19,7 +19,7 @@ export function LandingPage() {
     }
   }, [light])
 
-  const actions = useMemo(() => ({ login: '/?auth=signin', signup: '/?auth=signup' }), [])
+  const actions = useMemo(() => ({ login: '/auth', signup: '/signup' }), [])
 
   return <div className="landingPage">
     <header className="landingNav">
