@@ -8880,3 +8880,14 @@ body.landing-dark .landingPage{--bg:#061226;--text:#e8eefb}
 .finalCta{background:linear-gradient(120deg,#e9f3ff,#ecfff6)}
 @media (max-width:1024px){.featureGrid{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:1fr}.hero h1{font-size:44px}}
 @media (max-width:768px){.landingMenuBtn{display:block}.landingNav nav{display:none;position:absolute;left:0;right:0;top:56px;flex-direction:column;background:#fff;border:1px solid #dbe6f8;border-radius:12px;padding:12px}.landingNav nav.open{display:flex}.featureGrid{grid-template-columns:repeat(2,1fr)}.showcaseGrid{grid-template-columns:1fr}.showcaseGrid .center{grid-column:auto}.how>div{grid-template-columns:1fr}}
+.browserFrame{background:#fff;border:1px solid #dbe6f8;border-radius:18px;padding:10px;box-shadow:0 24px 55px rgba(17,45,113,.22)}
+.browserDots{display:flex;gap:6px;padding:0 0 8px}.browserDots span{width:9px;height:9px;border-radius:50%;background:#d5e2f8}
+.phoneMock{position:absolute;right:-24px;bottom:-24px;width:34%;max-width:220px;background:#fff;border:1px solid #dbe6f8;border-radius:24px;padding:6px;box-shadow:0 20px 45px rgba(17,45,113,.2);transform:rotate(3deg)}
+.heroMedia{position:relative}
+.showcaseGrid figure{transition:transform .25s ease, box-shadow .25s ease;animation:floatCard 5s ease-in-out infinite}
+.showcaseGrid figure:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 18px 40px rgba(17,45,113,.18)}
+.showcaseGrid figure:nth-child(odd){animation-delay:.4s}
+.universalSearchCard{background:#fff;border:1px solid #dbe6f8;border-radius:16px;padding:14px}
+.universalSearchCard header{display:flex;align-items:center;gap:8px}
+@keyframes floatCard{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media (max-width:768px){.phoneMock{position:static;width:62%;max-width:none;margin:12px auto 0;transform:none}.heroMedia{display:block}}
