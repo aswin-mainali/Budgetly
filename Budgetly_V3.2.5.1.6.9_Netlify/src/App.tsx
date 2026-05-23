@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus } from 'lucide-react'
 import Auth from './components/Auth'
+import LandingPage from './components/LandingPage'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
@@ -53,6 +54,19 @@ export default function App() {
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
+
+  const [publicRoute, setPublicRoute] = useState<'landing' | 'login' | 'signup'>(() => {
+    const pathname = window.location.pathname.toLowerCase()
+    if (pathname === '/login') return 'login'
+    if (pathname === '/signup') return 'signup'
+    return 'landing'
+  })
+
+  const navigatePublicRoute = (route: 'landing' | 'login' | 'signup') => {
+    const path = route === 'landing' ? '/' : route === 'signup' ? '/signup' : '/login'
+    if (window.location.pathname !== path) window.history.pushState({}, '', path)
+    setPublicRoute(route)
+  }
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -64,6 +78,19 @@ export default function App() {
     document.body.classList.toggle('light', theme === 'light')
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
+
+
+  useEffect(() => {
+    const onPopState = () => {
+      const pathname = window.location.pathname.toLowerCase()
+      if (pathname === '/login') setPublicRoute('login')
+      else if (pathname === '/signup') setPublicRoute('signup')
+      else setPublicRoute('landing')
+    }
+
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
 
   useEffect(() => {
     document.body.classList.toggle('mobile-app', isMobile)
@@ -364,7 +391,10 @@ export default function App() {
   }, [admin.visibleFeatures, isMobile])
 
   if (!sessionChecked) return null
-  if (!userId) return <Auth />
+  if (!userId) {
+    if (publicRoute === 'landing') return <LandingPage onNavigateAuth={(mode) => navigatePublicRoute(mode === 'signup' ? 'signup' : 'login')} />
+    return <Auth initialMode={publicRoute === 'signup' ? 'signup' : 'signin'} />
+  }
   if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
   if (admin.profile && !admin.profile.is_active) {
     return (
