@@ -1621,15 +1621,23 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
   useEffect(() => {
     if (!userId) return
     const boot = async () => {
-      const prefs = await getNotificationPreferences(userId)
-      if (prefs.budgets) await generateBudgetNotifications(userId)
-      if (prefs.bills_recurring) await generateRecurringNotifications(userId)
-      if (prefs.subscriptions) await generateSubscriptionNotifications(userId)
-      if (prefs.goals) await generateGoalNotifications(userId)
-      if (prefs.investments) await generateInvestmentNotifications(userId)
-      if (prefs.net_worth) await generateNetWorthNotifications(userId)
-      if (prefs.monthly_reports) await generateMonthlyReportNotifications(userId)
-      setNotifications(await getNotifications(userId))
+      try {
+        if (import.meta.env.DEV) console.log('Generating notifications for user:', userId)
+        const prefs = await getNotificationPreferences(userId)
+        if (prefs.bills_recurring) await generateRecurringNotifications(userId)
+        if (prefs.budgets) await generateBudgetNotifications(userId)
+        if (prefs.subscriptions) await generateSubscriptionNotifications(userId)
+        if (prefs.goals) await generateGoalNotifications(userId)
+        if (prefs.investments) await generateInvestmentNotifications(userId)
+        if (prefs.net_worth) await generateNetWorthNotifications(userId)
+        if (prefs.monthly_reports) await generateMonthlyReportNotifications(userId)
+        const loaded = await getNotifications(userId)
+        if (import.meta.env.DEV) console.log('Notifications loaded:', loaded.length)
+        setNotifications(loaded)
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Notification generation failed', error)
+        setNotifications([])
+      }
     }
     void boot()
   }, [userId])
