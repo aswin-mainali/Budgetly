@@ -469,7 +469,7 @@ export default function App() {
           </header>
         ) : null}
 
-        {view === 'dashboard' && admin.visibleFeatures.dashboard ? <DashboardView budget={budget} theme={theme} onOpenTransactionsByType={handleOpenTransactionsByType} /> : null}
+        {view === 'dashboard' && admin.visibleFeatures.dashboard ? <DashboardView budget={budget} theme={theme} onOpenTransactionsByType={handleOpenTransactionsByType} email={email} userId={userId} /> : null}
         {view === 'transactions' && admin.visibleFeatures.transactions ? <TransactionsView budget={budget} /> : null}
         {view === 'categories' && admin.visibleFeatures.categories ? <CategoriesView budget={budget} /> : null}
         {view === 'recurring' && admin.visibleFeatures.recurring ? <RecurringView budget={budget} /> : null}
