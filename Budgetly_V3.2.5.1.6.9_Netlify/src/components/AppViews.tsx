@@ -1666,6 +1666,14 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     return list
   }, [notifications])
   const unreadCount = uniqueNotifications.filter((item) => item.status === 'unread').length
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('budgetly:notif-unread', { detail: { count: unreadCount } }))
+  }, [unreadCount])
+  useEffect(() => {
+    const toggle = () => setNotifOpen((prev) => !prev)
+    window.addEventListener('budgetly:toggle-notif-panel', toggle)
+    return () => window.removeEventListener('budgetly:toggle-notif-panel', toggle)
+  }, [])
   const formatRelativeTime = (iso: string) => {
     const diffMs = Date.now() - new Date(iso).getTime()
     const minutes = Math.max(0, Math.floor(diffMs / 60000))
@@ -1740,7 +1748,6 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
           <div className="mobileDashTitleRow">
             <div className="mobileDashTitle">Dashboard</div>
             <div className="mobileDashControls">
-              <button ref={bellRef} className="notifBellBtn mobileNotifBell" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
               <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
                 {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
               </select>

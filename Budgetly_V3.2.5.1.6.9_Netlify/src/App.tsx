@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus } from 'lucide-react'
+import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell } from 'lucide-react'
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
@@ -53,6 +53,7 @@ export default function App() {
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
+  const [mobileUnreadCount, setMobileUnreadCount] = useState(0)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -75,6 +76,15 @@ export default function App() {
     document.body.classList.toggle('auth-active', isAuthPage)
     return () => document.body.classList.remove('auth-active')
   }, [userId])
+
+  useEffect(() => {
+    const onUnread = (event: Event) => {
+      const detail = (event as CustomEvent<{ count?: number }>).detail
+      setMobileUnreadCount(Math.max(0, Number(detail?.count ?? 0)))
+    }
+    window.addEventListener('budgetly:notif-unread', onUnread as EventListener)
+    return () => window.removeEventListener('budgetly:notif-unread', onUnread as EventListener)
+  }, [])
 
 
   useEffect(() => {
@@ -463,6 +473,12 @@ export default function App() {
             <div className="mobileWordmark">
               <strong>Hi, {profileName} 👋</strong><small>{timeGreeting}</small>
             </div>
+            {view === 'dashboard' ? (
+              <button className="notifBellBtn mobileTopNotifBell" onClick={() => window.dispatchEvent(new Event('budgetly:toggle-notif-panel'))} aria-label="Open notifications">
+                <Bell size={19} />
+                {mobileUnreadCount > 0 ? <span className="notifBellBadge">{mobileUnreadCount > 99 ? '99+' : mobileUnreadCount}</span> : null}
+              </button>
+            ) : null}
             <button className="mobileAvatarBtn" onClick={() => handleViewChange('settings')} aria-label="Open settings">
               {profileImage ? <img src={profileImage} alt="Profile" /> : <span>{profileName.charAt(0).toUpperCase()}</span>}
             </button>

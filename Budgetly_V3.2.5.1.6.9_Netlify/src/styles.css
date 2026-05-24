@@ -8411,6 +8411,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
   body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px}
   body.mobile-app .mobileNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
+  body.mobile-app .mobileTopNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
   body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:var(--text);max-width:100%;word-break:normal;white-space:nowrap}
 
   @media (max-width: 420px){
