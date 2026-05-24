@@ -2652,7 +2652,8 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .notifNewBadge{padding:7px 14px;border-radius:999px;background:#e6f0ff;color:#2563eb;font-weight:700}
 .notifMarkRead{border:0;background:transparent;color:#2563eb;font-weight:700}
 .notifMarkRead:disabled{opacity:.45}
-.notifList{max-height:560px;overflow-y:auto}
+.notifList{max-height:560px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+.notifList::-webkit-scrollbar{display:none}
 .notifRow{width:100%;border:0;background:transparent;display:flex;gap:18px;align-items:center;padding:22px 20px;border-bottom:1px solid rgba(148,163,184,.2);text-align:left}
 .notifRow:hover{background:rgba(37,99,235,.04)}
 .notifRow.unreadHighlight{background:rgba(37,99,235,.06)}

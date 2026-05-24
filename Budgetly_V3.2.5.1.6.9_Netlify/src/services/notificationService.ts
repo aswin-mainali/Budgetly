@@ -30,6 +30,7 @@ const SUBSCRIPTION_PATTERNS = ['netflix', 'spotify', 'disney', 'apple', 'google'
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate())
 const toIsoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const money = (n: number, currency = 'CAD') => new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(Number(n || 0))
+const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
 
 const insertIfMissing = async (payload: Omit<BudgetlyNotification, 'id' | 'created_at' | 'status' | 'read_at'> & { metadata: Record<string, unknown> }) => {
   const dedupeKey = String(payload.metadata?.dedupe_key || '')
@@ -131,9 +132,17 @@ export const generateBudgetNotifications = async (userId: string) => {
   for (const c of (categories ?? []) as any[]) {
     const budget = Number(c.budget_monthly || 0); if (budget <= 0) continue
     const pct = ((spentBy.get(c.id) ?? 0) / budget) * 100
-    const checks: Array<[number, string, NotificationSection]> = [[100, '100', 'action_needed'], [90, '90', 'insights'], [80, '80', 'insights']]
-    for (const [threshold, label, section] of checks) if (pct >= threshold) await insertIfMissing({ user_id: userId, category: 'budgets', section, title: `${c.name} is at ${Math.floor(pct)}% of budget`, message: `${c.name} is at ${Math.floor(pct)}% of budget.`, type: 'budget_threshold', action_label: 'View budget', action_target: 'categories', metadata: { dedupe_key: `budget-${c.id}-${label}-${month}` } })
-    if (pct > 100) await insertIfMissing({ user_id: userId, category: 'budgets', section: 'action_needed', title: `${c.name} exceeded budget`, message: `${c.name} exceeded budget by ${money((spentBy.get(c.id) ?? 0) - budget, 'CAD')}.`, type: 'budget_exceeded', action_label: 'View budget', action_target: 'categories', metadata: { dedupe_key: `budget-${c.id}-exceeded-${month}` } })
+    const keyBase = c.id || slugify(c.name || 'budget')
+    const rounded = Math.floor(pct)
+    if (pct > 100) {
+      await insertIfMissing({ user_id: userId, category: 'budgets', section: 'action_needed', title: `${c.name} exceeded budget`, message: `${c.name} is at ${rounded}% of budget.`, type: 'budget_threshold', action_label: 'View budget', action_target: 'categories', metadata: { dedupe_key: `budget-${keyBase}-exceeded-${month}`, budget_id: c.id ?? null, category_name: c.name, threshold: 'exceeded', usage_percent: rounded, month_key: month } })
+    } else if (pct >= 100) {
+      await insertIfMissing({ user_id: userId, category: 'budgets', section: 'action_needed', title: `${c.name} is at 100% of budget`, message: `${c.name} is at 100% of budget.`, type: 'budget_threshold', action_label: 'View budget', action_target: 'categories', metadata: { dedupe_key: `budget-${keyBase}-100-${month}`, budget_id: c.id ?? null, category_name: c.name, threshold: '100', usage_percent: 100, month_key: month } })
+    } else if (pct >= 90) {
+      await insertIfMissing({ user_id: userId, category: 'budgets', section: 'insights', title: `${c.name} is at 90% of budget`, message: `${c.name} is at ${rounded}% of budget.`, type: 'budget_threshold', action_label: 'View budget', action_target: 'categories', metadata: { dedupe_key: `budget-${keyBase}-90-${month}`, budget_id: c.id ?? null, category_name: c.name, threshold: '90', usage_percent: rounded, month_key: month } })
+    } else if (pct >= 80) {
+      await insertIfMissing({ user_id: userId, category: 'budgets', section: 'insights', title: `${c.name} is at 80% of budget`, message: `${c.name} is at ${rounded}% of budget.`, type: 'budget_threshold', action_label: 'View budget', action_target: 'categories', metadata: { dedupe_key: `budget-${keyBase}-80-${month}`, budget_id: c.id ?? null, category_name: c.name, threshold: '80', usage_percent: rounded, month_key: month } })
+    }
   }
 }
 

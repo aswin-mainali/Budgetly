@@ -1651,7 +1651,21 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     window.addEventListener('mousedown', onDown)
     return () => window.removeEventListener('mousedown', onDown)
   }, [notifOpen])
-  const unreadCount = notifications.filter((item) => item.status === 'unread').length
+  const uniqueNotifications = useMemo(() => {
+    const seen = new Set<string>()
+    const list: BudgetlyNotification[] = []
+    for (const notification of notifications) {
+      const createdDay = String(notification.created_at || '').slice(0, 10)
+      const dedupeKey = typeof notification.metadata?.dedupe_key === 'string'
+        ? notification.metadata.dedupe_key
+        : `${notification.title}-${notification.message}-${notification.type}-${createdDay}`
+      if (seen.has(dedupeKey)) continue
+      seen.add(dedupeKey)
+      list.push(notification)
+    }
+    return list
+  }, [notifications])
+  const unreadCount = uniqueNotifications.filter((item) => item.status === 'unread').length
   const formatRelativeTime = (iso: string) => {
     const diffMs = Date.now() - new Date(iso).getTime()
     const minutes = Math.max(0, Math.floor(diffMs / 60000))
@@ -1775,7 +1789,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                 <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
               </div>
               <div className="notifList">
-                {notifications.map((item, index) => {
+                {uniqueNotifications.map((item, index) => {
                   const meta = getNotificationIcon(item)
                   const Icon = meta.icon
                   return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
@@ -1787,7 +1801,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                     <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
                   </button>
                 })}
-                {notifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+                {uniqueNotifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
               </div>
               <button className="notifFooter" onClick={() => window.dispatchEvent(new Event('budgetly:open-settings-general'))}>View all notifications <ChevronRight size={18} /></button>
             </div> : null}
