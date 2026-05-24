@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, ChevronDown, ChevronUp } from 'lucide-react'
+import { AlertTriangle, Bell, CalendarDays, ChevronDown, ChevronRight, ChevronUp, FileText, LineChart, Settings, Tag, TrendingUp } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -7,7 +7,7 @@ import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
-import { clearReadNotifications, generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateNetWorthNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
+import { generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateNetWorthNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -1652,6 +1652,25 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     return () => window.removeEventListener('mousedown', onDown)
   }, [notifOpen])
   const unreadCount = notifications.filter((item) => item.status === 'unread').length
+  const formatRelativeTime = (iso: string) => {
+    const diffMs = Date.now() - new Date(iso).getTime()
+    const minutes = Math.max(0, Math.floor(diffMs / 60000))
+    if (minutes < 60) return `${minutes || 1}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    return `${Math.floor(hours / 24)}d ago`
+  }
+  const getNotificationIcon = (item: BudgetlyNotification) => {
+    const key = `${item.category}:${item.type}`.toLowerCase()
+    if (key.includes('bills_recurring') || key.includes('recurring')) return { icon: CalendarDays, className: 'notifIcon recurring' }
+    if (key.includes('subscription')) return { icon: Tag, className: 'notifIcon subscription' }
+    if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
+    if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
+    if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
+    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
+    if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
+    return { icon: Bell, className: 'notifIcon system' }
+  }
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -1749,12 +1768,28 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
             <select className={`select ${isPhone ? 'mobileMonthSelect' : ''}`} style={{ maxWidth: isPhone ? undefined : 220 }} value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
             </select>
-            <button ref={bellRef} className="btn" style={{ width: 44, height: 44, borderRadius: 12, position: 'relative' }} onClick={() => setNotifOpen((v) => !v)}><Bell size={18} />{unreadCount > 0 ? <span style={{ position: 'absolute', right: 4, top: 4, background: '#ef4444', color: '#fff', minWidth: 16, height: 16, fontSize: 10, borderRadius: 999, display: 'grid', placeItems: 'center', padding: '0 4px' }}>{unreadCount}</span> : null}</button>
-            {notifOpen ? <div ref={panelRef} style={{ position: 'absolute', top: 52, right: 0, width: 340, maxHeight: 520, overflowY: 'auto', zIndex: 50, background: theme === 'dark' ? '#0f172a' : '#fff', border: '1px solid var(--line)', borderRadius: 14, boxShadow: '0 18px 40px rgba(0,0,0,.2)' }}>
-              <div className="row space" style={{ padding: 16, borderBottom: '1px solid var(--line)' }}><strong>Notifications</strong><button className="btn ghost" style={{ padding: 0, border: 0 }} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button></div>
-              {(notifications.length ? notifications : []).map((item) => <button key={item.id} className="row space" style={{ width: '100%', textAlign: 'left', padding: '10px 14px', border: 0, borderBottom: '1px solid var(--line)', background: item.status === 'unread' ? (theme === 'dark' ? 'rgba(59,130,246,.08)' : 'rgba(59,130,246,.06)') : 'transparent' }} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}><span>{item.title}</span><small>{new Date(item.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small></button>)}
-              {notifications.length === 0 ? <div style={{ padding: 16 }} className="muted">You’re all caught up.</div> : null}
-              <div className="row space" style={{ padding: 12 }}><button className="btn ghost" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); setNotifications(await getNotifications(userId)) }}>Clear read notifications</button><button className="btn ghost" onClick={() => window.dispatchEvent(new Event('budgetly:open-settings-general'))}>Open notification settings</button></div>
+            <button ref={bellRef} className="notifBellBtn" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
+            {notifOpen ? <div ref={panelRef} className="notification-popover">
+              <div className="notifHeader">
+                <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
+                <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
+              </div>
+              <div className="notifList">
+                {notifications.map((item, index) => {
+                  const meta = getNotificationIcon(item)
+                  const Icon = meta.icon
+                  return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
+                    <span className={meta.className}><Icon size={23} /></span>
+                    <span className="notifContent">
+                      <span className="notifTitle">{item.title}</span>
+                      <span className="notifSubtitle">{item.message}</span>
+                    </span>
+                    <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
+                  </button>
+                })}
+                {notifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+              </div>
+              <button className="notifFooter" onClick={() => window.dispatchEvent(new Event('budgetly:open-settings-general'))}>View all notifications <ChevronRight size={18} /></button>
             </div> : null}
           </div>
         </div>
