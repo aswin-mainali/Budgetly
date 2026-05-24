@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, Bell, CalendarDays, ChevronDown, ChevronUp, FileText, LineChart, Settings, Tag, TrendingUp } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -6,6 +7,7 @@ import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
+import { clearReadNotifications, generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -1580,7 +1582,7 @@ function loadTawkWidget() {
 }
 
 
-export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType'>) {
+export function DashboardView({ budget, theme, onOpenTransactionsByType, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'email' | 'userId'>) {
   const { data, months, activeMonth, setActiveMonth, income, expenses, net, byCategory, daily, monthlyTrend, sortedCategories, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
@@ -1602,12 +1604,119 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
   const recurringPageSize = getResponsivePageSize(3, 3, 3)
   const [budgetPage, setBudgetPage] = useState(1)
   const [recurringPage, setRecurringPage] = useState(1)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [notifications, setNotifications] = useState<BudgetlyNotification[]>([])
+  const bellRef = useRef<HTMLButtonElement | null>(null)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const profile = readCachedUserProfile()
+  const displayName = `${profile.firstName ?? ''} ${profile.lastName ?? ''}`.trim() || (email?.split('@')[0] ?? 'there')
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const budgetPages = Math.max(1, Math.ceil(sortedCategories.length / budgetPageSize))
   const recurringPages = Math.max(1, Math.ceil(upcomingRecurringThisMonth.length / recurringPageSize))
   const pagedBudgets = useMemo(() => sortedCategories.slice((budgetPage - 1) * budgetPageSize, budgetPage * budgetPageSize), [sortedCategories, budgetPage, budgetPageSize])
   const pagedRecurring = useMemo(() => upcomingRecurringThisMonth.slice((recurringPage - 1) * recurringPageSize, recurringPage * recurringPageSize), [upcomingRecurringThisMonth, recurringPage, recurringPageSize])
   useEffect(() => setBudgetPage((prev) => Math.min(prev, budgetPages)), [budgetPages])
   useEffect(() => setRecurringPage((prev) => Math.min(prev, recurringPages)), [recurringPages])
+  useEffect(() => {
+    if (!userId) return
+    const boot = async () => {
+      try {
+        if (import.meta.env.DEV) console.log('Generating notifications for user:', userId)
+        const prefs = await getNotificationPreferences(userId)
+        if (prefs.bills_recurring) await generateRecurringNotifications(userId)
+        if (prefs.budgets) await generateBudgetNotifications(userId)
+        if (prefs.subscriptions) await generateSubscriptionNotifications(userId)
+        if (prefs.goals) await generateGoalNotifications(userId)
+        if (prefs.investments) await generateInvestmentNotifications(userId)
+        if (prefs.monthly_reports) await generateMonthlyReportNotifications(userId)
+        const loaded = await getNotifications(userId)
+        if (import.meta.env.DEV) console.log('Notifications loaded:', loaded.length)
+        setNotifications(loaded)
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Notification generation failed', error)
+        setNotifications([])
+      }
+    }
+    void boot()
+  }, [userId])
+  useEffect(() => {
+    const onDown = (event: MouseEvent) => {
+      if (!notifOpen) return
+      const target = event.target as Node
+      if (panelRef.current?.contains(target) || bellRef.current?.contains(target)) return
+      setNotifOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [notifOpen])
+  const uniqueNotifications = useMemo(() => {
+    const seen = new Set<string>()
+    const list: BudgetlyNotification[] = []
+    for (const notification of notifications) {
+      if (notification.category === 'net_worth') continue
+      const createdDay = String(notification.created_at || '').slice(0, 10)
+      const dedupeKey = typeof notification.metadata?.dedupe_key === 'string'
+        ? notification.metadata.dedupe_key
+        : `${notification.title}-${notification.message}-${notification.type}-${createdDay}`
+      if (seen.has(dedupeKey)) continue
+      seen.add(dedupeKey)
+      list.push(notification)
+    }
+    return list
+  }, [notifications])
+  const unreadCount = uniqueNotifications.filter((item) => item.status === 'unread').length
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('budgetly:notif-unread', { detail: { count: unreadCount } }))
+  }, [unreadCount])
+  useEffect(() => {
+    const toggle = () => setNotifOpen((prev) => !prev)
+    window.addEventListener('budgetly:toggle-notif-panel', toggle)
+    return () => window.removeEventListener('budgetly:toggle-notif-panel', toggle)
+  }, [])
+  const formatRelativeTime = (iso: string) => {
+    const diffMs = Date.now() - new Date(iso).getTime()
+    const minutes = Math.max(0, Math.floor(diffMs / 60000))
+    if (minutes < 60) return `${minutes || 1}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    return `${Math.floor(hours / 24)}d ago`
+  }
+  const getNotificationIcon = (item: BudgetlyNotification) => {
+    const key = `${item.category}:${item.type}`.toLowerCase()
+    if (key.includes('bills_recurring') || key.includes('recurring')) return { icon: CalendarDays, className: 'notifIcon recurring' }
+    if (key.includes('subscription')) return { icon: Tag, className: 'notifIcon subscription' }
+    if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
+    if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
+    if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
+    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
+    if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
+    return { icon: Bell, className: 'notifIcon system' }
+  }
+  const renderNotificationPanel = () => (
+    <div ref={panelRef} className="notification-popover">
+      <div className="notifHeader">
+        <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
+        <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
+      </div>
+      <div className="notifList notification-mobile-list">
+        {uniqueNotifications.map((item, index) => {
+          const meta = getNotificationIcon(item)
+          const Icon = meta.icon
+          return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
+            <span className={meta.className}><Icon size={23} /></span>
+            <span className="notifContent">
+              <span className="notifTitle">{item.title}</span>
+              <span className="notifSubtitle">{item.message}</span>
+            </span>
+            <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
+          </button>
+        })}
+        {uniqueNotifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+      </div>
+      <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); setNotifications(await getNotifications(userId)) }}>Clear read notifications</button>
+    </div>
+  )
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -1638,11 +1747,14 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
         <section className="mobileDashHero">
           <div className="mobileDashTitleRow">
             <div className="mobileDashTitle">Dashboard</div>
-            <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
-              {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
-            </select>
+            <div className="mobileDashControls">
+              <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+                {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
+              </select>
+            </div>
           </div>
           <div className="mobileDashSubtitle">Here’s your financial overview</div>
+          {notifOpen ? renderNotificationPanel() : null}
         </section>
         <div className="mobileDashKpis">
           <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small></button>
@@ -1698,13 +1810,16 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType }: Pick<
       <div className={`card ${isPhone ? 'mobileDashboardCard' : ''}`}>
         <div className={`row space dashboardTopRow ${isPhone ? 'mobileDashTop' : ''}`} style={{ marginBottom: isPhone ? 14 : 10 }}>
           <div className={isPhone ? 'mobileDashIntro' : ''}>
-            <div className="h1">Dashboard</div>
-            <small>Month: {helpers.monthLabel(activeMonth)}</small>
-            {isPhone ? <div className="mobileDashSubtle">A cleaner snapshot of your money, trends, and monthly momentum.</div> : null}
+            <div style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.2 }}>Hi, {displayName} 👋</div>
+            <small>{greeting} — here’s what needs your attention today.</small>
           </div>
-          <select className={`select ${isPhone ? 'mobileMonthSelect' : ''}`} style={{ maxWidth: isPhone ? undefined : 220 }} value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
-            {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
-          </select>
+          <div style={{ position: 'relative', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <select className={`select ${isPhone ? 'mobileMonthSelect' : ''}`} style={{ maxWidth: isPhone ? undefined : 220 }} value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+              {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
+            </select>
+            <button ref={bellRef} className="notifBellBtn" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
+            {notifOpen ? renderNotificationPanel() : null}
+          </div>
         </div>
 
         <div className={`grid cols3 ${isPhone ? 'mobileKpiGrid' : ''} ${useCompactDashboard ? 'dashboardKpiCompact' : ''}`} style={{ marginBottom: isPhone ? 18 : 14 }}>
@@ -4718,6 +4833,19 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [shortcutListening, setShortcutListening] = useState(false)
   const [shortcutError, setShortcutError] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
+  const [notificationPrefs, setNotificationPrefs] = useState({ bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true })
+  const [notificationsExpanded, setNotificationsExpanded] = useState(false)
+  useEffect(() => { if (!userId) return; void getNotificationPreferences(userId).then((prefs) => setNotificationPrefs(prefs)) }, [userId])
+  const notificationItems: Array<{ key: keyof typeof notificationPrefs; label: string; description: string }> = [
+    { key: 'bills_recurring', label: 'Bills & Recurring', description: 'Upcoming bills, recurring income, and recurring expenses.' },
+    { key: 'budgets', label: 'Budgets', description: 'Budget usage, warnings, and exceeded limits.' },
+    { key: 'subscriptions', label: 'Subscriptions', description: 'Upcoming subscription charges and subscription reminders.' },
+    { key: 'goals', label: 'Goals', description: 'Goal progress and milestone updates.' },
+    { key: 'investments', label: 'Investments', description: 'Portfolio changes, refresh reminders, and investment insights.' },
+    { key: 'net_worth', label: 'Net Worth', description: 'Net worth changes and milestone updates.' },
+    { key: 'monthly_reports', label: 'Monthly Reports', description: 'Monthly report reminders and closeout updates.' },
+    { key: 'system_updates', label: 'System Updates', description: 'Sync, settings, and product update messages.' },
+  ]
 
   const normalizeShortcut = (value: string) => value.trim()
   const blockedShortcuts = new Set([
@@ -5094,6 +5222,47 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                 </div>
                 <small>Click the box and press any key combination. The pressed shortcut will appear here, for example: Shift + O.</small>
                 {shortcutError ? <small className="settingsShortcutError">{shortcutError}</small> : null}
+              </div>
+
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <button
+                  type="button"
+                  className="settingsNotifHeader"
+                  onClick={() => setNotificationsExpanded((prev) => !prev)}
+                  aria-expanded={notificationsExpanded}
+                  aria-controls="settings-notification-list"
+                >
+                  <span>
+                    <span className="h1" style={{ fontSize: 16, margin: 0, display: 'block', textAlign: 'left' }}>Notifications</span>
+                    <small>Control which notification categories are generated and shown.</small>
+                  </span>
+                  {notificationsExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+                <div id="settings-notification-list" className={`settingsNotifBody ${notificationsExpanded ? 'expanded' : ''}`}>
+                  {notificationItems.map((item) => (
+                    <div key={item.key} className="settingsNotifRow">
+                      <div>
+                        <div className="settingsNotifLabel">{item.label}</div>
+                        <small>{item.description}</small>
+                      </div>
+                      <button
+                        type="button"
+                        className={`settingsSwitch ${notificationPrefs[item.key] ? 'on' : ''}`}
+                        role="switch"
+                        aria-checked={notificationPrefs[item.key]}
+                        aria-label={`Toggle ${item.label} notifications`}
+                        onClick={async () => {
+                          if (!userId) return
+                          const next = { ...notificationPrefs, [item.key]: !notificationPrefs[item.key] }
+                          setNotificationPrefs(next)
+                          await updateNotificationPreferences(userId, { [item.key]: next[item.key] })
+                        }}
+                      >
+                        <span className="settingsSwitchKnob" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="settingsFieldCard settingsFieldCardWide">

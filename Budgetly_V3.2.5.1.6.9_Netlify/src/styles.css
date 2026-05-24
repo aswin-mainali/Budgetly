@@ -2565,6 +2565,31 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsShortcutInput{width:100%;border:1px solid rgba(148,163,184,.34);border-radius:10px}
 .settingsShortcutInput:focus{border-color:#8b5cf6;box-shadow:0 0 0 1px rgba(139,92,246,.45)}
 .settingsShortcutError{color:#ef4444}
+.settingsNotifHeader{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:inherit;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:0;
+  cursor:pointer;
+}
+.settingsNotifHeader:focus-visible{outline:2px solid rgba(59,130,246,.7);outline-offset:4px;border-radius:10px}
+.settingsNotifBody{max-height:0;overflow:hidden;transition:max-height .25s ease, margin-top .25s ease}
+.settingsNotifBody.expanded{max-height:860px;margin-top:10px}
+.settingsNotifRow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(148,163,184,.14)}
+.settingsNotifLabel{font-weight:600;margin-bottom:2px}
+.settingsSwitch{
+  width:48px;height:28px;border-radius:999px;border:1px solid rgba(148,163,184,.4);
+  background:rgba(100,116,139,.5);display:inline-flex;align-items:center;padding:2px;flex:0 0 auto;cursor:pointer;transition:.2s;
+}
+.settingsSwitch.on{background:linear-gradient(135deg,#10b981,#3b82f6);border-color:transparent}
+.settingsSwitch:focus-visible{outline:2px solid rgba(59,130,246,.75);outline-offset:2px}
+.settingsSwitchKnob{width:22px;height:22px;border-radius:999px;background:#fff;transition:transform .2s}
+.settingsSwitch.on .settingsSwitchKnob{transform:translateX(20px)}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
 .settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch}
 .settingsAccountGrid > .card{height:100%}
@@ -2611,6 +2636,60 @@ body.light .deleteConfirmModal p strong{color:#111827}
   padding-bottom: 4px;
 }
 .settingsTopTabs::-webkit-scrollbar { display: none; }
+.notifBellBtn{
+  width:52px;height:52px;border-radius:16px;border:1px solid rgba(148,163,184,.25);background:rgba(255,255,255,.85);
+  box-shadow:0 10px 24px rgba(15,23,42,.12);display:grid;place-items:center;position:relative;color:#0f172a;
+}
+.notifBellBadge{position:absolute;right:-4px;top:-4px;min-width:22px;height:22px;border-radius:999px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 5px}
+.notification-popover{
+  position:absolute;right:0;top:calc(100% + 14px);width:540px;max-height:720px;background:#fff;border-radius:24px;
+  border:1px solid rgba(15,23,42,.08);box-shadow:0 24px 70px rgba(15,23,42,.18);z-index:1000;overflow:hidden;
+}
+.notification-popover::before{content:"";position:absolute;top:-10px;right:88px;width:20px;height:20px;background:inherit;border-left:1px solid rgba(15,23,42,.08);border-top:1px solid rgba(15,23,42,.08);transform:rotate(45deg)}
+.notifHeader{display:flex;justify-content:space-between;align-items:center;padding:24px 28px 18px;border-bottom:1px solid rgba(148,163,184,.22)}
+.notifHeaderLeft{display:flex;align-items:center;gap:12px}
+.notifHeaderLeft strong{font-size:36px;font-size:22px}
+.notifNewBadge{padding:7px 14px;border-radius:999px;background:#e6f0ff;color:#2563eb;font-weight:700}
+.notifMarkRead{border:0;background:transparent;color:#2563eb;font-weight:700}
+.notifMarkRead:disabled{opacity:.45}
+.notifList{max-height:560px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
+.notifList::-webkit-scrollbar{display:none}
+.notifRow{width:100%;border:0;background:transparent;display:flex;gap:18px;align-items:center;padding:22px 20px;border-bottom:1px solid rgba(148,163,184,.2);text-align:left}
+.notifRow:hover{background:rgba(37,99,235,.04)}
+.notifRow.unreadHighlight{background:rgba(37,99,235,.06)}
+.notifIcon{width:54px;height:54px;border-radius:16px;display:grid;place-items:center;flex:0 0 auto}
+.notifIcon.recurring{background:#eaf2ff;color:#2563eb}.notifIcon.subscription{background:#fff3e8;color:#f59e0b}.notifIcon.budget{background:#feecef;color:#ef4444}.notifIcon.investments{background:#e8f8ef;color:#16a34a}.notifIcon.report{background:#efe9ff;color:#7c3aed}.notifIcon.networth{background:#e9f1ff;color:#2563eb}.notifIcon.system{background:#f1f5f9;color:#64748b}
+.notifContent{display:grid;gap:5px;min-width:0;flex:1}
+.notifTitle{font-size:16px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notifSubtitle{font-size:14px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notifRight{display:grid;justify-items:end;gap:10px;min-width:68px}
+.notifTime{font-size:14px;color:#64748b}
+.notifDot{width:12px;height:12px;border-radius:999px;background:#cbd5e1}.notifDot.unread{background:#2563eb}
+.notifFooter{width:100%;border:0;border-top:1px solid rgba(148,163,184,.22);padding:22px;background:transparent;color:#2563eb;font-size:34px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.notifFooter:hover{background:rgba(37,99,235,.05)}
+.notifEmpty{padding:36px 20px;display:grid;justify-items:center;gap:10px;color:#64748b}
+body.light .notifBellBtn{background:#fff}
+body:not(.light) .notifBellBtn{background:rgba(15,23,42,.9);color:#e2e8f0;border-color:rgba(148,163,184,.3)}
+body:not(.light) .notification-popover{background:#0f172a;border-color:rgba(148,163,184,.22);box-shadow:0 24px 70px rgba(2,6,23,.55)}
+body:not(.light) .notification-popover::before{border-color:rgba(148,163,184,.22)}
+body:not(.light) .notifHeader{border-bottom-color:rgba(148,163,184,.22)}
+body:not(.light) .notifHeaderLeft strong, body:not(.light) .notifTitle{color:#f8fafc}
+body:not(.light) .notifSubtitle, body:not(.light) .notifTime, body:not(.light) .notifEmpty{color:#94a3b8}
+body:not(.light) .notifRow{border-bottom-color:rgba(148,163,184,.2)}
+body:not(.light) .notifRow:hover{background:rgba(59,130,246,.12)}
+body:not(.light) .notifRow.unreadHighlight{background:rgba(59,130,246,.15)}
+@media (max-width: 768px){
+  .notification-popover{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 80px);top:auto;width:auto;max-height:75vh;border-radius:24px 24px 20px 20px;display:flex;flex-direction:column;overflow:hidden;z-index:1300}
+  .notification-popover::before{display:none}
+  .notifHeader{flex-shrink:0}
+  .notifList{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 12px)}
+  .notification-mobile-list{overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
+  .notification-mobile-list::-webkit-scrollbar{display:none}
+  .notifFooter{flex-shrink:0}
+  .notifIcon{width:46px;height:46px}
+  .notifTitle,.notifSubtitle{white-space:normal}
+  .notifRow{min-height:74px}
+}
 .settingsTopNavBtn {
   min-width: max-content;
   flex: 0 0 auto;
@@ -8330,6 +8409,9 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px}
   body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
   body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px}
+  body.mobile-app .mobileNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
+  body.mobile-app .mobileTopNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
   body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:var(--text);max-width:100%;word-break:normal;white-space:nowrap}
 
   @media (max-width: 420px){
