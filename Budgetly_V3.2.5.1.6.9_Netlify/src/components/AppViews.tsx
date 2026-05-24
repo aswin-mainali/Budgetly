@@ -7,7 +7,7 @@ import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
-import { clearReadNotifications, generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateNetWorthNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
+import { clearReadNotifications, generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -1629,7 +1629,6 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
         if (prefs.subscriptions) await generateSubscriptionNotifications(userId)
         if (prefs.goals) await generateGoalNotifications(userId)
         if (prefs.investments) await generateInvestmentNotifications(userId)
-        if (prefs.net_worth) await generateNetWorthNotifications(userId)
         if (prefs.monthly_reports) await generateMonthlyReportNotifications(userId)
         const loaded = await getNotifications(userId)
         if (import.meta.env.DEV) console.log('Notifications loaded:', loaded.length)
@@ -1655,6 +1654,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     const seen = new Set<string>()
     const list: BudgetlyNotification[] = []
     for (const notification of notifications) {
+      if (notification.category === 'net_worth') continue
       const createdDay = String(notification.created_at || '').slice(0, 10)
       const dedupeKey = typeof notification.metadata?.dedupe_key === 'string'
         ? notification.metadata.dedupe_key
