@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, ChevronDown, ChevronUp } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -4763,7 +4763,18 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [shortcutError, setShortcutError] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
   const [notificationPrefs, setNotificationPrefs] = useState({ bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true })
+  const [notificationsExpanded, setNotificationsExpanded] = useState(false)
   useEffect(() => { if (!userId) return; void getNotificationPreferences(userId).then((prefs) => setNotificationPrefs(prefs)) }, [userId])
+  const notificationItems: Array<{ key: keyof typeof notificationPrefs; label: string; description: string }> = [
+    { key: 'bills_recurring', label: 'Bills & Recurring', description: 'Upcoming bills, recurring income, and recurring expenses.' },
+    { key: 'budgets', label: 'Budgets', description: 'Budget usage, warnings, and exceeded limits.' },
+    { key: 'subscriptions', label: 'Subscriptions', description: 'Upcoming subscription charges and subscription reminders.' },
+    { key: 'goals', label: 'Goals', description: 'Goal progress and milestone updates.' },
+    { key: 'investments', label: 'Investments', description: 'Portfolio changes, refresh reminders, and investment insights.' },
+    { key: 'net_worth', label: 'Net Worth', description: 'Net worth changes and milestone updates.' },
+    { key: 'monthly_reports', label: 'Monthly Reports', description: 'Monthly report reminders and closeout updates.' },
+    { key: 'system_updates', label: 'System Updates', description: 'Sync, settings, and product update messages.' },
+  ]
 
   const normalizeShortcut = (value: string) => value.trim()
   const blockedShortcuts = new Set([
@@ -5143,15 +5154,43 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </div>
 
               <div className="settingsFieldCard settingsFieldCardWide">
-                <div>
-                  <div className="h1" style={{ fontSize: 16, margin: 0 }}>Notifications</div>
-                  <small>Control which notification categories are generated and shown.</small>
-                </div>
-                <div className="grid" style={{ gap: 8, marginTop: 10 }}>
-                  {[
-                    ['bills_recurring', 'Bills & Recurring'], ['budgets', 'Budgets'], ['subscriptions', 'Subscriptions'], ['goals', 'Goals'],
-                    ['investments', 'Investments'], ['net_worth', 'Net Worth'], ['monthly_reports', 'Monthly Reports'], ['system_updates', 'System Updates'],
-                  ].map(([key, label]) => <div key={key} className="row between"><small>{label}</small><button className={`btn ${notificationPrefs[key as keyof typeof notificationPrefs] ? 'primary' : ''}`} onClick={async () => { if (!userId) return; const next = { ...notificationPrefs, [key]: !notificationPrefs[key as keyof typeof notificationPrefs] }; setNotificationPrefs(next); await updateNotificationPreferences(userId, { [key]: next[key as keyof typeof next] }) }}>{notificationPrefs[key as keyof typeof notificationPrefs] ? 'On' : 'Off'}</button></div>)}
+                <button
+                  type="button"
+                  className="settingsNotifHeader"
+                  onClick={() => setNotificationsExpanded((prev) => !prev)}
+                  aria-expanded={notificationsExpanded}
+                  aria-controls="settings-notification-list"
+                >
+                  <span>
+                    <span className="h1" style={{ fontSize: 16, margin: 0, display: 'block', textAlign: 'left' }}>Notifications</span>
+                    <small>Control which notification categories are generated and shown.</small>
+                  </span>
+                  {notificationsExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+                <div id="settings-notification-list" className={`settingsNotifBody ${notificationsExpanded ? 'expanded' : ''}`}>
+                  {notificationItems.map((item) => (
+                    <div key={item.key} className="settingsNotifRow">
+                      <div>
+                        <div className="settingsNotifLabel">{item.label}</div>
+                        <small>{item.description}</small>
+                      </div>
+                      <button
+                        type="button"
+                        className={`settingsSwitch ${notificationPrefs[item.key] ? 'on' : ''}`}
+                        role="switch"
+                        aria-checked={notificationPrefs[item.key]}
+                        aria-label={`Toggle ${item.label} notifications`}
+                        onClick={async () => {
+                          if (!userId) return
+                          const next = { ...notificationPrefs, [item.key]: !notificationPrefs[item.key] }
+                          setNotificationPrefs(next)
+                          await updateNotificationPreferences(userId, { [item.key]: next[item.key] })
+                        }}
+                      >
+                        <span className="settingsSwitchKnob" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 

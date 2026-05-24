@@ -2565,6 +2565,31 @@ body.light .deleteConfirmModal p strong{color:#111827}
 .settingsShortcutInput{width:100%;border:1px solid rgba(148,163,184,.34);border-radius:10px}
 .settingsShortcutInput:focus{border-color:#8b5cf6;box-shadow:0 0 0 1px rgba(139,92,246,.45)}
 .settingsShortcutError{color:#ef4444}
+.settingsNotifHeader{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:inherit;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:0;
+  cursor:pointer;
+}
+.settingsNotifHeader:focus-visible{outline:2px solid rgba(59,130,246,.7);outline-offset:4px;border-radius:10px}
+.settingsNotifBody{max-height:0;overflow:hidden;transition:max-height .25s ease, margin-top .25s ease}
+.settingsNotifBody.expanded{max-height:860px;margin-top:10px}
+.settingsNotifRow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(148,163,184,.14)}
+.settingsNotifLabel{font-weight:600;margin-bottom:2px}
+.settingsSwitch{
+  width:48px;height:28px;border-radius:999px;border:1px solid rgba(148,163,184,.4);
+  background:rgba(100,116,139,.5);display:inline-flex;align-items:center;padding:2px;flex:0 0 auto;cursor:pointer;transition:.2s;
+}
+.settingsSwitch.on{background:linear-gradient(135deg,#10b981,#3b82f6);border-color:transparent}
+.settingsSwitch:focus-visible{outline:2px solid rgba(59,130,246,.75);outline-offset:2px}
+.settingsSwitchKnob{width:22px;height:22px;border-radius:999px;background:#fff;transition:transform .2s}
+.settingsSwitch.on .settingsSwitchKnob{transform:translateX(20px)}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
 .settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch}
 .settingsAccountGrid > .card{height:100%}
