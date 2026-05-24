@@ -2679,10 +2679,16 @@ body:not(.light) .notifRow{border-bottom-color:rgba(148,163,184,.2)}
 body:not(.light) .notifRow:hover{background:rgba(59,130,246,.12)}
 body:not(.light) .notifRow.unreadHighlight{background:rgba(59,130,246,.15)}
 @media (max-width: 768px){
-  .notification-popover{right:12px;left:12px;width:auto;max-height:75vh}
-  .notification-popover::before{right:30px}
+  .notification-popover{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 80px);top:auto;width:auto;max-height:75vh;border-radius:24px 24px 20px 20px;display:flex;flex-direction:column;overflow:hidden;z-index:1300}
+  .notification-popover::before{display:none}
+  .notifHeader{flex-shrink:0}
+  .notifList{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 12px)}
+  .notification-mobile-list{overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
+  .notification-mobile-list::-webkit-scrollbar{display:none}
+  .notifFooter{flex-shrink:0}
   .notifIcon{width:46px;height:46px}
   .notifTitle,.notifSubtitle{white-space:normal}
+  .notifRow{min-height:74px}
 }
 .settingsTopNavBtn {
   min-width: max-content;
@@ -8403,6 +8409,8 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px}
   body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
   body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px}
+  body.mobile-app .mobileNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
   body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:var(--text);max-width:100%;word-break:normal;white-space:nowrap}
 
   @media (max-width: 420px){

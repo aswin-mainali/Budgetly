@@ -1685,6 +1685,30 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
     return { icon: Bell, className: 'notifIcon system' }
   }
+  const renderNotificationPanel = () => (
+    <div ref={panelRef} className="notification-popover">
+      <div className="notifHeader">
+        <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
+        <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
+      </div>
+      <div className="notifList notification-mobile-list">
+        {uniqueNotifications.map((item, index) => {
+          const meta = getNotificationIcon(item)
+          const Icon = meta.icon
+          return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
+            <span className={meta.className}><Icon size={23} /></span>
+            <span className="notifContent">
+              <span className="notifTitle">{item.title}</span>
+              <span className="notifSubtitle">{item.message}</span>
+            </span>
+            <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
+          </button>
+        })}
+        {uniqueNotifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+      </div>
+      <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); setNotifications(await getNotifications(userId)) }}>Clear read notifications</button>
+    </div>
+  )
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -1715,11 +1739,15 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
         <section className="mobileDashHero">
           <div className="mobileDashTitleRow">
             <div className="mobileDashTitle">Dashboard</div>
-            <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
-              {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
-            </select>
+            <div className="mobileDashControls">
+              <button ref={bellRef} className="notifBellBtn mobileNotifBell" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
+              <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
+                {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
+              </select>
+            </div>
           </div>
           <div className="mobileDashSubtitle">Here’s your financial overview</div>
+          {notifOpen ? renderNotificationPanel() : null}
         </section>
         <div className="mobileDashKpis">
           <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small></button>
@@ -1783,28 +1811,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
               {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
             </select>
             <button ref={bellRef} className="notifBellBtn" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
-            {notifOpen ? <div ref={panelRef} className="notification-popover">
-              <div className="notifHeader">
-                <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
-                <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
-              </div>
-              <div className="notifList">
-                {uniqueNotifications.map((item, index) => {
-                  const meta = getNotificationIcon(item)
-                  const Icon = meta.icon
-                  return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
-                    <span className={meta.className}><Icon size={23} /></span>
-                    <span className="notifContent">
-                      <span className="notifTitle">{item.title}</span>
-                      <span className="notifSubtitle">{item.message}</span>
-                    </span>
-                    <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
-                  </button>
-                })}
-                {uniqueNotifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
-              </div>
-              <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); setNotifications(await getNotifications(userId)) }}>Clear read notifications</button>
-            </div> : null}
+            {notifOpen ? renderNotificationPanel() : null}
           </div>
         </div>
 
