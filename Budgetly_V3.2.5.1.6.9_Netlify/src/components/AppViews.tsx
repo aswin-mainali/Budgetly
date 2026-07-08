@@ -1582,6 +1582,51 @@ function loadTawkWidget() {
 }
 
 
+function Sparkline({ values, color, width = 74, height = 30 }: { values: number[]; color: string; width?: number; height?: number }) {
+  const safe = values.length ? values : [0]
+  const max = Math.max(1, ...safe.map((value) => Math.abs(value)))
+  const count = safe.length
+  const gap = count > 1 ? 3 : 0
+  const barWidth = Math.max(2, (width - gap * (count - 1)) / count)
+  return (
+    <svg className="kpiSparkline" width={width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      {safe.map((value, index) => {
+        const barHeight = Math.max(2, (Math.abs(value) / max) * (height - 2))
+        const x = index * (barWidth + gap)
+        const y = height - barHeight
+        return <rect key={index} x={x} y={y} width={barWidth} height={barHeight} rx={Math.min(2.5, barWidth / 2)} fill={color} opacity={value === 0 ? 0.22 : 0.9} />
+      })}
+    </svg>
+  )
+}
+
+function budgetHealthColor(ratio: number) {
+  if (ratio >= 1) return 'var(--danger)'
+  if (ratio >= 0.8) return 'var(--warn)'
+  return 'var(--accent)'
+}
+
+function DeltaBadge({ current, previous, invert = false }: { current: number; previous: number; invert?: boolean }) {
+  if (!Number.isFinite(previous) || previous === 0) {
+    if (!current) return null
+    return <span className="deltaBadge neutral">New this month</span>
+  }
+  const pct = ((current - previous) / Math.abs(previous)) * 100
+  const rounded = Math.round(pct)
+  const up = rounded > 0
+  const down = rounded < 0
+  const favorable = invert ? down : up
+  const tone = rounded === 0 ? 'neutral' : favorable ? 'good' : 'bad'
+  const Icon = up ? ArrowUp : down ? ArrowDown : null
+  return (
+    <span className={`deltaBadge ${tone}`}>
+      {Icon ? <Icon size={12} strokeWidth={2.75} /> : null}
+      <span className="num">{up ? '+' : ''}{rounded}%</span>
+      <span className="deltaCtx">vs last month</span>
+    </span>
+  )
+}
+
 export function DashboardView({ budget, theme, onOpenTransactionsByType, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'email' | 'userId'>) {
   const { data, months, activeMonth, setActiveMonth, income, expenses, net, byCategory, daily, monthlyTrend, sortedCategories, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
@@ -1741,6 +1786,29 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     })
   }, [activeMonth, data.transactions])
 
+  const previousMonthTotals = useMemo(() => {
+    const activeDate = new Date(`${activeMonth}-01T00:00:00`)
+    if (Number.isNaN(activeDate.getTime())) return { income: 0, expenses: 0, net: 0 }
+    const prev = new Date(activeDate.getFullYear(), activeDate.getMonth() - 1, 1)
+    const prevKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`
+    let incomeSum = 0
+    let expenseSum = 0
+    data.transactions.forEach((tx) => {
+      if (!tx.date?.startsWith(`${prevKey}-`)) return
+      const amount = Number(tx.amount || 0)
+      if (tx.type === 'income') incomeSum += amount
+      else expenseSum += amount
+    })
+    return { income: incomeSum, expenses: expenseSum, net: incomeSum - expenseSum }
+  }, [activeMonth, data.transactions])
+
+  const incomeSpark = useMemo(() => cashFlowSeries.map((bucket) => bucket.income), [cashFlowSeries])
+  const expenseSpark = useMemo(() => cashFlowSeries.map((bucket) => bucket.expenses), [cashFlowSeries])
+  const netSpark = useMemo(() => cashFlowSeries.map((bucket) => bucket.net), [cashFlowSeries])
+  const hasCashFlowData = useMemo(() => cashFlowSeries.some((bucket) => bucket.income !== 0 || bucket.expenses !== 0), [cashFlowSeries])
+  const hasSpendingData = byCategory.length > 0 && expenses > 0
+  const areaFillId = theme === 'dark' ? 'trendAreaFillDark' : 'trendAreaFillLight'
+
   if (isPhone) {
     return (
       <div className="mobileDashScreen">
@@ -1757,17 +1825,17 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
           {notifOpen ? renderNotificationPanel() : null}
         </section>
         <div className="mobileDashKpis">
-          <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong><small>This month</small></button>
-          <button type="button" className="mobileRefKpi expenses" onClick={() => onOpenTransactionsByType?.('expense')}><span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><small>This month</small></button>
-          <div className="mobileRefKpi net"><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><small>This month</small></div>
+          <button type="button" className="mobileRefKpi income" onClick={() => onOpenTransactionsByType?.('income')}><span className="kpiLabel">Income</span><strong className="num">{helpers.fmtMoney(income, data.currency)}</strong><DeltaBadge current={income} previous={previousMonthTotals.income} /></button>
+          <button type="button" className="mobileRefKpi expenses" onClick={() => onOpenTransactionsByType?.('expense')}><span className="kpiLabel">Expenses</span><strong className="num">{helpers.fmtMoney(expenses, data.currency)}</strong><DeltaBadge current={expenses} previous={previousMonthTotals.expenses} invert /></button>
+          <div className="mobileRefKpi net kpiHighlight"><span className="kpiLabel">Net</span><strong className="num">{helpers.fmtMoney(net, data.currency)}</strong><DeltaBadge current={net} previous={previousMonthTotals.net} /></div>
         </div>
         <div className="card mobileRefCard">
           <div className="row space"><h3>Cash flow trend</h3><span className="badge">Weekly</span></div>
-          <div style={{ height: 220 }}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowSeries}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="label" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={44} tickFormatter={(v:number)=>v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`} /><Legend /><Bar dataKey="income" fill={cashIncome} barSize={14} radius={[7,7,0,0]} /><Bar dataKey="expenses" fill={cashExpense} barSize={14} radius={[7,7,0,0]} /><Line type="monotone" dataKey="net" stroke={cashNet} strokeWidth={3} dot={{r:4}} /></ComposedChart></ResponsiveContainer></div>
+          <div style={{ height: 220 }}>{hasCashFlowData ? (<ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowSeries}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="label" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={44} tickFormatter={(v:number)=>v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`} /><Legend /><Bar dataKey="income" fill={cashIncome} barSize={14} radius={[7,7,0,0]} /><Bar dataKey="expenses" fill={cashExpense} barSize={14} radius={[7,7,0,0]} /><Line type="monotone" dataKey="net" stroke={cashNet} strokeWidth={3} dot={{r:4}} /></ComposedChart></ResponsiveContainer>) : (<div className="chartEmptyState"><svg className="chartEmptyLine" viewBox="0 0 300 90" preserveAspectRatio="none" aria-hidden="true"><path d="M0 70 C 45 40, 80 55, 120 45 S 210 20, 300 30" fill="none" stroke="var(--border)" strokeWidth="2.5" strokeDasharray="6 7" strokeLinecap="round" /></svg><p className="chartEmptyText">No transactions yet this month</p><button type="button" className="chartEmptyBtn" onClick={() => onOpenTransactionsByType?.('expense')}><PlusIcon size={15} /> Add a transaction</button></div>)}</div>
         </div>
         <div className="mobileRefTwoCol">
-          <div className="card mobileRefCard"><h3>Share of spending</h3><div className="mobileShareWrap"><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68}>{byCategory.map((r)=> <Cell key={r.id} fill={r.color} />)}</Pie></PieChart></ResponsiveContainer></div><div className="mobileShareLegend">{byCategory.slice(0, 6).map((r) => { const pct = expenses > 0 ? Math.round((r.total / expenses) * 100) : 0; return <div key={r.id} className="mobileShareLegendRow"><span><i style={{ background: r.color }} />{r.name}</span><strong>{pct}%</strong></div> })}</div></div></div>
-          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{pagedBudgets.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const pr=b>0?Math.min(1,spent/b):0;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small>{helpers.fmtMoney(spent,data.currency)} / {helpers.fmtMoney(b,data.currency)}</small></div><div className="progress"><div style={{width:`${pr*100}%`, background:'#16a34a'}} /></div></div>})}</div><PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} /></div>
+          <div className="card mobileRefCard"><h3>Share of spending</h3>{hasSpendingData ? (<div className="mobileShareWrap"><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68} paddingAngle={1.5}>{byCategory.map((r)=> <Cell key={r.id} fill={r.color} stroke="transparent" />)}</Pie></PieChart></ResponsiveContainer></div><div className="mobileShareLegend">{byCategory.slice(0, 6).map((r) => { const pct = expenses > 0 ? Math.round((r.total / expenses) * 100) : 0; return <div key={r.id} className="mobileShareLegendRow"><span><i style={{ background: r.color }} />{r.name}</span><strong className="num">{pct}%</strong></div> })}</div></div>) : (<div className="chartEmptyState" style={{minHeight:180}}><div className="ghostDonut" aria-hidden="true" /><p className="chartEmptyText">Add expenses to see your spending breakdown</p></div>)}</div>
+          <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{pagedBudgets.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const ratio=b>0?spent/b:0;const pr=Math.min(1,ratio);const remaining=b-spent;const accentColor=category.color??'#94a3b8';const rightLabel=spent>0?(remaining>=0?`${helpers.fmtMoney(remaining,data.currency)} left`:`${helpers.fmtMoney(Math.abs(remaining),data.currency)} over`):`${helpers.fmtMoney(spent,data.currency)} / ${helpers.fmtMoney(b,data.currency)}`;return <div key={category.id}><div className="row space"><small>{category.emoji??'🏷️'} {category.name}</small><small className="num">{rightLabel}</small></div><div className="progress budgetProgress" style={{ ['--track-color' as string]: accentColor }}><div style={{width:`${pr*100}%`, background:budgetHealthColor(ratio)}} /></div></div>})}</div><PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} /></div>
         </div>
         <div className="card mobileRefCard">
           <div className="row space"><h3>Monthly spending trends</h3><div className="row" style={{gap:10}}><small>This year</small><small>Last year</small></div></div>
@@ -1794,7 +1862,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="num" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -1817,19 +1885,37 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
             <select className={`select ${isPhone ? 'mobileMonthSelect' : ''}`} style={{ maxWidth: isPhone ? undefined : 220 }} value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
             </select>
+            {isPhone ? null : <span className="headerDivider" aria-hidden="true" />}
             <button ref={bellRef} className="notifBellBtn" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
             {notifOpen ? renderNotificationPanel() : null}
           </div>
         </div>
 
-        <div className={`grid cols3 ${isPhone ? 'mobileKpiGrid' : ''} ${useCompactDashboard ? 'dashboardKpiCompact' : ''}`} style={{ marginBottom: isPhone ? 18 : 14 }}>
+        <div className={`grid cols3 kpiRow ${isPhone ? 'mobileKpiGrid' : ''} ${useCompactDashboard ? 'dashboardKpiCompact' : ''}`} style={{ marginBottom: isPhone ? 18 : 14 }}>
           <button type="button" className={`kpi income clickableKpi ${isPhone ? 'mobileKpiCard' : ''}`} onClick={() => onOpenTransactionsByType?.('income')}>
-            <span>Income</span><strong>{helpers.fmtMoney(income, data.currency)}</strong>
+            <span className="kpiLabel">Income</span>
+            <strong className="num">{helpers.fmtMoney(income, data.currency)}</strong>
+            <div className="kpiMetaRow">
+              <DeltaBadge current={income} previous={previousMonthTotals.income} />
+              <Sparkline values={incomeSpark} color={cashIncome} />
+            </div>
           </button>
           <button type="button" className={`kpi expenses clickableKpi ${isPhone ? 'mobileKpiCard' : ''}`} onClick={() => onOpenTransactionsByType?.('expense')}>
-            <span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong>
+            <span className="kpiLabel">Expenses</span>
+            <strong className="num">{helpers.fmtMoney(expenses, data.currency)}</strong>
+            <div className="kpiMetaRow">
+              <DeltaBadge current={expenses} previous={previousMonthTotals.expenses} invert />
+              <Sparkline values={expenseSpark} color={cashExpense} />
+            </div>
           </button>
-          <div className={`kpi net ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong></div>
+          <div className={`kpi net kpiHighlight ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}>
+            <span className="kpiLabel">Net</span>
+            <strong className="num">{helpers.fmtMoney(net, data.currency)}</strong>
+            <div className="kpiMetaRow">
+              <DeltaBadge current={net} previous={previousMonthTotals.net} />
+              <Sparkline values={netSpark} color={cashNet} />
+            </div>
+          </div>
         </div>
 
         <div className={`grid cols2 dashboardSecondaryGrid ${useCompactDashboard ? 'dashboardSecondaryGridCompact' : ''}`}>
@@ -1840,6 +1926,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
               </div>
             </div>
             <div style={{ height: isPhone ? 220 : 260 }}>
+              {hasCashFlowData ? (
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={cashFlowSeries} margin={{ top: 12, right: 14, left: 2, bottom: 4 }}>
                   <CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} />
@@ -1883,23 +1970,37 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   />
                 </ComposedChart>
               </ResponsiveContainer>
+              ) : (
+                <div className="chartEmptyState">
+                  <svg className="chartEmptyLine" viewBox="0 0 300 90" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M0 70 C 45 40, 80 55, 120 45 S 210 20, 300 30" fill="none" stroke="var(--border)" strokeWidth="2.5" strokeDasharray="6 7" strokeLinecap="round" />
+                  </svg>
+                  <p className="chartEmptyText">No transactions yet this month</p>
+                  <button type="button" className="chartEmptyBtn" onClick={() => onOpenTransactionsByType?.('expense')}>
+                    <PlusIcon size={15} /> Add a transaction
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="card" style={{ background: 'rgba(255,255,255,.02)' }}>
+          <div className="card shareCard" style={{ background: 'rgba(255,255,255,.02)' }}>
             <h3>Share of spending</h3>
             <div style={{ height: isPhone ? 220 : 260 }}>
+              {hasSpendingData ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={byCategory}
                     dataKey="total"
                     nameKey="name"
+                    innerRadius={54}
                     outerRadius={95}
+                    paddingAngle={1.5}
                     labelLine={false}
                     label={renderPieEmojiLabel}
                   >
-                    {byCategory.map((row) => <Cell key={row.id} fill={row.color} />)}
+                    {byCategory.map((row) => <Cell key={row.id} fill={row.color} stroke="transparent" />)}
                   </Pie>
                   <Tooltip
                     formatter={(value: number) => helpers.fmtMoney(Number(value), data.currency)}
@@ -1910,11 +2011,17 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   />
                 </PieChart>
               </ResponsiveContainer>
+              ) : (
+                <div className="chartEmptyState">
+                  <div className="ghostDonut" aria-hidden="true" />
+                  <p className="chartEmptyText">Add expenses to see your spending breakdown</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="card" style={{ background: theme === 'dark' ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,0.78)', marginTop: 14 }}>
+        <div className="card heroCard" style={{ marginTop: 14 }}>
           <div className="row space" style={{ alignItems: 'center', marginBottom: 8 }}>
             <h3 style={{ marginBottom: 0 }}>Monthly spending trends</h3>
             {isPhone ? null : (
@@ -1927,6 +2034,12 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
           <div style={{ height: isPhone ? 240 : 300 }}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={monthlyTrend} margin={{ top: 14, right: 16, left: 8, bottom: 10 }}>
+                <defs>
+                  <linearGradient id={areaFillId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={trendThisYear} stopOpacity={theme === 'dark' ? 0.42 : 0.28} />
+                    <stop offset="100%" stopColor={trendThisYear} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} />
                 <XAxis
                   dataKey="month"
@@ -1955,6 +2068,15 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   formatter={(value: number, name: string) => [helpers.fmtMoney(Number(value), data.currency), name === 'thisYear' ? 'This year' : name === 'lastYear' ? 'Last year' : 'Current month']}
                 />
                 <Bar dataKey="highlight" fill={trendBar} radius={[12, 12, 0, 0]} barSize={isPhone ? 24 : 44} />
+                <Area
+                  type="monotone"
+                  dataKey="thisYear"
+                  stroke="none"
+                  fill={`url(#${areaFillId})`}
+                  fillOpacity={1}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />
                 <Line
                   type="monotone"
                   dataKey="thisYear"
@@ -1986,20 +2108,27 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
             {pagedBudgets.map((category) => {
               const spent = byCategory.find((row) => row.id === category.id)?.total ?? 0
               const budgetAmount = Number(category.budget_monthly ?? 0)
-              const progress = budgetAmount > 0 ? Math.min(1, spent / budgetAmount) : 0
+              const ratio = budgetAmount > 0 ? spent / budgetAmount : 0
+              const progress = Math.min(1, ratio)
               const overBudget = budgetAmount > 0 && spent > budgetAmount
+              const remaining = budgetAmount - spent
+              const accentColor = category.color ?? '#94a3b8'
+              const fillColor = budgetHealthColor(ratio)
+              const rightLabel = spent > 0
+                ? (remaining >= 0 ? `${helpers.fmtMoney(remaining, data.currency)} left` : `${helpers.fmtMoney(Math.abs(remaining), data.currency)} over`)
+                : `${helpers.fmtMoney(spent, data.currency)} / ${helpers.fmtMoney(budgetAmount, data.currency)}`
               return (
                 <div key={category.id} className="card budgetItemCard" style={{ background: 'rgba(255,255,255,.02)' }}>
                   <div className="row space" style={{ marginBottom: 8 }}>
                     <span className="badge">
-                      <span className="dot" style={{ background: category.color ?? '#94a3b8' }} />
+                      <span className="dot" style={{ background: accentColor }} />
                       <span>{category.emoji ?? '🏷️'}</span>
                       {category.name}
                     </span>
-                    <span className="badge">{helpers.fmtMoney(spent, data.currency)} / {helpers.fmtMoney(budgetAmount, data.currency)}</span>
+                    <span className="badge num" style={overBudget ? { color: 'var(--danger)' } : undefined}>{rightLabel}</span>
                   </div>
-                  <div className="progress" title={overBudget ? 'Over budget' : 'On track'}>
-                    <div style={{ width: `${progress * 100}%`, background: overBudget ? 'var(--danger)' : 'var(--accent)' }} />
+                  <div className="progress budgetProgress" title={overBudget ? 'Over budget' : 'On track'} style={{ ['--track-color' as string]: accentColor }}>
+                    <div style={{ width: `${progress * 100}%`, background: fillColor }} />
                   </div>
                   {overBudget ? <small className="budgetOverBudget" style={{ color: 'var(--danger)' }}>Over budget</small> : null}
                 </div>
@@ -2030,7 +2159,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="num" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
