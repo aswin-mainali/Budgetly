@@ -1601,7 +1601,7 @@ function Sparkline({ values, color, width = 74, height = 30 }: { values: number[
 }
 
 function budgetHealthColor(ratio: number) {
-  if (ratio >= 1) return 'var(--danger)'
+  if (ratio > 1) return 'var(--danger)'
   if (ratio >= 0.8) return 'var(--warn)'
   return 'var(--accent)'
 }
