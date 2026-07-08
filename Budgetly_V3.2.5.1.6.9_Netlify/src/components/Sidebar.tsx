@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
+import { BrandWordmark } from './BrandWordmark'
 
 export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
 
@@ -170,7 +171,7 @@ export default function Sidebar(props: {
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="brand">
         <div className="brandTitle">
-          <strong>Budgetly</strong>
+          <BrandWordmark />
         </div>
         <button className="btn" onClick={() => setCollapsed(!collapsed)} title="Collapse sidebar">
           <Menu size={18} />
