@@ -107,13 +107,20 @@ body.light .brandWordmark{ color:#111b3a; }
   filter:drop-shadow(0 5px 12px rgba(31,157,99,.30));
 }
 .brandWordmarkText{
-  font-size:29px;
+  font-size:34px;
   font-weight:800;
   letter-spacing:-.02em;
   line-height:1;
   color:inherit;
+  white-space:nowrap;
 }
 .sidebar.collapsed .brandWordmarkText{ display:none; }
+
+/* Compact-laptop sidebar is narrower (236px) — ease the wordmark down so it
+   does not crowd the collapse button */
+@media (max-width: 1366px){
+  body:not(.mobile-app) .brandWordmarkText{ font-size:27px; }
+}
 
 .sidebarClock{
   display:flex;
