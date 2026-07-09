@@ -304,46 +304,51 @@ export function NetWorthView() {
 
     {errorMsg ? <div className='card refCard netWorthError'>{errorMsg}</div> : null}
 
-    <div className='investKpis'>
-      <div className='card investKpi refCard'>
-        <div>
+    <div className='investKpis netWorthKpis'>
+      <div className='card investKpi refCard netWorthKpi feature'>
+        <div className='netWorthKpiHead'>
           <div className='investKpiLabel'>Net Worth</div>
-          <div className={`investKpiValue ${totals.netWorth > 0 ? 'pos' : totals.netWorth < 0 ? 'neg' : ''}`}>{money(totals.netWorth)}</div>
-          <div className='muted'>{periodStats ? `${money(periodStats.change)} (${pct(periodStats.changePercent)}) this period` : 'As of ' + new Date().toLocaleDateString()}</div>
+          <div className='investKpiBubble nwBubbleIndigo'><Scale size={16} /></div>
         </div>
-        <div className='investKpiBubble'><Scale size={16} /></div>
+        <div className={`investKpiValue ${totals.netWorth > 0 ? 'pos' : totals.netWorth < 0 ? 'neg' : ''}`}>{money(totals.netWorth)}</div>
+        {periodStats ? (
+          <div className={`netWorthKpiTrend ${periodStats.change >= 0 ? 'pos' : 'neg'}`}>
+            {periodStats.change >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+            <span>{pct(periodStats.changePercent)} this period</span>
+          </div>
+        ) : <div className='muted netWorthKpiSub'>As of {new Date().toLocaleDateString()}</div>}
       </div>
-      <div className='card investKpi refCard'>
-        <div>
+      <div className='card investKpi refCard netWorthKpi'>
+        <div className='netWorthKpiHead'>
           <div className='investKpiLabel'>Total Assets</div>
-          <div className='investKpiValue pos'>{money(totals.totalAssets)}</div>
-          <div className='muted'>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</div>
+          <div className='investKpiBubble nwBubbleGreen'><TrendingUp size={16} /></div>
         </div>
-        <div className='investKpiBubble'><TrendingUp size={16} /></div>
+        <div className='investKpiValue pos'>{money(totals.totalAssets)}</div>
+        <div className='muted netWorthKpiSub'>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</div>
       </div>
-      <div className='card investKpi refCard'>
-        <div>
+      <div className='card investKpi refCard netWorthKpi'>
+        <div className='netWorthKpiHead'>
           <div className='investKpiLabel'>Total Liabilities</div>
-          <div className='investKpiValue neg'>{money(totals.totalLiabilities)}</div>
-          <div className='muted'>{liabilities.length} {liabilities.length === 1 ? 'liability' : 'liabilities'}</div>
+          <div className='investKpiBubble nwBubbleRed'><TrendingDown size={16} /></div>
         </div>
-        <div className='investKpiBubble'><TrendingDown size={16} /></div>
+        <div className='investKpiValue neg'>{money(totals.totalLiabilities)}</div>
+        <div className='muted netWorthKpiSub'>{liabilities.length} {liabilities.length === 1 ? 'liability' : 'liabilities'}</div>
       </div>
-      <div className='card investKpi refCard'>
-        <div>
+      <div className='card investKpi refCard netWorthKpi'>
+        <div className='netWorthKpiHead'>
           <div className='investKpiLabel'>Debt Ratio</div>
-          <div className='investKpiValue'>{totals.totalAssets > 0 ? `${((totals.totalLiabilities / totals.totalAssets) * 100).toFixed(0)}%` : '—'}</div>
-          <div className='muted'>Liabilities vs assets</div>
+          <div className='investKpiBubble nwBubbleAmber'><Landmark size={16} /></div>
         </div>
-        <div className='investKpiBubble'><Landmark size={16} /></div>
+        <div className='investKpiValue'>{totals.totalAssets > 0 ? `${((totals.totalLiabilities / totals.totalAssets) * 100).toFixed(0)}%` : '—'}</div>
+        <div className='muted netWorthKpiSub'>Liabilities vs assets</div>
       </div>
-      <div className='card investKpi refCard'>
-        <div>
+      <div className='card investKpi refCard netWorthKpi'>
+        <div className='netWorthKpiHead'>
           <div className='investKpiLabel'>Items Tracked</div>
-          <div className='investKpiValue'>{safeItems.length}</div>
-          <div className='muted'>Across all categories</div>
+          <div className='investKpiBubble nwBubbleViolet'><Layers size={16} /></div>
         </div>
-        <div className='investKpiBubble'><Layers size={16} /></div>
+        <div className='investKpiValue'>{safeItems.length}</div>
+        <div className='muted netWorthKpiSub'>Across all categories</div>
       </div>
     </div>
 
@@ -353,7 +358,8 @@ export function NetWorthView() {
         {loading && safeItems.length === 0 ? <div className='investEmpty'>Loading your net worth…</div> : filtered.length === 0 ? (
           <div className='investEmpty'>No items yet.<br />Add an asset or liability to start tracking your net worth.</div>
         ) : (
-          <table className='table investDesktop'>
+          <div className='netWorthTableWrap'>
+          <table className='table netWorthTable'>
             <thead><tr><th>Item</th><th>Type</th><th>Category</th><th>Value</th><th>Actions</th></tr></thead>
             <tbody>
               {filtered.map((item) => (
@@ -382,6 +388,7 @@ export function NetWorthView() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
