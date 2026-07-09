@@ -93,26 +93,27 @@ hr{border:0;border-top:1px solid var(--border);margin:16px 0}
 
 /* Budgetly brand wordmark (replaces the old cursive script) */
 .brandWordmark{
-  --brand-accent:#3ed081;
   display:inline-flex;
   align-items:center;
-  gap:10px;
-  color:#f8fafc; /* dark sidebar default */
+  gap:11px;
+  color:#f8fafc; /* dark sidebar default (wordmark text) */
 }
 body.light .brandWordmark{ color:#111b3a; }
 .brandWordmarkIcon{
-  height:30px;
-  width:auto;
+  height:40px;
+  width:40px;
   flex:0 0 auto;
-  color:inherit;
+  border-radius:13px;
+  filter:drop-shadow(0 5px 12px rgba(31,157,99,.30));
 }
 .brandWordmarkText{
-  font-size:27px;
+  font-size:29px;
   font-weight:800;
   letter-spacing:-.02em;
   line-height:1;
   color:inherit;
 }
+.sidebar.collapsed .brandWordmarkText{ display:none; }
 
 .sidebarClock{
   display:flex;
