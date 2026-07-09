@@ -8081,8 +8081,10 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringFiltersSheetActions{display:flex;gap:10px;margin-top:18px}
 .recurringFiltersSheetActions .btn{flex:1;justify-content:center}
 
-/* Sticky bottom save bar */
-.recurringFeedPage .recurringSummaryRow.dataPageFooter{position:sticky;bottom:0;z-index:40;margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:16px;background:var(--panel-elevated, rgba(10,24,48,.94));backdrop-filter:blur(10px);box-shadow:0 -10px 30px rgba(0,0,0,.18)}
+/* Sticky bottom save bar — flat page-flush bar matching the Transactions footer */
+.recurringFeedPage .recurringSummaryRow.dataPageFooter{position:sticky;bottom:0;z-index:30;margin-top:14px;padding:12px 0 4px;border:0;border-radius:0;background:#08122b;box-shadow:0 -1px 0 rgba(255,255,255,.06);backdrop-filter:none}
+body.light .recurringFeedPage .recurringSummaryRow.dataPageFooter,
+.theme-light .recurringFeedPage .recurringSummaryRow.dataPageFooter{background:#f8fafc;box-shadow:0 -1px 0 rgba(15,23,42,.08)}
 .recurringSummaryBadge{margin-left:auto}
 
 /* ===== Tablet / mobile: table -> stacked cards at 768px ===== */
