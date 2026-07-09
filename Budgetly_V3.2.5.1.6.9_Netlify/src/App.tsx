@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell } from 'lucide-react'
+import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Scale } from 'lucide-react'
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
@@ -8,6 +8,7 @@ import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
 import { InvestmentsView } from './components/InvestmentsView'
+import { NetWorthView } from './components/NetWorthView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
@@ -47,7 +48,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [view, setView] = useState<ViewKey | 'utilities_hub'>('dashboard')
-  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt' | 'investments'>('goals')
+  const [toolsSection, setToolsSection] = useState<'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth'>('goals')
   const [theme, setTheme] = useState<'dark' | 'light'>(() => (localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'))
   const [idleWarningOpen, setIdleWarningOpen] = useState(false)
   const [idleCountdown, setIdleCountdown] = useState(Math.ceil(IDLE_WARNING_MS / 1000))
@@ -422,6 +423,7 @@ export default function App() {
     { id: 'page-advice', type: 'page', label: 'Advice', description: 'Get personalized financial insights and tips', keywords: ['advice', 'tips', 'insights'], onSelect: () => handleViewChange('advice'), iconClassName: 'purple', icon: <Sparkles size={16} /> },
     { id: 'page-goals', type: 'page', label: 'Goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
     { id: 'page-reports', type: 'page', label: 'Reports', description: 'View monthly insights and summaries', keywords: ['reports', 'summary', 'analytics'], onSelect: () => { setToolsSection('reports'); handleViewChange('tools') }, iconClassName: 'violet', icon: <BarChart3 size={16} /> },
+    { id: 'page-networth', type: 'page', label: 'Net Worth', description: 'Track your assets and liabilities over time', keywords: ['net worth', 'assets', 'liabilities', 'wealth', 'debt'], onSelect: () => { setToolsSection('networth'); handleViewChange('tools') }, iconClassName: 'teal', icon: <Scale size={16} /> },
     { id: 'page-settings', type: 'page', label: 'Settings', description: 'Manage account and app preferences', keywords: ['settings', 'preferences', 'account', 'general'], onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
     { id: 'page-support', type: 'page', label: 'Help & Support', description: 'Get help and contact support', keywords: ['help', 'support', 'contact'], onSelect: () => handleViewChange('support'), iconClassName: 'teal', icon: <CircleHelp size={16} /> },
     { id: 'action-add-transaction', type: 'action', label: 'Add transaction', description: 'Create a new income or expense transaction', keywords: ['add', 'transaction', 'expense', 'income', 'new', 'quick add'], onSelect: () => { handleViewChange('transactions'); window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:focus-add-transaction')), 0) }, iconClassName: 'indigo', icon: <Plus size={16} /> },
@@ -501,6 +503,7 @@ export default function App() {
               <button className="utilityCard" onClick={() => { setToolsSection('reports'); setView('tools') }}><BarChart3 size={22} /><div><strong>Reports</strong><p>View insights and reports for this month.</p></div><ChevronRight size={18} /></button>
               <button className="utilityCard" onClick={() => { setToolsSection('converter'); setView('tools') }}><ArrowLeftRight size={22} /><div><strong>Currency Converter</strong><p>Convert currencies with live exchange rates.</p></div><ChevronRight size={18} /></button>
               <button className="utilityCard" onClick={() => { setToolsSection('investments'); setView('tools') }}><BarChart3 size={22} /><div><strong>Investments</strong><p>Track manual holdings and portfolio performance.</p></div><ChevronRight size={18} /></button>
+              <button className="utilityCard" onClick={() => { setToolsSection('networth'); setView('tools') }}><Scale size={22} /><div><strong>Net Worth</strong><p>Track your assets and liabilities over time.</p></div><ChevronRight size={18} /></button>
             </section>
           ) : (
           <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
@@ -509,6 +512,7 @@ export default function App() {
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}
               {toolsSection === 'investments' ? <InvestmentsView /> : null}
+              {toolsSection === 'networth' ? <NetWorthView /> : null}
             </div>
           </div>
           )

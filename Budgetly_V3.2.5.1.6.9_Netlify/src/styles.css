@@ -8946,3 +8946,113 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .investTrendSummary{margin-top:16px;background:rgba(148,163,184,.1);border-radius:16px;padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.investTrendSummary div{padding:0 10px}.investTrendSummary small{color:var(--muted);display:block}.investTrendSummary strong{font-size:30px}
 .investChartTooltip{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,.16);padding:12px 14px;min-width:240px}.investChartTooltipDate{font-weight:700;margin-bottom:8px}.investChartTooltipRow{display:flex;justify-content:space-between;gap:12px;margin:4px 0}.investChartTooltipDivider{height:1px;background:var(--line);margin:8px 0}
 @media (max-width:900px){.investTrendHead{flex-direction:column}.investTrendRanges{flex-wrap:wrap}.investTrendTitle{font-size:26px}.investTrendSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ==========================================================================
+   Net Worth Tracker — polished, self-contained styling
+   ========================================================================== */
+.netWorthPage{display:flex;flex-direction:column;gap:16px}
+
+/* Header */
+.netWorthPage .investTop{align-items:center}
+.netWorthPage .investTop h2{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+.netWorthPage .investTop p.muted{font-size:14px;margin:0}
+.netWorthPage .investControl{min-height:40px;border-radius:10px;font-weight:600}
+.netWorthPage .investBtnPrimary,.netWorthPage .investBtnSecondary{min-height:40px;border-radius:10px;font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.netWorthPage .investBtnSecondary{background:#fff;color:#dc2626;border:1px solid #fecaca}
+body:not(.light) .netWorthPage .investBtnSecondary{background:transparent;color:#f87171;border-color:rgba(248,113,113,.35)}
+.netWorthPage .investBtnSecondary:hover{background:rgba(239,68,68,.06);border-color:#fca5a5;color:#dc2626}
+
+/* Cards */
+.netWorthPage .refCard{border-radius:16px;padding:20px}
+.netWorthPage .refCard h3{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 16px}
+.netWorthPage .investTrendTitle{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.netWorthPage .investTrendTitle svg{color:var(--muted)}
+
+/* KPI grid */
+.netWorthKpis{gap:14px}
+.netWorthKpi{flex-direction:column;align-items:stretch;gap:12px;padding:18px 18px 16px;border-radius:16px;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;position:relative;overflow:hidden}
+.netWorthKpi:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(15,23,42,.10);border-color:#cfd8e8}
+body:not(.light) .netWorthKpi:hover{border-color:#33405a;box-shadow:0 10px 26px rgba(0,0,0,.35)}
+.netWorthKpi.feature{background:linear-gradient(160deg,rgba(37,99,235,.08),rgba(37,99,235,0) 62%)}
+body:not(.light) .netWorthKpi.feature{background:linear-gradient(160deg,rgba(59,130,246,.16),rgba(59,130,246,0) 62%)}
+.netWorthKpiHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.netWorthKpi .investKpiLabel{margin:0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.netWorthKpi .investKpiValue{margin:0;font-size:clamp(20px,2vw,25px);font-weight:800;line-height:1.15;letter-spacing:-.02em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.netWorthKpi .investKpiBubble{width:34px;height:34px;flex-shrink:0}
+.nwBubbleIndigo{background:rgba(79,70,229,.12);color:#4f46e5}
+.nwBubbleGreen{background:rgba(34,197,94,.14);color:#16a34a}
+.nwBubbleRed{background:rgba(239,68,68,.14);color:#dc2626}
+.nwBubbleAmber{background:rgba(245,158,11,.15);color:#d97706}
+.nwBubbleViolet{background:rgba(124,58,237,.13);color:#7c3aed}
+.netWorthKpiSub{font-size:12px}
+.netWorthKpiTrend{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;align-self:flex-start}
+.netWorthKpiTrend.pos{color:#16a34a;background:rgba(34,197,94,.12)}
+.netWorthKpiTrend.neg{color:#dc2626;background:rgba(239,68,68,.12)}
+
+/* Items table */
+.netWorthTableWrap{width:100%;overflow-x:auto}
+.netWorthTable{border-collapse:separate;border-spacing:0;width:100%;min-width:520px;display:table}
+.netWorthTable th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:0 12px 10px;text-align:left}
+.netWorthTable th:nth-child(4),.netWorthTable td:nth-child(4){text-align:right;white-space:nowrap}
+.netWorthTable th:last-child,.netWorthTable td:last-child{text-align:right;width:48px}
+.netWorthTable td{padding:13px 12px;border-top:1px solid var(--line);vertical-align:middle;font-variant-numeric:tabular-nums}
+.netWorthTable tbody tr{transition:background .15s ease}
+.netWorthTable tbody tr:hover td{background:rgba(148,163,184,.06)}
+.netWorthTable .holdingCell strong{font-weight:600}
+.netWorthGlyph{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;flex-shrink:0}
+.netWorthGlyph.asset{background:rgba(34,197,94,.14);color:#16a34a}
+.netWorthGlyph.liability{background:rgba(239,68,68,.14);color:#dc2626}
+.netWorthTag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.02em}
+.netWorthTag.asset{background:rgba(34,197,94,.12);color:#16a34a}
+.netWorthTag.liability{background:rgba(239,68,68,.12);color:#dc2626}
+.netWorthError{border-color:#fecaca;color:#b91c1c;background:rgba(239,68,68,.06);margin-bottom:4px;border-radius:14px;padding:14px 16px;font-weight:500}
+
+/* Allocation legend */
+.netWorthPage .allocLegendItem{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.netWorthPage .allocLegendItem:last-child{border-bottom:none}
+.netWorthPage .allocLegendItem>div{flex:1;min-width:0}
+.netWorthPage .allocLegendItem small{color:var(--muted);font-variant-numeric:tabular-nums}
+.netWorthPage .allocLegendItem strong{font-variant-numeric:tabular-nums}
+.netWorthPage .allocCenter strong{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.netWorthPage .allocCenter small{color:var(--muted);font-size:12px}
+.netWorthPage .dot{width:11px;height:11px;border-radius:4px}
+
+/* Balance summary */
+.netWorthSummary{display:flex;flex-direction:column;gap:11px;margin-top:2px}
+.netWorthSummaryRow{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
+.netWorthSummaryRow span{display:flex;align-items:center;gap:9px;color:var(--muted);font-weight:500}
+.netWorthSummaryRow strong{font-variant-numeric:tabular-nums;font-weight:700}
+.netWorthSummaryRow.total{margin-top:2px;font-size:15px}
+.netWorthSummaryRow.total span{color:inherit;font-weight:700}
+.netWorthSummaryRow.total strong{font-size:22px;font-weight:800;letter-spacing:-.01em}
+.netWorthDot{width:10px;height:10px;border-radius:3px;display:inline-block}
+.netWorthDot.asset{background:#22c55e}.netWorthDot.liability{background:#ef4444}
+.netWorthBar{height:9px;border-radius:999px;background:rgba(148,163,184,.16);overflow:hidden}
+.netWorthBarFill{height:100%;border-radius:999px;transition:width .45s cubic-bezier(.4,0,.2,1)}
+.netWorthBarFill.asset{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.netWorthBarFill.liability{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.netWorthSummaryDivider{height:1px;background:var(--line);margin:7px 0 3px}
+
+/* Trend badge */
+.netWorthPage .investTrendBadge{border-radius:999px;font-size:12px;padding:5px 11px}
+
+/* Modal */
+.netWorthModal{max-width:460px}
+.netWorthModal .addHoldTitle{font-size:19px;font-weight:700;padding:0 24px 4px}
+.netWorthKindToggle{display:flex;gap:6px;margin:12px 24px 4px;padding:4px;background:rgba(148,163,184,.14);border-radius:12px}
+.netWorthKindToggle button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border:none;border-radius:9px;background:transparent;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;transition:background .15s ease,color .15s ease,box-shadow .15s ease}
+.netWorthKindToggle button.active{background:var(--card);color:var(--text,#0f172a);box-shadow:0 2px 8px rgba(15,23,42,.12)}
+.netWorthModal .fieldLabel{font-size:13px;font-weight:600;padding:14px 24px 6px;color:var(--muted);text-transform:none}
+.netWorthModal .input,.netWorthModal select{margin:0 24px;width:calc(100% - 48px);min-height:44px;border-radius:10px;font-size:15px}
+.netWorthModal .currencyWrap{margin:0}
+.netWorthModal .mobileFooter{margin-top:18px}
+
+@media (max-width:900px){
+  .netWorthPage .investTop h2{font-size:24px}
+  .netWorthKpi .investKpiValue{font-size:clamp(19px,5vw,23px)}
+}
+@media (max-width:700px){
+  .netWorthModal{max-width:100vw}
+  .netWorthModal .addHoldTitle{font-size:20px}
+  .netWorthModal .fieldLabel{font-size:14px}
+}
