@@ -632,11 +632,14 @@ body:not(.light) .txp-menu { background: #10233f; }
 .txp-drawer-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.42);
+  background: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   opacity: 0;
   transition: opacity 0.24s ease;
   pointer-events: none;
 }
+body:not(.light) .txp-drawer-backdrop { background: rgba(3, 8, 20, 0.42); }
 .txp-drawer {
   position: absolute;
   top: 0;
@@ -659,13 +662,10 @@ body:not(.light) .txp-drawer { background: #0c1c33; }
 .txp-drawer-root.open .txp-drawer { transform: translateX(0); }
 .txp-drawer-root.closing .txp-drawer { transform: translateX(100%); }
 
-/* Desktop: no backdrop capture so the page stays usable next to the drawer */
-@media (min-width: 1025px) {
-  .txp-drawer-root .txp-drawer-backdrop { display: none; }
-}
-/* Tablet & mobile: dim + tap-to-close backdrop */
+/* Blur + dim the rest of the page behind the drawer, and tap-to-close. */
+.txp-drawer-root.open .txp-drawer-backdrop { opacity: 1; pointer-events: auto; }
+/* Tablet & mobile: overlay width */
 @media (max-width: 1024px) {
-  .txp-drawer-root.open .txp-drawer-backdrop { opacity: 1; pointer-events: auto; }
   .txp-drawer { width: min(440px, 82vw); }
 }
 @media (max-width: 640px) {
@@ -897,11 +897,9 @@ body:not(.light) .txp-modal { background: #0c1c33; }
 .txp-modal-actions { display: flex; gap: 10px; justify-content: center; }
 .txp-modal-actions .txp-btn { flex: 1; }
 
-/* Lock background scroll while drawer is open on smaller screens */
+/* Lock background scroll while the drawer is open */
 body.txp-drawer-lock { overflow: hidden; }
-@media (max-width: 1024px) {
-  body.txp-drawer-lock .main { overflow: hidden; }
-}
+body.txp-drawer-lock .main { overflow: hidden; }
 
 /* ============================================================
    Responsive
