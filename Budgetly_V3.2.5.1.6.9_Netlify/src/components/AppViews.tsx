@@ -3636,6 +3636,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const [createError, setCreateError] = useState<string | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [categoryPickerId, setCategoryPickerId] = useState<string | null>(null)
+  const [menuDir, setMenuDir] = useState<'down' | 'up'>('down')
   const [draftRecurring, setDraftRecurring] = useState({
     name: '',
     kind: 'expense' as RecurringKind,
@@ -3687,6 +3688,22 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     setCategoryPickerId(null)
   }
 
+  // Decide whether an in-row popover should open upward so it isn't clipped by
+  // the internal table scroll region. Defaults to 'down' if anything goes wrong.
+  const computeMenuDir = (trigger: HTMLElement, estHeight: number): 'down' | 'up' => {
+    try {
+      const scroller = trigger.closest('.recurringFeedTable')
+      if (!scroller) return 'down'
+      const triggerRect = trigger.getBoundingClientRect()
+      const scrollRect = scroller.getBoundingClientRect()
+      const spaceBelow = scrollRect.bottom - triggerRect.bottom
+      const spaceAbove = triggerRect.top - scrollRect.top
+      return spaceBelow < estHeight && spaceAbove > spaceBelow ? 'up' : 'down'
+    } catch {
+      return 'down'
+    }
+  }
+
   const renderCategoryControl = (item: typeof sortedRecurring[number], category: Category | undefined) => (
     category ? (
       <span className="recurringCategoryValue">{category.emoji ?? '🏷️'} {category.name}</span>
@@ -3698,13 +3715,14 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
           onClick={(event) => {
             event.stopPropagation()
             setActiveMenuId(null)
+            setMenuDir(computeMenuDir(event.currentTarget, 220))
             setCategoryPickerId((current) => (current === item.id ? null : item.id))
           }}
         >
           <Tag size={12} /> Set category
         </button>
         {categoryPickerId === item.id ? (
-          <span className="recurringCategoryMenu">
+          <span className={`recurringCategoryMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
             {categories.length === 0 ? (
               <span className="recurringCategoryMenuEmpty muted">No categories yet</span>
             ) : categories.map((cat) => (
@@ -3953,7 +3971,15 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         )}
 
-        <div className="recurringFeedTable">
+        <div
+          className="recurringFeedTable"
+          onScroll={() => {
+            if (activeMenuId || categoryPickerId) {
+              setActiveMenuId(null)
+              setCategoryPickerId(null)
+            }
+          }}
+        >
           <div className="recurringFeedTableInner">
             <div className="recurringFeedHeaderRow">
               <div>Name</div>
@@ -4002,13 +4028,14 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                       onClick={(event) => {
                         event.stopPropagation()
                         setCategoryPickerId(null)
+                        setMenuDir(computeMenuDir(event.currentTarget, 96))
                         setActiveMenuId((current) => current === item.id ? null : item.id)
                       }}
                     >
                       <MoreHorizontal size={16} />
                     </button>
                     {activeMenuId === item.id ? (
-                      <div className="recurringRowMenu">
+                      <div className={`recurringRowMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
                         <button
                           type="button"
                           onClick={(event) => {

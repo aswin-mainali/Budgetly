@@ -7985,7 +7985,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringFeedPage{display:flex;flex-direction:column;gap:14px}
 .recurringFeedHeader{gap:12px;align-items:flex-start}
 .recurringFeedTitleWrap{max-width:760px}
-.recurringFeedBody{display:flex;flex-direction:column;gap:14px;flex:1;min-width:0}
+.recurringFeedBody{display:flex;flex-direction:column;gap:14px;flex:1;min-width:0;min-height:0}
 
 /* Tabular numerals so figures align cleanly */
 .recurringNum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
@@ -8045,12 +8045,14 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringCategoryMenu button{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:inherit;text-align:left;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap}
 .recurringCategoryMenu button:hover{background:rgba(148,163,184,.12)}
 .recurringCategoryMenuEmpty{padding:8px 9px;font-size:12px}
+.recurringCategoryMenu.openUp{top:auto;bottom:calc(100% + 6px)}
 
 /* Row actions menu */
 .recurringRowMenu{position:absolute;top:34px;right:0;display:grid;gap:4px;min-width:120px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--panel-elevated, #0a1b33);z-index:20;box-shadow:0 12px 34px rgba(0,0,0,.3)}
 .recurringRowMenu button{border:0;background:transparent;color:inherit;text-align:left;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px}
 .recurringRowMenu button:hover{background:rgba(148,163,184,.12)}
 .recurringRowMenu button.danger{color:var(--amount-overdue)}
+.recurringRowMenu.openUp{top:auto;bottom:34px}
 .recurringCreateError{margin-top:10px;padding:8px 10px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.08);border-radius:10px;font-size:12px;color:#ff9ab0}
 
 /* Drawer form fields */
@@ -8081,11 +8083,31 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringFiltersSheetActions{display:flex;gap:10px;margin-top:18px}
 .recurringFiltersSheetActions .btn{flex:1;justify-content:center}
 
-/* Sticky bottom save bar — flat page-flush bar matching the Transactions footer */
-.recurringFeedPage .recurringSummaryRow.dataPageFooter{position:sticky;bottom:0;z-index:30;margin-top:14px;padding:12px 0 4px;border:0;border-radius:0;background:#08122b;box-shadow:0 -1px 0 rgba(255,255,255,.06);backdrop-filter:none}
+/* Bottom save bar — flat page-flush bar matching the Transactions footer */
+.recurringFeedPage .recurringSummaryRow.dataPageFooter{margin-top:14px;padding:12px 0 4px;border:0;border-radius:0;background:#08122b;box-shadow:0 -1px 0 rgba(255,255,255,.06);backdrop-filter:none}
 body.light .recurringFeedPage .recurringSummaryRow.dataPageFooter,
 .theme-light .recurringFeedPage .recurringSummaryRow.dataPageFooter{background:#f8fafc;box-shadow:0 -1px 0 rgba(15,23,42,.08)}
 .recurringSummaryBadge{margin-left:auto}
+
+/* Desktop: fixed-height layout with an internal scroll region so the footer is
+   flush at the very bottom and no list rows ever render below it (matches the
+   Transactions page's txFullLayout). */
+body:not(.mobile-app) .recurringFeedPage.dataPageCard{height:calc(100dvh - 120px);min-height:calc(100dvh - 120px);max-height:calc(100dvh - 120px);overflow:hidden}
+body:not(.mobile-app) .recurringFeedHeader{flex:0 0 auto}
+body:not(.mobile-app) .recurringKpiRow,
+body:not(.mobile-app) .recurringToolbar{flex:0 0 auto}
+body:not(.mobile-app) .recurringFeedTable{flex:1 1 auto;min-height:0;overflow:auto}
+body:not(.mobile-app) .recurringFooterText{flex:0 0 auto}
+body:not(.mobile-app) .recurringFeedPage .recurringSummaryRow.dataPageFooter{flex:0 0 auto;margin-top:0}
+
+/* Mobile (body.mobile-app, <=768px): normal page flow, footer flows at the end
+   above the tab bar (mirrors the Transactions mobile footer, which also relies
+   on !important to unwind the desktop fixed-height layout). */
+body.mobile-app .recurringFeedPage.dataPageCard{height:auto !important;min-height:0 !important;max-height:none !important;overflow:visible !important}
+body.mobile-app .recurringFeedBody{flex:none !important;min-height:0 !important}
+body.mobile-app .recurringFeedTable{flex:none !important;min-height:0 !important;overflow-x:auto !important;overflow-y:visible !important}
+body.mobile-app .recurringFeedPage .recurringSummaryRow.dataPageFooter{margin-top:0;margin-bottom:calc(8px + env(safe-area-inset-bottom));background:transparent}
+body.light.mobile-app .recurringFeedPage .recurringSummaryRow.dataPageFooter{background:transparent}
 
 /* ===== Tablet / mobile: table -> stacked cards at 768px ===== */
 @media (max-width: 768px){
@@ -8116,7 +8138,7 @@ body.light .recurringFeedPage .recurringSummaryRow.dataPageFooter,
 /* ===== Summary cards single column + save-bar clears mobile tab bar below 640px ===== */
 @media (max-width: 640px){
   .recurringKpiRow{grid-template-columns:1fr}
-  .recurringFeedPage .recurringSummaryRow.dataPageFooter{bottom:calc(env(safe-area-inset-bottom) + 84px);flex-wrap:wrap;gap:10px 12px}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter{flex-wrap:wrap;gap:10px 12px}
   .recurringSummaryStatus{order:1;width:100%}
   .recurringSummaryBadge{order:2;margin-left:0}
   .recurringFeedPage .recurringSummaryRow.dataPageFooter .btn.primary{order:3;margin-left:auto}
