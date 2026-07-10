@@ -3276,7 +3276,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       <div className={`recurringFeedLayout ${isDrawerOpen ? 'drawer-open' : ''} ${isPhone || isCompactLaptop ? 'compact' : ''} recurringDesignerLayout`}>
         <div className="recurringFeedListCard recurringDesignerLeft">
           <div className="recurringKpiRow">
-            <div className="recurringKpiCard"><div className="recurringKpiIcon">📅</div><div><div className="muted">Active Items</div><strong>{sortedRecurring.length}</strong></div></div>
             <div className="recurringKpiCard"><div className="recurringKpiIcon">💵</div><div><div className="muted">Monthly Total</div><strong>{helpers.fmtMoney(monthlyExpenseTotal, data.currency)}</strong></div></div>
             <div className="recurringKpiCard"><div className="recurringKpiIcon">🪙</div><div><div className="muted">Recurring Income</div><strong>{helpers.fmtMoney(monthlyIncomeTotal, data.currency)}</strong></div></div>
             <div className="recurringKpiCard"><div className="recurringKpiIcon">📊</div><div><div className="muted">Estimated monthly net</div><strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong></div></div>
