@@ -320,6 +320,108 @@ body:not(.light) {
   pointer-events: none;
 }
 
+/* Date range filter */
+.txp-daterange-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--txp-border-strong);
+  border-radius: var(--txp-radius-ctrl);
+  background: var(--txp-surface-2);
+  color: var(--txp-text);
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.txp-daterange-trigger:hover { border-color: var(--txp-text-3); }
+.txp-daterange-trigger:focus-visible { outline: none; box-shadow: var(--txp-focus); border-color: var(--txp-primary); }
+.txp-daterange-trigger.open { border-color: var(--txp-primary); box-shadow: var(--txp-focus); background: var(--txp-surface); }
+.txp-daterange-trigger.active { border-color: var(--txp-primary); color: var(--txp-primary); background: var(--txp-primary-soft); }
+.txp-daterange-trigger > svg:first-child { color: var(--txp-text-3); flex: 0 0 auto; }
+.txp-daterange-trigger.active > svg:first-child { color: var(--txp-primary); }
+.txp-daterange-value { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.txp-daterange-chevron { color: var(--txp-text-3); flex: 0 0 auto; }
+
+.txp-daterange-pop {
+  z-index: 1200;
+  background: var(--txp-surface);
+  border: 1px solid var(--txp-border-strong);
+  border-radius: 14px;
+  box-shadow: var(--txp-shadow-lg);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: txp-pop 0.12s ease;
+}
+body:not(.light) .txp-daterange-pop { background: #10233f; }
+.txp-daterange-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.txp-daterange-preset {
+  border: 1px solid var(--txp-border-strong);
+  background: var(--txp-surface-2);
+  color: var(--txp-text);
+  border-radius: 9px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.txp-daterange-preset:hover { border-color: var(--txp-primary); color: var(--txp-primary); }
+.txp-daterange-preset.active { background: var(--txp-primary-soft); border-color: var(--txp-primary); color: var(--txp-primary); }
+.txp-daterange-preset:focus-visible { outline: none; box-shadow: var(--txp-focus); }
+.txp-daterange-fields { display: flex; gap: 10px; }
+.txp-daterange-field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 0; }
+.txp-daterange-field > span { font-size: 11.5px; font-weight: 600; color: var(--txp-text-2); }
+.txp-daterange-field input {
+  height: 40px;
+  border: 1px solid var(--txp-border-strong);
+  border-radius: 10px;
+  background: var(--txp-surface-2);
+  color: var(--txp-text);
+  font-size: 13px;
+  padding: 0 10px;
+  min-width: 0;
+  width: 100%;
+  text-transform: none;
+  box-shadow: none;
+}
+.txp-daterange-field input:focus { outline: none; border-color: var(--txp-primary); box-shadow: var(--txp-focus); background: var(--txp-surface); }
+.txp-daterange-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.txp-daterange-clear {
+  border: none;
+  background: transparent;
+  color: var(--txp-text-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.txp-daterange-clear:hover { background: var(--txp-surface-2); color: var(--txp-text); }
+.txp-daterange-clear:focus-visible { outline: none; box-shadow: var(--txp-focus); }
+.txp-daterange-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--txp-primary);
+  background: var(--txp-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 9px 16px;
+  border-radius: 9px;
+}
+.txp-daterange-apply:hover:not(:disabled) { background: var(--txp-primary-hover); border-color: var(--txp-primary-hover); }
+.txp-daterange-apply:disabled { opacity: 0.5; cursor: not-allowed; }
+.txp-daterange-apply:focus-visible { outline: none; box-shadow: var(--txp-focus); }
+
 .txp-reset {
   display: inline-flex;
   align-items: center;

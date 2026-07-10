@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import {
   Plus, Search, Download, Upload, X, MoreVertical, Pencil, Copy, Trash2, Repeat,
   RotateCcw, TrendingUp, TrendingDown, Activity, ReceiptText, RefreshCw,
-  Inbox, AlertTriangle, CalendarDays, Tag, ChevronDown,
+  Inbox, AlertTriangle, CalendarDays, CalendarRange, Tag, ChevronDown, Check as CheckIcon,
 } from 'lucide-react'
 import { Transaction, TxType } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -80,6 +80,18 @@ const fullDateLabel = (iso: string) => {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+const shortDate = (iso: string) => {
+  const d = parseLocalDate(iso)
+  if (!d) return iso
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+const isoDaysAgo = (days: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const dateGroupLabel = (iso: string) => {
   const d = parseLocalDate(iso)
   if (!d) return { primary: iso, secondary: '' }
@@ -104,6 +116,8 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const symbol = currencySymbol(currency)
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null)
@@ -168,9 +182,19 @@ export function TransactionsView({ budget }: { budget: Budget }) {
     return { income, expenses, net: income - expenses, count: monthTx.length }
   }, [monthTx])
 
+  const rangeActive = !!(dateFrom || dateTo)
+
+  // When a custom date range is set it takes over from the Month view so users
+  // can look across months; otherwise the selected month is the base set.
+  const baseTx = useMemo(() => {
+    if (!rangeActive) return monthTx
+    return data.transactions.filter((tx) =>
+      (!dateFrom || tx.date >= dateFrom) && (!dateTo || tx.date <= dateTo))
+  }, [rangeActive, monthTx, data.transactions, dateFrom, dateTo])
+
   const visibleTx = useMemo(() => {
     const q = txSearch.trim().toLowerCase()
-    return monthTx.filter((tx) => {
+    return baseTx.filter((tx) => {
       if (txType !== 'all' && tx.type !== txType) return false
       if (categoryFilter !== 'all') {
         const cid = tx.category_id ?? ''
@@ -184,7 +208,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
       }
       return true
     })
-  }, [monthTx, txType, categoryFilter, txSearch, categoryNameFor])
+  }, [baseTx, txType, categoryFilter, txSearch, categoryNameFor])
 
   const groups = useMemo(() => {
     const map = new Map<string, Transaction[]>()
@@ -213,14 +237,24 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const typeActive = txType !== 'all'
   const catActive = categoryFilter !== 'all'
   const searchActive = txSearch.trim() !== ''
-  const filtersActive = monthActive || typeActive || catActive || searchActive
+  const filtersActive = monthActive || typeActive || catActive || searchActive || rangeActive
+
+  const clearDateRange = () => { setDateFrom(''); setDateTo('') }
 
   const resetFilters = () => {
     setTxSearch('')
     setTxType('all')
     setCategoryFilter('all')
     setTxActiveMonth(currentMonth)
+    clearDateRange()
   }
+
+  const rangeLabel = (() => {
+    if (dateFrom && dateTo) return `${shortDate(dateFrom)} – ${shortDate(dateTo)}`
+    if (dateFrom) return `From ${shortDate(dateFrom)}`
+    if (dateTo) return `Until ${shortDate(dateTo)}`
+    return 'Any dates'
+  })()
 
   // ---- Drawer control ----
   const openAddDrawer = () => {
@@ -448,6 +482,12 @@ export function TransactionsView({ budget }: { budget: Budget }) {
             options={categoryOptions}
           />
 
+          <DateRangeFilter
+            from={dateFrom} to={dateTo} label={rangeLabel} active={rangeActive}
+            onApply={(f, t) => { setDateFrom(f); setDateTo(t) }}
+            onClear={clearDateRange}
+          />
+
           <button type="button" className="txp-reset" onClick={resetFilters} disabled={!filtersActive}>
             <RotateCcw size={15} aria-hidden="true" />
             <span>Reset</span>
@@ -468,6 +508,9 @@ export function TransactionsView({ budget }: { budget: Budget }) {
                 label={`Category: ${categoryOptions.find((o) => o.value === categoryFilter)?.label ?? 'All'}`}
                 onRemove={() => setCategoryFilter('all')}
               />
+            ) : null}
+            {rangeActive ? (
+              <FilterChip label={`Dates: ${rangeLabel}`} onRemove={clearDateRange} />
             ) : null}
             {searchActive ? (
               <FilterChip label={`Search: “${txSearch.trim()}”`} onRemove={() => setTxSearch('')} />
@@ -635,6 +678,124 @@ function ToolbarSelect({ label, icon, value, onChange, options }: {
         <ChevronDown size={15} className="txp-select-chevron" aria-hidden="true" />
       </span>
     </label>
+  )
+}
+
+/* ============================ Date Range Filter ============================ */
+function DateRangeFilter({ from, to, label, active, onApply, onClear }: {
+  from: string
+  to: string
+  label: string
+  active: boolean
+  onApply: (from: string, to: string) => void
+  onClear: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [tempFrom, setTempFrom] = useState(from)
+  const [tempTo, setTempTo] = useState(to)
+  const btnRef = useRef<HTMLButtonElement | null>(null)
+  const popRef = useRef<HTMLDivElement | null>(null)
+  const [style, setStyle] = useState<React.CSSProperties>({})
+
+  useEffect(() => {
+    if (open) { setTempFrom(from); setTempTo(to) }
+  }, [open, from, to])
+
+  useLayoutEffect(() => {
+    if (!open) return
+    const sync = () => {
+      const rect = btnRef.current?.getBoundingClientRect()
+      if (!rect) return
+      const popW = 288
+      const vw = window.innerWidth
+      const vh = window.innerHeight
+      let left = rect.right - popW
+      if (left < 8) left = 8
+      if (left + popW > vw - 8) left = vw - 8 - popW
+      const spaceBelow = vh - rect.bottom
+      const top = spaceBelow < 320 && rect.top > 340 ? Math.max(8, rect.top - 8 - 320) : rect.bottom + 8
+      setStyle({ position: 'fixed', left, top, width: popW })
+    }
+    sync()
+    window.addEventListener('resize', sync)
+    window.addEventListener('scroll', sync, true)
+    return () => { window.removeEventListener('resize', sync); window.removeEventListener('scroll', sync, true) }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (btnRef.current?.contains(t) || popRef.current?.contains(t)) return
+      setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  const today = todayIso()
+  const presets: Array<{ id: string; label: string; from: string; to: string }> = [
+    { id: '7d', label: 'Last 7 days', from: isoDaysAgo(6), to: today },
+    { id: '30d', label: 'Last 30 days', from: isoDaysAgo(29), to: today },
+    { id: '90d', label: 'Last 90 days', from: isoDaysAgo(89), to: today },
+    { id: 'ytd', label: 'Year to date', from: `${new Date().getFullYear()}-01-01`, to: today },
+  ]
+  const activePreset = presets.find((p) => p.from === tempFrom && p.to === tempTo)?.id ?? null
+
+  const apply = () => { onApply(tempFrom, tempTo); setOpen(false) }
+  const clear = () => { setTempFrom(''); setTempTo(''); onClear(); setOpen(false) }
+
+  return (
+    <div className="txp-field">
+      <span className="txp-field-label">Dates</span>
+      <button
+        type="button"
+        ref={btnRef}
+        className={`txp-daterange-trigger ${active ? 'active' : ''} ${open ? 'open' : ''}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <CalendarRange size={15} aria-hidden="true" />
+        <span className="txp-daterange-value">{label}</span>
+        <ChevronDown size={15} className="txp-daterange-chevron" aria-hidden="true" />
+      </button>
+      {open ? createPortal(
+        <div className="txp-daterange-pop" ref={popRef} style={style} role="dialog" aria-label="Filter by date range">
+          <div className="txp-daterange-presets">
+            {presets.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`txp-daterange-preset ${activePreset === p.id ? 'active' : ''}`}
+                onClick={() => { setTempFrom(p.from); setTempTo(p.to) }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <div className="txp-daterange-fields">
+            <label className="txp-daterange-field">
+              <span>From</span>
+              <input type="date" value={tempFrom} max={tempTo || undefined} onChange={(e) => setTempFrom(e.target.value)} />
+            </label>
+            <label className="txp-daterange-field">
+              <span>To</span>
+              <input type="date" value={tempTo} min={tempFrom || undefined} onChange={(e) => setTempTo(e.target.value)} />
+            </label>
+          </div>
+          <div className="txp-daterange-actions">
+            <button type="button" className="txp-daterange-clear" onClick={clear}>Clear</button>
+            <button type="button" className="txp-daterange-apply" onClick={apply} disabled={!tempFrom && !tempTo}>
+              <CheckIcon size={14} aria-hidden="true" /> Apply
+            </button>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
+    </div>
   )
 }
 
