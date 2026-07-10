@@ -2461,7 +2461,6 @@ body.light .sidebarUserAvatar{
   .adminUserListTall{max-height:none;}
   .adminAuditRowClear{flex-direction:column;}
   .adminAuditMeta{justify-content:flex-start;}
-  .adminUserRow{align-items:flex-start;flex-direction:column;}
   .adminUserMeta{justify-content:flex-start;}
   .adminFeatureSection .adminFeatureGrid{grid-template-columns:1fr;}
 }
@@ -2555,8 +2554,35 @@ body.light .sidebarUserAvatar{
 @media (max-width: 760px){
   .adminSwitchGrid{grid-template-columns:1fr;}
   .adminProfileField{grid-template-columns:1fr;gap:2px;}
-  .adminDetailTab{padding:8px 10px;}
   .adminDangerRow{align-items:stretch;}
+
+  /* Stack the user-directory rows into a clean card instead of a crushed 4-col grid */
+  .adminUserRow{
+    grid-template-columns:1fr auto !important;
+    grid-template-areas:
+      "identity identity"
+      "role      time"
+      "status    time" !important;
+    gap:8px 12px;
+    padding:14px;
+  }
+  .adminUserIdentity{grid-area:identity;min-width:0;}
+  .adminUserIdentity strong{overflow-wrap:anywhere;}
+  .adminUserIdentity .adminSubRow{overflow-wrap:anywhere;}
+  .adminUserRow .adminUserMeta.role{grid-area:role;justify-content:flex-start;}
+  .adminUserRow .adminUserMeta.status{grid-area:status;justify-content:flex-start;}
+  .adminUserRow .adminLastActiveCell{grid-area:time;align-self:center;justify-self:end;text-align:right;white-space:nowrap;}
+
+  /* Detail panel: let tabs scroll horizontally rather than wrap into a tall stack */
+  .adminDetailTabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .adminDetailTabs::-webkit-scrollbar{display:none;}
+  .adminDetailTab{padding:8px 10px;flex:0 0 auto;white-space:nowrap;}
+  .adminDetailHeader{flex-direction:column;align-items:stretch !important;}
+  .adminActionsMenu{align-self:flex-end;}
+  .adminActionsDropdown{min-width:200px;}
+  .adminDetailFooter{flex-direction:column;align-items:stretch !important;gap:10px;}
+  .adminDetailFooter .btn.primary{width:100%;}
+  .adminSaveStatus{justify-content:center;}
 }
 
 
