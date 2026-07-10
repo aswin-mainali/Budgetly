@@ -12,6 +12,10 @@
   --danger:#ef4444;
   --warn:#f59e0b;
   --chart-bar:#60a5fa;
+  /* Amount color coding: income green, expense neutral (not black), red reserved for overdue */
+  --amount-income:#21c97a;
+  --amount-neutral:#cbd7ec;
+  --amount-overdue:#f8748c;
 }
 
 *{box-sizing:border-box}
@@ -780,6 +784,9 @@ body.light{
               radial-gradient(1000px 700px at 86% 20%, rgba(16,185,129,.08), transparent 54%),
               linear-gradient(180deg, #f4f8fc 0%, #edf4fb 100%);
   --chart-bar:#2563eb;
+  --amount-income:#0f9d63;
+  --amount-neutral:#475569;
+  --amount-overdue:#dc2626;
 }
 body.light .card{ background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,250,255,.92)); box-shadow: 0 16px 34px rgba(15,23,42,.08); }
 
@@ -8090,93 +8097,164 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringFeedPage{display:flex;flex-direction:column;gap:14px}
 .recurringFeedHeader{gap:12px;align-items:flex-start}
 .recurringFeedTitleWrap{max-width:760px}
-.recurringFeedLayout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:stretch}
-.recurringFeedLayout.compact{grid-template-columns:minmax(0,1fr)}
-.recurringFeedListCard,
-.recurringDrawerCard,
-.recurringDrawerPlaceholder{border:1px solid var(--border);border-radius:16px;background:var(--panel-soft, rgba(255,255,255,.02));padding:12px}
-.recurringFeedList{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow:auto;padding-right:4px}
-.recurringFeedRow{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:12px;border:1px solid var(--border);border-radius:14px;background:transparent;color:inherit;text-align:left;cursor:pointer;transition:border-color .16s ease, background .16s ease}
-.recurringFeedRow:hover{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.06)}
-.recurringFeedRow.selected{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.1)}
-.recurringFeedRowName{font-weight:700}
-.recurringFeedRowMeta{font-size:12px;margin-top:4px}
-.recurringFeedRowRight{display:flex;align-items:center;gap:8px}
-.recurringFeedEmpty,.recurringDrawerPlaceholder{min-height:180px;display:grid;place-items:center;text-align:center}
-.recurringDrawerCard{display:flex;flex-direction:column}
-.goalFields.compact.recurringDrawerFields{grid-template-columns:1fr 1fr}
-.goalFields.compact.recurringDrawerFields .recurringFieldFull{grid-column:1/-1}
-.recurringDrawerNote{min-height:32px;height:40px;resize:vertical}
-.recurringDrawerActions{margin-top:auto;padding-top:8px}
+.recurringFeedBody{display:flex;flex-direction:column;gap:14px;flex:1;min-width:0;min-height:0}
 
-@media (max-width: 1200px){
-  .recurringFeedLayout{grid-template-columns:minmax(0,1fr)}
-}
+/* Tabular numerals so figures align cleanly */
+.recurringNum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 
-.recurringDesignerLayout{grid-template-columns:330px minmax(0,1fr)}
-.recurringDesignerLeft{display:flex;flex-direction:column;gap:12px;height:100%;order:2}
+/* Summary cards: 3-across down to 640px, then single column */
 .recurringKpiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.recurringKpiCard{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02);min-height:78px}
+.recurringKpiCard{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02);min-height:78px}
 .recurringKpiCard strong{display:block;font-size:18px;line-height:1.1;margin:2px 0}
-.recurringKpiIcon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(79,124,255,.15)}
-.recurringToolbar{display:grid;grid-template-columns:minmax(260px,1.6fr) repeat(3,minmax(185px,1fr));gap:10px;align-items:center}
+.recurringKpiIcon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft, rgba(33,201,122,.15));flex:0 0 auto}
+
+/* Toolbar: search + 3 dropdowns above tablet, search + Filters button below */
+.recurringToolbar{display:grid;grid-template-columns:minmax(240px,1.6fr) repeat(3,minmax(170px,1fr));gap:10px;align-items:center}
+.recurringToolbar.recurringToolbarCompact{grid-template-columns:minmax(0,1fr) auto}
 .recurringToolbar .select,
 .recurringToolbar .input{height:44px;border-radius:14px}
 .recurringToolbar .select{min-width:0;padding-right:32px}
 .recurringSearchInput{position:relative;display:flex;align-items:center;min-width:0}
-.recurringSearchInput svg{display:none}
-.recurringSearchInput .input{padding-left:14px;width:100%;line-height:1.2}
-.recurringFeedTable{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding-right:4px}
-.recurringFeedDataRow{width:100%;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(120px,1fr) minmax(120px,.8fr) 90px minmax(120px,.9fr) 28px;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:inherit;text-align:left;cursor:pointer}
-.recurringFeedDataRow:hover{border-color:var(--accent, #4f7cff);background:rgba(79,124,255,.06)}
-.recurringFeedDataRow.selected{border-color:var(--border);background:transparent}
+.recurringSearchInput svg{position:absolute;left:12px;color:var(--muted);pointer-events:none}
+.recurringSearchInput .input{padding-left:34px;width:100%;line-height:1.2}
+.recurringFiltersBtn{height:44px;border-radius:14px;white-space:nowrap;display:inline-flex;align-items:center;gap:8px}
+.recurringFilterDot{width:8px;height:8px;border-radius:999px;background:var(--accent)}
+
+/* Table: scrolls horizontally as a whole above tablet, no fixed-height boxed pane */
+.recurringFeedTable{overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.recurringFeedTableInner{display:flex;flex-direction:column;gap:8px;min-width:720px}
+.recurringFeedHeaderRow{display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(140px,1fr) minmax(110px,.8fr) 96px minmax(130px,.9fr) 40px;gap:10px;padding:8px 12px;margin-bottom:2px;font-size:12px;font-weight:700;color:var(--muted);background:var(--panel-soft, rgba(255,255,255,.02));border:1px solid var(--border);border-radius:10px}
+.recurringFeedDataRow{position:relative;width:100%;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(140px,1fr) minmax(110px,.8fr) 96px minmax(130px,.9fr) 40px;align-items:center;gap:10px;padding:12px;border:1px solid var(--border);border-radius:12px;background:transparent;color:inherit;text-align:left}
+.recurringFeedDataRow:hover{border-color:var(--border);background:rgba(255,255,255,.02)}
+.recurringFeedDataRow.selected{border-color:var(--accent);background:var(--accent-soft, rgba(33,201,122,.10))}
 .recurringNameCol{display:flex;align-items:center;gap:10px;min-width:0}
-.recurringItemEmoji{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:rgba(79,124,255,.14)}
-.recurringKindPill{font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(244,63,94,.12);color:#ff6486}
-.recurringKindPill.income{background:rgba(16,185,129,.16);color:#37d39d}
-.recurringAmountCol.good{color:#35c98d;font-weight:700}
-.recurringFreqPill{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(96,165,250,.16);color:#6ca6ff}
-.recurringDueCol{display:flex;flex-direction:column;gap:2px}
-.recurringActionsCol{display:grid;place-items:center;opacity:.7}
-.recurringFooterText{font-size:12px;padding:4px 2px 0}
-.recurringDesignerDrawer{position:sticky;top:10px;height:100%;max-height:none;overflow:visible;order:1}
+.recurringNameText{min-width:0;display:flex;flex-direction:column;gap:3px}
+.recurringItemEmoji{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(148,163,184,.14);font-size:16px;flex:0 0 auto}
+.recurringFeedRowName{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recurringKindPill{align-self:flex-start;font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(148,163,184,.16);color:var(--muted)}
+.recurringKindPill.income{background:rgba(33,201,122,.16);color:var(--amount-income)}
+.recurringCategoryCol{min-width:0;color:var(--muted);font-size:13px}
+.recurringCategoryValue{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:100%}
 
-@media (max-width: 1400px){
-  .recurringFeedTable{max-height:calc(100vh - 360px);overflow:auto}
-  .recurringFeedPage .recurringSummaryRow.dataPageFooter{position:fixed;right:16px;bottom:14px;z-index:60;background:transparent;padding:0;border:0;gap:0}
-  .recurringFeedPage .recurringSummaryRow.dataPageFooter .muted,
-  .recurringFeedPage .recurringSummaryRow.dataPageFooter .badge{display:none}
-  .recurringFeedPage .recurringSummaryRow.dataPageFooter .btn.primary{box-shadow:0 10px 24px rgba(0,0,0,.25)}
-}
+/* Amount color coding: income green, expense red */
+.recurringAmountCol{font-weight:700;color:var(--danger)}
+.recurringAmountCol.good{color:var(--amount-income)}
+.recurringAmountCol.overdue{color:var(--danger)}
 
-@media (max-width: 1200px){
-  .recurringKpiRow{grid-template-columns:1fr}
-  .recurringToolbar{grid-template-columns:1fr 1fr}
-  .recurringFeedDataRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
-}
-@media (max-width: 860px){
-  .recurringToolbar{grid-template-columns:1fr}
-  .recurringFeedDataRow{grid-template-columns:1fr;gap:8px}
-  .recurringActionsCol{justify-content:flex-start}
-  .goalFields.compact.recurringDrawerFields{grid-template-columns:1fr}
-}
+.recurringFreqPill{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(96,165,250,.16);color:#6ca6ff;white-space:nowrap}
+.recurringDueCol{display:flex;flex-direction:column;gap:2px;font-size:13px}
+.recurringActionsCol{position:relative;display:grid;place-items:center}
+.recurringActionsCol .icon{opacity:.7}
+.recurringActionsCol .icon:hover{opacity:1}
+.recurringCardMeta{display:none}
+.recurringFooterText{font-size:12px;padding:2px 2px 0}
 
-.recurringActionsCol{position:relative}
-.recurringRowMenu{position:absolute;top:30px;right:0;display:grid;gap:4px;min-width:110px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--panel, #111827);z-index:8;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-.recurringRowMenu button{border:0;background:transparent;color:inherit;text-align:left;padding:6px 8px;border-radius:8px;cursor:pointer}
-.recurringRowMenu button:hover{background:rgba(255,255,255,.06)}
-.recurringRowMenu button.danger{color:#ff7a93}
+/* Ghost "set category" pill for uncategorized items + inline picker */
+.recurringCategoryAssign{position:relative;display:inline-flex}
+.recurringCategoryGhost{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);padding:3px 10px;border:1px dashed var(--border);border-radius:999px;background:transparent;cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease}
+.recurringCategoryGhost:hover{border-color:var(--accent);color:var(--text);background:var(--accent-soft, rgba(33,201,122,.08))}
+.recurringCategoryMenu{position:absolute;top:calc(100% + 6px);left:0;z-index:20;display:flex;flex-direction:column;gap:2px;min-width:180px;max-height:240px;overflow:auto;padding:6px;border:1px solid var(--border);border-radius:12px;background:var(--panel-elevated, #0a1b33);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.recurringCategoryMenu button{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:inherit;text-align:left;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap}
+.recurringCategoryMenu button:hover{background:rgba(148,163,184,.12)}
+.recurringCategoryMenuEmpty{padding:8px 9px;font-size:12px}
+.recurringCategoryMenu.openUp{top:auto;bottom:calc(100% + 6px)}
+
+/* Row actions menu */
+.recurringRowMenu{position:absolute;top:34px;right:0;display:grid;gap:4px;min-width:120px;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--panel-elevated, #0a1b33);z-index:20;box-shadow:0 12px 34px rgba(0,0,0,.3)}
+.recurringRowMenu button{border:0;background:transparent;color:inherit;text-align:left;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:13px}
+.recurringRowMenu button:hover{background:rgba(148,163,184,.12)}
+.recurringRowMenu button.danger{color:var(--amount-overdue)}
+.recurringRowMenu.openUp{top:auto;bottom:34px}
 .recurringCreateError{margin-top:10px;padding:8px 10px;border:1px solid rgba(244,63,94,.35);background:rgba(244,63,94,.08);border-radius:10px;font-size:12px;color:#ff9ab0}
 
-.recurringFeedHeaderRow{position:sticky;top:0;z-index:4;display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(120px,1fr) minmax(120px,.8fr) 90px minmax(120px,.9fr) 28px;gap:10px;padding:8px 12px;margin-bottom:2px;font-size:12px;font-weight:700;color:var(--muted);background:var(--panel, #111827);border:1px solid var(--border);border-radius:10px}
-@media (max-width: 1200px){
-  .recurringFeedHeaderRow{grid-template-columns:minmax(180px,1fr) minmax(100px,1fr) minmax(95px,.8fr) 78px 100px 24px}
-}
-@media (max-width: 860px){
+/* Drawer form fields */
+.goalFields.compact.recurringDrawerFields{grid-template-columns:1fr 1fr}
+.goalFields.compact.recurringDrawerFields .recurringFieldFull{grid-column:1/-1}
+.recurringDrawerNote{min-height:64px;height:64px;resize:vertical}
+.recurringDrawerActions{margin-top:18px;padding-top:8px}
+
+/* ===== Slide-over drawer (desktop) / centered modal (phone) ===== */
+.recurringDrawerBackdrop{position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(4px);z-index:1300;display:flex;justify-content:flex-end;animation:recurringFade .18s ease}
+.recurringDrawerBackdrop.asModalBackdrop{align-items:center;justify-content:center;padding:16px}
+.recurringSlideOver{width:min(440px,100vw);height:100%;display:flex;flex-direction:column;background:var(--panel-strong, #0a1b33);border-left:1px solid var(--border);box-shadow:-24px 0 60px rgba(0,0,0,.4);padding:20px;overflow-y:auto;animation:recurringSlideIn .22s cubic-bezier(.22,.61,.36,1)}
+.recurringSlideOver.asModal{width:min(460px,100%);height:auto;max-height:calc(100dvh - 32px);border-radius:20px;border:1px solid var(--border);box-shadow:0 28px 80px rgba(0,0,0,.5);animation:recurringSheetUp .2s ease}
+.recurringSlideOverHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.recurringSlideOverClose{border:1px solid var(--border);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;background:transparent;cursor:pointer;color:var(--muted);flex:0 0 auto}
+.recurringSlideOverClose:hover{color:var(--text);border-color:var(--accent)}
+.recurringSlideOverBody{display:flex;flex-direction:column;flex:1}
+@keyframes recurringSlideIn{from{transform:translateX(24px);opacity:.6}to{transform:translateX(0);opacity:1}}
+@keyframes recurringFade{from{opacity:0}to{opacity:1}}
+@keyframes recurringSheetUp{from{transform:translateY(24px);opacity:.6}to{transform:translateY(0);opacity:1}}
+
+/* Filters bottom sheet (tablet/mobile) */
+.recurringFiltersBackdrop{align-items:flex-end;justify-content:center}
+.recurringFiltersSheet{width:100%;max-width:560px;background:var(--panel-strong, #0a1b33);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(0,0,0,.4);animation:recurringSheetUp .2s ease}
+.recurringFiltersSheetBody{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.recurringFilterField{display:flex;flex-direction:column;gap:6px}
+.recurringFilterField .select{height:46px;border-radius:14px}
+.recurringFiltersSheetActions{display:flex;gap:10px;margin-top:18px}
+.recurringFiltersSheetActions .btn{flex:1;justify-content:center}
+
+/* Bottom save bar — flat page-flush bar matching the Transactions footer */
+.recurringFeedPage .recurringSummaryRow.dataPageFooter{margin-top:14px;padding:12px 0 4px;border:0;border-radius:0;background:#08122b;box-shadow:0 -1px 0 rgba(255,255,255,.06);backdrop-filter:none}
+body.light .recurringFeedPage .recurringSummaryRow.dataPageFooter,
+.theme-light .recurringFeedPage .recurringSummaryRow.dataPageFooter{background:#f8fafc;box-shadow:0 -1px 0 rgba(15,23,42,.08)}
+.recurringSummaryBadge{margin-left:auto}
+
+/* Desktop: fixed-height layout with an internal scroll region so the footer is
+   flush at the very bottom and no list rows ever render below it (matches the
+   Transactions page's txFullLayout). */
+body:not(.mobile-app) .recurringFeedPage.dataPageCard{height:calc(100dvh - 120px);min-height:calc(100dvh - 120px);max-height:calc(100dvh - 120px);overflow:hidden}
+body:not(.mobile-app) .recurringFeedHeader{flex:0 0 auto}
+body:not(.mobile-app) .recurringKpiRow,
+body:not(.mobile-app) .recurringToolbar{flex:0 0 auto}
+body:not(.mobile-app) .recurringFeedTable{flex:1 1 auto;min-height:0;overflow:auto}
+body:not(.mobile-app) .recurringFooterText{flex:0 0 auto}
+body:not(.mobile-app) .recurringFeedPage .recurringSummaryRow.dataPageFooter{flex:0 0 auto;margin-top:0}
+
+/* Mobile (body.mobile-app, <=768px): normal page flow, footer flows at the end
+   above the tab bar (mirrors the Transactions mobile footer, which also relies
+   on !important to unwind the desktop fixed-height layout). */
+body.mobile-app .recurringFeedPage.dataPageCard{height:auto !important;min-height:0 !important;max-height:none !important;overflow:visible !important}
+body.mobile-app .recurringFeedBody{flex:none !important;min-height:0 !important}
+body.mobile-app .recurringFeedTable{flex:none !important;min-height:0 !important;overflow-x:auto !important;overflow-y:visible !important}
+body.mobile-app .recurringFeedPage .recurringSummaryRow.dataPageFooter{margin-top:0;margin-bottom:calc(8px + env(safe-area-inset-bottom));background:transparent}
+body.light.mobile-app .recurringFeedPage .recurringSummaryRow.dataPageFooter{background:transparent}
+
+/* ===== Tablet / mobile: table -> stacked cards at 768px ===== */
+@media (max-width: 768px){
+  .recurringFeedTable{overflow-x:visible}
+  .recurringFeedTableInner{min-width:0;gap:10px}
   .recurringFeedHeaderRow{display:none}
+  .recurringFeedDataRow{
+    grid-template-columns:minmax(0,1fr) auto auto;
+    grid-template-areas:
+      "name amount actions"
+      "meta meta meta";
+    align-items:center;
+    gap:10px 12px;
+    padding:14px;
+  }
+  .recurringNameCol{grid-area:name;min-width:0}
+  .recurringAmountCol{grid-area:amount;justify-self:end;align-self:center;font-size:18px;text-align:right;white-space:nowrap}
+  .recurringActionsCol{grid-area:actions;align-self:center}
+  .recurringCategoryCol,
+  .recurringFreqCol,
+  .recurringDueCol{display:none}
+  .recurringCardMeta{grid-area:meta;display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .recurringCardMeta .recurringMetaDot{opacity:.45}
+  .recurringRowMenu{right:0}
+  .recurringCategoryMenu{left:0}
 }
 
-.recurringDrawerModal{width:min(560px, calc(100vw - 24px));max-height:calc(100vh - 16px);overflow:hidden;padding:12px 14px}
+/* ===== Summary cards single column + save-bar clears mobile tab bar below 640px ===== */
+@media (max-width: 640px){
+  .recurringKpiRow{grid-template-columns:1fr}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter{flex-wrap:wrap;gap:10px 12px}
+  .recurringSummaryStatus{order:1;width:100%}
+  .recurringSummaryBadge{order:2;margin-left:0}
+  .recurringFeedPage .recurringSummaryRow.dataPageFooter .btn.primary{order:3;margin-left:auto}
+}
 
 /* Final light-mode auth lock: force mock-matching palette */
 body.light .authWrap::before{

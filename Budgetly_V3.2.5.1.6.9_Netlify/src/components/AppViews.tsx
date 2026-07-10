@@ -1084,7 +1084,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, Copy, Check, KeyRound, UserX, Activity, X } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, X, SlidersHorizontal } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1539,6 +1539,10 @@ function useIsCompactLaptop() {
   return useMediaQuery('(max-width: 1366px)')
 }
 
+function useIsTabletDown() {
+  return useMediaQuery('(max-width: 768px)')
+}
+
 
 
 declare global {
@@ -1794,7 +1798,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -2030,7 +2034,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -3016,12 +3020,12 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
 
 
 export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { categories, sortedRecurring, addRecurring, updateRecurringField, deleteRecurring, saveRecurring, recurringDirty, helpers, data } = budget
+  const { categories, sortedRecurring, addRecurring, updateRecurringField, deleteRecurring, saveRecurring, recurringDirty, helpers, data, getOrCreateCategory } = budget
   const isPhone = useIsPhone()
-  const isCompactLaptop = useIsCompactLaptop()
+  const isTabletDown = useIsTabletDown()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [selectedRecurringId, setSelectedRecurringId] = useState<string | null>(null)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(true)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | RecurringKind>('all')
   const [frequencyFilter, setFrequencyFilter] = useState<'all' | RecurrenceType>('all')
@@ -3029,7 +3033,9 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(true)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [categoryPickerId, setCategoryPickerId] = useState<string | null>(null)
+  const [menuDir, setMenuDir] = useState<'down' | 'up'>('down')
   const [draftRecurring, setDraftRecurring] = useState({
     name: '',
     kind: 'expense' as RecurringKind,
@@ -3040,10 +3046,8 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     day_of_month: '',
     note: '',
   })
-  const previousRecurringIdsRef = useRef<string[]>(sortedRecurring.map((item) => item.id))
   const pendingDeleteRecurring = useMemo(() => sortedRecurring.find((item) => item.id === pendingDeleteId) ?? null, [sortedRecurring, pendingDeleteId])
   const selectedRecurring = useMemo(() => sortedRecurring.find((item) => item.id === selectedRecurringId) ?? null, [sortedRecurring, selectedRecurringId])
-  const useModalDrawer = isPhone || isCompactLaptop
 
   // ---- Autosave: persist to Supabase shortly after any local change ----
   useEffect(() => {
@@ -3069,24 +3073,108 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   ]
 
   useEffect(() => {
-    if (!sortedRecurring.length) {
-      setSelectedRecurringId(null)
-      previousRecurringIdsRef.current = []
-      return
+    if (!activeMenuId && !categoryPickerId) return
+    const onDocClick = () => {
+      setActiveMenuId(null)
+      setCategoryPickerId(null)
     }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [activeMenuId, categoryPickerId])
 
-    const previousIds = previousRecurringIdsRef.current
-    const nextIds = sortedRecurring.map((item) => item.id)
-    const newRecurringId = nextIds.find((id) => !previousIds.includes(id))
+  const closeForm = () => {
+    setIsFormOpen(false)
+    setCreateError(null)
+    setIsCreating(true)
+    setSelectedRecurringId(null)
+  }
 
-    if (newRecurringId && !isCreating) {
-      setSelectedRecurringId(newRecurringId)
-    } else if (!isCreating && (!selectedRecurringId || !nextIds.includes(selectedRecurringId))) {
-      setSelectedRecurringId(nextIds[0])
+  const assignCategory = (id: string, categoryId: string) => {
+    updateRecurringField(id, 'category_id', categoryId)
+    setCategoryPickerId(null)
+  }
+
+  // Decide whether an in-row popover should open upward so it isn't clipped by
+  // the internal table scroll region. Defaults to 'down' if anything goes wrong.
+  const computeMenuDir = (trigger: HTMLElement, estHeight: number): 'down' | 'up' => {
+    try {
+      const scroller = trigger.closest('.recurringFeedTable')
+      if (!scroller) return 'down'
+      const triggerRect = trigger.getBoundingClientRect()
+      const scrollRect = scroller.getBoundingClientRect()
+      const spaceBelow = scrollRect.bottom - triggerRect.bottom
+      const spaceAbove = triggerRect.top - scrollRect.top
+      return spaceBelow < estHeight && spaceAbove > spaceBelow ? 'up' : 'down'
+    } catch {
+      return 'down'
     }
+  }
 
-    previousRecurringIdsRef.current = nextIds
-  }, [isCreating, selectedRecurringId, sortedRecurring])
+  // Income categories mirror the Transactions page (its fixed INCOME_CATEGORY_OPTIONS
+  // list); expense uses the user's real categories filtered to expense usage so an
+  // income item never offers expense categories and vice-versa.
+  type CategoryOption = { id: string; name: string; emoji?: string | null }
+  const expenseCategories = (): CategoryOption[] => categories.filter((cat) => {
+    const usage = getCategoryUsageType(cat.id, cat.name, data.transactions, sortedRecurring)
+    return usage === 'both' || usage === 'expense'
+  })
+  const categoryOptionsForKind = (kind: RecurringKind): CategoryOption[] =>
+    kind === 'income'
+      ? INCOME_CATEGORY_OPTIONS.map((option) => ({ id: option.id, name: option.name, emoji: option.emoji }))
+      : expenseCategories()
+
+  // Resolve a stored category_id for display: real user categories first, then the
+  // synthetic income ids (income:*) surfaced by the fixed income list.
+  const resolveRecurringCategory = (item: typeof sortedRecurring[number]): CategoryOption | undefined => {
+    if (!item.category_id) return undefined
+    const real = categories.find((cat) => cat.id === item.category_id)
+    if (real) return real
+    const incomeName = INCOME_CATEGORY_NAME_BY_ID.get(item.category_id)
+    if (incomeName) return { id: item.category_id, name: incomeName, emoji: INCOME_CATEGORY_EMOJI_BY_ID.get(item.category_id) ?? '💵' }
+    return undefined
+  }
+
+  const renderCategoryControl = (item: typeof sortedRecurring[number], category: CategoryOption | undefined) => {
+    if (category) {
+      return <span className="recurringCategoryValue">{category.emoji ?? '🏷️'} {category.name}</span>
+    }
+    const pickerCategories = categoryOptionsForKind(item.kind === 'income' ? 'income' : 'expense')
+    return (
+      <span className="recurringCategoryAssign" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className="recurringCategoryGhost"
+          onClick={(event) => {
+            event.stopPropagation()
+            setActiveMenuId(null)
+            setMenuDir(computeMenuDir(event.currentTarget, 220))
+            setCategoryPickerId((current) => (current === item.id ? null : item.id))
+          }}
+        >
+          <Tag size={12} /> Set category
+        </button>
+        {categoryPickerId === item.id ? (
+          <span className={`recurringCategoryMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
+            {pickerCategories.length === 0 ? (
+              <span className="recurringCategoryMenuEmpty muted">No {item.kind === 'income' ? 'income' : 'expense'} categories yet</span>
+            ) : pickerCategories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  const realId = item.kind === 'income' ? getOrCreateCategory(cat.name, cat.emoji ?? '💵') : cat.id
+                  if (realId) assignCategory(item.id, realId)
+                }}
+              >
+                <span>{cat.emoji ?? '🏷️'}</span> {cat.name}
+              </button>
+            ))}
+          </span>
+        ) : null}
+      </span>
+    )
+  }
 
   const handleAddRecurring = () => {
     setIsCreating(true)
@@ -3102,8 +3190,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       note: '',
     })
     setSelectedRecurringId(null)
-    setIsDrawerOpen(true)
-    if (useModalDrawer) setIsAddModalOpen(true)
+    setIsFormOpen(true)
   }
 
   const monthlyNet = sortedRecurring.reduce((sum, item) => {
@@ -3199,13 +3286,14 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         day_of_month: '',
         note: '',
       })
+      setIsFormOpen(false)
       return
     }
     await saveRecurring()
     setIsCreating(true)
     setSelectedRecurringId(null)
     setCreateError(null)
-    if (useModalDrawer) setIsAddModalOpen(true)
+    setIsFormOpen(false)
     setDraftRecurring({
       name: '',
       kind: 'expense',
@@ -3218,12 +3306,38 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     })
   }
 
-  const renderDrawerBody = () => (
+  const renderDrawerBody = () => {
+    const formKind: RecurringKind = isCreating ? draftRecurring.kind : (selectedRecurring?.kind === 'income' ? 'income' : 'expense')
+    const drawerCategories = categoryOptionsForKind(formKind)
+    // Income options are keyed by name (they map to real categories created on save);
+    // expense options are keyed by real category id.
+    const drawerCategoryId = isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')
+    const drawerSelectValue = formKind === 'income' ? (categories.find((cat) => cat.id === drawerCategoryId)?.name ?? '') : drawerCategoryId
+    const setDrawerCategory = (categoryId: string) => {
+      if (isCreating) setDraftRecurring((current) => ({ ...current, category_id: categoryId }))
+      else if (selectedRecurring) updateRecurringField(selectedRecurring.id, 'category_id', categoryId)
+    }
+    const onDrawerCategoryChange = (raw: string) => {
+      if (formKind === 'income') {
+        setDrawerCategory(raw ? (getOrCreateCategory(raw, '💵') ?? '') : '')
+      } else {
+        setDrawerCategory(raw)
+      }
+    }
+    return (
     <>
       <div className="goalFields compact recurringDrawerFields" style={{ marginTop: 14 }}>
         <div className="recurringFieldFull"><small>Name *</small><input className="input" value={isCreating ? draftRecurring.name : (selectedRecurring?.name ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, name: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'name', event.target.value) : null} placeholder="e.g., Rent, Salary, Netflix" /></div>
-        <div><small>Type</small><select className="select" value={isCreating ? draftRecurring.kind : (selectedRecurring?.kind ?? 'expense')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, kind: event.target.value as RecurringKind })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'kind', event.target.value) : null}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-        <div><small>Category</small><select className="select" value={isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, category_id: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'category_id', event.target.value) : null}><option value="">None</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
+        <div><small>Type</small><select className="select" value={isCreating ? draftRecurring.kind : (selectedRecurring?.kind ?? 'expense')} onChange={(event) => {
+          const nextKind = event.target.value as RecurringKind
+          if (isCreating) {
+            setDraftRecurring((current) => ({ ...current, kind: nextKind, category_id: '' }))
+          } else if (selectedRecurring) {
+            updateRecurringField(selectedRecurring.id, 'kind', nextKind)
+            updateRecurringField(selectedRecurring.id, 'category_id', '')
+          }
+        }}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+        <div><small>Category</small><select className="select" value={drawerSelectValue} onChange={(event) => onDrawerCategoryChange(event.target.value)}><option value="">None</option>{drawerCategories.map((category) => <option key={category.id} value={formKind === 'income' ? category.name : category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
         <div><small>Amount *</small><input className="input" inputMode="decimal" value={isCreating ? draftRecurring.amount : String(selectedRecurring?.amount ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, amount: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'amount', event.target.value) : null} placeholder="0.00" /></div>
         <div><small>Frequency</small><select className="select" value={isCreating ? draftRecurring.recurrence_type : (selectedRecurring?.recurrence_type === 'weekly' || selectedRecurring?.recurrence_type === 'biweekly' ? selectedRecurring.recurrence_type : 'monthly')} onChange={(event) => {
           const nextFrequency = event.target.value as RecurrenceType
@@ -3259,7 +3373,8 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         <button className="btn primary" onClick={() => void handleSaveDrawer()} disabled={!isCreating && !recurringDirty}>Save Item</button>
       </div>
     </>
-  )
+    )
+  }
 
   return (
     <div className="card mobileSectionCard dataPageCard recurringFeedPage recurringDesignerPage">
@@ -3280,6 +3395,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
             <div className="recurringKpiCard"><div className="recurringKpiIcon">🪙</div><div><div className="muted">Recurring Income</div><strong>{helpers.fmtMoney(monthlyIncomeTotal, data.currency)}</strong></div></div>
             <div className="recurringKpiCard"><div className="recurringKpiIcon">📊</div><div><div className="muted">Estimated monthly net</div><strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong></div></div>
           </div>
+        ) : (
           <div className="recurringToolbar">
             <div className="recurringSearchInput">
               <Search size={14} />
@@ -3302,8 +3418,18 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               <option value="name">Sort by name</option>
             </select>
           </div>
+        )}
 
-          <div className="recurringFeedTable">
+        <div
+          className="recurringFeedTable"
+          onScroll={() => {
+            if (activeMenuId || categoryPickerId) {
+              setActiveMenuId(null)
+              setCategoryPickerId(null)
+            }
+          }}
+        >
+          <div className="recurringFeedTableInner">
             <div className="recurringFeedHeaderRow">
               <div>Name</div>
               <div>Category</div>
@@ -3316,43 +3442,58 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               <div className="muted recurringFeedEmpty">No recurring items match your filters.</div>
             ) : recurringRows.map(({ item, dueDate }) => {
               const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
-              const category = categories.find((entry) => entry.id === item.category_id)
+              const category = resolveRecurringCategory(item)
               const badgeText = recurrenceType === 'biweekly' ? 'Bi-weekly' : recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'
-              const isSelected = item.id === selectedRecurringId && isDrawerOpen
+              const startOfToday = new Date()
+              startOfToday.setHours(0, 0, 0, 0)
+              const isOverdue = dueDate < startOfToday
+              const amountClass = item.kind === 'income' ? 'good' : isOverdue ? 'overdue' : ''
+              const isSelected = item.id === selectedRecurringId && isFormOpen
               return (
-                <div key={item.id} className={`recurringFeedDataRow ${isSelected ? 'selected' : ''}`}>
+                <div key={item.id} className={`recurringFeedDataRow ${isSelected ? 'selected' : ''} ${item.kind}`}>
                   <div className="recurringNameCol">
                     <div className="recurringItemEmoji">{category?.emoji ?? (item.kind === 'income' ? '💰' : '📌')}</div>
-                    <div>
+                    <div className="recurringNameText">
                       <div className="recurringFeedRowName">{item.name || 'Untitled recurring item'}</div>
                       <span className={`recurringKindPill ${item.kind}`}>{item.kind === 'income' ? 'Income' : 'Expense'}</span>
                     </div>
                   </div>
-                  <div className="muted recurringCategoryCol">{category?.emoji ?? '🏷️'} {category?.name ?? 'Uncategorized'}</div>
-                  <div className={`recurringAmountCol ${item.kind === 'income' ? 'good' : ''}`}>{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</div>
-                  <div><span className="recurringFreqPill">{badgeText}</span></div>
-                  <div className="recurringDueCol"><div className="muted">Next due</div><strong>{dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
-                  <div className="recurringActionsCol">
+                  <div className="recurringCategoryCol">{renderCategoryControl(item, category)}</div>
+                  <div className={`recurringAmountCol recurringNum ${amountClass}`}>{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</div>
+                  <div className="recurringFreqCol"><span className="recurringFreqPill">{badgeText}</span></div>
+                  <div className="recurringDueCol"><div className="muted">Next due</div><strong className="recurringNum">{dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
+                  <div className="recurringCardMeta">
+                    <span className="recurringMetaCategory">{renderCategoryControl(item, category)}</span>
+                    <span className="recurringMetaDot">•</span>
+                    <span>{badgeText}</span>
+                    <span className="recurringMetaDot">•</span>
+                    <span>Due {dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  <div className="recurringActionsCol" onClick={(event) => event.stopPropagation()}>
                     <button
                       type="button"
                       className="icon"
+                      aria-label="Row actions"
                       onClick={(event) => {
                         event.stopPropagation()
+                        setCategoryPickerId(null)
+                        setMenuDir(computeMenuDir(event.currentTarget, 96))
                         setActiveMenuId((current) => current === item.id ? null : item.id)
                       }}
                     >
                       <MoreHorizontal size={16} />
                     </button>
                     {activeMenuId === item.id ? (
-                      <div className="recurringRowMenu">
+                      <div className={`recurringRowMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
                         <button
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation()
                             setSelectedRecurringId(item.id)
                             setIsCreating(false)
+                            setCreateError(null)
                             setActiveMenuId(null)
-                            if (useModalDrawer) setIsAddModalOpen(true)
+                            setIsFormOpen(true)
                           }}
                         >
                           Edit
@@ -3375,28 +3516,32 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               )
             })}
           </div>
-          <div className="muted recurringFooterText">Showing 1 to {recurringRows.length} of {recurringRows.length} items</div>
         </div>
-
-        {!useModalDrawer ? <aside className="recurringDrawerCard recurringDesignerDrawer">
-            <div className="row between" style={{ alignItems: 'flex-start', gap: 10 }}>
-              <div>
-                <h3 style={{ marginBottom: 4 }}>Add Recurring Item</h3>
-                <div className="muted">Create or edit a recurring payment or income.</div>
-              </div>
-            </div>
-            {renderDrawerBody()}
-          </aside> : null}
+        <div className="muted recurringFooterText">Showing 1 to {recurringRows.length} of {recurringRows.length} items</div>
       </div>
 
-      {useModalDrawer && isAddModalOpen ? (
-        <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setIsAddModalOpen(false)}>
-          <div className="card recurringDrawerModal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <h3 style={{ marginBottom: 4 }}>Add Recurring Item</h3>
-            <div className="muted">Create or edit a recurring payment or income.</div>
-            {renderDrawerBody()}
+      <div className="row between recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
+        <div className="muted recurringSummaryStatus">{recurringDirty ? 'You have unsaved recurring changes.' : 'All recurring changes are saved.'}</div>
+        <div className="badge recurringSummaryBadge">Estimated monthly net <span className="recurringNum">{helpers.fmtMoney(monthlyNet, data.currency)}</span></div>
+        <button className="btn primary" onClick={() => void saveRecurring()} disabled={!recurringDirty}>Update Recurring</button>
+      </div>
+
+      {isFormOpen ? createPortal(
+        <div className={`recurringDrawerBackdrop ${isPhone ? 'asModalBackdrop' : ''}`} role="presentation" onClick={closeForm}>
+          <div className={`recurringSlideOver ${isPhone ? 'asModal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="recurringSlideOverHeader">
+              <div>
+                <h3 style={{ margin: 0 }}>{isCreating ? 'Add Recurring Item' : 'Edit Recurring Item'}</h3>
+                <div className="muted">Create or edit a recurring payment or income.</div>
+              </div>
+              <button type="button" className="icon recurringSlideOverClose" onClick={closeForm} aria-label="Close form"><X size={18} /></button>
+            </div>
+            <div className="recurringSlideOverBody">
+              {renderDrawerBody()}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
 
       {!isPhone ? null : (
