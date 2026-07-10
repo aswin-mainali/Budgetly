@@ -3704,18 +3704,35 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     }
   }
 
-  // Categories the user keeps are a mix of income/expense; surface only the ones
-  // that match the item's kind so an income item doesn't offer expense categories.
-  const categoriesForKind = (kind: RecurringKind) => categories.filter((cat) => {
+  // Income categories mirror the Transactions page (its fixed INCOME_CATEGORY_OPTIONS
+  // list); expense uses the user's real categories filtered to expense usage so an
+  // income item never offers expense categories and vice-versa.
+  type CategoryOption = { id: string; name: string; emoji?: string | null }
+  const expenseCategories = (): CategoryOption[] => categories.filter((cat) => {
     const usage = getCategoryUsageType(cat.id, cat.name, data.transactions, sortedRecurring)
-    return usage === 'both' || usage === kind
+    return usage === 'both' || usage === 'expense'
   })
+  const categoryOptionsForKind = (kind: RecurringKind): CategoryOption[] =>
+    kind === 'income'
+      ? INCOME_CATEGORY_OPTIONS.map((option) => ({ id: option.id, name: option.name, emoji: option.emoji }))
+      : expenseCategories()
 
-  const renderCategoryControl = (item: typeof sortedRecurring[number], category: Category | undefined) => {
+  // Resolve a stored category_id for display: real user categories first, then the
+  // synthetic income ids (income:*) surfaced by the fixed income list.
+  const resolveRecurringCategory = (item: typeof sortedRecurring[number]): CategoryOption | undefined => {
+    if (!item.category_id) return undefined
+    const real = categories.find((cat) => cat.id === item.category_id)
+    if (real) return real
+    const incomeName = INCOME_CATEGORY_NAME_BY_ID.get(item.category_id)
+    if (incomeName) return { id: item.category_id, name: incomeName, emoji: INCOME_CATEGORY_EMOJI_BY_ID.get(item.category_id) ?? '💵' }
+    return undefined
+  }
+
+  const renderCategoryControl = (item: typeof sortedRecurring[number], category: CategoryOption | undefined) => {
     if (category) {
       return <span className="recurringCategoryValue">{category.emoji ?? '🏷️'} {category.name}</span>
     }
-    const pickerCategories = categoriesForKind(item.kind === 'income' ? 'income' : 'expense')
+    const pickerCategories = categoryOptionsForKind(item.kind === 'income' ? 'income' : 'expense')
     return (
       <span className="recurringCategoryAssign" onClick={(event) => event.stopPropagation()}>
         <button
@@ -3884,7 +3901,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const renderDrawerBody = () => {
     const formKind: RecurringKind = isCreating ? draftRecurring.kind : (selectedRecurring?.kind === 'income' ? 'income' : 'expense')
-    const drawerCategories = categoriesForKind(formKind)
+    const drawerCategories = categoryOptionsForKind(formKind)
     return (
     <>
       <div className="goalFields compact recurringDrawerFields" style={{ marginTop: 14 }}>
@@ -4014,7 +4031,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               <div className="muted recurringFeedEmpty">No recurring items match your filters.</div>
             ) : recurringRows.map(({ item, dueDate }) => {
               const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
-              const category = categories.find((entry) => entry.id === item.category_id)
+              const category = resolveRecurringCategory(item)
               const badgeText = recurrenceType === 'biweekly' ? 'Bi-weekly' : recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'
               const startOfToday = new Date()
               startOfToday.setHours(0, 0, 0, 0)
