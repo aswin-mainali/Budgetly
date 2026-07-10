@@ -1084,7 +1084,7 @@ import {
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, Copy, Check, KeyRound, UserX, Activity, X } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -6267,23 +6267,32 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
 }
 
 
+type AdminDetailTab = 'profile' | 'permissions' | 'activity' | 'danger'
+
 export function SuperAdminView({ admin, embedded = false, hideAudit = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean; hideAudit?: boolean }) {
   const selectedUser = admin.selectedUser
   const [draftRole, setDraftRole] = useState<UserRole>('user')
-  const [draftActive, setDraftActive] = useState(true)
   const [draftFeatures, setDraftFeatures] = useState<FeatureAccess>(admin.defaultFeatureAccess)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all')
   const [localProfileImage, setLocalProfileImage] = useState('')
   const [localProfileName, setLocalProfileName] = useState({ firstName: '', lastName: '' })
+  const [detailTab, setDetailTab] = useState<AdminDetailTab>('permissions')
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<null | 'suspend' | 'remove'>(null)
 
   useEffect(() => {
     if (!selectedUser) return
     setDraftRole(selectedUser.role)
-    setDraftActive(selectedUser.is_active)
     setDraftFeatures({ ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) })
-  }, [selectedUser, admin.defaultFeatureAccess])
+    setDetailTab('permissions')
+    setActionsOpen(false)
+    setConfirmAction(null)
+    setJustSaved(false)
+  }, [selectedUser?.id])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -6307,22 +6316,65 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     })
   }, [admin.managedUsers, searchTerm, statusFilter, roleFilter])
 
+  const baseFeatures = useMemo(
+    () => ({ ...admin.defaultFeatureAccess, ...(selectedUser?.feature_access ?? {}) }),
+    [admin.defaultFeatureAccess, selectedUser?.feature_access],
+  )
+
   const dirty = !!selectedUser && (
     draftRole !== selectedUser.role ||
-    draftActive !== selectedUser.is_active ||
-    admin.featureKeys.some((key) => draftFeatures[key] !== ({ ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) })[key])
+    admin.featureKeys.some((key) => draftFeatures[key] !== baseFeatures[key])
+  )
+
+  const accessPresets = useMemo(() => ([
+    { id: 'full', label: 'Full Access', access: { ...admin.defaultFeatureAccess } as FeatureAccess },
+    { id: 'standard', label: 'Standard', access: { ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false } as FeatureAccess },
+    { id: 'readonly', label: 'Read Only', access: { ...admin.defaultFeatureAccess, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false } as FeatureAccess },
+  ]), [admin.defaultFeatureAccess])
+
+  const activePresetId = useMemo(
+    () => accessPresets.find((preset) => admin.featureKeys.every((key) => draftFeatures[key] === preset.access[key]))?.id ?? null,
+    [accessPresets, draftFeatures, admin.featureKeys],
+  )
+
+  const userActivity = useMemo(
+    () => admin.auditLogs.filter((log) => log.target_user_id === selectedUser?.id),
+    [admin.auditLogs, selectedUser?.id],
   )
 
   const saveUser = async () => {
     if (!selectedUser) return
-    if (draftRole !== selectedUser.role || draftActive !== selectedUser.is_active) {
-      await admin.updateManagedUser(selectedUser.id, { role: draftRole, is_active: draftActive })
+    if (draftRole !== selectedUser.role) {
+      await admin.updateManagedUser(selectedUser.id, { role: draftRole })
     }
-    const base = { ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) }
-    const hasFeatureChanges = admin.featureKeys.some((key) => draftFeatures[key] !== base[key])
+    const hasFeatureChanges = admin.featureKeys.some((key) => draftFeatures[key] !== baseFeatures[key])
     if (hasFeatureChanges) {
       await admin.updateManagedFeatures(selectedUser.id, draftFeatures)
     }
+  }
+
+  const handleSave = async () => {
+    await saveUser()
+    setJustSaved(true)
+    window.setTimeout(() => setJustSaved(false), 2400)
+  }
+
+  const copyUserId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id)
+      setCopiedId(true)
+      window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'User ID copied' } }))
+      window.setTimeout(() => setCopiedId(false), 1600)
+    } catch {
+      window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Could not copy user ID' } }))
+    }
+  }
+
+  const formatJoined = (value?: string | null) => {
+    if (!value) return 'Unknown'
+    const timestamp = new Date(value)
+    if (Number.isNaN(timestamp.getTime())) return 'Unknown'
+    return timestamp.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
   }
 
   const formatAuditAction = (action: string) => action.replaceAll('_', ' ').replace(/\w/g, (char) => char.toUpperCase())
@@ -6469,7 +6521,9 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                   <span className="badge">{user.role.replace('_', ' ')}</span>
                 </div>
                 <div className="adminUserMeta status">
-                  <span className={`badge ${user.is_active ? 'successOutline' : 'dangerOutline'}`}>{user.is_active ? 'Active' : 'Inactive'}</span>
+                  <span className={`adminStatusIndicator ${user.is_active ? 'active' : 'inactive'}`}>
+                    <span className="adminStatusDot" />{user.is_active ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
                 <div className="muted adminLastActiveCell">{formatLastActive(user.updated_at)}</div>
               </button>
@@ -6481,7 +6535,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
         {selectedUser ? (
           <div className="card adminDetailCard adminDetailScrollable adminCardShell">
             <div className="adminDetailInner">
-              <div className="row between" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
+              <div className="row between adminDetailHeader" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
                 <div className="adminSelectedUser">
                   <span className="adminAvatar large">
                     {avatarImageForUser(selectedUser)
@@ -6489,84 +6543,241 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                       : initialsForUser(selectedUser)}
                   </span>
                   <div>
-                    <h3 style={{ marginBottom: 4 }}>User Access & Permissions</h3>
-                    <div className="muted">{displayNameForUser(selectedUser)} • {selectedUser.email}</div>
-                    <div className="muted" style={{ marginTop: 4 }}>{formatLastActive(selectedUser.updated_at)}</div>
+                    <h3 style={{ marginBottom: 4 }}>{displayNameForUser(selectedUser)}</h3>
+                    <div className="muted">{selectedUser.email}</div>
                   </div>
                 </div>
-                <div className="row gap" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn" onClick={() => admin.setSelectedUserId(null)}>Actions <ChevronDown size={14} /></button>
+                <div className="adminActionsMenu">
+                  <button className="btn" onClick={() => setActionsOpen((open) => !open)}>Actions <ChevronDown size={14} /></button>
+                  {actionsOpen ? (
+                    <>
+                      <div className="adminMenuBackdrop" onClick={() => setActionsOpen(false)} />
+                      <div className="adminActionsDropdown">
+                        <button onClick={() => { void copyUserId(selectedUser.id); setActionsOpen(false) }}>
+                          <Copy size={14} /> Copy user ID
+                        </button>
+                        <button onClick={() => { admin.setSelectedUserId(null); setActionsOpen(false) }}>
+                          <X size={14} /> Close panel
+                        </button>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="grid cols2 adminRoleStatusRow" style={{ marginBottom: 14 }}>
-                <label className="field">
-                  <span>Role</span>
-                  <select className="select" value={draftRole} onChange={(event) => setDraftRole(event.target.value as UserRole)}>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="super_admin">Super Admin</option>
-                  </select>
-                </label>
-                <div className="field">
-                  <span>Account status</span>
-                  <button className={`btn ${draftActive ? 'primary' : 'danger'}`} onClick={() => setDraftActive((current) => !current)}>
-                    {draftActive ? <ToggleRight size={18} /> : <ToggleLeft size={18} />} {draftActive ? 'Active' : 'Inactive'}
+              <div className="adminDetailTabs" role="tablist">
+                {([
+                  { id: 'profile', label: 'Profile', icon: <UserCircle2 size={15} /> },
+                  { id: 'permissions', label: 'Permissions', icon: <Lock size={15} /> },
+                  { id: 'activity', label: 'Activity', icon: <Activity size={15} /> },
+                  { id: 'danger', label: 'Danger zone', icon: <AlertTriangle size={15} /> },
+                ] as const).map((tab) => (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={detailTab === tab.id}
+                    className={`adminDetailTab ${detailTab === tab.id ? 'active' : ''} ${tab.id === 'danger' ? 'danger' : ''}`}
+                    onClick={() => setDetailTab(tab.id)}
+                  >
+                    {tab.icon}<span>{tab.label}</span>
                   </button>
-                </div>
+                ))}
               </div>
 
-              <div className="adminPresetRow" style={{ marginBottom: 12 }}>
-                <span className="muted">Access preset</span>
-                <div className="row gap" style={{ flexWrap: 'wrap' }}>
-                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess })}>Full Access</button>
-                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false })}>Standard</button>
-                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, dashboard: true, settings: true, support: true, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false })}>Read Only</button>
+              {detailTab === 'profile' ? (
+                <div className="adminProfilePanel">
+                  <div className="adminProfileList">
+                    <div className="adminProfileField"><span className="adminProfileKey">Name</span><span className="adminProfileVal">{displayNameForUser(selectedUser)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Email</span><span className="adminProfileVal">{selectedUser.email}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Role</span><span className="adminProfileVal">{selectedUser.role.replace('_', ' ')}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Status</span>
+                      <span className={`adminStatusIndicator ${selectedUser.is_active ? 'active' : 'inactive'}`}><span className="adminStatusDot" />{selectedUser.is_active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Joined</span><span className="adminProfileVal">{formatJoined(selectedUser.created_at)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Last active</span><span className="adminProfileVal">{formatLastActive(selectedUser.updated_at)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">User ID</span>
+                      <span className="adminProfileVal adminUserIdField">
+                        <code>{selectedUser.id}</code>
+                        <button className="icon" title="Copy user ID" onClick={() => void copyUserId(selectedUser.id)}>
+                          {copiedId ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <div className="adminFeatureSections">
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Core Modules</div>
-                  <div className="adminFeatureGrid">
-                    {(['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
+              {detailTab === 'permissions' ? (
+                <div className="adminPermissionsPanel">
+                  <div className="grid adminRoleStatusRow" style={{ marginBottom: 14 }}>
+                    <label className="field">
+                      <span>Role</span>
+                      <select className="select" value={draftRole} onChange={(event) => setDraftRole(event.target.value as UserRole)}>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                      </select>
+                    </label>
                   </div>
-                </div>
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Planning</div>
-                  <div className="adminFeatureGrid">
-                    {(['advice', 'converter'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Utilities</div>
-                  <div className="adminFeatureGrid">
-                    {(['support', 'settings'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
 
-              <div className="row between adminDetailFooter" style={{ marginTop: 16, gap: 12 }}>
-                <div className="muted">User ID: <code>{selectedUser.id}</code></div>
-                <button className="btn primary" onClick={() => void saveUser()} disabled={!dirty || !!admin.busyAction}>
-                  {admin.busyAction ? 'Saving…' : 'Save admin changes'}
-                </button>
-              </div>
+                  <div className="adminPresetRow" style={{ marginBottom: 12 }}>
+                    <span className="muted">Access preset</span>
+                    <div className="row gap adminPresetButtons" style={{ flexWrap: 'wrap' }}>
+                      {accessPresets.map((preset) => (
+                        <button
+                          key={preset.id}
+                          className={`btn adminPresetBtn ${activePresetId === preset.id ? 'active' : ''}`}
+                          onClick={() => setDraftFeatures({ ...preset.access })}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      {activePresetId === null ? <span className="badge adminPresetCustom">Custom</span> : null}
+                    </div>
+                  </div>
+
+                  <div className="adminFeatureSections">
+                    {([
+                      { title: 'Core Modules', keys: ['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const },
+                      { title: 'Planning', keys: ['advice', 'converter'] as const },
+                      { title: 'Utilities', keys: ['support', 'settings'] as const },
+                    ]).map((group) => (
+                      <div key={group.title} className="adminFeatureSection">
+                        <div className="adminFeatureTitle">{group.title}</div>
+                        <div className="adminSwitchGrid">
+                          {group.keys.map((feature) => (
+                            <label key={feature} className={`adminSwitchRow ${draftFeatures[feature] ? 'on' : 'off'}`}>
+                              <span className="adminSwitchLabel">{featureLabel(feature)}</span>
+                              <span className="adminSwitch">
+                                <input
+                                  type="checkbox"
+                                  checked={draftFeatures[feature]}
+                                  onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))}
+                                />
+                                <span className="adminSwitchTrack"><span className="adminSwitchThumb" /></span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="row between adminDetailFooter" style={{ marginTop: 16, gap: 12 }}>
+                    <div className="adminSaveStatus">
+                      {dirty ? (
+                        <span className="adminDirtyIndicator"><span className="adminDirtyDot" /> Unsaved changes</span>
+                      ) : justSaved ? (
+                        <span className="adminSavedIndicator"><Check size={14} /> Saved</span>
+                      ) : null}
+                    </div>
+                    <button className={`btn primary ${dirty ? '' : 'muted'}`} onClick={() => void handleSave()} disabled={!dirty || !!admin.busyAction}>
+                      {admin.busyAction ? 'Saving…' : 'Save changes'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {detailTab === 'activity' ? (
+                <div className="adminActivityPanel">
+                  {userActivity.length === 0 ? (
+                    <div className="adminActivityEmpty">
+                      <div className="adminEmptyIcon"><Activity size={20} /></div>
+                      <strong>No activity recorded</strong>
+                      <div className="muted">Sign-ins and account changes for this user will appear here.</div>
+                    </div>
+                  ) : (
+                    <div className="adminActivityList">
+                      {userActivity.map((log) => (
+                        <div key={log.id} className="adminActivityRow">
+                          <span className="adminActivityDot" />
+                          <div className="adminActivityBody">
+                            <strong>{formatAuditAction(log.action)}</strong>
+                            <div className="muted">{renderAuditDetails(log.details)}</div>
+                          </div>
+                          <div className="muted adminActivityTime">{formatLastActive(log.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {detailTab === 'danger' ? (
+                <div className="adminDangerZone">
+                  <div className="adminDangerIntro"><AlertTriangle size={15} /> Destructive actions — proceed with care.</div>
+
+                  <div className="adminDangerRow">
+                    <div className="adminDangerText">
+                      <strong>{selectedUser.is_active ? 'Suspend account' : 'Reactivate account'}</strong>
+                      <div className="muted">{selectedUser.is_active ? 'Immediately blocks this user from signing in.' : 'Restores this user’s access to sign in.'}</div>
+                    </div>
+                    <div className="adminDangerActions">
+                      {confirmAction === 'suspend' ? (
+                        <>
+                          <button className="btn" onClick={() => setConfirmAction(null)}>Cancel</button>
+                          <button
+                            className="btn danger"
+                            disabled={!!admin.busyAction}
+                            onClick={async () => { await admin.updateManagedUser(selectedUser.id, { is_active: !selectedUser.is_active }); setConfirmAction(null) }}
+                          >
+                            {admin.busyAction ? 'Working…' : 'Confirm'}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className={`btn ${selectedUser.is_active ? 'danger' : 'primary'}`}
+                          disabled={!!admin.busyAction}
+                          onClick={() => selectedUser.is_active ? setConfirmAction('suspend') : void admin.updateManagedUser(selectedUser.id, { is_active: true })}
+                        >
+                          <UserX size={15} /> {selectedUser.is_active ? 'Suspend' : 'Reactivate'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="adminDangerRow">
+                    <div className="adminDangerText">
+                      <strong>Reset password</strong>
+                      <div className="muted">Sends a password reset email to {selectedUser.email}.</div>
+                    </div>
+                    <div className="adminDangerActions">
+                      <button
+                        className="btn"
+                        disabled={admin.busyAction === `reset:${selectedUser.id}`}
+                        onClick={() => void admin.resetManagedUserPassword(selectedUser.id, selectedUser.email)}
+                      >
+                        <KeyRound size={15} /> {admin.busyAction === `reset:${selectedUser.id}` ? 'Sending…' : 'Send reset email'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="adminDangerRow">
+                    <div className="adminDangerText">
+                      <strong>Remove user</strong>
+                      <div className="muted">Permanently deletes this user’s profile and access. This cannot be undone.</div>
+                    </div>
+                    <div className="adminDangerActions">
+                      {confirmAction === 'remove' ? (
+                        <>
+                          <button className="btn" onClick={() => setConfirmAction(null)}>Cancel</button>
+                          <button
+                            className="btn danger"
+                            disabled={!!admin.busyAction}
+                            onClick={async () => { await admin.removeManagedUser(selectedUser.id); setConfirmAction(null) }}
+                          >
+                            {admin.busyAction ? 'Removing…' : 'Confirm remove'}
+                          </button>
+                        </>
+                      ) : (
+                        <button className="btn danger" disabled={!!admin.busyAction} onClick={() => setConfirmAction('remove')}>
+                          <Trash2 size={15} /> Remove user
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (

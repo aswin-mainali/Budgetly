@@ -240,6 +240,44 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
   }, [isSuperAdmin, refresh, writeAudit])
 
+  const resetManagedUserPassword = useCallback(async (targetUserId: string, targetEmail: string) => {
+    if (!isSuperAdmin) return
+    setBusyAction(`reset:${targetUserId}`)
+    setError(null)
+    try {
+      const redirectTo = new URL('/reset-password', window.location.origin).toString()
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, { redirectTo })
+      if (resetError) throw new Error(resetError.message)
+      await writeAudit('password_reset_sent', targetUserId, { email: targetEmail })
+      await loadAdminData()
+      notify('Password reset email sent')
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to send password reset email.')
+    } finally {
+      setBusyAction(null)
+    }
+  }, [isSuperAdmin, writeAudit, loadAdminData])
+
+  const removeManagedUser = useCallback(async (targetUserId: string) => {
+    if (!isSuperAdmin) return
+    setBusyAction(`remove:${targetUserId}`)
+    setError(null)
+    try {
+      const accessResult = await supabase.from('user_feature_access').delete().eq('user_id', targetUserId)
+      if (accessResult.error) throw new Error(accessResult.error.message)
+      const profileResult = await supabase.from('profiles').delete().eq('id', targetUserId)
+      if (profileResult.error) throw new Error(profileResult.error.message)
+      await writeAudit('user_removed', targetUserId, {})
+      if (selectedUserId === targetUserId) setSelectedUserId(null)
+      await loadAdminData()
+      notify('User removed')
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to remove user.')
+    } finally {
+      setBusyAction(null)
+    }
+  }, [isSuperAdmin, writeAudit, loadAdminData, selectedUserId])
+
   const updateBugReport = useCallback(async (reportId: string, updates: Partial<Pick<BugReport, 'status' | 'admin_notes'>>) => {
     if (!isSuperAdmin) return
     setBusyAction(`bug:${reportId}`)
@@ -275,6 +313,8 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     refresh,
     updateManagedUser,
     updateManagedFeatures,
+    resetManagedUserPassword,
+    removeManagedUser,
     updateBugReport,
     featureKeys: FEATURE_KEYS,
     defaultFeatureAccess: DEFAULT_FEATURE_ACCESS,
