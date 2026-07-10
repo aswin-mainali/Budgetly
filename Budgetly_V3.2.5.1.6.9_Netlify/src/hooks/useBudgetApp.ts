@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { download, fmtMoney, monthKey, monthLabel, safeCsv } from '../lib/utils'
+import { buildCategoryColorMap, colorForCategory, UNCATEGORIZED_ID } from '../lib/categoryColors'
 import { Category, Transaction, TxType, SyncState, LocalSettings, RecurringItem, RecurrenceType, RecurringKind, Goal } from '../types'
 
 type DataState = {
@@ -368,6 +369,16 @@ export function useBudgetApp(userId: string | null) {
 
   const catsById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories])
 
+  // Stable id -> color map from the fixed categorical palette, assigned in a
+  // consistent order so the same category keeps the same color everywhere.
+  const categoryColorMap = useMemo(() => {
+    const orderedIds = [...categories]
+      .sort((left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0) || left.id.localeCompare(right.id))
+      .map((category) => category.id)
+    orderedIds.push(UNCATEGORIZED_ID)
+    return buildCategoryColorMap(orderedIds, 'light')
+  }, [categories])
+
   const months = useMemo(() => {
     const keys = new Set<string>()
     transactions.forEach((tx) => keys.add(monthKey(tx.date)))
@@ -400,6 +411,17 @@ export function useBudgetApp(userId: string | null) {
   const expenses = useMemo(() => monthTx.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [monthTx])
   const net = income - expenses
 
+  const prevMonth = useMemo(() => {
+    const [y, m] = activeMonth.split('-').map(Number)
+    if (!y || !m) return activeMonth
+    const date = new Date(y, m - 2, 1)
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  }, [activeMonth])
+  const prevMonthTx = useMemo(() => transactions.filter((tx) => monthKey(tx.date) === prevMonth), [transactions, prevMonth])
+  const prevIncome = useMemo(() => prevMonthTx.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [prevMonthTx])
+  const prevExpenses = useMemo(() => prevMonthTx.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0), [prevMonthTx])
+  const prevNet = prevIncome - prevExpenses
+
   const byCategory = useMemo(() => {
     const totals = new Map<string, number>()
     monthTx.forEach((tx) => {
@@ -411,10 +433,10 @@ export function useBudgetApp(userId: string | null) {
     return Array.from(totals.entries())
       .map(([id, total]) => {
         const category = id === 'uncat' ? null : catsById.get(id) ?? null
-        return { id, name: category?.name ?? 'Uncategorized', emoji: category?.emoji ?? (id === 'uncat' ? '📁' : '🏷️'), total, color: category?.color ?? '#94a3b8' }
+        return { id, name: category?.name ?? 'Uncategorized', emoji: category?.emoji ?? (id === 'uncat' ? '📁' : '🏷️'), total, color: colorForCategory(id, categoryColorMap, 'light') }
       })
       .sort((left, right) => right.total - left.total)
-  }, [monthTx, catsById])
+  }, [monthTx, catsById, categoryColorMap])
 
   const daily = useMemo(() => {
     const totals = new Map<string, number>()
@@ -1088,6 +1110,11 @@ export function useBudgetApp(userId: string | null) {
     income,
     expenses,
     net,
+    prevIncome,
+    prevExpenses,
+    prevNet,
+    prevMonth,
+    categoryColorMap,
     byCategory,
     daily,
     monthlyTrend,
