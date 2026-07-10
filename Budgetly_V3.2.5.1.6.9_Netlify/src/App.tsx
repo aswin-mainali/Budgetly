@@ -288,6 +288,12 @@ export default function App() {
     if (toolsSection === 'converter' && !admin.visibleFeatures.converter) {
       if (admin.visibleFeatures.goals) setToolsSection('goals')
       else if (admin.visibleFeatures.reports) setToolsSection('reports')
+      else if (admin.visibleFeatures.investments) setToolsSection('investments')
+    }
+    if (toolsSection === 'investments' && !admin.visibleFeatures.investments) {
+      if (admin.visibleFeatures.goals) setToolsSection('goals')
+      else if (admin.visibleFeatures.reports) setToolsSection('reports')
+      else if (admin.visibleFeatures.converter) setToolsSection('converter')
     }
   }, [view, toolsSection, admin.visibleFeatures])
 
@@ -500,7 +506,7 @@ export default function App() {
               <button className="utilityCard" onClick={() => { setToolsSection('goals'); setView('tools') }}><Target size={22} /><div><strong>Goals</strong><p>Set financial goals and track your progress.</p></div><ChevronRight size={18} /></button>
               <button className="utilityCard" onClick={() => { setToolsSection('reports'); setView('tools') }}><BarChart3 size={22} /><div><strong>Reports</strong><p>View insights and reports for this month.</p></div><ChevronRight size={18} /></button>
               <button className="utilityCard" onClick={() => { setToolsSection('converter'); setView('tools') }}><ArrowLeftRight size={22} /><div><strong>Currency Converter</strong><p>Convert currencies with live exchange rates.</p></div><ChevronRight size={18} /></button>
-              <button className="utilityCard" onClick={() => { setToolsSection('investments'); setView('tools') }}><BarChart3 size={22} /><div><strong>Investments</strong><p>Track manual holdings and portfolio performance.</p></div><ChevronRight size={18} /></button>
+              {admin.visibleFeatures.investments ? <button className="utilityCard" onClick={() => { setToolsSection('investments'); setView('tools') }}><BarChart3 size={22} /><div><strong>Investments</strong><p>Track manual holdings and portfolio performance.</p></div><ChevronRight size={18} /></button> : null}
             </section>
           ) : (
           <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
@@ -508,7 +514,7 @@ export default function App() {
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}
-              {toolsSection === 'investments' ? <InvestmentsView /> : null}
+              {toolsSection === 'investments' && admin.visibleFeatures.investments ? <InvestmentsView /> : null}
             </div>
           </div>
           )

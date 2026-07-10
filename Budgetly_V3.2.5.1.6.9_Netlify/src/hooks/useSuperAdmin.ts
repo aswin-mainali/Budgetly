@@ -16,6 +16,7 @@ export const DEFAULT_FEATURE_ACCESS: FeatureAccess = {
   goals: true,
   advice: true,
   converter: true,
+  investments: true,
   support: true,
   settings: true,
 }
@@ -59,27 +60,31 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
   const ensureSelfRecords = useCallback(async () => {
     if (!userId) return null
 
+    // Best-effort: stamp this user's real "last active" time on load. Ignored if the
+    // touch_last_active() function has not been created yet (pre-migration).
+    void supabase.rpc('touch_last_active')
+
     let currentProfile = await getSingleOrNull(
-      supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
     ) as Profile | null
 
     if (!currentProfile) {
       const insertResult = await supabase.from('profiles').insert({ id: userId, email: email ?? '', role: 'user', is_active: true })
       if (insertResult.error && insertResult.error.code !== '23505') throw new Error(insertResult.error.message || 'Failed to create profile.')
       currentProfile = await getSingleOrNull(
-        supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
+        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       ) as Profile | null
     }
 
     let currentAccess = await getSingleOrNull(
-      supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at').eq('user_id', userId).maybeSingle(),
+      supabase.from('user_feature_access').select('*').eq('user_id', userId).maybeSingle(),
     ) as UserFeatureAccess | null
 
     if (!currentAccess) {
       const insertResult = await supabase.from('user_feature_access').insert({ user_id: userId, ...DEFAULT_FEATURE_ACCESS })
       if (insertResult.error && insertResult.error.code !== '23505') throw new Error(insertResult.error.message || 'Failed to create feature access row.')
       currentAccess = await getSingleOrNull(
-        supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_feature_access').select('*').eq('user_id', userId).maybeSingle(),
       ) as UserFeatureAccess | null
     }
 
@@ -98,12 +103,16 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
 
     setError(null)
-    const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
-      supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').order('created_at', { ascending: false }),
-      supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at'),
+    const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, activityResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('user_feature_access').select('*'),
       supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
       supabase.from('bug_reports').select('id,user_id,user_email,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
+      // Real per-user "last active" = auth.users.last_sign_in_at, exposed to super
+      // admins via a SECURITY DEFINER function. Best-effort: ignored if the
+      // admin_user_activity() function has not been created yet (pre-migration).
+      supabase.rpc('admin_user_activity'),
       supabase.from('transactions').select('*', { count: 'exact', head: true }),
       supabase.from('categories').select('*', { count: 'exact', head: true }),
       supabase.from('recurring_items').select('*', { count: 'exact', head: true }),
@@ -118,10 +127,17 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
     const accessMap = new Map((accessResult.data ?? []).map((row) => [row.user_id, row]))
     const accountProfileMap = new Map((accountProfilesResult.data ?? []).map((row) => [row.user_id, row]))
+    const activityMap = new Map(
+      (!activityResult.error ? ((activityResult.data ?? []) as Array<{ id: string; last_sign_in_at: string | null }>) : [])
+        .map((row) => [row.id, row.last_sign_in_at]),
+    )
     const nextManagedUsers = (profilesResult.data ?? []).map((item) => {
       const accountProfile = accountProfileMap.get(item.id)
       return {
         ...item,
+        // Prefer the real last sign-in time; fall back to the tracked column,
+        // then to updated_at (handled at the display layer).
+        last_active_at: activityMap.get(item.id) ?? item.last_active_at ?? null,
         feature_access: accessMap.get(item.id) ?? null,
         first_name: accountProfile?.first_name ?? null,
         last_name: accountProfile?.last_name ?? null,
@@ -240,6 +256,51 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
   }, [isSuperAdmin, refresh, writeAudit])
 
+  const resetManagedUserPassword = useCallback(async (targetUserId: string, targetEmail: string) => {
+    if (!isSuperAdmin) return
+    setBusyAction(`reset:${targetUserId}`)
+    setError(null)
+    try {
+      const redirectTo = new URL('/reset-password', window.location.origin).toString()
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, { redirectTo })
+      if (resetError) throw new Error(resetError.message)
+      await writeAudit('password_reset_sent', targetUserId, { email: targetEmail })
+      await loadAdminData()
+      notify('Password reset email sent')
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to send password reset email.')
+    } finally {
+      setBusyAction(null)
+    }
+  }, [isSuperAdmin, writeAudit, loadAdminData])
+
+  const removeManagedUser = useCallback(async (targetUserId: string) => {
+    if (!isSuperAdmin) return
+    setBusyAction(`remove:${targetUserId}`)
+    setError(null)
+    try {
+      const accessResult = await supabase.from('user_feature_access').delete().eq('user_id', targetUserId)
+      if (accessResult.error) throw new Error(accessResult.error.message)
+      // Use .select() so we can confirm a row was actually deleted. Under row-level
+      // security a blocked delete succeeds but affects 0 rows, which previously showed
+      // a false "success" while the user stayed in the directory.
+      const { data: removedProfiles, error: profileError } = await supabase
+        .from('profiles').delete().eq('id', targetUserId).select('id')
+      if (profileError) throw new Error(profileError.message)
+      if (!removedProfiles || removedProfiles.length === 0) {
+        throw new Error('User was not removed. This requires the Super Admin delete policy — apply the add_user_delete_and_last_active.sql migration.')
+      }
+      await writeAudit('user_removed', targetUserId, {})
+      if (selectedUserId === targetUserId) setSelectedUserId(null)
+      await loadAdminData()
+      notify('User removed')
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to remove user.')
+    } finally {
+      setBusyAction(null)
+    }
+  }, [isSuperAdmin, writeAudit, loadAdminData, selectedUserId])
+
   const updateBugReport = useCallback(async (reportId: string, updates: Partial<Pick<BugReport, 'status' | 'admin_notes'>>) => {
     if (!isSuperAdmin) return
     setBusyAction(`bug:${reportId}`)
@@ -275,6 +336,8 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     refresh,
     updateManagedUser,
     updateManagedFeatures,
+    resetManagedUserPassword,
+    removeManagedUser,
     updateBugReport,
     featureKeys: FEATURE_KEYS,
     defaultFeatureAccess: DEFAULT_FEATURE_ACCESS,
