@@ -244,7 +244,9 @@ body:not(.light) {
   color: var(--txp-text);
   padding: 0 14px 0 36px;
   font-size: 14px;
+  text-transform: none;
   min-width: 0;
+  box-shadow: none;
 }
 .txp-search input::placeholder { color: var(--txp-text-3); }
 .txp-search input:focus { outline: none; border-color: var(--txp-primary); box-shadow: var(--txp-focus); background: var(--txp-surface); }
@@ -269,17 +271,21 @@ body:not(.light) {
 .txp-drawer-select select {
   appearance: none;
   -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: none; /* suppress the app-wide native-select chevron; we render our own */
   height: 42px;
   border: 1px solid var(--txp-border-strong);
   border-radius: var(--txp-radius-ctrl);
-  background: var(--txp-surface-2);
+  background-color: var(--txp-surface-2);
   color: var(--txp-text);
   font-size: 13.5px;
   font-weight: 500;
+  text-transform: none;
   padding: 0 32px 0 12px;
   cursor: pointer;
   min-width: 0;
   width: 100%;
+  box-shadow: none;
 }
 .txp-select select { min-width: 120px; }
 .txp-select-icon ~ select { padding-left: 32px; }
@@ -752,6 +758,8 @@ body:not(.light) .txp-drawer-head { background: #0c1c33; }
   font-weight: 600;
   color: var(--txp-text);
   padding: 0 14px 0 6px;
+  text-transform: none;
+  box-shadow: none;
 }
 .txp-amount-input input:focus { outline: none; }
 
@@ -768,8 +776,10 @@ body:not(.light) .txp-drawer-head { background: #0c1c33; }
   background: var(--txp-surface-2);
   color: var(--txp-text);
   font-size: 14px;
+  text-transform: none;
   padding: 0 14px;
   min-width: 0;
+  box-shadow: none;
 }
 .txp-date-input, .txp-text-input { height: 44px; }
 .txp-textarea { padding: 12px 14px; min-height: 76px; resize: vertical; font-family: inherit; }

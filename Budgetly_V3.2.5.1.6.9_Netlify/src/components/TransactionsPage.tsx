@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom'
 import {
   Plus, Search, Download, Upload, X, MoreVertical, Pencil, Copy, Trash2, Repeat,
-  Check, RotateCcw, TrendingUp, TrendingDown, Activity, ReceiptText, RefreshCw,
+  RotateCcw, TrendingUp, TrendingDown, Activity, ReceiptText, RefreshCw,
   Inbox, AlertTriangle, CalendarDays, Tag, ChevronDown,
 } from 'lucide-react'
 import { Transaction, TxType } from '../types'
@@ -104,7 +104,6 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const symbol = currencySymbol(currency)
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [accountFilter, setAccountFilter] = useState<string>('all')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null)
@@ -209,16 +208,18 @@ export function TransactionsView({ budget }: { budget: Budget }) {
     return opts
   }, [categories])
 
-  const filtersActive =
-    txType !== 'all' || categoryFilter !== 'all' || accountFilter !== 'all' ||
-    txSearch.trim() !== '' || selectedMonth !== monthKey(new Date().toISOString())
+  const currentMonth = monthKey(new Date().toISOString())
+  const monthActive = selectedMonth !== currentMonth
+  const typeActive = txType !== 'all'
+  const catActive = categoryFilter !== 'all'
+  const searchActive = txSearch.trim() !== ''
+  const filtersActive = monthActive || typeActive || catActive || searchActive
 
   const resetFilters = () => {
     setTxSearch('')
     setTxType('all')
     setCategoryFilter('all')
-    setAccountFilter('all')
-    setTxActiveMonth(monthKey(new Date().toISOString()))
+    setTxActiveMonth(currentMonth)
   }
 
   // ---- Drawer control ----
@@ -346,13 +347,6 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const isInitialLoading = sync === 'syncing' && data.transactions.length === 0
   const isError = sync === 'error' && data.transactions.length === 0
 
-  const saveStatus: { label: string; tone: 'ok' | 'saving' | 'offline' | 'error' } =
-    sync === 'syncing' ? { label: 'Saving changes…', tone: 'saving' }
-    : sync === 'pending' || transactionDirty ? { label: 'Saving changes…', tone: 'saving' }
-    : sync === 'offline' ? { label: 'Offline — changes saved on this device', tone: 'offline' }
-    : sync === 'error' ? { label: 'Could not sync changes', tone: 'error' }
-    : { label: 'All changes saved', tone: 'ok' }
-
   return (
     <div className="txp">
       <input
@@ -453,11 +447,6 @@ export function TransactionsView({ budget }: { budget: Budget }) {
             value={categoryFilter} onChange={setCategoryFilter}
             options={categoryOptions}
           />
-          <ToolbarSelect
-            label="Account"
-            value={accountFilter} onChange={setAccountFilter}
-            options={[{ value: 'all', label: 'All Accounts' }]}
-          />
 
           <button type="button" className="txp-reset" onClick={resetFilters} disabled={!filtersActive}>
             <RotateCcw size={15} aria-hidden="true" />
@@ -465,22 +454,27 @@ export function TransactionsView({ budget }: { budget: Budget }) {
           </button>
         </div>
 
-        <div className="txp-chips">
-          <span className="txp-chips-label">Active filters:</span>
-          <FilterChip label={`Month: ${monthLabel(selectedMonth)}`} onRemove={() => setTxActiveMonth(monthKey(new Date().toISOString()))} />
-          <FilterChip label={`Type: ${txType === 'all' ? 'All' : txType === 'income' ? 'Income' : 'Expense'}`} onRemove={() => setTxType('all')} />
-          {categoryFilter !== 'all' ? (
-            <FilterChip
-              label={`Category: ${categoryOptions.find((o) => o.value === categoryFilter)?.label ?? 'All'}`}
-              onRemove={() => setCategoryFilter('all')}
-            />
-          ) : null}
-          <FilterChip label={`Account: ${accountFilter === 'all' ? 'All' : accountFilter}`} onRemove={() => setAccountFilter('all')} />
-          {txSearch.trim() ? (
-            <FilterChip label={`Search: “${txSearch.trim()}”`} onRemove={() => setTxSearch('')} />
-          ) : null}
-          <button type="button" className="txp-clear-all" onClick={resetFilters} disabled={!filtersActive}>Clear all</button>
-        </div>
+        {filtersActive ? (
+          <div className="txp-chips">
+            <span className="txp-chips-label">Active filters:</span>
+            {monthActive ? (
+              <FilterChip label={`Month: ${monthLabel(selectedMonth)}`} onRemove={() => setTxActiveMonth(currentMonth)} />
+            ) : null}
+            {typeActive ? (
+              <FilterChip label={`Type: ${txType === 'income' ? 'Income' : 'Expense'}`} onRemove={() => setTxType('all')} />
+            ) : null}
+            {catActive ? (
+              <FilterChip
+                label={`Category: ${categoryOptions.find((o) => o.value === categoryFilter)?.label ?? 'All'}`}
+                onRemove={() => setCategoryFilter('all')}
+              />
+            ) : null}
+            {searchActive ? (
+              <FilterChip label={`Search: “${txSearch.trim()}”`} onRemove={() => setTxSearch('')} />
+            ) : null}
+            <button type="button" className="txp-clear-all" onClick={resetFilters}>Clear all</button>
+          </div>
+        ) : null}
       </section>
 
       {/* ---------------- List ---------------- */}
@@ -564,17 +558,14 @@ export function TransactionsView({ budget }: { budget: Budget }) {
               )
             })}
 
-            <div className="txp-savestatus">
-              <span className={`txp-savestatus-pill tone-${saveStatus.tone}`}>
-                {saveStatus.tone === 'ok' ? <Check size={14} aria-hidden="true" /> : <RefreshCw size={14} aria-hidden="true" className={saveStatus.tone === 'saving' ? 'txp-spin' : undefined} />}
-                {saveStatus.label}
-              </span>
-              {lastDeleted ? (
+            {lastDeleted ? (
+              <div className="txp-savestatus">
+                <span className="txp-savestatus-pill">Transaction deleted</span>
                 <button type="button" className="txp-undo" onClick={handleUndo}>
                   <RotateCcw size={13} aria-hidden="true" /> Undo
                 </button>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </>
         )}
       </section>
@@ -638,7 +629,7 @@ function ToolbarSelect({ label, icon, value, onChange, options }: {
       <span className="txp-field-label">{label}</span>
       <span className="txp-select">
         {icon ? <span className="txp-select-icon">{icon}</span> : null}
-        <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
+        <select className="unstyled" value={value} onChange={(e) => onChange(e.target.value)} aria-label={label}>
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
         <ChevronDown size={15} className="txp-select-chevron" aria-hidden="true" />
@@ -1040,6 +1031,7 @@ function AddTransactionDrawer({
             <div className="txp-drawer-select">
               <select
                 id="txp-category"
+                className="unstyled"
                 value={form.category_id}
                 onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
               >
@@ -1050,17 +1042,6 @@ function AddTransactionDrawer({
               </select>
               <ChevronDown size={16} className="txp-select-chevron" aria-hidden="true" />
             </div>
-          </div>
-
-          <div className="txp-form-field">
-            <label htmlFor="txp-account">Account</label>
-            <div className="txp-drawer-select">
-              <select id="txp-account" value="" disabled>
-                <option value="">No accounts yet</option>
-              </select>
-              <ChevronDown size={16} className="txp-select-chevron" aria-hidden="true" />
-            </div>
-            <span className="txp-field-hint">Accounts aren’t set up on this workspace yet.</span>
           </div>
 
           <div className="txp-form-field">
