@@ -3704,10 +3704,19 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     }
   }
 
-  const renderCategoryControl = (item: typeof sortedRecurring[number], category: Category | undefined) => (
-    category ? (
-      <span className="recurringCategoryValue">{category.emoji ?? '🏷️'} {category.name}</span>
-    ) : (
+  // Categories the user keeps are a mix of income/expense; surface only the ones
+  // that match the item's kind so an income item doesn't offer expense categories.
+  const categoriesForKind = (kind: RecurringKind) => categories.filter((cat) => {
+    const usage = getCategoryUsageType(cat.id, cat.name, data.transactions, sortedRecurring)
+    return usage === 'both' || usage === kind
+  })
+
+  const renderCategoryControl = (item: typeof sortedRecurring[number], category: Category | undefined) => {
+    if (category) {
+      return <span className="recurringCategoryValue">{category.emoji ?? '🏷️'} {category.name}</span>
+    }
+    const pickerCategories = categoriesForKind(item.kind === 'income' ? 'income' : 'expense')
+    return (
       <span className="recurringCategoryAssign" onClick={(event) => event.stopPropagation()}>
         <button
           type="button"
@@ -3723,9 +3732,9 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         </button>
         {categoryPickerId === item.id ? (
           <span className={`recurringCategoryMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
-            {categories.length === 0 ? (
-              <span className="recurringCategoryMenuEmpty muted">No categories yet</span>
-            ) : categories.map((cat) => (
+            {pickerCategories.length === 0 ? (
+              <span className="recurringCategoryMenuEmpty muted">No {item.kind === 'income' ? 'income' : 'expense'} categories yet</span>
+            ) : pickerCategories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
@@ -3741,7 +3750,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         ) : null}
       </span>
     )
-  )
+  }
 
   const handleAddRecurring = () => {
     setIsCreating(true)
@@ -3873,12 +3882,23 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     })
   }
 
-  const renderDrawerBody = () => (
+  const renderDrawerBody = () => {
+    const formKind: RecurringKind = isCreating ? draftRecurring.kind : (selectedRecurring?.kind === 'income' ? 'income' : 'expense')
+    const drawerCategories = categoriesForKind(formKind)
+    return (
     <>
       <div className="goalFields compact recurringDrawerFields" style={{ marginTop: 14 }}>
         <div className="recurringFieldFull"><small>Name *</small><input className="input" value={isCreating ? draftRecurring.name : (selectedRecurring?.name ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, name: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'name', event.target.value) : null} placeholder="e.g., Rent, Salary, Netflix" /></div>
-        <div><small>Type</small><select className="select" value={isCreating ? draftRecurring.kind : (selectedRecurring?.kind ?? 'expense')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, kind: event.target.value as RecurringKind })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'kind', event.target.value) : null}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-        <div><small>Category</small><select className="select" value={isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, category_id: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'category_id', event.target.value) : null}><option value="">None</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
+        <div><small>Type</small><select className="select" value={isCreating ? draftRecurring.kind : (selectedRecurring?.kind ?? 'expense')} onChange={(event) => {
+          const nextKind = event.target.value as RecurringKind
+          if (isCreating) {
+            setDraftRecurring((current) => ({ ...current, kind: nextKind, category_id: '' }))
+          } else if (selectedRecurring) {
+            updateRecurringField(selectedRecurring.id, 'kind', nextKind)
+            updateRecurringField(selectedRecurring.id, 'category_id', '')
+          }
+        }}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+        <div><small>Category</small><select className="select" value={isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, category_id: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'category_id', event.target.value) : null}><option value="">None</option>{drawerCategories.map((category) => <option key={category.id} value={category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
         <div><small>Amount *</small><input className="input" inputMode="decimal" value={isCreating ? draftRecurring.amount : String(selectedRecurring?.amount ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, amount: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'amount', event.target.value) : null} placeholder="0.00" /></div>
         <div><small>Frequency</small><select className="select" value={isCreating ? draftRecurring.recurrence_type : (selectedRecurring?.recurrence_type === 'weekly' || selectedRecurring?.recurrence_type === 'biweekly' ? selectedRecurring.recurrence_type : 'monthly')} onChange={(event) => {
           const nextFrequency = event.target.value as RecurrenceType
@@ -3914,7 +3934,8 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         <button className="btn primary" onClick={() => void handleSaveDrawer()} disabled={!isCreating && !recurringDirty}>Save Item</button>
       </div>
     </>
-  )
+    )
+  }
 
   return (
     <div className="card mobileSectionCard dataPageCard recurringFeedPage recurringDesignerPage">
