@@ -289,6 +289,19 @@ body:not(.light) {
 }
 .txp-select select { min-width: 120px; }
 .txp-select-icon ~ select { padding-left: 32px; }
+
+/* The app-wide stylesheet forces `-webkit-appearance: menulist !important` on
+   every light-mode <select>, which re-adds the native OS arrow on top of our
+   own chevron (double chevron). Win that override with higher specificity so
+   only our custom chevron shows, consistently in light and dark. */
+.txp-select select.unstyled,
+.txp-drawer-select select.unstyled {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+  padding-right: 32px !important;
+}
 .txp-select select:focus,
 .txp-drawer-select select:focus,
 .txp-date-input:focus,
