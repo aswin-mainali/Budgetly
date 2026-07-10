@@ -76,10 +76,11 @@ const STATUS = {
   danger: '#d03b3b',
 } as const
 
-/** ratio = spent / budget (0..∞). green < 0.8, amber 0.8–1, red >= 1. */
+/** ratio = spent / budget (0..∞). green < 0.8, amber 0.8–1 (incl. at budget),
+ *  red only when strictly over budget (ratio > 1). */
 export function budgetStatusColor(ratio: number): string {
   if (!Number.isFinite(ratio) || ratio <= 0) return STATUS.good
-  if (ratio >= 1) return STATUS.danger
+  if (ratio > 1) return STATUS.danger
   if (ratio >= 0.8) return STATUS.warning
   return STATUS.good
 }

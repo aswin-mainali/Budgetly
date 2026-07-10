@@ -1478,12 +1478,13 @@ const CATEGORY_EMOJIS = [
 
 function renderPieEmojiLabel(props: { cx?: number; cy?: number; midAngle?: number; innerRadius?: number; outerRadius?: number; percent?: number; payload?: { emoji?: string } }) {
   const { cx = 0, cy = 0, midAngle = 0, innerRadius = 0, outerRadius = 0, percent = 0, payload } = props
-  if (percent < 0.08) return null
+  if (percent < 0.06) return null
   const radius = innerRadius + (outerRadius - innerRadius) * 0.55
   const x = cx + radius * Math.cos(-midAngle * (Math.PI / 180))
   const y = cy + radius * Math.sin(-midAngle * (Math.PI / 180))
+  const fontSize = Math.max(11, Math.min(22, Math.round((outerRadius - innerRadius) * 0.62)))
   return (
-    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={22}>
+    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={fontSize}>
       {payload?.emoji ?? '🏷️'}
     </text>
   )
@@ -1867,7 +1868,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
           <div style={{ height: 220 }}>{cashFlowAxis.hasData ? (<ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowSeries}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="label" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={44} domain={cashFlowAxis.domain} allowDecimals={false} tickFormatter={(v:number)=>v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`} /><Legend /><Bar dataKey="income" fill={cashIncome} barSize={14} radius={[7,7,0,0]} /><Bar dataKey="expenses" fill={cashExpense} barSize={14} radius={[7,7,0,0]} /><Line type="monotone" dataKey="net" stroke={cashNet} strokeWidth={3} dot={{r:4}} /></ComposedChart></ResponsiveContainer>) : renderChartEmpty('No transactions yet this month')}</div>
         </div>
         <div className="mobileRefTwoCol">
-          <div className="card mobileRefCard"><h3>Share of spending</h3>{expenses > 0 && byCategory.length > 0 ? (<div className="mobileShareWrap"><div style={{height:180}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={42} outerRadius={68} paddingAngle={2} stroke={theme === 'dark' ? '#0b1730' : '#ffffff'} strokeWidth={2}>{byCategory.map((r)=> <Cell key={r.id} fill={colorFor(r.id)} />)}</Pie><Tooltip formatter={(value: number) => helpers.fmtMoney(Number(value), data.currency)} labelFormatter={(_, payload) => payload?.[0]?.payload?.name ?? ''} /></PieChart></ResponsiveContainer></div><div className="mobileShareLegend">{byCategory.slice(0, 6).map((r) => { const pct = expenses > 0 ? Math.round((r.total / expenses) * 100) : 0; return <div key={r.id} className="mobileShareLegendRow"><span><i style={{ background: colorFor(r.id) }} />{r.name}</span><strong>{pct}%</strong></div> })}</div></div>) : (<div className="chartEmpty" style={{minHeight:180}}><div className="donutGhost"><svg width="112" height="112" viewBox="0 0 132 132" aria-hidden><circle cx="66" cy="66" r="48" fill="none" stroke="var(--border-strong)" strokeWidth="20" strokeDasharray="6 8" strokeLinecap="round" /></svg></div><span className="chartEmptyText">Add expenses to see your breakdown</span></div>)}</div>
+          <div className="card mobileRefCard"><h3>Share of spending</h3>{expenses > 0 && byCategory.length > 0 ? (<div style={{height:200,position:'relative'}}><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={54} outerRadius={88} paddingAngle={2} stroke={theme === 'dark' ? '#0b1730' : '#ffffff'} strokeWidth={2} labelLine={false} label={renderPieEmojiLabel} isAnimationActive={false}>{byCategory.map((r)=> <Cell key={r.id} fill={colorFor(r.id)} />)}</Pie><Tooltip formatter={(value: number) => helpers.fmtMoney(Number(value), data.currency)} labelFormatter={(_, payload) => payload?.[0]?.payload ? `${payload[0].payload.emoji ?? '🏷️'} ${payload[0].payload.name}` : ''} /></PieChart></ResponsiveContainer><div className="donutCenter" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}><span style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--muted)'}}>Total</span><strong style={{fontSize:15,fontWeight:700}}>{helpers.fmtMoney(expenses, data.currency)}</strong></div></div>) : (<div className="chartEmpty" style={{minHeight:180}}><div className="donutGhost"><svg width="112" height="112" viewBox="0 0 132 132" aria-hidden><circle cx="66" cy="66" r="48" fill="none" stroke="var(--border-strong)" strokeWidth="20" strokeDasharray="6 8" strokeLinecap="round" /></svg></div><span className="chartEmptyText">Add expenses to see your breakdown</span></div>)}</div>
           <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{pagedBudgets.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const ratio=b>0?spent/b:0;const pr=b>0?Math.min(1,ratio):0;const over=b>0&&spent>b;const catColor=colorFor(category.id);const fillColor=b>0?budgetStatusColor(ratio):catColor;const remaining=b-spent;const label=spent===0?`${helpers.fmtMoney(0,data.currency)} / ${helpers.fmtMoney(b,data.currency)}`:b<=0?`${helpers.fmtMoney(spent,data.currency)} spent`:over?`${helpers.fmtMoney(Math.abs(remaining),data.currency)} over`:`${helpers.fmtMoney(remaining,data.currency)} left`;return <div key={category.id}><div className="budgetTopRow"><span className="budgetCatLabel"><span className="budgetCatIcon" style={{background:`${catColor}22`,color:catColor}}><CategoryIcon name={category.name} size={14} color={catColor} /></span><span className="budgetCatName">{category.name}</span></span><span className={`budgetRemaining ${over?'over':''}`}>{label}</span></div><div className="progress" style={{background:`${catColor}1f`,borderColor:`${catColor}33`}}><div className="budgetFill" style={{width:`${pr*100}%`, background:fillColor}} /></div></div>})}</div><PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} /></div>
         </div>
         <div className="card mobileRefCard">
@@ -1996,49 +1997,38 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
           <div className="card" style={{ background: 'rgba(255,255,255,.02)' }}>
             <h3>Share of spending</h3>
             {expenses > 0 && byCategory.length > 0 ? (
-              <>
-                <div style={{ height: isPhone ? 200 : 230, position: 'relative' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={byCategory}
-                        dataKey="total"
-                        nameKey="name"
-                        innerRadius={isPhone ? 58 : 66}
-                        outerRadius={isPhone ? 84 : 94}
-                        paddingAngle={2}
-                        stroke={theme === 'dark' ? '#0b1730' : '#ffffff'}
-                        strokeWidth={2}
-                      >
-                        {byCategory.map((row) => <Cell key={row.id} fill={colorFor(row.id)} />)}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number) => helpers.fmtMoney(Number(value), data.currency)}
-                        labelFormatter={(_, payload) => {
-                          const row = payload?.[0]?.payload
-                          return row ? row.name : ''
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="donutCenter" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--muted)' }}>Total spent</span>
-                    <strong style={{ fontSize: isPhone ? 18 : 20, fontWeight: 700 }}>{helpers.fmtMoney(expenses, data.currency)}</strong>
-                  </div>
+              <div style={{ height: isPhone ? 220 : 300, position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={byCategory}
+                      dataKey="total"
+                      nameKey="name"
+                      innerRadius={isPhone ? 60 : 78}
+                      outerRadius={isPhone ? 92 : 118}
+                      paddingAngle={2}
+                      stroke={theme === 'dark' ? '#0b1730' : '#ffffff'}
+                      strokeWidth={2}
+                      labelLine={false}
+                      label={renderPieEmojiLabel}
+                      isAnimationActive={false}
+                    >
+                      {byCategory.map((row) => <Cell key={row.id} fill={colorFor(row.id)} />)}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => helpers.fmtMoney(Number(value), data.currency)}
+                      labelFormatter={(_, payload) => {
+                        const row = payload?.[0]?.payload
+                        return row ? `${row.emoji ?? '🏷️'} ${row.name}` : ''
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="donutCenter" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--muted)' }}>Total spent</span>
+                  <strong style={{ fontSize: isPhone ? 18 : 22, fontWeight: 700 }}>{helpers.fmtMoney(expenses, data.currency)}</strong>
                 </div>
-                <div className="donutLegend">
-                  {byCategory.slice(0, 8).map((row) => {
-                    const pct = expenses > 0 ? Math.round((row.total / expenses) * 100) : 0
-                    return (
-                      <div key={row.id} className="donutLegendRow">
-                        <span className="swatch" style={{ background: colorFor(row.id) }} />
-                        <span className="name">{row.name}</span>
-                        <span className="pct">{pct}%</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </>
+              </div>
             ) : (
               <div style={{ height: isPhone ? 240 : 300 }}>
                 <div className="chartEmpty">
