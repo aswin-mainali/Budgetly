@@ -2069,6 +2069,13 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
 
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!categoryDirty) return
+    const timer = window.setTimeout(() => { void saveCategories() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [categoryDirty, saveCategories])
+
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase()
     if (!query) return sortedCategories
@@ -2303,13 +2310,6 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
         </section>
       </div>
 
-      <div className="row between dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted">{categoryDirty ? 'You have unsaved category changes.' : 'All category changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void saveCategories()} disabled={!categoryDirty}>
-          Update Categories
-        </button>
-      </div>
-
       {pickerFor && activeCategory ? (
         <div className="emojiPickerOverlay" onClick={() => setPickerFor(null)}>
           <div className="emojiPickerModal" onClick={(event) => event.stopPropagation()}>
@@ -2374,6 +2374,13 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isCompactLaptop = useIsCompactLaptop()
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!goalDirty) return
+    const timer = window.setTimeout(() => { void saveGoals() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [goalDirty, saveGoals])
 
   const totalTarget = sortedGoals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0)
   const totalSaved = sortedGoals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0)
@@ -2638,11 +2645,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             ))}
           </div>
         ) : null}
-      </div>
-
-      <div className="row between goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
-        <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
       </div>
 
       <DeleteConfirmModal
@@ -3046,6 +3048,13 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   })
   const pendingDeleteRecurring = useMemo(() => sortedRecurring.find((item) => item.id === pendingDeleteId) ?? null, [sortedRecurring, pendingDeleteId])
   const selectedRecurring = useMemo(() => sortedRecurring.find((item) => item.id === selectedRecurringId) ?? null, [sortedRecurring, selectedRecurringId])
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!recurringDirty) return
+    const timer = window.setTimeout(() => { void saveRecurring() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [recurringDirty, saveRecurring])
 
   const confirmDeleteRecurring = async () => {
     if (!pendingDeleteId) return
@@ -3522,10 +3531,8 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         <div className="muted recurringFooterText">Showing 1 to {recurringRows.length} of {recurringRows.length} items</div>
       </div>
 
-      <div className="row between recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted recurringSummaryStatus">{recurringDirty ? 'You have unsaved recurring changes.' : 'All recurring changes are saved.'}</div>
+      <div className="row recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
         <div className="badge recurringSummaryBadge">Estimated monthly net <span className="recurringNum">{helpers.fmtMoney(monthlyNet, data.currency)}</span></div>
-        <button className="btn primary" onClick={() => void saveRecurring()} disabled={!recurringDirty}>Update Recurring</button>
       </div>
 
       {isFormOpen ? createPortal(
