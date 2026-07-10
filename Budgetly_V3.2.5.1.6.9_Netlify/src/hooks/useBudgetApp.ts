@@ -531,6 +531,37 @@ export function useBudgetApp(userId: string | null) {
     markCategoryDirty()
   }
 
+  // Return an existing real category id matching `name` (case-insensitive), or
+  // create a new real category and return its id. Used so recurring income
+  // categories are stored as real rows (the category_id column is a uuid FK, so
+  // synthetic ids can't persist).
+  const getOrCreateCategory = (name: string, emoji?: string | null): string | null => {
+    if (!userId) return null
+    const trimmed = name.trim()
+    if (!trimmed) return null
+    const existing = data.categories.find((category) => category.name.trim().toLowerCase() === trimmed.toLowerCase())
+    if (existing) return existing.id
+    const nextSort = (data.categories.reduce((max, category) => Math.max(max, category.sort_order ?? 0), 0) || 0) + 1
+    const id = crypto.randomUUID()
+    persistLocal((current) => ({
+      ...current,
+      categories: [
+        ...current.categories,
+        {
+          id,
+          user_id: userId,
+          name: trimmed,
+          color: categoryColorFor({ id, name: trimmed, color: null }, nextSort),
+          emoji: emoji ?? inferCategoryEmoji(trimmed),
+          budget_monthly: 0,
+          sort_order: nextSort,
+        },
+      ],
+    }))
+    markCategoryDirty()
+    return id
+  }
+
   const deleteCategory = (id: string) => {
     persistLocal((current) => ({
       ...current,
@@ -978,6 +1009,13 @@ export function useBudgetApp(userId: string | null) {
       return false
     }
 
+    // Persist any categories created inline (e.g. income categories) first so the
+    // recurring_items.category_id foreign key resolves. Mirrors saveTransactions.
+    if (categoryDirty) {
+      const categoriesSaved = await saveCategories()
+      if (!categoriesSaved) return false
+    }
+
     const validCategoryIds = new Set(categories.map((category) => category.id))
     const sanitizedRecurring = recurring.map((item) => ({
       id: item.id,
@@ -1103,6 +1141,7 @@ export function useBudgetApp(userId: string | null) {
     sortedGoals,
     upcomingRecurringThisMonth,
     addCategory,
+    getOrCreateCategory,
     updateCategoryField,
     deleteCategory,
     saveCategories,

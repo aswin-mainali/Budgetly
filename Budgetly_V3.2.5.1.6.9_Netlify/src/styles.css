@@ -8024,10 +8024,10 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .recurringCategoryCol{min-width:0;color:var(--muted);font-size:13px}
 .recurringCategoryValue{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:100%}
 
-/* Amount color coding: income green, expense neutral, red reserved for overdue */
-.recurringAmountCol{font-weight:700;color:var(--amount-neutral)}
+/* Amount color coding: income green, expense red */
+.recurringAmountCol{font-weight:700;color:var(--danger)}
 .recurringAmountCol.good{color:var(--amount-income)}
-.recurringAmountCol.overdue{color:var(--amount-overdue)}
+.recurringAmountCol.overdue{color:var(--danger)}
 
 .recurringFreqPill{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(96,165,250,.16);color:#6ca6ff;white-space:nowrap}
 .recurringDueCol{display:flex;flex-direction:column;gap:2px;font-size:13px}

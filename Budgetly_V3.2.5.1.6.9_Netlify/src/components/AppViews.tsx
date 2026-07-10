@@ -1798,7 +1798,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--amount-neutral)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -2034,7 +2034,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--amount-neutral)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -3621,7 +3621,7 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
 
 
 export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { categories, sortedRecurring, addRecurring, updateRecurringField, deleteRecurring, saveRecurring, recurringDirty, helpers, data } = budget
+  const { categories, sortedRecurring, addRecurring, updateRecurringField, deleteRecurring, saveRecurring, recurringDirty, helpers, data, getOrCreateCategory } = budget
   const isPhone = useIsPhone()
   const isTabletDown = useIsTabletDown()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -3757,7 +3757,8 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation()
-                  assignCategory(item.id, cat.id)
+                  const realId = item.kind === 'income' ? getOrCreateCategory(cat.name, cat.emoji ?? '💵') : cat.id
+                  if (realId) assignCategory(item.id, realId)
                 }}
               >
                 <span>{cat.emoji ?? '🏷️'}</span> {cat.name}
@@ -3902,6 +3903,21 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const renderDrawerBody = () => {
     const formKind: RecurringKind = isCreating ? draftRecurring.kind : (selectedRecurring?.kind === 'income' ? 'income' : 'expense')
     const drawerCategories = categoryOptionsForKind(formKind)
+    // Income options are keyed by name (they map to real categories created on save);
+    // expense options are keyed by real category id.
+    const drawerCategoryId = isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')
+    const drawerSelectValue = formKind === 'income' ? (categories.find((cat) => cat.id === drawerCategoryId)?.name ?? '') : drawerCategoryId
+    const setDrawerCategory = (categoryId: string) => {
+      if (isCreating) setDraftRecurring((current) => ({ ...current, category_id: categoryId }))
+      else if (selectedRecurring) updateRecurringField(selectedRecurring.id, 'category_id', categoryId)
+    }
+    const onDrawerCategoryChange = (raw: string) => {
+      if (formKind === 'income') {
+        setDrawerCategory(raw ? (getOrCreateCategory(raw, '💵') ?? '') : '')
+      } else {
+        setDrawerCategory(raw)
+      }
+    }
     return (
     <>
       <div className="goalFields compact recurringDrawerFields" style={{ marginTop: 14 }}>
@@ -3915,7 +3931,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
             updateRecurringField(selectedRecurring.id, 'category_id', '')
           }
         }}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-        <div><small>Category</small><select className="select" value={isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, category_id: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'category_id', event.target.value) : null}><option value="">None</option>{drawerCategories.map((category) => <option key={category.id} value={category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
+        <div><small>Category</small><select className="select" value={drawerSelectValue} onChange={(event) => onDrawerCategoryChange(event.target.value)}><option value="">None</option>{drawerCategories.map((category) => <option key={category.id} value={formKind === 'income' ? category.name : category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
         <div><small>Amount *</small><input className="input" inputMode="decimal" value={isCreating ? draftRecurring.amount : String(selectedRecurring?.amount ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, amount: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'amount', event.target.value) : null} placeholder="0.00" /></div>
         <div><small>Frequency</small><select className="select" value={isCreating ? draftRecurring.recurrence_type : (selectedRecurring?.recurrence_type === 'weekly' || selectedRecurring?.recurrence_type === 'biweekly' ? selectedRecurring.recurrence_type : 'monthly')} onChange={(event) => {
           const nextFrequency = event.target.value as RecurrenceType
