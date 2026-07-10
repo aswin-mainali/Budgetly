@@ -73,9 +73,10 @@ export type Profile = {
   is_active: boolean
   created_at?: string
   updated_at?: string
+  last_active_at?: string | null
 }
 
-export type FeatureKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'reports' | 'goals' | 'advice' | 'converter' | 'support' | 'settings'
+export type FeatureKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'reports' | 'goals' | 'advice' | 'converter' | 'investments' | 'support' | 'settings'
 
 export type FeatureAccess = Record<FeatureKey, boolean>
 
@@ -89,6 +90,7 @@ export type UserFeatureAccess = {
   goals: boolean
   advice: boolean
   converter: boolean
+  investments: boolean
   support: boolean
   settings: boolean
   created_at?: string

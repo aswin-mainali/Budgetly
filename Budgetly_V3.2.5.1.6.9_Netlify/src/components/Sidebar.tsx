@@ -192,7 +192,7 @@ export default function Sidebar(props: {
         {visibleItems.map((item) => {
           const isActive = item.key === 'tools' ? (view === 'tools' || toolsExpanded) : view === item.key
           if (item.key === 'tools') {
-            const hasAnyTool = features.goals || features.reports || features.converter || true
+            const hasAnyTool = features.goals || features.reports || features.converter || features.investments
             return (
               <div key={item.key} className="toolsNavItem">
                 <button
@@ -224,7 +224,7 @@ export default function Sidebar(props: {
                         <ArrowLeftRight size={16} /> <span className="navLabel">Currency Converter</span>
                       </button>
                     ) : null}
-                  {true ? (
+                  {features.investments ? (
                       <button className={toolsSection === 'investments' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('investments'); setToolsExpanded(false) }}><BarChart3 size={16} /> <span className='navLabel'>Investments</span></button>
                     ) : null}
                   </div>,

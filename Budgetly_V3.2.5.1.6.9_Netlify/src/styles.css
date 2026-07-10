@@ -2461,7 +2461,6 @@ body.light .sidebarUserAvatar{
   .adminUserListTall{max-height:none;}
   .adminAuditRowClear{flex-direction:column;}
   .adminAuditMeta{justify-content:flex-start;}
-  .adminUserRow{align-items:flex-start;flex-direction:column;}
   .adminUserMeta{justify-content:flex-start;}
   .adminFeatureSection .adminFeatureGrid{grid-template-columns:1fr;}
 }
@@ -2471,6 +2470,119 @@ body.light .sidebarUserAvatar{
   .superAdminPanels{
     grid-template-columns:1fr!important;
   }
+}
+
+/* --- Super Admin detail panel redesign --- */
+/* Left-table status: dot + label instead of a full pill on every row */
+.adminStatusIndicator{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);}
+.adminStatusDot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto;}
+.adminStatusIndicator.active{color:var(--text);}
+.adminStatusIndicator.active .adminStatusDot{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+.adminStatusIndicator.inactive .adminStatusDot{background:color-mix(in srgb, var(--muted) 65%, transparent);}
+
+/* Detail-panel header + actions dropdown */
+.adminActionsMenu{position:relative;}
+.adminMenuBackdrop{position:fixed;inset:0;z-index:40;}
+.adminActionsDropdown{position:absolute;right:0;top:calc(100% + 6px);z-index:50;min-width:184px;background:var(--panel-elevated);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 18px 40px rgba(2,6,23,.45);display:grid;gap:2px;}
+.adminActionsDropdown button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border:0;background:transparent;color:var(--text);border-radius:8px;cursor:pointer;text-align:left;font-size:13px;}
+.adminActionsDropdown button:hover{background:color-mix(in srgb, var(--muted) 14%, transparent);}
+
+/* Sub-tabs */
+.adminDetailTabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap;}
+.adminDetailTab{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:-1px;border-radius:8px 8px 0 0;}
+.adminDetailTab:hover{color:var(--text);}
+.adminDetailTab.active{color:var(--text);border-bottom-color:var(--accent);}
+.adminDetailTab.danger.active{color:var(--danger);border-bottom-color:var(--danger);}
+
+/* Profile tab */
+.adminProfileList{display:grid;gap:2px;}
+.adminProfileField{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border);align-items:center;}
+.adminProfileField:last-child{border-bottom:0;}
+.adminProfileKey{color:var(--muted);font-size:12px;font-weight:600;}
+.adminProfileVal{font-size:13px;word-break:break-word;text-transform:capitalize;}
+.adminProfileList .adminProfileField:nth-child(2) .adminProfileVal{text-transform:none;}
+.adminUserIdField{display:flex;align-items:center;gap:8px;text-transform:none;}
+.adminUserIdField code{font-size:12px;background:color-mix(in srgb, var(--muted) 12%, transparent);padding:3px 7px;border-radius:6px;overflow-wrap:anywhere;}
+
+/* Access presets selected state */
+.adminPresetBtn.active{border-color:var(--accent);background:var(--accent-soft);color:var(--text);}
+.adminPresetCustom{border:1px dashed var(--border);background:transparent;color:var(--muted);}
+
+/* Permission toggle switches */
+.adminSwitchGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 22px;}
+.adminSwitchRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid color-mix(in srgb, var(--border) 60%, transparent);}
+.adminSwitchLabel{font-size:13px;}
+.adminSwitchRow.off .adminSwitchLabel{color:var(--muted);}
+.adminSwitch{position:relative;display:inline-flex;flex:0 0 auto;}
+.adminSwitch input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;}
+.adminSwitchTrack{width:40px;height:22px;border-radius:999px;background:color-mix(in srgb, var(--muted) 42%, transparent);border:1px solid var(--border);display:inline-flex;align-items:center;padding:2px;transition:background .15s ease,border-color .15s ease;}
+.adminSwitchThumb{width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(2,6,23,.35);transform:translateX(0);transition:transform .15s ease;}
+.adminSwitch input:checked + .adminSwitchTrack{background:var(--accent);border-color:var(--accent);}
+.adminSwitch input:checked + .adminSwitchTrack .adminSwitchThumb{transform:translateX(18px);}
+.adminSwitch input:focus-visible + .adminSwitchTrack{outline:2px solid var(--accent);outline-offset:2px;}
+
+/* Theme-aware sticky footer (was hardcoded light) */
+.adminDetailFooter{background:linear-gradient(180deg, transparent 0%, var(--panel-strong) 42%, var(--panel-strong) 100%);}
+
+/* Unsaved-changes + saved indicators */
+.adminSaveStatus{display:flex;align-items:center;min-height:20px;}
+.adminDirtyIndicator{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--warn);}
+.adminDirtyDot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent);}
+.adminSavedIndicator{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accent);}
+.btn.muted{opacity:.5;}
+
+/* Activity tab */
+.adminActivityList{display:grid;gap:0;}
+.adminActivityRow{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-bottom:1px solid color-mix(in srgb, var(--border) 60%, transparent);}
+.adminActivityRow:last-child{border-bottom:0;}
+.adminActivityDot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;flex:0 0 auto;}
+.adminActivityBody{flex:1;min-width:0;}
+.adminActivityBody strong{font-size:13px;text-transform:capitalize;}
+.adminActivityTime{font-size:12px;white-space:nowrap;}
+.adminActivityEmpty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:38px 16px;color:var(--muted);}
+.adminActivityEmpty strong{color:var(--text);}
+
+/* Danger zone */
+.adminDangerZone{display:grid;gap:12px;}
+.adminDangerIntro{display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:13px;margin-bottom:2px;}
+.adminDangerRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px;border:1px solid color-mix(in srgb, var(--danger) 32%, var(--border));border-radius:14px;background:color-mix(in srgb, var(--danger) 6%, transparent);flex-wrap:wrap;}
+.adminDangerText{flex:1;min-width:180px;}
+.adminDangerText strong{display:block;font-size:13px;color:var(--text);}
+.adminDangerText .muted{font-size:12px;margin-top:2px;}
+.adminDangerActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+@media (max-width: 760px){
+  .adminSwitchGrid{grid-template-columns:1fr;}
+  .adminProfileField{grid-template-columns:1fr;gap:2px;}
+  .adminDangerRow{align-items:stretch;}
+
+  /* Stack the user-directory rows into a clean card instead of a crushed 4-col grid */
+  .adminUserRow{
+    grid-template-columns:1fr auto !important;
+    grid-template-areas:
+      "identity identity"
+      "role      time"
+      "status    time" !important;
+    gap:8px 12px;
+    padding:14px;
+  }
+  .adminUserIdentity{grid-area:identity;min-width:0;}
+  .adminUserIdentity strong{overflow-wrap:anywhere;}
+  .adminUserIdentity .adminSubRow{overflow-wrap:anywhere;}
+  .adminUserRow .adminUserMeta.role{grid-area:role;justify-content:flex-start;}
+  .adminUserRow .adminUserMeta.status{grid-area:status;justify-content:flex-start;}
+  .adminUserRow .adminLastActiveCell{grid-area:time;align-self:center;justify-self:end;text-align:right;white-space:nowrap;}
+
+  /* Detail panel: let tabs scroll horizontally rather than wrap into a tall stack */
+  .adminDetailTabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .adminDetailTabs::-webkit-scrollbar{display:none;}
+  .adminDetailTab{padding:8px 10px;flex:0 0 auto;white-space:nowrap;}
+  .adminDetailHeader{flex-direction:column;align-items:stretch !important;}
+  .adminActionsMenu{align-self:flex-end;}
+  .adminActionsDropdown{min-width:200px;}
+  .adminDetailFooter{flex-direction:column;align-items:stretch !important;gap:10px;}
+  .adminDetailFooter .btn.primary{width:100%;}
+  .adminSaveStatus{justify-content:center;}
 }
 
 
