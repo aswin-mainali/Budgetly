@@ -103,12 +103,16 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
 
     setError(null)
-    const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
+    const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, activityResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_feature_access').select('*'),
       supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
       supabase.from('bug_reports').select('id,user_id,user_email,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
+      // Real per-user "last active" = auth.users.last_sign_in_at, exposed to super
+      // admins via a SECURITY DEFINER function. Best-effort: ignored if the
+      // admin_user_activity() function has not been created yet (pre-migration).
+      supabase.rpc('admin_user_activity'),
       supabase.from('transactions').select('*', { count: 'exact', head: true }),
       supabase.from('categories').select('*', { count: 'exact', head: true }),
       supabase.from('recurring_items').select('*', { count: 'exact', head: true }),
@@ -123,10 +127,17 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
     const accessMap = new Map((accessResult.data ?? []).map((row) => [row.user_id, row]))
     const accountProfileMap = new Map((accountProfilesResult.data ?? []).map((row) => [row.user_id, row]))
+    const activityMap = new Map(
+      (!activityResult.error ? ((activityResult.data ?? []) as Array<{ id: string; last_sign_in_at: string | null }>) : [])
+        .map((row) => [row.id, row.last_sign_in_at]),
+    )
     const nextManagedUsers = (profilesResult.data ?? []).map((item) => {
       const accountProfile = accountProfileMap.get(item.id)
       return {
         ...item,
+        // Prefer the real last sign-in time; fall back to the tracked column,
+        // then to updated_at (handled at the display layer).
+        last_active_at: activityMap.get(item.id) ?? item.last_active_at ?? null,
         feature_access: accessMap.get(item.id) ?? null,
         first_name: accountProfile?.first_name ?? null,
         last_name: accountProfile?.last_name ?? null,

@@ -66,6 +66,21 @@ $$;
 
 grant execute on function public.touch_last_active() to authenticated;
 
+-- Exposes the real last sign-in time (auth.users.last_sign_in_at) to super admins
+-- for the "Last active" column. SECURITY DEFINER so it can read the auth schema.
+create or replace function public.admin_user_activity()
+returns table (id uuid, last_sign_in_at timestamptz, auth_created_at timestamptz)
+language sql
+security definer
+set search_path = public, auth
+as $$
+  select u.id, u.last_sign_in_at, u.created_at
+  from auth.users u
+  where public.is_super_admin();
+$$;
+
+grant execute on function public.admin_user_activity() to authenticated;
+
 create or replace function public.handle_new_user_profile()
 returns trigger as $$
 begin
