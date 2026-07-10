@@ -20,6 +20,7 @@ create table if not exists public.user_feature_access (
   goals boolean not null default true,
   advice boolean not null default true,
   converter boolean not null default true,
+  investments boolean not null default true,
   support boolean not null default true,
   settings boolean not null default true,
   created_at timestamptz not null default now(),

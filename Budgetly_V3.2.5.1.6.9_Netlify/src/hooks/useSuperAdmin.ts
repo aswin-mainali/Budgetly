@@ -16,6 +16,7 @@ export const DEFAULT_FEATURE_ACCESS: FeatureAccess = {
   goals: true,
   advice: true,
   converter: true,
+  investments: true,
   support: true,
   settings: true,
 }
@@ -72,14 +73,14 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
 
     let currentAccess = await getSingleOrNull(
-      supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at').eq('user_id', userId).maybeSingle(),
+      supabase.from('user_feature_access').select('*').eq('user_id', userId).maybeSingle(),
     ) as UserFeatureAccess | null
 
     if (!currentAccess) {
       const insertResult = await supabase.from('user_feature_access').insert({ user_id: userId, ...DEFAULT_FEATURE_ACCESS })
       if (insertResult.error && insertResult.error.code !== '23505') throw new Error(insertResult.error.message || 'Failed to create feature access row.')
       currentAccess = await getSingleOrNull(
-        supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_feature_access').select('*').eq('user_id', userId).maybeSingle(),
       ) as UserFeatureAccess | null
     }
 
@@ -100,7 +101,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     setError(null)
     const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
       supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').order('created_at', { ascending: false }),
-      supabase.from('user_feature_access').select('user_id,dashboard,transactions,categories,recurring,reports,goals,advice,converter,support,settings,created_at,updated_at'),
+      supabase.from('user_feature_access').select('*'),
       supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
       supabase.from('bug_reports').select('id,user_id,user_email,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
