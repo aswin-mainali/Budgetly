@@ -2059,6 +2059,13 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const [draftBudget, setDraftBudget] = useState('')
   const [draftError, setDraftError] = useState('')
   const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!categoryDirty) return
+    const timer = window.setTimeout(() => { void saveCategories() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [categoryDirty, saveCategories])
   const [categoriesPage, setCategoriesPage] = useState(1)
   const [categoriesViewportKey, setCategoriesViewportKey] = useState(0)
   const previousCategoryIds = React.useRef<string[]>([])
@@ -2299,13 +2306,6 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
         </section>
       </div>
 
-      <div className="row between dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted">{categoryDirty ? 'You have unsaved category changes.' : 'All category changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void saveCategories()} disabled={!categoryDirty}>
-          Update Categories
-        </button>
-      </div>
-
       {pickerFor && activeCategory ? (
         <div className="emojiPickerOverlay" onClick={() => setPickerFor(null)}>
           <div className="emojiPickerModal" onClick={(event) => event.stopPropagation()}>
@@ -2370,6 +2370,13 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isCompactLaptop = useIsCompactLaptop()
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!goalDirty) return
+    const timer = window.setTimeout(() => { void saveGoals() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [goalDirty, saveGoals])
 
   const totalTarget = sortedGoals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0)
   const totalSaved = sortedGoals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0)
@@ -2634,11 +2641,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             ))}
           </div>
         ) : null}
-      </div>
-
-      <div className="row between goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
-        <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
       </div>
 
       <DeleteConfirmModal
@@ -3043,6 +3045,13 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const selectedRecurring = useMemo(() => sortedRecurring.find((item) => item.id === selectedRecurringId) ?? null, [sortedRecurring, selectedRecurringId])
   const useModalDrawer = isPhone || isCompactLaptop
 
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!recurringDirty) return
+    const timer = window.setTimeout(() => { void saveRecurring() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [recurringDirty, saveRecurring])
+
   const confirmDeleteRecurring = async () => {
     if (!pendingDeleteId) return
     await deleteRecurring(pendingDeleteId)
@@ -3270,6 +3279,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
             <div className="recurringKpiCard"><div className="recurringKpiIcon">📅</div><div><div className="muted">Active Items</div><strong>{sortedRecurring.length}</strong></div></div>
             <div className="recurringKpiCard"><div className="recurringKpiIcon">💵</div><div><div className="muted">Monthly Total</div><strong>{helpers.fmtMoney(monthlyExpenseTotal, data.currency)}</strong></div></div>
             <div className="recurringKpiCard"><div className="recurringKpiIcon">🪙</div><div><div className="muted">Recurring Income</div><strong>{helpers.fmtMoney(monthlyIncomeTotal, data.currency)}</strong></div></div>
+            <div className="recurringKpiCard"><div className="recurringKpiIcon">📊</div><div><div className="muted">Estimated monthly net</div><strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong></div></div>
           </div>
           <div className="recurringToolbar">
             <div className="recurringSearchInput">
@@ -3393,12 +3403,6 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       {!isPhone ? null : (
         <div className="muted" style={{ marginTop: 10 }}>Tip: tap any recurring item above to edit in the drawer.</div>
       )}
-
-      <div className="row between recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted">{recurringDirty ? 'You have unsaved recurring changes.' : 'All recurring changes are saved.'}</div>
-        <div className="badge">Estimated monthly net {helpers.fmtMoney(monthlyNet, data.currency)}</div>
-        <button className="btn primary" onClick={() => void saveRecurring()} disabled={!recurringDirty}>Update Recurring</button>
-      </div>
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}
