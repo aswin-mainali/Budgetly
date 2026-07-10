@@ -626,6 +626,75 @@ export function useBudgetApp(userId: string | null) {
     notify('New transaction added')
   }
 
+  const createTransaction = (values: { date: string; type: TxType; category_id: string | null; amount: number; note: string | null }): string | null => {
+    if (!userId) return 'You are signed out.'
+    const amount = clampMoney(Number(values.amount))
+    if (!Number.isFinite(amount) || amount <= 0) return 'Enter an amount greater than zero.'
+    if (values.type === 'expense' && !values.category_id) return 'Choose a category for this expense.'
+    const today = todayIso()
+    if (!data.settings.allowTxnInFutureDate && values.date > today) return 'Future-dated transactions are turned off in Settings.'
+
+    const next: Transaction = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      date: values.date,
+      type: values.type,
+      category_id: values.category_id || null,
+      amount,
+      note: values.note?.trim() || null,
+    }
+
+    persistLocal((current) => ({
+      ...current,
+      transactions: [next, ...current.transactions.filter((tx) => tx.id !== next.id)],
+    }))
+    markTransactionDirty()
+    notify('New transaction added')
+    return null
+  }
+
+  const updateTransaction = (id: string, patch: Partial<Pick<Transaction, 'date' | 'type' | 'category_id' | 'amount' | 'note'>>): string | null => {
+    if (!userId) return 'You are signed out.'
+    if (patch.amount != null) {
+      const amount = clampMoney(Number(patch.amount))
+      if (!Number.isFinite(amount) || amount <= 0) return 'Enter an amount greater than zero.'
+      patch = { ...patch, amount }
+    }
+    if (patch.date && !data.settings.allowTxnInFutureDate && patch.date > todayIso()) return 'Future-dated transactions are turned off in Settings.'
+    persistLocal((current) => ({
+      ...current,
+      transactions: current.transactions.map((tx) => (tx.id === id ? { ...tx, ...patch, note: patch.note !== undefined ? (patch.note?.trim() || null) : tx.note } : tx)),
+    }))
+    markTransactionDirty()
+    notify('Transaction updated')
+    return null
+  }
+
+  const duplicateTransaction = (id: string) => {
+    if (!userId) return
+    persistLocal((current) => {
+      const source = current.transactions.find((tx) => tx.id === id)
+      if (!source) return current
+      const copy: Transaction = { ...source, id: crypto.randomUUID(), created_at: undefined, updated_at: undefined }
+      return { ...current, transactions: [copy, ...current.transactions] }
+    })
+    markTransactionDirty()
+    notify('Transaction duplicated')
+  }
+
+  const restoreTransaction = (tx: Transaction) => {
+    if (!userId) return
+    setPendingTxDeletes((current) => current.filter((pendingId) => pendingId !== tx.id))
+    persistLocal((current) => ({
+      ...current,
+      transactions: current.transactions.some((existing) => existing.id === tx.id)
+        ? current.transactions
+        : [tx, ...current.transactions],
+    }))
+    markTransactionDirty()
+    notify('Transaction restored')
+  }
+
   const deleteTx = (id: string) => {
     persistLocal((current) => ({
       ...current,
@@ -1119,6 +1188,10 @@ export function useBudgetApp(userId: string | null) {
     saveGoals,
     goalDirty,
     addTransaction,
+    createTransaction,
+    updateTransaction,
+    duplicateTransaction,
+    restoreTransaction,
     deleteTx,
     saveTransactions,
     transactionDirty,
