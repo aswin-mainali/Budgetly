@@ -60,15 +60,19 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
   const ensureSelfRecords = useCallback(async () => {
     if (!userId) return null
 
+    // Best-effort: stamp this user's real "last active" time on load. Ignored if the
+    // touch_last_active() function has not been created yet (pre-migration).
+    void supabase.rpc('touch_last_active')
+
     let currentProfile = await getSingleOrNull(
-      supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
     ) as Profile | null
 
     if (!currentProfile) {
       const insertResult = await supabase.from('profiles').insert({ id: userId, email: email ?? '', role: 'user', is_active: true })
       if (insertResult.error && insertResult.error.code !== '23505') throw new Error(insertResult.error.message || 'Failed to create profile.')
       currentProfile = await getSingleOrNull(
-        supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').eq('id', userId).maybeSingle(),
+        supabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
       ) as Profile | null
     }
 
@@ -100,7 +104,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
     setError(null)
     const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
-      supabase.from('profiles').select('id,email,role,is_active,created_at,updated_at').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_feature_access').select('*'),
       supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
@@ -266,8 +270,15 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     try {
       const accessResult = await supabase.from('user_feature_access').delete().eq('user_id', targetUserId)
       if (accessResult.error) throw new Error(accessResult.error.message)
-      const profileResult = await supabase.from('profiles').delete().eq('id', targetUserId)
-      if (profileResult.error) throw new Error(profileResult.error.message)
+      // Use .select() so we can confirm a row was actually deleted. Under row-level
+      // security a blocked delete succeeds but affects 0 rows, which previously showed
+      // a false "success" while the user stayed in the directory.
+      const { data: removedProfiles, error: profileError } = await supabase
+        .from('profiles').delete().eq('id', targetUserId).select('id')
+      if (profileError) throw new Error(profileError.message)
+      if (!removedProfiles || removedProfiles.length === 0) {
+        throw new Error('User was not removed. This requires the Super Admin delete policy — apply the add_user_delete_and_last_active.sql migration.')
+      }
       await writeAudit('user_removed', targetUserId, {})
       if (selectedUserId === targetUserId) setSelectedUserId(null)
       await loadAdminData()

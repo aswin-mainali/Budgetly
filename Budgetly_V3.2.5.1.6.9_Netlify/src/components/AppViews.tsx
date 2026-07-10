@@ -6526,7 +6526,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                     <span className="adminStatusDot" />{user.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div className="muted adminLastActiveCell">{formatLastActive(user.updated_at)}</div>
+                <div className="muted adminLastActiveCell">{formatLastActive(user.last_active_at ?? user.updated_at)}</div>
               </button>
             ))}
           </div>
@@ -6595,7 +6595,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                       <span className={`adminStatusIndicator ${selectedUser.is_active ? 'active' : 'inactive'}`}><span className="adminStatusDot" />{selectedUser.is_active ? 'Active' : 'Inactive'}</span>
                     </div>
                     <div className="adminProfileField"><span className="adminProfileKey">Joined</span><span className="adminProfileVal">{formatJoined(selectedUser.created_at)}</span></div>
-                    <div className="adminProfileField"><span className="adminProfileKey">Last active</span><span className="adminProfileVal">{formatLastActive(selectedUser.updated_at)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Last active</span><span className="adminProfileVal">{formatLastActive(selectedUser.last_active_at ?? selectedUser.updated_at)}</span></div>
                     <div className="adminProfileField"><span className="adminProfileKey">User ID</span>
                       <span className="adminProfileVal adminUserIdField">
                         <code>{selectedUser.id}</code>
