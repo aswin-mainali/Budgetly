@@ -4850,7 +4850,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
     <div className="card advicePage advicePagePro2">
       <div className="row between adviceHeader" style={{ alignItems: 'flex-start', gap: 12 }}>
         <div>
-          <h2>Advice</h2>
+          <h2>Insights</h2>
           <div className="muted">Your financial health, tracked insights, and an assistant that can act with your confirmation.</div>
         </div>
         <span className="badge">Smart guidance</span>
@@ -6645,7 +6645,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
       recurring: 'Recurring',
       reports: 'Reports',
       goals: 'Goals',
-      advice: 'Advice',
+      advice: 'Insights',
       converter: 'Currency Converter',
       investments: 'Investments',
       support: 'Help & Support',
