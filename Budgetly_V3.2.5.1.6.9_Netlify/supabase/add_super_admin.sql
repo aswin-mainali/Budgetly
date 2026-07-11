@@ -7,7 +7,8 @@ create table if not exists public.profiles (
   role text not null default 'user' check (role in ('user','admin','super_admin')),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  last_active_at timestamptz
 );
 
 create table if not exists public.user_feature_access (
@@ -20,6 +21,7 @@ create table if not exists public.user_feature_access (
   goals boolean not null default true,
   advice boolean not null default true,
   converter boolean not null default true,
+  investments boolean not null default true,
   support boolean not null default true,
   settings boolean not null default true,
   created_at timestamptz not null default now(),
@@ -49,6 +51,35 @@ as $$
       and is_active = true
   );
 $$;
+
+-- Each authenticated user can stamp their own last_active_at (used for the
+-- "Last active" column in the Super Admin directory). SECURITY DEFINER so it
+-- works even though users cannot directly UPDATE their profile row.
+create or replace function public.touch_last_active()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.profiles set last_active_at = now() where id = auth.uid();
+$$;
+
+grant execute on function public.touch_last_active() to authenticated;
+
+-- Exposes the real last sign-in time (auth.users.last_sign_in_at) to super admins
+-- for the "Last active" column. SECURITY DEFINER so it can read the auth schema.
+create or replace function public.admin_user_activity()
+returns table (id uuid, last_sign_in_at timestamptz, auth_created_at timestamptz)
+language sql
+security definer
+set search_path = public, auth
+as $$
+  select u.id, u.last_sign_in_at, u.created_at
+  from auth.users u
+  where public.is_super_admin();
+$$;
+
+grant execute on function public.admin_user_activity() to authenticated;
 
 create or replace function public.handle_new_user_profile()
 returns trigger as $$
@@ -141,6 +172,11 @@ on public.profiles for update
 using (public.is_super_admin())
 with check (public.is_super_admin());
 
+drop policy if exists "profiles_super_admin_delete" on public.profiles;
+create policy "profiles_super_admin_delete"
+on public.profiles for delete
+using (public.is_super_admin());
+
 drop policy if exists "user_feature_access_self_select" on public.user_feature_access;
 create policy "user_feature_access_self_select"
 on public.user_feature_access for select
@@ -156,6 +192,11 @@ create policy "user_feature_access_super_admin_update"
 on public.user_feature_access for update
 using (public.is_super_admin())
 with check (public.is_super_admin());
+
+drop policy if exists "user_feature_access_super_admin_delete" on public.user_feature_access;
+create policy "user_feature_access_super_admin_delete"
+on public.user_feature_access for delete
+using (public.is_super_admin());
 
 drop policy if exists "admin_audit_logs_super_admin_select" on public.admin_audit_logs;
 create policy "admin_audit_logs_super_admin_select"

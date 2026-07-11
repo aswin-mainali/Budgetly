@@ -1611,6 +1611,10 @@ function useIsCompactLaptop() {
   return useMediaQuery('(max-width: 1366px)')
 }
 
+function useIsTabletDown() {
+  return useMediaQuery('(max-width: 768px)')
+}
+
 
 
 declare global {
@@ -1896,7 +1900,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -2181,7 +2185,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
                   </div>
                 </div>
                 <div className="recurringUpcomingAmount">
-                  <strong style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
+                  <strong className="recurringNum" style={{ color: item.kind === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{item.kind === 'income' ? '+' : '-'}{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</strong>
                   <small>in {item.daysAway} day{item.daysAway === 1 ? '' : 's'}</small>
                 </div>
               </div>
@@ -2195,610 +2199,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
 }
 
 
-export function TransactionsView({ budget }: Pick<SharedProps, 'budget'>) {
-  type SortKey = 'date' | 'type' | 'category' | 'amount' | 'note'
-  type SortDirection = 'asc' | 'desc'
-  const SORT_STORAGE_KEY = 'budgetly_transactions_column_sort'
-  const { data, categories, txDraft, setTxDraft, txSearch, setTxSearch, txType, setTxType, filteredTx, deleteTx, addTransaction, saveTransactions, transactionDirty, helpers, catsById, months, txActiveMonth, setTxActiveMonth, sortedRecurring } = budget
-  const isPhone = useIsPhone()
-  const isCompactLaptop = useIsCompactLaptop()
-  const useTxAddModal = isCompactLaptop
-  const useCompactDashboard = !isPhone && isCompactLaptop
-  const forceCompactManageToolbar = !isPhone && isCompactLaptop
-  const today = new Date().toISOString().slice(0, 10)
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-  const [duplicateGroups, setDuplicateGroups] = useState<DuplicateTransactionGroup[]>([])
-  const [txAddModalOpen, setTxAddModalOpen] = useState(false)
-  const [txViewportKey, setTxViewportKey] = useState(0)
-  const [txPage, setTxPage] = useState(1)
-  const [sortKey, setSortKey] = useState<SortKey>('date')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow
-    const previousRootOverflow = document.documentElement.style.overflow
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.documentElement.style.overflow = previousRootOverflow
-    }
-  }, [])
-  useEffect(() => {
-    const onResize = () => setTxViewportKey((prev) => prev + 1)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-  const txPageSize = useMemo(() => {
-    if (typeof window === 'undefined') return 6
-    const width = window.innerWidth
-    const height = window.innerHeight
-    if (width <= 560 || height <= 760) return 3
-    if (width <= 960 || height <= 880) return 4
-    return 6
-  }, [txViewportKey])
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SORT_STORAGE_KEY)
-      if (!raw) return
-      const parsed = JSON.parse(raw) as { sortKey?: SortKey; sortDirection?: SortDirection }
-      if (parsed?.sortKey && ['date', 'type', 'category', 'amount', 'note'].includes(parsed.sortKey)) setSortKey(parsed.sortKey)
-      if (parsed?.sortDirection && ['asc', 'desc'].includes(parsed.sortDirection)) setSortDirection(parsed.sortDirection)
-    } catch {
-      setSortKey('date')
-      setSortDirection('desc')
-    }
-  }, [])
-  useEffect(() => {
-    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({ sortKey, sortDirection }))
-  }, [sortKey, sortDirection])
-  const categoryNameForTransaction = (transaction: Transaction) => {
-    if (transaction.category_id) {
-      if (transaction.type === 'income') return INCOME_CATEGORY_NAME_BY_ID.get(transaction.category_id) ?? catsById.get(transaction.category_id)?.name ?? 'Income Source'
-      return catsById.get(transaction.category_id)?.name ?? 'Unknown'
-    }
-    return transaction.type === 'income' ? 'Income Source' : 'Uncategorized'
-  }
-  const categoryDisplayForTransaction = (transaction: Transaction) => {
-    const categoryName = categoryNameForTransaction(transaction)
-    const categoryEmoji = transaction.type === 'income'
-      ? INCOME_CATEGORY_EMOJI_BY_ID.get(transaction.category_id ?? '') ?? '💵'
-      : catsById.get(transaction.category_id ?? '')?.emoji
-    return categoryEmoji ? `${categoryEmoji} ${categoryName}` : categoryName
-  }
-
-  const sortedTransactions = useMemo(() => {
-    const normalizeAmount = (amount: unknown) => {
-      if (typeof amount === 'number' && Number.isFinite(amount)) return Math.abs(amount)
-      const numeric = Number(String(amount ?? '').replace(/[^0-9.-]/g, ''))
-      return Number.isFinite(numeric) ? Math.abs(numeric) : 0
-    }
-    const normalizeTypeRank = (type: unknown) => {
-      const normalized = String(type ?? '').toLowerCase()
-      if (normalized === 'income') return 0
-      if (normalized === 'expense') return 1
-      return 2
-    }
-    const normalizeDate = (date: unknown) => {
-      const parsed = Date.parse(String(date ?? ''))
-      return Number.isFinite(parsed) ? parsed : Number.NaN
-    }
-
-    return [...filteredTx].sort((a, b) => {
-      let compare = 0
-      if (sortKey === 'date') {
-        const aDate = normalizeDate(a.date)
-        const bDate = normalizeDate(b.date)
-        const aInvalid = Number.isNaN(aDate)
-        const bInvalid = Number.isNaN(bDate)
-        if (aInvalid || bInvalid) compare = aInvalid === bInvalid ? 0 : aInvalid ? 1 : -1
-        else compare = aDate - bDate
-      } else if (sortKey === 'type') {
-        compare = normalizeTypeRank(a.type) - normalizeTypeRank(b.type)
-      } else if (sortKey === 'category') {
-        const aCategory = categoryNameForTransaction(a) || 'Uncategorized'
-        const bCategory = categoryNameForTransaction(b) || 'Uncategorized'
-        compare = aCategory.localeCompare(bCategory, undefined, { sensitivity: 'base' })
-      } else if (sortKey === 'amount') {
-        compare = normalizeAmount(a.amount) - normalizeAmount(b.amount)
-      } else if (sortKey === 'note') {
-        const aNote = a.note?.trim() ?? ''
-        const bNote = b.note?.trim() ?? ''
-        if (!aNote || !bNote) compare = !aNote && !bNote ? 0 : !aNote ? 1 : -1
-        else compare = aNote.localeCompare(bNote, undefined, { sensitivity: 'base' })
-      }
-      return sortDirection === 'asc' ? compare : -compare
-    })
-  }, [filteredTx, sortDirection, sortKey])
-
-  const txPages = Math.max(1, Math.ceil(sortedTransactions.length / txPageSize))
-  const pagedTransactions = useMemo(() => sortedTransactions.slice((txPage - 1) * txPageSize, txPage * txPageSize), [sortedTransactions, txPage, txPageSize])
-  const pendingDeleteTx = useMemo(() => sortedTransactions.find((transaction) => transaction.id === pendingDeleteId) ?? null, [sortedTransactions, pendingDeleteId])
-  useEffect(() => setTxPage(1), [txSearch, txType, txActiveMonth])
-  useEffect(() => setTxPage((prev) => Math.min(prev, txPages)), [txPages])
-  const activeDuplicateGroup = duplicateGroups[0] ?? null
-  const filteredCategoriesForDraft = useMemo(() => {
-    const preferred = categories.filter((category) => {
-      const usageType = getCategoryUsageType(category.id, category.name, data.transactions, sortedRecurring)
-      return usageType === 'both' || usageType === txDraft.type
-    })
-    return preferred.length ? preferred : categories
-  }, [categories, data.transactions, sortedRecurring, txDraft.type])
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDirection((current) => current === 'desc' ? 'asc' : 'desc')
-      return
-    }
-    setSortKey(key)
-    setSortDirection(key === 'type' || key === 'category' || key === 'note' ? 'asc' : 'desc')
-  }
-  const getAriaSort = (key: SortKey) => (sortKey !== key ? 'none' : sortDirection === 'asc' ? 'ascending' : 'descending')
-  const SortIcon = ({ keyName }: { keyName: SortKey }) => {
-    if (sortKey !== keyName) return <ArrowUpDown size={13} strokeWidth={1.8} aria-hidden="true" />
-    return sortDirection === 'desc' ? <ArrowDown size={13} strokeWidth={2} aria-hidden="true" /> : <ArrowUp size={13} strokeWidth={2} aria-hidden="true" />
-  }
-
-  const confirmDeleteTx = async () => {
-    if (!pendingDeleteId) return
-    await deleteTx(pendingDeleteId)
-    setPendingDeleteId(null)
-  }
-
-  const handleDiscardDuplicate = async (transactionId: string) => {
-    await deleteTx(transactionId)
-    setDuplicateGroups((current) => current
-      .map((group) => ({ ...group, items: group.items.filter((transaction) => transaction.id !== transactionId) }))
-      .filter((group) => group.items.length > 1))
-  }
-
-  const handleSaveTransactions = async () => {
-    const duplicates = findDuplicateTransactionGroups(data.transactions)
-    if (duplicates.length > 0) {
-      setDuplicateGroups(duplicates)
-      return
-    }
-    await saveTransactions()
-  }
-
-  const handleProceedWithDuplicates = async () => {
-    setDuplicateGroups([])
-    await saveTransactions()
-  }
-
-  const handleAddTransaction = async () => {
-    await addTransaction()
-    if (isPhone && txDraft.type === 'expense') {
-      setTxDraft((current) => ({ ...current, category_id: '' }))
-    }
-    if (useTxAddModal) setTxAddModalOpen(false)
-  }
-
-  useEffect(() => {
-    if (duplicateGroups.length === 0) return
-    const freshGroups = findDuplicateTransactionGroups(data.transactions)
-    setDuplicateGroups(freshGroups)
-  }, [data.transactions])
-
-  if (isPhone) {
-    return (
-      <div className="card mobileSectionCard dataPageCard categoriesPageCard mobileTxPageLikeCategories">
-        <section className="categoriesComposer card">
-          <div className="categoriesSectionHead">
-            <h2>Transactions</h2>
-            <p className="muted">Add and manage your transactions with a mobile-first layout.</p>
-          </div>
-          <button className="btn primary" type="button" onClick={() => setTxAddModalOpen(true)}>
-            <Plus size={16} /> Add Transaction
-          </button>
-        </section>
-
-        <section className="categoriesManage card">
-          <div className="categoriesSectionHead">
-            <h2>Manage Transactions</h2>
-            <p className="muted">{filteredTx.length} item(s)</p>
-          </div>
-          <div className="categoriesToolbarRow mobileTxToolbarCompact">
-            <div className="categoriesSearchWrap">
-              <Search size={16} />
-              <input className="input" value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" />
-            </div>
-            <select className="select" value={txActiveMonth} onChange={(event) => setTxActiveMonth(event.target.value)}>
-              {months.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
-            </select>
-            <select className="select" value={txType} onChange={(event) => setTxType(event.target.value as TxType | 'all')}>
-              <option value="all">All</option><option value="income">Income</option><option value="expense">Expense</option>
-            </select>
-          </div>
-
-          <div className="mobileTxList">
-            {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : filteredTx.map((transaction) => {
-              const categoryName = categoryNameForTransaction(transaction)
-              return (
-                <div key={transaction.id} className="mobileInfoCard">
-                  <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
-                    <div>
-                      <div className="mobileCardTitle">{categoryDisplayForTransaction(transaction)}</div>
-                      <div className="muted">{transaction.note?.trim() || 'No note'}</div>
-                    </div>
-                    <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete"><Trash2 size={16} /></button>
-                  </div>
-                  <div className="mobileMetaRow">
-                    <span className="badge">{transaction.date}</span>
-                    <span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span>
-                  </div>
-                  <div className={`mobileAmountRow ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</div>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        <div className="row between dataPageFooter mobileTxFooter" style={{ alignItems: 'center', gap: 12 }}>
-          <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
-          <button className="btn primary" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>Update Transactions</button>
-        </div>
-
-        {txAddModalOpen ? (
-          <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setTxAddModalOpen(false)}>
-            <div className="card txAddModal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-              <div className="row between" style={{ alignItems: 'center', marginBottom: 6 }}>
-                <h3 style={{ margin: 0 }}>Add Transaction</h3>
-                <button className="btn" type="button" onClick={() => setTxAddModalOpen(false)}>Close</button>
-              </div>
-              <div className="txAddModalGrid">{/* keep existing fields simple */}
-                <div className="field txField"><label>Date</label><input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} /></div>
-                <div className="field txField"><label>Type</label><AppDropdown value={txDraft.type} options={[{ value: 'income', label: 'Income', icon: '💵' }, { value: 'expense', label: 'Expense', icon: '💸' }]} placeholder="Select type" onChange={(next) => setTxDraft((current) => ({ ...current, type: next as TxType, category_id: '' }))} /></div>
-                <div className="field txField">
-                  <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-                  <AppDropdown
-                    value={txDraft.category_id}
-                    options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ value: category.id, label: category.name, icon: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ value: category.id, label: category.name, icon: category.emoji ?? '🏷️' }))}
-                    placeholder={txDraft.type === 'income' ? 'Select income category' : 'Choose category'}
-                    onChange={(next) => setTxDraft((current) => ({ ...current, category_id: next }))}
-                  />
-                </div>
-                <div className="field txField"><label>Amount</label><input inputMode="decimal" value={txDraft.amount} onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))} /></div>
-                <div className="field txField txAddModalNote"><label>Note</label><input value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} /></div>
-              </div>
-              <div className="row between" style={{ marginTop: 14, justifyContent: 'flex-end', gap: 10 }}>
-                <button className="btn primary" onClick={() => void handleAddTransaction()}>Save Transaction</button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <DeleteConfirmModal
-          open={!!pendingDeleteId}
-          itemLabel={pendingDeleteTx?.note?.trim() || (pendingDeleteTx ? `${pendingDeleteTx.type} transaction` : 'this transaction')}
-          onConfirm={() => void confirmDeleteTx()}
-          onCancel={() => setPendingDeleteId(null)}
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div className="card mobileSectionCard dataPageCard txPageCard txFullLayout">
-      <div className="row between txPageHeader">
-        <div>
-          <h2>Transactions</h2>
-          <div className="muted">Add today’s transaction by default, or backdate it if needed. Use Month to view older records.</div>
-        </div>
-        {useTxAddModal ? (
-          <button className="btn primary txOpenAddModalBtn" type="button" onClick={() => setTxAddModalOpen(true)}>
-            <Plus size={16} /> Add Transaction
-          </button>
-        ) : null}
-      </div>
-
-      {!useTxAddModal ? (
-      <section className="txPanel txAddPanel" aria-labelledby="tx-add-title">
-        <div className="txPanelHeader row between">
-          <div>
-            <h3 id="tx-add-title">Add Transaction</h3>
-          </div>
-        </div>
-
-        <div className={`row gap txAddRow ${txDraft.type === 'income' ? 'incomeMode' : 'expenseMode'}`} style={{ marginTop: 12 }}>
-          <div className="field txField txDateField">
-            <label>Date</label>
-            <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
-          </div>
-
-          <div className="field txField txTypeField">
-            <label>Type</label>
-            <div className="typeToggle" role="tablist" aria-label="Transaction type">
-              <button type="button" className={`typeToggleBtn income ${txDraft.type === 'income' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'income', category_id: '' }))}>Income</button>
-              <button type="button" className={`typeToggleBtn expense ${txDraft.type === 'expense' ? 'active' : ''}`} onClick={() => setTxDraft((current) => ({ ...current, type: 'expense', category_id: '' }))}>Expense</button>
-            </div>
-          </div>
-
-          <div className="field txField txCategoryField">
-            <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-            <select
-              value={txDraft.category_id}
-              onChange={(event) => setTxDraft((current) => ({ ...current, category_id: event.target.value }))}
-            >
-              <option value="">{txDraft.type === 'income' ? 'Select income category' : 'Choose category'}</option>
-              {txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
-              )) : filteredCategoriesForDraft.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {(category.emoji ?? '🏷️')} {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field txField txAmountField">
-            <label>Amount</label>
-            <input
-              inputMode="decimal"
-              placeholder="0.00"
-              value={txDraft.amount}
-              onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
-            />
-          </div>
-
-          <div className="field txField txGrow txNoteField">
-            <label>Note</label>
-            <input placeholder={txDraft.type === 'income' ? 'Salary, freelance, refund…' : 'Groceries, fuel, rent…'} value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
-          </div>
-
-          <button
-            className={`btn primary txAddButton ${txDraft.type}`}
-            onClick={() => void handleAddTransaction()}
-            disabled={!txDraft.category_id}
-            title={!txDraft.category_id ? 'Choose a category first' : undefined}
-          >
-            <Plus size={16} /> Add
-          </button>
-        </div>
-      </section>
-      ) : null}
-
-      {useTxAddModal && txAddModalOpen ? (
-        <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setTxAddModalOpen(false)}>
-          <div className="card txAddModal" role="dialog" aria-modal="true" aria-labelledby="tx-add-modal-title" onClick={(event) => event.stopPropagation()}>
-            <div className="row between" style={{ alignItems: 'center', marginBottom: 6 }}>
-              <h3 id="tx-add-modal-title" style={{ margin: 0 }}>Add Transaction</h3>
-              <button className="btn" type="button" onClick={() => setTxAddModalOpen(false)}>Close</button>
-            </div>
-            <div className="muted" style={{ marginBottom: 12 }}>Add and save a transaction without leaving this page.</div>
-            <div className="txAddModalGrid">
-              <div className="field txField">
-                <label>Date</label>
-                <input value={txDraft.date} onChange={(event) => setTxDraft((current) => ({ ...current, date: event.target.value }))} type="date" max={data.settings.allowTxnInFutureDate ? undefined : today} />
-              </div>
-
-              <div className="field txField">
-                <label>Type</label>
-                <AppDropdown
-                  value={txDraft.type}
-                  options={[{ value: 'income', label: 'Income', icon: '💵' }, { value: 'expense', label: 'Expense', icon: '💸' }]}
-                  placeholder="Select type"
-                  onChange={(next) => {
-                    const nextType = next as TxType
-                    setTxDraft((current) => ({
-                      ...current,
-                      type: nextType,
-                      category_id: '',
-                    }))
-                  }}
-                />
-              </div>
-
-              <div className="field txField">
-                <label>{txDraft.type === 'income' ? 'Income Category' : 'Expense category'}</label>
-                <AppDropdown
-                  value={txDraft.category_id}
-                  options={txDraft.type === 'income' ? INCOME_CATEGORY_OPTIONS.map((category) => ({ value: category.id, label: category.name, icon: category.emoji })) : filteredCategoriesForDraft.map((category) => ({ value: category.id, label: category.name, icon: category.emoji ?? '🏷️' }))}
-                  placeholder={txDraft.type === 'income' ? 'Select income category' : 'Choose category'}
-                  onChange={(next) => setTxDraft((current) => ({ ...current, category_id: next }))}
-                />
-              </div>
-
-              <div className="field txField">
-                <label>Amount</label>
-                <input
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  value={txDraft.amount}
-                  onChange={(event) => setTxDraft((current) => ({ ...current, amount: event.target.value }))}
-                />
-              </div>
-
-              <div className="field txField txAddModalNote">
-                <label>Note</label>
-                <input placeholder={txDraft.type === 'income' ? 'Salary, freelance, refund…' : 'Groceries, fuel, rent…'} value={txDraft.note} onChange={(event) => setTxDraft((current) => ({ ...current, note: event.target.value }))} />
-              </div>
-            </div>
-            <div className="row between" style={{ marginTop: 14, justifyContent: 'flex-end', gap: 10 }}>
-              <button
-                className={`btn primary txAddButton ${txDraft.type}`}
-                onClick={() => void handleAddTransaction()}
-                disabled={!txDraft.category_id}
-                title={!txDraft.category_id ? 'Choose a category first' : undefined}
-              >
-                <Plus size={16} /> Save Transaction
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <section className={`txPanel ${isPhone ? 'mobileTxManagePanel' : 'txManagePanel'}`} aria-labelledby="tx-manage-title">
-        <div className="txPanelHeader row between">
-          <div>
-            <h3 id="tx-manage-title">Manage Transactions</h3>
-          </div>
-        </div>
-
-      <div className={`row between txToolbarRow ${isPhone ? 'txToolbarRowMobile' : ''}`} style={{ marginTop: 4, alignItems: 'flex-end', gap: 12, flexWrap: forceCompactManageToolbar ? 'nowrap' : undefined }}>
-        <div className="row gap txToolbarFields" style={forceCompactManageToolbar ? { gridTemplateColumns: 'minmax(180px, 1.15fr) minmax(160px, .9fr) minmax(160px, .9fr)', gap: 8 } : undefined}>
-          <div className="field txField txSearchField" style={forceCompactManageToolbar ? { gridColumn: 'auto', maxWidth: 320 } : undefined}>
-            <div className="input-icon txSearchInput" style={forceCompactManageToolbar ? { maxWidth: 320 } : undefined}>
-              <Search size={16} />
-              <span className="txSearchPrefix">Search</span>
-              <input value={txSearch} onChange={(event) => setTxSearch(event.target.value)} placeholder="Search by note, category, amount…" aria-label="Search transactions" />
-            </div>
-          </div>
-
-          <div className="field txField txFilterField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
-            <label>Filter</label>
-            {isPhone ? (
-              <select value={txType} onChange={(event) => setTxType(event.target.value as TxType | 'all')} aria-label="Transaction filter">
-                <option value="all">All</option>
-                <option value="income">Income</option>
-                <option value="expense">Expense</option>
-              </select>
-            ) : (
-              <div className="filterChips" role="tablist" aria-label="Transaction filter">
-                <button type="button" className={`filterChip ${txType === 'all' ? 'active' : ''}`} onClick={() => setTxType('all')}>All</button>
-                <button type="button" className={`filterChip income ${txType === 'income' ? 'active' : ''}`} onClick={() => setTxType('income')}>Income</button>
-                <button type="button" className={`filterChip expense ${txType === 'expense' ? 'active' : ''}`} onClick={() => setTxType('expense')}>Expense</button>
-              </div>
-            )}
-          </div>
-
-          <div className="field txField txMonthField" style={forceCompactManageToolbar ? { gridColumn: 'auto' } : undefined}>
-            <label>Month</label>
-            <select value={txActiveMonth} onChange={(event) => setTxActiveMonth(event.target.value)}>
-              {months.map((month) => (
-                <option key={month} value={month}>
-                  {helpers.monthLabel(month)}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="muted" style={forceCompactManageToolbar ? { whiteSpace: 'nowrap', marginLeft: 'auto' } : undefined}>{filteredTx.length} item(s)</div>
-      </div>
-
-      <div className={isPhone ? 'mobileTxListWrap' : 'txPageScrollable'}>
-      {isPhone ? (
-        <div className="mobileList dataMobileList mobileTxList" style={{ marginTop: 8 }}>
-          {filteredTx.length === 0 ? <div className="muted mobileEmptyCard">No transactions found.</div> : pagedTransactions.map((transaction) => {
-            const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
-            return (
-              <div key={transaction.id} className="mobileInfoCard">
-                <div className="row between" style={{ gap: 10, alignItems: 'flex-start' }}>
-                  <div>
-                    <div className="mobileCardTitle">{categoryDisplayForTransaction(transaction)}</div>
-                    <div className="muted">{transaction.note?.trim() || 'No note'}</div>
-                  </div>
-                  <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                <div className="mobileMetaRow">
-                  <span className="badge">{transaction.date}</span>
-                  <span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span>
-                </div>
-                <div className={`mobileAmountRow ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="dataScrollBox transactionsScrollBox" style={{ marginTop: 8 }}>
-          <table className="table dataStickyTable txHistoryTable">
-              <colgroup>
-                <col className="txColDate" />
-                <col className="txColType" />
-                <col className="txColCategory" />
-                <col className="txColAmount" />
-                <col className="txColNote" />
-                <col className="txColActions" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th aria-sort={getAriaSort('date')}>
-                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'date' ? 'active' : ''}`} onClick={() => toggleSort('date')}>
-                      <span>Date</span><SortIcon keyName="date" />
-                    </button>
-                  </th>
-                  <th aria-sort={getAriaSort('type')}>
-                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'type' ? 'active' : ''}`} onClick={() => toggleSort('type')}>
-                      <span>Type</span><SortIcon keyName="type" />
-                    </button>
-                  </th>
-                  <th aria-sort={getAriaSort('category')}>
-                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'category' ? 'active' : ''}`} onClick={() => toggleSort('category')}>
-                      <span>Category</span><SortIcon keyName="category" />
-                    </button>
-                  </th>
-                  <th aria-sort={getAriaSort('amount')}>
-                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'amount' ? 'active' : ''}`} onClick={() => toggleSort('amount')}>
-                      <span>Amount</span><SortIcon keyName="amount" />
-                    </button>
-                  </th>
-                  <th aria-sort={getAriaSort('note')}>
-                    <button type="button" className={`txSortHeaderBtn ${sortKey === 'note' ? 'active' : ''}`} onClick={() => toggleSort('note')}>
-                      <span>Note</span><SortIcon keyName="note" />
-                    </button>
-                  </th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {pagedTransactions.map((transaction) => {
-                  const categoryName = transaction.category_id ? catsById.get(transaction.category_id)?.name ?? 'Unknown' : 'Uncategorized'
-                  return (
-                    <tr key={transaction.id}>
-                      <td>{transaction.date}</td>
-                      <td><span className={`badge txTypeBadge ${transaction.type}`}>{transaction.type}</span></td>
-                      <td>{categoryDisplayForTransaction(transaction)}</td>
-                      <td className={`txAmountCell ${transaction.type}`}>{amountDisplay(transaction.amount, data.currency, transaction.type, helpers.fmtMoney)}</td>
-                      <td className="muted">{transaction.note ?? ''}</td>
-                      <td>
-                        <button className="icon danger" onClick={() => setPendingDeleteId(transaction.id)} title="Delete">
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {filteredTx.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="muted" style={{ padding: 18, textAlign: 'center' }}>
-                      No transactions found.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-          </table>
-        </div>
-      )}      </div>
-      <div className={`row between dataPageFooter ${isPhone ? 'mobileTxFooter' : 'txStickyFooter'}`} style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted">{transactionDirty ? 'You have unsaved transaction changes.' : 'All transaction changes are saved.'}</div>
-        <PaginationControls page={txPage} totalPages={txPages} onPrev={() => setTxPage((prev) => Math.max(1, prev - 1))} onNext={() => setTxPage((prev) => Math.min(txPages, prev + 1))} />
-        <button className="btn primary txUpdateButton" onClick={() => void handleSaveTransactions()} disabled={!transactionDirty}>
-          Update Transactions
-        </button>
-      </div>
-      </section>
-
-      <DeleteConfirmModal
-        open={!!pendingDeleteId}
-        itemLabel={pendingDeleteTx?.note?.trim() || pendingDeleteTx ? `${pendingDeleteTx.type} transaction` : 'this transaction'}
-        onConfirm={() => void confirmDeleteTx()}
-        onCancel={() => setPendingDeleteId(null)}
-      />
-
-      <DuplicateTransactionModal
-        open={duplicateGroups.length > 0}
-        group={activeDuplicateGroup}
-        catsById={catsById}
-        currency={data.currency}
-        fmtMoney={helpers.fmtMoney}
-        onDiscard={(transactionId) => void handleDiscardDuplicate(transactionId)}
-        onProceed={() => void handleProceedWithDuplicates()}
-        onCancel={() => setDuplicateGroups([])}
-      />
-    </div>
-  )
-}
+export { TransactionsView } from './TransactionsPage'
 
 
 
@@ -2818,6 +2219,13 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
   const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!categoryDirty) return
+    const timer = window.setTimeout(() => { void saveCategories() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [categoryDirty, saveCategories])
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -3053,13 +2461,6 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
         </section>
       </div>
 
-      <div className="row between dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted">{categoryDirty ? 'You have unsaved category changes.' : 'All category changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void saveCategories()} disabled={!categoryDirty}>
-          Update Categories
-        </button>
-      </div>
-
       {pickerFor && activeCategory ? (
         <div className="emojiPickerOverlay" onClick={() => setPickerFor(null)}>
           <div className="emojiPickerModal" onClick={(event) => event.stopPropagation()}>
@@ -3124,6 +2525,13 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const isCompactLaptop = useIsCompactLaptop()
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!goalDirty) return
+    const timer = window.setTimeout(() => { void saveGoals() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [goalDirty, saveGoals])
 
   const totalTarget = sortedGoals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0)
   const totalSaved = sortedGoals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0)
@@ -3388,11 +2796,6 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             ))}
           </div>
         ) : null}
-      </div>
-
-      <div className="row between goalsUpdateFooter" style={{ marginTop: 8, alignItems: 'center', gap: 12 }}>
-        <div className="muted">{goalDirty ? 'You have unsaved goal changes.' : 'All goal changes are saved.'}</div>
-        <button className="btn primary" onClick={() => void saveGoals()} disabled={!goalDirty}>Update Goals</button>
       </div>
 
       <DeleteConfirmModal
@@ -3768,12 +3171,12 @@ export function CurrencyConverterView({ budget, theme }: Pick<SharedProps, 'budg
 
 
 export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { categories, sortedRecurring, addRecurring, updateRecurringField, deleteRecurring, saveRecurring, recurringDirty, helpers, data } = budget
+  const { categories, sortedRecurring, addRecurring, updateRecurringField, deleteRecurring, saveRecurring, recurringDirty, helpers, data, getOrCreateCategory } = budget
   const isPhone = useIsPhone()
-  const isCompactLaptop = useIsCompactLaptop()
+  const isTabletDown = useIsTabletDown()
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [selectedRecurringId, setSelectedRecurringId] = useState<string | null>(null)
-  const [isDrawerOpen, setIsDrawerOpen] = useState(true)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | RecurringKind>('all')
   const [frequencyFilter, setFrequencyFilter] = useState<'all' | RecurrenceType>('all')
@@ -3781,7 +3184,9 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(true)
   const [createError, setCreateError] = useState<string | null>(null)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [categoryPickerId, setCategoryPickerId] = useState<string | null>(null)
+  const [menuDir, setMenuDir] = useState<'down' | 'up'>('down')
   const [draftRecurring, setDraftRecurring] = useState({
     name: '',
     kind: 'expense' as RecurringKind,
@@ -3792,10 +3197,15 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     day_of_month: '',
     note: '',
   })
-  const previousRecurringIdsRef = useRef<string[]>(sortedRecurring.map((item) => item.id))
   const pendingDeleteRecurring = useMemo(() => sortedRecurring.find((item) => item.id === pendingDeleteId) ?? null, [sortedRecurring, pendingDeleteId])
   const selectedRecurring = useMemo(() => sortedRecurring.find((item) => item.id === selectedRecurringId) ?? null, [sortedRecurring, selectedRecurringId])
-  const useModalDrawer = isPhone || isCompactLaptop
+
+  // ---- Autosave: persist to Supabase shortly after any local change ----
+  useEffect(() => {
+    if (!recurringDirty) return
+    const timer = window.setTimeout(() => { void saveRecurring() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [recurringDirty, saveRecurring])
 
   const confirmDeleteRecurring = async () => {
     if (!pendingDeleteId) return
@@ -3814,24 +3224,108 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
   ]
 
   useEffect(() => {
-    if (!sortedRecurring.length) {
-      setSelectedRecurringId(null)
-      previousRecurringIdsRef.current = []
-      return
+    if (!activeMenuId && !categoryPickerId) return
+    const onDocClick = () => {
+      setActiveMenuId(null)
+      setCategoryPickerId(null)
     }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [activeMenuId, categoryPickerId])
 
-    const previousIds = previousRecurringIdsRef.current
-    const nextIds = sortedRecurring.map((item) => item.id)
-    const newRecurringId = nextIds.find((id) => !previousIds.includes(id))
+  const closeForm = () => {
+    setIsFormOpen(false)
+    setCreateError(null)
+    setIsCreating(true)
+    setSelectedRecurringId(null)
+  }
 
-    if (newRecurringId && !isCreating) {
-      setSelectedRecurringId(newRecurringId)
-    } else if (!isCreating && (!selectedRecurringId || !nextIds.includes(selectedRecurringId))) {
-      setSelectedRecurringId(nextIds[0])
+  const assignCategory = (id: string, categoryId: string) => {
+    updateRecurringField(id, 'category_id', categoryId)
+    setCategoryPickerId(null)
+  }
+
+  // Decide whether an in-row popover should open upward so it isn't clipped by
+  // the internal table scroll region. Defaults to 'down' if anything goes wrong.
+  const computeMenuDir = (trigger: HTMLElement, estHeight: number): 'down' | 'up' => {
+    try {
+      const scroller = trigger.closest('.recurringFeedTable')
+      if (!scroller) return 'down'
+      const triggerRect = trigger.getBoundingClientRect()
+      const scrollRect = scroller.getBoundingClientRect()
+      const spaceBelow = scrollRect.bottom - triggerRect.bottom
+      const spaceAbove = triggerRect.top - scrollRect.top
+      return spaceBelow < estHeight && spaceAbove > spaceBelow ? 'up' : 'down'
+    } catch {
+      return 'down'
     }
+  }
 
-    previousRecurringIdsRef.current = nextIds
-  }, [isCreating, selectedRecurringId, sortedRecurring])
+  // Income categories mirror the Transactions page (its fixed INCOME_CATEGORY_OPTIONS
+  // list); expense uses the user's real categories filtered to expense usage so an
+  // income item never offers expense categories and vice-versa.
+  type CategoryOption = { id: string; name: string; emoji?: string | null }
+  const expenseCategories = (): CategoryOption[] => categories.filter((cat) => {
+    const usage = getCategoryUsageType(cat.id, cat.name, data.transactions, sortedRecurring)
+    return usage === 'both' || usage === 'expense'
+  })
+  const categoryOptionsForKind = (kind: RecurringKind): CategoryOption[] =>
+    kind === 'income'
+      ? INCOME_CATEGORY_OPTIONS.map((option) => ({ id: option.id, name: option.name, emoji: option.emoji }))
+      : expenseCategories()
+
+  // Resolve a stored category_id for display: real user categories first, then the
+  // synthetic income ids (income:*) surfaced by the fixed income list.
+  const resolveRecurringCategory = (item: typeof sortedRecurring[number]): CategoryOption | undefined => {
+    if (!item.category_id) return undefined
+    const real = categories.find((cat) => cat.id === item.category_id)
+    if (real) return real
+    const incomeName = INCOME_CATEGORY_NAME_BY_ID.get(item.category_id)
+    if (incomeName) return { id: item.category_id, name: incomeName, emoji: INCOME_CATEGORY_EMOJI_BY_ID.get(item.category_id) ?? '💵' }
+    return undefined
+  }
+
+  const renderCategoryControl = (item: typeof sortedRecurring[number], category: CategoryOption | undefined) => {
+    if (category) {
+      return <span className="recurringCategoryValue">{category.emoji ?? '🏷️'} {category.name}</span>
+    }
+    const pickerCategories = categoryOptionsForKind(item.kind === 'income' ? 'income' : 'expense')
+    return (
+      <span className="recurringCategoryAssign" onClick={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className="recurringCategoryGhost"
+          onClick={(event) => {
+            event.stopPropagation()
+            setActiveMenuId(null)
+            setMenuDir(computeMenuDir(event.currentTarget, 220))
+            setCategoryPickerId((current) => (current === item.id ? null : item.id))
+          }}
+        >
+          <Tag size={12} /> Set category
+        </button>
+        {categoryPickerId === item.id ? (
+          <span className={`recurringCategoryMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
+            {pickerCategories.length === 0 ? (
+              <span className="recurringCategoryMenuEmpty muted">No {item.kind === 'income' ? 'income' : 'expense'} categories yet</span>
+            ) : pickerCategories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  const realId = item.kind === 'income' ? getOrCreateCategory(cat.name, cat.emoji ?? '💵') : cat.id
+                  if (realId) assignCategory(item.id, realId)
+                }}
+              >
+                <span>{cat.emoji ?? '🏷️'}</span> {cat.name}
+              </button>
+            ))}
+          </span>
+        ) : null}
+      </span>
+    )
+  }
 
   const handleAddRecurring = () => {
     setIsCreating(true)
@@ -3847,8 +3341,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
       note: '',
     })
     setSelectedRecurringId(null)
-    setIsDrawerOpen(true)
-    if (useModalDrawer) setIsAddModalOpen(true)
+    setIsFormOpen(true)
   }
 
   const monthlyNet = sortedRecurring.reduce((sum, item) => {
@@ -3944,13 +3437,14 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         day_of_month: '',
         note: '',
       })
+      setIsFormOpen(false)
       return
     }
     await saveRecurring()
     setIsCreating(true)
     setSelectedRecurringId(null)
     setCreateError(null)
-    if (useModalDrawer) setIsAddModalOpen(true)
+    setIsFormOpen(false)
     setDraftRecurring({
       name: '',
       kind: 'expense',
@@ -3963,12 +3457,38 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
     })
   }
 
-  const renderDrawerBody = () => (
+  const renderDrawerBody = () => {
+    const formKind: RecurringKind = isCreating ? draftRecurring.kind : (selectedRecurring?.kind === 'income' ? 'income' : 'expense')
+    const drawerCategories = categoryOptionsForKind(formKind)
+    // Income options are keyed by name (they map to real categories created on save);
+    // expense options are keyed by real category id.
+    const drawerCategoryId = isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')
+    const drawerSelectValue = formKind === 'income' ? (categories.find((cat) => cat.id === drawerCategoryId)?.name ?? '') : drawerCategoryId
+    const setDrawerCategory = (categoryId: string) => {
+      if (isCreating) setDraftRecurring((current) => ({ ...current, category_id: categoryId }))
+      else if (selectedRecurring) updateRecurringField(selectedRecurring.id, 'category_id', categoryId)
+    }
+    const onDrawerCategoryChange = (raw: string) => {
+      if (formKind === 'income') {
+        setDrawerCategory(raw ? (getOrCreateCategory(raw, '💵') ?? '') : '')
+      } else {
+        setDrawerCategory(raw)
+      }
+    }
+    return (
     <>
       <div className="goalFields compact recurringDrawerFields" style={{ marginTop: 14 }}>
         <div className="recurringFieldFull"><small>Name *</small><input className="input" value={isCreating ? draftRecurring.name : (selectedRecurring?.name ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, name: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'name', event.target.value) : null} placeholder="e.g., Rent, Salary, Netflix" /></div>
-        <div><small>Type</small><select className="select" value={isCreating ? draftRecurring.kind : (selectedRecurring?.kind ?? 'expense')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, kind: event.target.value as RecurringKind })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'kind', event.target.value) : null}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
-        <div><small>Category</small><select className="select" value={isCreating ? draftRecurring.category_id : (selectedRecurring?.category_id ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, category_id: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'category_id', event.target.value) : null}><option value="">None</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
+        <div><small>Type</small><select className="select" value={isCreating ? draftRecurring.kind : (selectedRecurring?.kind ?? 'expense')} onChange={(event) => {
+          const nextKind = event.target.value as RecurringKind
+          if (isCreating) {
+            setDraftRecurring((current) => ({ ...current, kind: nextKind, category_id: '' }))
+          } else if (selectedRecurring) {
+            updateRecurringField(selectedRecurring.id, 'kind', nextKind)
+            updateRecurringField(selectedRecurring.id, 'category_id', '')
+          }
+        }}>{recurringKindOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></div>
+        <div><small>Category</small><select className="select" value={drawerSelectValue} onChange={(event) => onDrawerCategoryChange(event.target.value)}><option value="">None</option>{drawerCategories.map((category) => <option key={category.id} value={formKind === 'income' ? category.name : category.id}>{category.emoji ?? '🏷️'} {category.name}</option>)}</select></div>
         <div><small>Amount *</small><input className="input" inputMode="decimal" value={isCreating ? draftRecurring.amount : String(selectedRecurring?.amount ?? '')} onChange={(event) => isCreating ? setDraftRecurring((current) => ({ ...current, amount: event.target.value })) : selectedRecurring ? updateRecurringField(selectedRecurring.id, 'amount', event.target.value) : null} placeholder="0.00" /></div>
         <div><small>Frequency</small><select className="select" value={isCreating ? draftRecurring.recurrence_type : (selectedRecurring?.recurrence_type === 'weekly' || selectedRecurring?.recurrence_type === 'biweekly' ? selectedRecurring.recurrence_type : 'monthly')} onChange={(event) => {
           const nextFrequency = event.target.value as RecurrenceType
@@ -4004,7 +3524,8 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         <button className="btn primary" onClick={() => void handleSaveDrawer()} disabled={!isCreating && !recurringDirty}>Save Item</button>
       </div>
     </>
-  )
+    )
+  }
 
   return (
     <div className="card mobileSectionCard dataPageCard recurringFeedPage recurringDesignerPage">
@@ -4018,13 +3539,25 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
         </button>
       </div>
 
-      <div className={`recurringFeedLayout ${isDrawerOpen ? 'drawer-open' : ''} ${isPhone || isCompactLaptop ? 'compact' : ''} recurringDesignerLayout`}>
-        <div className="recurringFeedListCard recurringDesignerLeft">
-          <div className="recurringKpiRow">
-            <div className="recurringKpiCard"><div className="recurringKpiIcon">📅</div><div><div className="muted">Active Items</div><strong>{sortedRecurring.length}</strong></div></div>
-            <div className="recurringKpiCard"><div className="recurringKpiIcon">💵</div><div><div className="muted">Monthly Total</div><strong>{helpers.fmtMoney(monthlyExpenseTotal, data.currency)}</strong></div></div>
-            <div className="recurringKpiCard"><div className="recurringKpiIcon">🪙</div><div><div className="muted">Recurring Income</div><strong>{helpers.fmtMoney(monthlyIncomeTotal, data.currency)}</strong></div></div>
+      <div className="recurringFeedBody">
+        <div className="recurringKpiRow">
+          <div className="recurringKpiCard"><div className="recurringKpiIcon">📅</div><div><div className="muted">Active Items</div><strong>{sortedRecurring.length}</strong></div></div>
+          <div className="recurringKpiCard"><div className="recurringKpiIcon">💵</div><div><div className="muted">Monthly Total</div><strong className="recurringNum">{helpers.fmtMoney(monthlyExpenseTotal, data.currency)}</strong></div></div>
+          <div className="recurringKpiCard"><div className="recurringKpiIcon">🪙</div><div><div className="muted">Recurring Income</div><strong className="recurringNum">{helpers.fmtMoney(monthlyIncomeTotal, data.currency)}</strong></div></div>
+        </div>
+
+        {isTabletDown ? (
+          <div className="recurringToolbar recurringToolbarCompact">
+            <div className="recurringSearchInput">
+              <Search size={14} />
+              <input className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search recurring items..." />
+            </div>
+            <button type="button" className="btn ghost recurringFiltersBtn" onClick={(event) => { event.stopPropagation(); setIsFiltersOpen(true) }}>
+              <SlidersHorizontal size={16} /> Filters
+              {(typeFilter !== 'all' || frequencyFilter !== 'all' || sortBy !== 'next_due') ? <span className="recurringFilterDot" /> : null}
+            </button>
           </div>
+        ) : (
           <div className="recurringToolbar">
             <div className="recurringSearchInput">
               <Search size={14} />
@@ -4047,8 +3580,18 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               <option value="name">Sort by name</option>
             </select>
           </div>
+        )}
 
-          <div className="recurringFeedTable">
+        <div
+          className="recurringFeedTable"
+          onScroll={() => {
+            if (activeMenuId || categoryPickerId) {
+              setActiveMenuId(null)
+              setCategoryPickerId(null)
+            }
+          }}
+        >
+          <div className="recurringFeedTableInner">
             <div className="recurringFeedHeaderRow">
               <div>Name</div>
               <div>Category</div>
@@ -4061,43 +3604,58 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               <div className="muted recurringFeedEmpty">No recurring items match your filters.</div>
             ) : recurringRows.map(({ item, dueDate }) => {
               const recurrenceType = item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly'
-              const category = categories.find((entry) => entry.id === item.category_id)
+              const category = resolveRecurringCategory(item)
               const badgeText = recurrenceType === 'biweekly' ? 'Bi-weekly' : recurrenceType === 'weekly' ? 'Weekly' : 'Monthly'
-              const isSelected = item.id === selectedRecurringId && isDrawerOpen
+              const startOfToday = new Date()
+              startOfToday.setHours(0, 0, 0, 0)
+              const isOverdue = dueDate < startOfToday
+              const amountClass = item.kind === 'income' ? 'good' : isOverdue ? 'overdue' : ''
+              const isSelected = item.id === selectedRecurringId && isFormOpen
               return (
-                <div key={item.id} className={`recurringFeedDataRow ${isSelected ? 'selected' : ''}`}>
+                <div key={item.id} className={`recurringFeedDataRow ${isSelected ? 'selected' : ''} ${item.kind}`}>
                   <div className="recurringNameCol">
                     <div className="recurringItemEmoji">{category?.emoji ?? (item.kind === 'income' ? '💰' : '📌')}</div>
-                    <div>
+                    <div className="recurringNameText">
                       <div className="recurringFeedRowName">{item.name || 'Untitled recurring item'}</div>
                       <span className={`recurringKindPill ${item.kind}`}>{item.kind === 'income' ? 'Income' : 'Expense'}</span>
                     </div>
                   </div>
-                  <div className="muted recurringCategoryCol">{category?.emoji ?? '🏷️'} {category?.name ?? 'Uncategorized'}</div>
-                  <div className={`recurringAmountCol ${item.kind === 'income' ? 'good' : ''}`}>{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</div>
-                  <div><span className="recurringFreqPill">{badgeText}</span></div>
-                  <div className="recurringDueCol"><div className="muted">Next due</div><strong>{dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
-                  <div className="recurringActionsCol">
+                  <div className="recurringCategoryCol">{renderCategoryControl(item, category)}</div>
+                  <div className={`recurringAmountCol recurringNum ${amountClass}`}>{helpers.fmtMoney(Number(item.amount ?? 0), data.currency)}</div>
+                  <div className="recurringFreqCol"><span className="recurringFreqPill">{badgeText}</span></div>
+                  <div className="recurringDueCol"><div className="muted">Next due</div><strong className="recurringNum">{dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
+                  <div className="recurringCardMeta">
+                    <span className="recurringMetaCategory">{renderCategoryControl(item, category)}</span>
+                    <span className="recurringMetaDot">•</span>
+                    <span>{badgeText}</span>
+                    <span className="recurringMetaDot">•</span>
+                    <span>Due {dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                  <div className="recurringActionsCol" onClick={(event) => event.stopPropagation()}>
                     <button
                       type="button"
                       className="icon"
+                      aria-label="Row actions"
                       onClick={(event) => {
                         event.stopPropagation()
+                        setCategoryPickerId(null)
+                        setMenuDir(computeMenuDir(event.currentTarget, 96))
                         setActiveMenuId((current) => current === item.id ? null : item.id)
                       }}
                     >
                       <MoreHorizontal size={16} />
                     </button>
                     {activeMenuId === item.id ? (
-                      <div className="recurringRowMenu">
+                      <div className={`recurringRowMenu ${menuDir === 'up' ? 'openUp' : ''}`}>
                         <button
                           type="button"
                           onClick={(event) => {
                             event.stopPropagation()
                             setSelectedRecurringId(item.id)
                             setIsCreating(false)
+                            setCreateError(null)
                             setActiveMenuId(null)
-                            if (useModalDrawer) setIsAddModalOpen(true)
+                            setIsFormOpen(true)
                           }}
                         >
                           Edit
@@ -4120,39 +3678,74 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
               )
             })}
           </div>
-          <div className="muted recurringFooterText">Showing 1 to {recurringRows.length} of {recurringRows.length} items</div>
         </div>
+        <div className="muted recurringFooterText">Showing 1 to {recurringRows.length} of {recurringRows.length} items</div>
+      </div>
 
-        {!useModalDrawer ? <aside className="recurringDrawerCard recurringDesignerDrawer">
-            <div className="row between" style={{ alignItems: 'flex-start', gap: 10 }}>
+      <div className="row recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', justifyContent: 'flex-end', gap: 12 }}>
+        <div className="badge recurringSummaryBadge">Estimated monthly net <span className="recurringNum">{helpers.fmtMoney(monthlyNet, data.currency)}</span></div>
+      </div>
+
+      {isFormOpen ? createPortal(
+        <div className={`recurringDrawerBackdrop ${isPhone ? 'asModalBackdrop' : ''}`} role="presentation" onClick={closeForm}>
+          <div className={`recurringSlideOver ${isPhone ? 'asModal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="recurringSlideOverHeader">
               <div>
-                <h3 style={{ marginBottom: 4 }}>Add Recurring Item</h3>
+                <h3 style={{ margin: 0 }}>{isCreating ? 'Add Recurring Item' : 'Edit Recurring Item'}</h3>
                 <div className="muted">Create or edit a recurring payment or income.</div>
               </div>
+              <button type="button" className="icon recurringSlideOverClose" onClick={closeForm} aria-label="Close form"><X size={18} /></button>
             </div>
-            {renderDrawerBody()}
-          </aside> : null}
-      </div>
-
-      {useModalDrawer && isAddModalOpen ? (
-        <div className="deleteConfirmBackdrop" role="presentation" onClick={() => setIsAddModalOpen(false)}>
-          <div className="card recurringDrawerModal" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <h3 style={{ marginBottom: 4 }}>Add Recurring Item</h3>
-            <div className="muted">Create or edit a recurring payment or income.</div>
-            {renderDrawerBody()}
+            <div className="recurringSlideOverBody">
+              {renderDrawerBody()}
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
 
-      {!isPhone ? null : (
-        <div className="muted" style={{ marginTop: 10 }}>Tip: tap any recurring item above to edit in the drawer.</div>
-      )}
-
-      <div className="row between recurringSummaryRow dataPageFooter" style={{ alignItems: 'center', gap: 12 }}>
-        <div className="muted">{recurringDirty ? 'You have unsaved recurring changes.' : 'All recurring changes are saved.'}</div>
-        <div className="badge">Estimated monthly net {helpers.fmtMoney(monthlyNet, data.currency)}</div>
-        <button className="btn primary" onClick={() => void saveRecurring()} disabled={!recurringDirty}>Update Recurring</button>
-      </div>
+      {isTabletDown && isFiltersOpen ? createPortal(
+        <div className="recurringDrawerBackdrop recurringFiltersBackdrop" role="presentation" onClick={() => setIsFiltersOpen(false)}>
+          <div className="recurringFiltersSheet" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="recurringSlideOverHeader">
+              <h3 style={{ margin: 0 }}>Filters</h3>
+              <button type="button" className="icon recurringSlideOverClose" onClick={() => setIsFiltersOpen(false)} aria-label="Close filters"><X size={18} /></button>
+            </div>
+            <div className="recurringFiltersSheetBody">
+              <label className="recurringFilterField">
+                <small>Type</small>
+                <select className="select" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as 'all' | RecurringKind)}>
+                  <option value="all">All Types</option>
+                  <option value="expense">Expense</option>
+                  <option value="income">Income</option>
+                </select>
+              </label>
+              <label className="recurringFilterField">
+                <small>Frequency</small>
+                <select className="select" value={frequencyFilter} onChange={(event) => setFrequencyFilter(event.target.value as 'all' | RecurrenceType)}>
+                  <option value="all">All Frequencies</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Bi-weekly</option>
+                </select>
+              </label>
+              <label className="recurringFilterField">
+                <small>Sort</small>
+                <select className="select" value={sortBy} onChange={(event) => setSortBy(event.target.value as 'next_due' | 'amount' | 'name')}>
+                  <option value="next_due">Sort by next due date</option>
+                  <option value="amount">Sort by amount</option>
+                  <option value="name">Sort by name</option>
+                </select>
+              </label>
+            </div>
+            <div className="recurringFiltersSheetActions">
+              <button type="button" className="btn ghost" onClick={() => { setTypeFilter('all'); setFrequencyFilter('all'); setSortBy('next_due') }}>Reset</button>
+              <button type="button" className="btn primary" onClick={() => setIsFiltersOpen(false)}>Done</button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
 
       <DeleteConfirmModal
         open={!!pendingDeleteId}
@@ -6418,23 +6011,32 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
 }
 
 
+type AdminDetailTab = 'profile' | 'permissions' | 'activity' | 'danger'
+
 export function SuperAdminView({ admin, embedded = false, hideAudit = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean; hideAudit?: boolean }) {
   const selectedUser = admin.selectedUser
   const [draftRole, setDraftRole] = useState<UserRole>('user')
-  const [draftActive, setDraftActive] = useState(true)
   const [draftFeatures, setDraftFeatures] = useState<FeatureAccess>(admin.defaultFeatureAccess)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all')
   const [localProfileImage, setLocalProfileImage] = useState('')
   const [localProfileName, setLocalProfileName] = useState({ firstName: '', lastName: '' })
+  const [detailTab, setDetailTab] = useState<AdminDetailTab>('permissions')
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const [copiedId, setCopiedId] = useState(false)
+  const [justSaved, setJustSaved] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<null | 'suspend' | 'remove'>(null)
 
   useEffect(() => {
     if (!selectedUser) return
     setDraftRole(selectedUser.role)
-    setDraftActive(selectedUser.is_active)
     setDraftFeatures({ ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) })
-  }, [selectedUser, admin.defaultFeatureAccess])
+    setDetailTab('permissions')
+    setActionsOpen(false)
+    setConfirmAction(null)
+    setJustSaved(false)
+  }, [selectedUser?.id])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -6458,22 +6060,65 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     })
   }, [admin.managedUsers, searchTerm, statusFilter, roleFilter])
 
+  const baseFeatures = useMemo(
+    () => ({ ...admin.defaultFeatureAccess, ...(selectedUser?.feature_access ?? {}) }),
+    [admin.defaultFeatureAccess, selectedUser?.feature_access],
+  )
+
   const dirty = !!selectedUser && (
     draftRole !== selectedUser.role ||
-    draftActive !== selectedUser.is_active ||
-    admin.featureKeys.some((key) => draftFeatures[key] !== ({ ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) })[key])
+    admin.featureKeys.some((key) => draftFeatures[key] !== baseFeatures[key])
+  )
+
+  const accessPresets = useMemo(() => ([
+    { id: 'full', label: 'Full Access', access: { ...admin.defaultFeatureAccess } as FeatureAccess },
+    { id: 'standard', label: 'Standard', access: { ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false, investments: false } as FeatureAccess },
+    { id: 'readonly', label: 'Read Only', access: { ...admin.defaultFeatureAccess, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false, investments: false } as FeatureAccess },
+  ]), [admin.defaultFeatureAccess])
+
+  const activePresetId = useMemo(
+    () => accessPresets.find((preset) => admin.featureKeys.every((key) => draftFeatures[key] === preset.access[key]))?.id ?? null,
+    [accessPresets, draftFeatures, admin.featureKeys],
+  )
+
+  const userActivity = useMemo(
+    () => admin.auditLogs.filter((log) => log.target_user_id === selectedUser?.id),
+    [admin.auditLogs, selectedUser?.id],
   )
 
   const saveUser = async () => {
     if (!selectedUser) return
-    if (draftRole !== selectedUser.role || draftActive !== selectedUser.is_active) {
-      await admin.updateManagedUser(selectedUser.id, { role: draftRole, is_active: draftActive })
+    if (draftRole !== selectedUser.role) {
+      await admin.updateManagedUser(selectedUser.id, { role: draftRole })
     }
-    const base = { ...admin.defaultFeatureAccess, ...(selectedUser.feature_access ?? {}) }
-    const hasFeatureChanges = admin.featureKeys.some((key) => draftFeatures[key] !== base[key])
+    const hasFeatureChanges = admin.featureKeys.some((key) => draftFeatures[key] !== baseFeatures[key])
     if (hasFeatureChanges) {
       await admin.updateManagedFeatures(selectedUser.id, draftFeatures)
     }
+  }
+
+  const handleSave = async () => {
+    await saveUser()
+    setJustSaved(true)
+    window.setTimeout(() => setJustSaved(false), 2400)
+  }
+
+  const copyUserId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id)
+      setCopiedId(true)
+      window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'User ID copied' } }))
+      window.setTimeout(() => setCopiedId(false), 1600)
+    } catch {
+      window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Could not copy user ID' } }))
+    }
+  }
+
+  const formatJoined = (value?: string | null) => {
+    if (!value) return 'Unknown'
+    const timestamp = new Date(value)
+    if (Number.isNaN(timestamp.getTime())) return 'Unknown'
+    return timestamp.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
   }
 
   const formatAuditAction = (action: string) => action.replaceAll('_', ' ').replace(/\w/g, (char) => char.toUpperCase())
@@ -6544,6 +6189,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
       goals: 'Goals',
       advice: 'Advice',
       converter: 'Currency Converter',
+      investments: 'Investments',
       support: 'Help & Support',
       settings: 'Settings',
     }
@@ -6620,9 +6266,11 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                   <span className="badge">{user.role.replace('_', ' ')}</span>
                 </div>
                 <div className="adminUserMeta status">
-                  <span className={`badge ${user.is_active ? 'successOutline' : 'dangerOutline'}`}>{user.is_active ? 'Active' : 'Inactive'}</span>
+                  <span className={`adminStatusIndicator ${user.is_active ? 'active' : 'inactive'}`}>
+                    <span className="adminStatusDot" />{user.is_active ? 'Active' : 'Inactive'}
+                  </span>
                 </div>
-                <div className="muted adminLastActiveCell">{formatLastActive(user.updated_at)}</div>
+                <div className="muted adminLastActiveCell">{formatLastActive(user.last_active_at ?? user.updated_at)}</div>
               </button>
             ))}
           </div>
@@ -6632,7 +6280,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
         {selectedUser ? (
           <div className="card adminDetailCard adminDetailScrollable adminCardShell">
             <div className="adminDetailInner">
-              <div className="row between" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
+              <div className="row between adminDetailHeader" style={{ gap: 12, marginBottom: 14, alignItems: 'flex-start' }}>
                 <div className="adminSelectedUser">
                   <span className="adminAvatar large">
                     {avatarImageForUser(selectedUser)
@@ -6640,84 +6288,241 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                       : initialsForUser(selectedUser)}
                   </span>
                   <div>
-                    <h3 style={{ marginBottom: 4 }}>User Access & Permissions</h3>
-                    <div className="muted">{displayNameForUser(selectedUser)} • {selectedUser.email}</div>
-                    <div className="muted" style={{ marginTop: 4 }}>{formatLastActive(selectedUser.updated_at)}</div>
+                    <h3 style={{ marginBottom: 4 }}>{displayNameForUser(selectedUser)}</h3>
+                    <div className="muted">{selectedUser.email}</div>
                   </div>
                 </div>
-                <div className="row gap" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn" onClick={() => admin.setSelectedUserId(null)}>Actions <ChevronDown size={14} /></button>
+                <div className="adminActionsMenu">
+                  <button className="btn" onClick={() => setActionsOpen((open) => !open)}>Actions <ChevronDown size={14} /></button>
+                  {actionsOpen ? (
+                    <>
+                      <div className="adminMenuBackdrop" onClick={() => setActionsOpen(false)} />
+                      <div className="adminActionsDropdown">
+                        <button onClick={() => { void copyUserId(selectedUser.id); setActionsOpen(false) }}>
+                          <Copy size={14} /> Copy user ID
+                        </button>
+                        <button onClick={() => { admin.setSelectedUserId(null); setActionsOpen(false) }}>
+                          <X size={14} /> Close panel
+                        </button>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
-              <div className="grid cols2 adminRoleStatusRow" style={{ marginBottom: 14 }}>
-                <label className="field">
-                  <span>Role</span>
-                  <select className="select" value={draftRole} onChange={(event) => setDraftRole(event.target.value as UserRole)}>
-                    <option value="user">User</option>
-                    <option value="admin">Admin</option>
-                    <option value="super_admin">Super Admin</option>
-                  </select>
-                </label>
-                <div className="field">
-                  <span>Account status</span>
-                  <button className={`btn ${draftActive ? 'primary' : 'danger'}`} onClick={() => setDraftActive((current) => !current)}>
-                    {draftActive ? <ToggleRight size={18} /> : <ToggleLeft size={18} />} {draftActive ? 'Active' : 'Inactive'}
+              <div className="adminDetailTabs" role="tablist">
+                {([
+                  { id: 'profile', label: 'Profile', icon: <UserCircle2 size={15} /> },
+                  { id: 'permissions', label: 'Permissions', icon: <Lock size={15} /> },
+                  { id: 'activity', label: 'Activity', icon: <Activity size={15} /> },
+                  { id: 'danger', label: 'Danger zone', icon: <AlertTriangle size={15} /> },
+                ] as const).map((tab) => (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={detailTab === tab.id}
+                    className={`adminDetailTab ${detailTab === tab.id ? 'active' : ''} ${tab.id === 'danger' ? 'danger' : ''}`}
+                    onClick={() => setDetailTab(tab.id)}
+                  >
+                    {tab.icon}<span>{tab.label}</span>
                   </button>
-                </div>
+                ))}
               </div>
 
-              <div className="adminPresetRow" style={{ marginBottom: 12 }}>
-                <span className="muted">Access preset</span>
-                <div className="row gap" style={{ flexWrap: 'wrap' }}>
-                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess })}>Full Access</button>
-                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false })}>Standard</button>
-                  <button className="btn" onClick={() => setDraftFeatures({ ...admin.defaultFeatureAccess, dashboard: true, settings: true, support: true, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false })}>Read Only</button>
+              {detailTab === 'profile' ? (
+                <div className="adminProfilePanel">
+                  <div className="adminProfileList">
+                    <div className="adminProfileField"><span className="adminProfileKey">Name</span><span className="adminProfileVal">{displayNameForUser(selectedUser)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Email</span><span className="adminProfileVal">{selectedUser.email}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Role</span><span className="adminProfileVal">{selectedUser.role.replace('_', ' ')}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Status</span>
+                      <span className={`adminStatusIndicator ${selectedUser.is_active ? 'active' : 'inactive'}`}><span className="adminStatusDot" />{selectedUser.is_active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Joined</span><span className="adminProfileVal">{formatJoined(selectedUser.created_at)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">Last active</span><span className="adminProfileVal">{formatLastActive(selectedUser.last_active_at ?? selectedUser.updated_at)}</span></div>
+                    <div className="adminProfileField"><span className="adminProfileKey">User ID</span>
+                      <span className="adminProfileVal adminUserIdField">
+                        <code>{selectedUser.id}</code>
+                        <button className="icon" title="Copy user ID" onClick={() => void copyUserId(selectedUser.id)}>
+                          {copiedId ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <div className="adminFeatureSections">
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Core Modules</div>
-                  <div className="adminFeatureGrid">
-                    {(['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
+              {detailTab === 'permissions' ? (
+                <div className="adminPermissionsPanel">
+                  <div className="grid adminRoleStatusRow" style={{ marginBottom: 14 }}>
+                    <label className="field">
+                      <span>Role</span>
+                      <select className="select" value={draftRole} onChange={(event) => setDraftRole(event.target.value as UserRole)}>
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                        <option value="super_admin">Super Admin</option>
+                      </select>
+                    </label>
                   </div>
-                </div>
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Planning</div>
-                  <div className="adminFeatureGrid">
-                    {(['advice', 'converter'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div className="adminFeatureSection">
-                  <div className="adminFeatureTitle">Utilities</div>
-                  <div className="adminFeatureGrid">
-                    {(['support', 'settings'] as const).map((feature) => (
-                      <label key={feature} className={`adminFeatureToggle ${draftFeatures[feature] ? 'on' : 'off'}`}>
-                        <input type="checkbox" checked={draftFeatures[feature]} onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))} />
-                        <span>{featureLabel(feature)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
 
-              <div className="row between adminDetailFooter" style={{ marginTop: 16, gap: 12 }}>
-                <div className="muted">User ID: <code>{selectedUser.id}</code></div>
-                <button className="btn primary" onClick={() => void saveUser()} disabled={!dirty || !!admin.busyAction}>
-                  {admin.busyAction ? 'Saving…' : 'Save admin changes'}
-                </button>
-              </div>
+                  <div className="adminPresetRow" style={{ marginBottom: 12 }}>
+                    <span className="muted">Access preset</span>
+                    <div className="row gap adminPresetButtons" style={{ flexWrap: 'wrap' }}>
+                      {accessPresets.map((preset) => (
+                        <button
+                          key={preset.id}
+                          className={`btn adminPresetBtn ${activePresetId === preset.id ? 'active' : ''}`}
+                          onClick={() => setDraftFeatures({ ...preset.access })}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      {activePresetId === null ? <span className="badge adminPresetCustom">Custom</span> : null}
+                    </div>
+                  </div>
+
+                  <div className="adminFeatureSections">
+                    {([
+                      { title: 'Core Modules', keys: ['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const },
+                      { title: 'Planning', keys: ['advice', 'converter', 'investments'] as const },
+                      { title: 'Utilities', keys: ['support', 'settings'] as const },
+                    ]).map((group) => (
+                      <div key={group.title} className="adminFeatureSection">
+                        <div className="adminFeatureTitle">{group.title}</div>
+                        <div className="adminSwitchGrid">
+                          {group.keys.map((feature) => (
+                            <label key={feature} className={`adminSwitchRow ${draftFeatures[feature] ? 'on' : 'off'}`}>
+                              <span className="adminSwitchLabel">{featureLabel(feature)}</span>
+                              <span className="adminSwitch">
+                                <input
+                                  type="checkbox"
+                                  checked={draftFeatures[feature]}
+                                  onChange={(event) => setDraftFeatures((current) => ({ ...current, [feature]: event.target.checked }))}
+                                />
+                                <span className="adminSwitchTrack"><span className="adminSwitchThumb" /></span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="row between adminDetailFooter" style={{ marginTop: 16, gap: 12 }}>
+                    <div className="adminSaveStatus">
+                      {dirty ? (
+                        <span className="adminDirtyIndicator"><span className="adminDirtyDot" /> Unsaved changes</span>
+                      ) : justSaved ? (
+                        <span className="adminSavedIndicator"><Check size={14} /> Saved</span>
+                      ) : null}
+                    </div>
+                    <button className={`btn primary ${dirty ? '' : 'muted'}`} onClick={() => void handleSave()} disabled={!dirty || !!admin.busyAction}>
+                      {admin.busyAction ? 'Saving…' : 'Save changes'}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {detailTab === 'activity' ? (
+                <div className="adminActivityPanel">
+                  {userActivity.length === 0 ? (
+                    <div className="adminActivityEmpty">
+                      <div className="adminEmptyIcon"><Activity size={20} /></div>
+                      <strong>No activity recorded</strong>
+                      <div className="muted">Sign-ins and account changes for this user will appear here.</div>
+                    </div>
+                  ) : (
+                    <div className="adminActivityList">
+                      {userActivity.map((log) => (
+                        <div key={log.id} className="adminActivityRow">
+                          <span className="adminActivityDot" />
+                          <div className="adminActivityBody">
+                            <strong>{formatAuditAction(log.action)}</strong>
+                            <div className="muted">{renderAuditDetails(log.details)}</div>
+                          </div>
+                          <div className="muted adminActivityTime">{formatLastActive(log.created_at)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+              {detailTab === 'danger' ? (
+                <div className="adminDangerZone">
+                  <div className="adminDangerIntro"><AlertTriangle size={15} /> Destructive actions — proceed with care.</div>
+
+                  <div className="adminDangerRow">
+                    <div className="adminDangerText">
+                      <strong>{selectedUser.is_active ? 'Suspend account' : 'Reactivate account'}</strong>
+                      <div className="muted">{selectedUser.is_active ? 'Immediately blocks this user from signing in.' : 'Restores this user’s access to sign in.'}</div>
+                    </div>
+                    <div className="adminDangerActions">
+                      {confirmAction === 'suspend' ? (
+                        <>
+                          <button className="btn" onClick={() => setConfirmAction(null)}>Cancel</button>
+                          <button
+                            className="btn danger"
+                            disabled={!!admin.busyAction}
+                            onClick={async () => { await admin.updateManagedUser(selectedUser.id, { is_active: !selectedUser.is_active }); setConfirmAction(null) }}
+                          >
+                            {admin.busyAction ? 'Working…' : 'Confirm'}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          className={`btn ${selectedUser.is_active ? 'danger' : 'primary'}`}
+                          disabled={!!admin.busyAction}
+                          onClick={() => selectedUser.is_active ? setConfirmAction('suspend') : void admin.updateManagedUser(selectedUser.id, { is_active: true })}
+                        >
+                          <UserX size={15} /> {selectedUser.is_active ? 'Suspend' : 'Reactivate'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="adminDangerRow">
+                    <div className="adminDangerText">
+                      <strong>Reset password</strong>
+                      <div className="muted">Sends a password reset email to {selectedUser.email}.</div>
+                    </div>
+                    <div className="adminDangerActions">
+                      <button
+                        className="btn"
+                        disabled={admin.busyAction === `reset:${selectedUser.id}`}
+                        onClick={() => void admin.resetManagedUserPassword(selectedUser.id, selectedUser.email)}
+                      >
+                        <KeyRound size={15} /> {admin.busyAction === `reset:${selectedUser.id}` ? 'Sending…' : 'Send reset email'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="adminDangerRow">
+                    <div className="adminDangerText">
+                      <strong>Remove user</strong>
+                      <div className="muted">Permanently deletes this user’s profile and access. This cannot be undone.</div>
+                    </div>
+                    <div className="adminDangerActions">
+                      {confirmAction === 'remove' ? (
+                        <>
+                          <button className="btn" onClick={() => setConfirmAction(null)}>Cancel</button>
+                          <button
+                            className="btn danger"
+                            disabled={!!admin.busyAction}
+                            onClick={async () => { await admin.removeManagedUser(selectedUser.id); setConfirmAction(null) }}
+                          >
+                            {admin.busyAction ? 'Removing…' : 'Confirm remove'}
+                          </button>
+                        </>
+                      ) : (
+                        <button className="btn danger" disabled={!!admin.busyAction} onClick={() => setConfirmAction('remove')}>
+                          <Trash2 size={15} /> Remove user
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : (

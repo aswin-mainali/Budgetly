@@ -553,6 +553,37 @@ export function useBudgetApp(userId: string | null) {
     markCategoryDirty()
   }
 
+  // Return an existing real category id matching `name` (case-insensitive), or
+  // create a new real category and return its id. Used so recurring income
+  // categories are stored as real rows (the category_id column is a uuid FK, so
+  // synthetic ids can't persist).
+  const getOrCreateCategory = (name: string, emoji?: string | null): string | null => {
+    if (!userId) return null
+    const trimmed = name.trim()
+    if (!trimmed) return null
+    const existing = data.categories.find((category) => category.name.trim().toLowerCase() === trimmed.toLowerCase())
+    if (existing) return existing.id
+    const nextSort = (data.categories.reduce((max, category) => Math.max(max, category.sort_order ?? 0), 0) || 0) + 1
+    const id = crypto.randomUUID()
+    persistLocal((current) => ({
+      ...current,
+      categories: [
+        ...current.categories,
+        {
+          id,
+          user_id: userId,
+          name: trimmed,
+          color: categoryColorFor({ id, name: trimmed, color: null }, nextSort),
+          emoji: emoji ?? inferCategoryEmoji(trimmed),
+          budget_monthly: 0,
+          sort_order: nextSort,
+        },
+      ],
+    }))
+    markCategoryDirty()
+    return id
+  }
+
   const deleteCategory = (id: string) => {
     persistLocal((current) => ({
       ...current,
@@ -646,6 +677,75 @@ export function useBudgetApp(userId: string | null) {
     setTxDraft((current) => ({ ...current, date: todayIso(), amount: '', note: '' }))
     markTransactionDirty()
     notify('New transaction added')
+  }
+
+  const createTransaction = (values: { date: string; type: TxType; category_id: string | null; amount: number; note: string | null }): string | null => {
+    if (!userId) return 'You are signed out.'
+    const amount = clampMoney(Number(values.amount))
+    if (!Number.isFinite(amount) || amount <= 0) return 'Enter an amount greater than zero.'
+    if (values.type === 'expense' && !values.category_id) return 'Choose a category for this expense.'
+    const today = todayIso()
+    if (!data.settings.allowTxnInFutureDate && values.date > today) return 'Future-dated transactions are turned off in Settings.'
+
+    const next: Transaction = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      date: values.date,
+      type: values.type,
+      category_id: values.category_id || null,
+      amount,
+      note: values.note?.trim() || null,
+    }
+
+    persistLocal((current) => ({
+      ...current,
+      transactions: [next, ...current.transactions.filter((tx) => tx.id !== next.id)],
+    }))
+    markTransactionDirty()
+    notify('New transaction added')
+    return null
+  }
+
+  const updateTransaction = (id: string, patch: Partial<Pick<Transaction, 'date' | 'type' | 'category_id' | 'amount' | 'note'>>): string | null => {
+    if (!userId) return 'You are signed out.'
+    if (patch.amount != null) {
+      const amount = clampMoney(Number(patch.amount))
+      if (!Number.isFinite(amount) || amount <= 0) return 'Enter an amount greater than zero.'
+      patch = { ...patch, amount }
+    }
+    if (patch.date && !data.settings.allowTxnInFutureDate && patch.date > todayIso()) return 'Future-dated transactions are turned off in Settings.'
+    persistLocal((current) => ({
+      ...current,
+      transactions: current.transactions.map((tx) => (tx.id === id ? { ...tx, ...patch, note: patch.note !== undefined ? (patch.note?.trim() || null) : tx.note } : tx)),
+    }))
+    markTransactionDirty()
+    notify('Transaction updated')
+    return null
+  }
+
+  const duplicateTransaction = (id: string) => {
+    if (!userId) return
+    persistLocal((current) => {
+      const source = current.transactions.find((tx) => tx.id === id)
+      if (!source) return current
+      const copy: Transaction = { ...source, id: crypto.randomUUID(), created_at: undefined, updated_at: undefined }
+      return { ...current, transactions: [copy, ...current.transactions] }
+    })
+    markTransactionDirty()
+    notify('Transaction duplicated')
+  }
+
+  const restoreTransaction = (tx: Transaction) => {
+    if (!userId) return
+    setPendingTxDeletes((current) => current.filter((pendingId) => pendingId !== tx.id))
+    persistLocal((current) => ({
+      ...current,
+      transactions: current.transactions.some((existing) => existing.id === tx.id)
+        ? current.transactions
+        : [tx, ...current.transactions],
+    }))
+    markTransactionDirty()
+    notify('Transaction restored')
   }
 
   const deleteTx = (id: string) => {
@@ -1000,6 +1100,13 @@ export function useBudgetApp(userId: string | null) {
       return false
     }
 
+    // Persist any categories created inline (e.g. income categories) first so the
+    // recurring_items.category_id foreign key resolves. Mirrors saveTransactions.
+    if (categoryDirty) {
+      const categoriesSaved = await saveCategories()
+      if (!categoriesSaved) return false
+    }
+
     const validCategoryIds = new Set(categories.map((category) => category.id))
     const sanitizedRecurring = recurring.map((item) => ({
       id: item.id,
@@ -1130,6 +1237,7 @@ export function useBudgetApp(userId: string | null) {
     sortedGoals,
     upcomingRecurringThisMonth,
     addCategory,
+    getOrCreateCategory,
     updateCategoryField,
     deleteCategory,
     saveCategories,
@@ -1146,6 +1254,10 @@ export function useBudgetApp(userId: string | null) {
     saveGoals,
     goalDirty,
     addTransaction,
+    createTransaction,
+    updateTransaction,
+    duplicateTransaction,
+    restoreTransaction,
     deleteTx,
     saveTransactions,
     transactionDirty,
