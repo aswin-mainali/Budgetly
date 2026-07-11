@@ -1086,7 +1086,7 @@ import {
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -3694,7 +3694,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
                 <h3 style={{ margin: 0 }}>{isCreating ? 'Add Recurring Item' : 'Edit Recurring Item'}</h3>
                 <div className="muted">Create or edit a recurring payment or income.</div>
               </div>
-              <button type="button" className="icon recurringSlideOverClose" onClick={closeForm} aria-label="Close form"><X size={18} /></button>
+              <button type="button" className="icon recurringSlideOverClose" onClick={closeForm} aria-label="Close form"><CloseIcon size={18} /></button>
             </div>
             <div className="recurringSlideOverBody">
               {renderDrawerBody()}
@@ -3709,7 +3709,7 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
           <div className="recurringFiltersSheet" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <div className="recurringSlideOverHeader">
               <h3 style={{ margin: 0 }}>Filters</h3>
-              <button type="button" className="icon recurringSlideOverClose" onClick={() => setIsFiltersOpen(false)} aria-label="Close filters"><X size={18} /></button>
+              <button type="button" className="icon recurringSlideOverClose" onClick={() => setIsFiltersOpen(false)} aria-label="Close filters"><CloseIcon size={18} /></button>
             </div>
             <div className="recurringFiltersSheetBody">
               <label className="recurringFilterField">
@@ -6302,7 +6302,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                           <Copy size={14} /> Copy user ID
                         </button>
                         <button onClick={() => { admin.setSelectedUserId(null); setActionsOpen(false) }}>
-                          <X size={14} /> Close panel
+                          <CloseIcon size={14} /> Close panel
                         </button>
                       </div>
                     </>
