@@ -9136,3 +9136,98 @@ body:not(.light) .logoBadgeDefault{background:linear-gradient(135deg,#1f2937,#33
 .investTrendSummary{margin-top:16px;background:rgba(148,163,184,.1);border-radius:16px;padding:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.investTrendSummary div{padding:0 10px}.investTrendSummary small{color:var(--muted);display:block}.investTrendSummary strong{font-size:30px}
 .investChartTooltip{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 24px rgba(15,23,42,.16);padding:12px 14px;min-width:240px}.investChartTooltipDate{font-weight:700;margin-bottom:8px}.investChartTooltipRow{display:flex;justify-content:space-between;gap:12px;margin:4px 0}.investChartTooltipDivider{height:1px;background:var(--line);margin:8px 0}
 @media (max-width:900px){.investTrendHead{flex-direction:column}.investTrendRanges{flex-wrap:wrap}.investTrendTitle{font-size:26px}.investTrendSummary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ===================== Dashboard redesign (trends & charts) ===================== */
+:root{ --border-strong: rgba(110,152,214,.34); }
+body.light{ --border-strong: rgba(76,101,145,.30); }
+
+/* Tabular figures for every amount on the dashboard so digits align */
+.dashboardView, .mobileDashScreen{ font-variant-numeric: tabular-nums; }
+
+/* Stronger label / value hierarchy on summary cards */
+.dashboardView .kpi > span,
+.mobileDashKpis .mobileRefKpi > span{
+  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);
+}
+.dashboardView .kpi > strong,
+.mobileDashKpis .mobileRefKpi > strong{
+  font-size:24px; font-weight:700; letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+}
+@media (max-width:640px){
+  .mobileDashKpis .mobileRefKpi > strong{ font-size:20px; }
+}
+
+/* Elevation: summary cards read above secondary panels */
+.dashboardView .kpi, .mobileDashKpis .mobileRefKpi{
+  box-shadow:0 10px 22px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.dashboardSecondaryGrid > .card,
+.dashboardView .budgetItemCard{
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+
+/* Net = primary card of the three (emphasized border) */
+.kpi.kpiPrimary{
+  border:1px solid var(--border-strong);
+  box-shadow:0 12px 26px rgba(59,130,246,.16), inset 0 1px 0 rgba(255,255,255,.06);
+}
+body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
+.mobileRefKpi.kpiPrimary{ border:1px solid rgba(37,99,235,.42) !important; }
+
+/* Trend delta chip under each summary value */
+.kpiDelta{
+  display:inline-flex; align-items:center; gap:3px; margin-top:4px;
+  font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; line-height:1.1;
+}
+.kpiDelta svg{ flex:0 0 auto; }
+.kpiDelta.up{ color:#0a8a0a; }
+.kpiDelta.down{ color:#d03b3b; }
+.kpiDelta.neutral{ color:var(--muted); }
+
+/* Budget progress: colored track + status fill + remaining label */
+.budgetItemCard .budgetTopRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.budgetCatLabel{ display:inline-flex; align-items:center; gap:8px; min-width:0; font-size:13px; font-weight:600; color:var(--text); }
+.budgetCatLabel .budgetCatIcon{ display:grid; place-items:center; width:26px; height:26px; border-radius:8px; flex:0 0 auto; }
+.budgetCatLabel .budgetCatName{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.budgetRemaining{ font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
+.budgetRemaining.over{ color:#d03b3b; }
+.progress > div.budgetFill{ border-radius:999px; transition:width .3s ease; }
+
+/* Donut legend for share of spending */
+.donutLegend{ display:grid; grid-template-columns:1fr 1fr; gap:6px 14px; margin-top:12px; }
+.donutLegendRow{ display:flex; align-items:center; gap:8px; min-width:0; font-size:12px; color:var(--text); }
+.donutLegendRow .swatch{ width:10px; height:10px; border-radius:3px; flex:0 0 auto; }
+.donutLegendRow .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.donutLegendRow .pct{ margin-left:auto; color:var(--muted); font-variant-numeric:tabular-nums; }
+.donutCenter{ font-variant-numeric:tabular-nums; }
+
+/* Empty states for charts */
+.chartEmpty{
+  height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; text-align:center; padding:16px;
+}
+.chartEmpty .chartEmptyBox{
+  width:100%; max-width:340px; border:1px dashed var(--border-strong); border-radius:16px;
+  padding:22px 16px; display:flex; flex-direction:column; align-items:center; gap:10px;
+  background:rgba(148,163,184,.04);
+}
+.chartEmpty .chartEmptyText{ color:var(--muted); font-size:13px; max-width:260px; }
+.chartEmptyCta{
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:12px;
+  border:1px solid var(--border-strong); background:var(--accent-soft); color:var(--text);
+  font-size:13px; font-weight:600; cursor:pointer;
+}
+.chartEmptyCta:hover{ filter:brightness(1.05); }
+.donutGhost{ display:grid; place-items:center; height:100%; }
+
+/* Outline category icons in the recurring/upcoming list (replaces emoji) */
+.recurringUpcomingIcon svg{ color:var(--muted); }
+.dashboardView h3, .mobileDashScreen h3{ text-transform:uppercase; letter-spacing:.06em; font-size:12px; }
+
+/* Keep 3-across summary KPIs legible on narrow phones */
+@media (max-width:640px){
+  .mobileDashKpis .mobileRefKpi{ padding:10px; }
+  .mobileDashKpis .mobileRefKpi > strong{ font-size:16px; letter-spacing:-.02em; }
+  .mobileDashKpis .mobileRefKpi > span{ font-size:10px; letter-spacing:.05em; }
+  .mobileDashKpis .kpiDelta{ font-size:10px; gap:2px; }
+}
