@@ -305,6 +305,15 @@ export default function App() {
     if (isMobile) setCollapsed(true)
   }
 
+  // Route a clicked notification (action_target) to the right view / tools section.
+  const handleNotificationNavigate = (target: string) => {
+    if (target === 'goals') { setToolsSection('goals'); handleViewChange('tools'); return }
+    if (target === 'utilities/investments') { setToolsSection('investments'); handleViewChange('tools'); return }
+    if (target === 'utilities/reports') { setToolsSection('reports'); handleViewChange('tools'); return }
+    const direct = ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'settings', 'support'] as const
+    if ((direct as readonly string[]).includes(target)) handleViewChange(target as ViewKey)
+  }
+
   const isEditableTarget = (target: EventTarget | null) => {
     const node = target as HTMLElement | null
     if (!node) return false
@@ -491,7 +500,7 @@ export default function App() {
           </header>
         ) : null}
 
-        {view === 'dashboard' && admin.visibleFeatures.dashboard ? <DashboardView budget={budget} theme={theme} onOpenTransactionsByType={handleOpenTransactionsByType} email={email} userId={userId} /> : null}
+        {view === 'dashboard' && admin.visibleFeatures.dashboard ? <DashboardView budget={budget} theme={theme} onOpenTransactionsByType={handleOpenTransactionsByType} onNavigate={handleNotificationNavigate} email={email} userId={userId} /> : null}
         {view === 'transactions' && admin.visibleFeatures.transactions ? <TransactionsView budget={budget} /> : null}
         {view === 'categories' && admin.visibleFeatures.categories ? <CategoriesView budget={budget} /> : null}
         {view === 'recurring' && admin.visibleFeatures.recurring ? <RecurringView budget={budget} /> : null}

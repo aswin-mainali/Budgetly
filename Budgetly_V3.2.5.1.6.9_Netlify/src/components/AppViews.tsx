@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, Bell, CalendarDays, ChevronDown, ChevronUp, FileText, LineChart, Settings, Tag, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Bell, BellOff, CalendarDays, ChevronDown, ChevronUp, Clock, FileText, LineChart, Settings, Tag, Target, TrendingUp, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction, RecurringItem } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -8,7 +8,8 @@ import { downloadPdfFromJpeg } from '../lib/utils'
 import { colorForCategory, budgetStatusColor } from '../lib/categoryColors'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
-import { clearReadNotifications, generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
+import { clearReadNotifications, generateAllNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, meetsPriorityThreshold, muteNotification, snoozeNotification, type BudgetlyNotification, type NotificationPriority, updateNotificationPreferences } from '../services/notificationService'
+import { disablePush, enablePush, getPushPermission, isPushEnabled, pushSupported } from '../services/pushNotifications'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -1196,6 +1197,7 @@ type SharedProps = {
   onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
+  onNavigate?: (target: string) => void
 }
 
 
@@ -1658,7 +1660,7 @@ function loadTawkWidget() {
 }
 
 
-export function DashboardView({ budget, theme, onOpenTransactionsByType, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'email' | 'userId'>) {
+export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavigate, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'onNavigate' | 'email' | 'userId'>) {
   const { data, months, activeMonth, setActiveMonth, income, expenses, net, prevIncome, prevExpenses, prevNet, categoryColorMap, byCategory, daily, monthlyTrend, sortedCategories, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
@@ -1684,6 +1686,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
   const [recurringPage, setRecurringPage] = useState(1)
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState<BudgetlyNotification[]>([])
+  const [notifPrefs, setNotifPrefs] = useState<{ min_priority: NotificationPriority } | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const bellRef = useRef<HTMLButtonElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const profile = readCachedUserProfile()
@@ -1700,14 +1704,9 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     if (!userId) return
     const boot = async () => {
       try {
-        if (import.meta.env.DEV) console.log('Generating notifications for user:', userId)
         const prefs = await getNotificationPreferences(userId)
-        if (prefs.bills_recurring) await generateRecurringNotifications(userId)
-        if (prefs.budgets) await generateBudgetNotifications(userId)
-        if (prefs.subscriptions) await generateSubscriptionNotifications(userId)
-        if (prefs.goals) await generateGoalNotifications(userId)
-        if (prefs.investments) await generateInvestmentNotifications(userId)
-        if (prefs.monthly_reports) await generateMonthlyReportNotifications(userId)
+        setNotifPrefs({ min_priority: prefs.min_priority })
+        await generateAllNotifications(userId)
         const loaded = await getNotifications(userId)
         if (import.meta.env.DEV) console.log('Notifications loaded:', loaded.length)
         setNotifications(loaded)
@@ -1718,6 +1717,28 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     }
     void boot()
   }, [userId])
+  // Live updates: refresh the bell whenever a row changes for this user (server-side
+  // generation, another tab, push-triggered inserts) without needing a reload.
+  useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
+        void getNotifications(userId).then(setNotifications)
+      })
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [userId])
+  // Deep-link from a clicked system/push notification into the right view.
+  useEffect(() => {
+    const onSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'budgetly:notification-click' && event.data?.url) {
+        try { const u = new URL(event.data.url, window.location.origin); const target = u.searchParams.get('view'); if (target) onNavigate?.(target) } catch { /* ignore */ }
+      }
+    }
+    navigator.serviceWorker?.addEventListener('message', onSwMessage)
+    return () => navigator.serviceWorker?.removeEventListener('message', onSwMessage)
+  }, [onNavigate])
   useEffect(() => {
     const onDown = (event: MouseEvent) => {
       if (!notifOpen) return
@@ -1762,39 +1783,75 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
   }
   const getNotificationIcon = (item: BudgetlyNotification) => {
     const key = `${item.category}:${item.type}`.toLowerCase()
+    if (key.includes('anomaly')) return { icon: AlertTriangle, className: 'notifIcon budget' }
     if (key.includes('bills_recurring') || key.includes('recurring')) return { icon: CalendarDays, className: 'notifIcon recurring' }
     if (key.includes('subscription')) return { icon: Tag, className: 'notifIcon subscription' }
-    if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
+    if (key.includes('goal')) return { icon: Target, className: 'notifIcon goals' }
+    if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('forecast') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
+    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
     if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
     if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
-    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
     if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
     return { icon: Bell, className: 'notifIcon system' }
   }
-  const renderNotificationPanel = () => (
-    <div ref={panelRef} className="notification-popover">
-      <div className="notifHeader">
-        <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
-        <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
+  const refreshNotifications = async () => { if (userId) setNotifications(await getNotifications(userId)) }
+  const openNotification = async (item: BudgetlyNotification) => {
+    if (item.status === 'unread') await markNotificationAsRead(item.id)
+    await refreshNotifications()
+    if (item.action_target) { onNavigate?.(item.action_target); setNotifOpen(false) }
+  }
+  const renderNotifRow = (item: BudgetlyNotification, highlight: boolean, groupCount = 0, onExpand?: () => void) => {
+    const meta = getNotificationIcon(item)
+    const Icon = meta.icon
+    return (
+      <div key={item.id} className={`notifRow ${item.status === 'unread' && highlight ? 'unreadHighlight' : ''} ${item.priority === 'high' || item.priority === 'critical' ? 'notifRowUrgent' : ''}`}>
+        <button type="button" className="notifRowMain" onClick={() => void openNotification(item)}>
+          <span className={meta.className}><Icon size={23} /></span>
+          <span className="notifContent">
+            <span className="notifTitle">{item.title}{groupCount > 1 ? <span className="notifGroupCount">{groupCount}</span> : null}</span>
+            <span className="notifSubtitle">{item.message}</span>
+            {groupCount > 1 ? <button type="button" className="notifShowMore" onClick={(e) => { e.stopPropagation(); onExpand?.() }}>Show {groupCount - 1} more</button> : null}
+          </span>
+          <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
+        </button>
+        <div className="notifRowActions">
+          <button type="button" className="notifActionBtn" title="Snooze 24h" aria-label="Snooze for 24 hours" onClick={async () => { if (userId) { await snoozeNotification(userId, item, 24); await refreshNotifications() } }}><Clock size={15} /></button>
+          <button type="button" className="notifActionBtn" title="Mute this type" aria-label="Mute this type of notification" onClick={async () => { if (userId) { await muteNotification(userId, item, 'type'); await refreshNotifications() } }}><BellOff size={15} /></button>
+          <button type="button" className="notifActionBtn" title="Dismiss" aria-label="Dismiss" onClick={async () => { await markNotificationAsRead(item.id); await refreshNotifications() }}><X size={15} /></button>
+        </div>
       </div>
-      <div className="notifList notification-mobile-list">
-        {uniqueNotifications.map((item, index) => {
-          const meta = getNotificationIcon(item)
-          const Icon = meta.icon
-          return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
-            <span className={meta.className}><Icon size={23} /></span>
-            <span className="notifContent">
-              <span className="notifTitle">{item.title}</span>
-              <span className="notifSubtitle">{item.message}</span>
-            </span>
-            <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
-          </button>
-        })}
-        {uniqueNotifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+    )
+  }
+  const renderNotificationPanel = () => {
+    // Collapse related alerts (same group_key) into a single expandable thread.
+    const groups: Array<{ key: string; items: BudgetlyNotification[] }> = []
+    const groupIndex = new Map<string, number>()
+    for (const n of uniqueNotifications) {
+      if (notifPrefs && !meetsPriorityThreshold(n.priority ?? 'normal', notifPrefs.min_priority)) continue
+      const gk = n.group_key || `single-${n.id}`
+      if (groupIndex.has(gk)) groups[groupIndex.get(gk)!].items.push(n)
+      else { groupIndex.set(gk, groups.length); groups.push({ key: gk, items: [n] }) }
+    }
+    return (
+      <div ref={panelRef} className="notification-popover">
+        <div className="notifHeader">
+          <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
+          <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); await refreshNotifications() }}>Mark all as read</button>
+        </div>
+        <div className="notifList notification-mobile-list">
+          {groups.map((group, index) => {
+            const expanded = expandedGroups.has(group.key)
+            const primary = group.items[0]
+            const rows = [renderNotifRow(primary, index === 0, expanded ? 0 : group.items.length, () => setExpandedGroups((prev) => new Set(prev).add(group.key)))]
+            if (expanded) for (const extra of group.items.slice(1)) rows.push(renderNotifRow(extra, false))
+            return rows
+          })}
+          {groups.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+        </div>
+        <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); await refreshNotifications() }}>Clear read notifications</button>
       </div>
-      <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); setNotifications(await getNotifications(userId)) }}>Clear read notifications</button>
-    </div>
-  )
+    )
+  }
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -4579,7 +4636,31 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
   const [notificationPrefs, setNotificationPrefs] = useState({ bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true })
   const [notificationsExpanded, setNotificationsExpanded] = useState(false)
-  useEffect(() => { if (!userId) return; void getNotificationPreferences(userId).then((prefs) => setNotificationPrefs(prefs)) }, [userId])
+  const [notifDelivery, setNotifDelivery] = useState({ channel_push: false, channel_email: false, quiet_hours_enabled: false, quiet_hours_start: 22, quiet_hours_end: 7, email_digest_frequency: 'weekly' as 'off' | 'daily' | 'weekly', min_priority: 'low' as NotificationPriority })
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushReady, setPushReady] = useState(false)
+  useEffect(() => { if (!userId) return; void getNotificationPreferences(userId).then((prefs) => { setNotificationPrefs(prefs); setNotifDelivery({ channel_push: prefs.channel_push, channel_email: prefs.channel_email, quiet_hours_enabled: prefs.quiet_hours_enabled, quiet_hours_start: prefs.quiet_hours_start, quiet_hours_end: prefs.quiet_hours_end, email_digest_frequency: prefs.email_digest_frequency, min_priority: prefs.min_priority }) }) }, [userId])
+  useEffect(() => { if (!pushSupported()) return; void isPushEnabled().then(setPushReady) }, [])
+  const saveNotifDelivery = async (patch: Partial<typeof notifDelivery>) => {
+    if (!userId) return
+    const next = { ...notifDelivery, ...patch }
+    setNotifDelivery(next)
+    await updateNotificationPreferences(userId, patch)
+  }
+  const togglePush = async () => {
+    if (!userId || pushBusy) return
+    setPushBusy(true)
+    try {
+      if (pushReady) { await disablePush(userId); setPushReady(false); setNotifDelivery((p) => ({ ...p, channel_push: false })) }
+      else {
+        const res = await enablePush(userId)
+        if (res.ok) { setPushReady(true); setNotifDelivery((p) => ({ ...p, channel_push: true })) }
+        else if (typeof window !== 'undefined') window.alert(res.reason === 'denied' ? 'Notifications are blocked in your browser settings.' : res.reason === 'missing_vapid_key' ? 'Push is not configured yet (missing VAPID key).' : 'Could not enable push notifications.')
+      }
+    } finally { setPushBusy(false) }
+  }
+  const hourOptions = Array.from({ length: 24 }, (_, h) => h)
+  const fmtHour = (h: number) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`
   const notificationItems: Array<{ key: keyof typeof notificationPrefs; label: string; description: string }> = [
     { key: 'bills_recurring', label: 'Bills & Recurring', description: 'Upcoming bills, recurring income, and recurring expenses.' },
     { key: 'budgets', label: 'Budgets', description: 'Budget usage, warnings, and exceeded limits.' },
@@ -5006,6 +5087,95 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                       </button>
                     </div>
                   ))}
+
+                  <div className="settingsNotifDivider">Delivery</div>
+
+                  <div className="settingsNotifRow">
+                    <div>
+                      <div className="settingsNotifLabel">Push notifications</div>
+                      <small>{pushSupported() ? (getPushPermission() === 'denied' ? 'Blocked in your browser settings.' : 'Get alerts on this device even when Budgetly is closed.') : 'Not supported on this browser.'}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className={`settingsSwitch ${pushReady ? 'on' : ''}`}
+                      role="switch"
+                      aria-checked={pushReady}
+                      aria-label="Toggle push notifications"
+                      disabled={!pushSupported() || pushBusy || getPushPermission() === 'denied'}
+                      onClick={togglePush}
+                    >
+                      <span className="settingsSwitchKnob" />
+                    </button>
+                  </div>
+
+                  <div className="settingsNotifRow">
+                    <div>
+                      <div className="settingsNotifLabel">Email digest</div>
+                      <small>Periodic summary of your alerts by email.</small>
+                    </div>
+                    <button
+                      type="button"
+                      className={`settingsSwitch ${notifDelivery.channel_email ? 'on' : ''}`}
+                      role="switch"
+                      aria-checked={notifDelivery.channel_email}
+                      aria-label="Toggle email digest"
+                      onClick={() => void saveNotifDelivery({ channel_email: !notifDelivery.channel_email })}
+                    >
+                      <span className="settingsSwitchKnob" />
+                    </button>
+                  </div>
+                  {notifDelivery.channel_email ? (
+                    <div className="settingsNotifRow">
+                      <div><div className="settingsNotifLabel">Digest frequency</div><small>How often to send the summary email.</small></div>
+                      <select className="settingsNotifSelect" value={notifDelivery.email_digest_frequency} onChange={(e) => void saveNotifDelivery({ email_digest_frequency: e.target.value as 'off' | 'daily' | 'weekly' })}>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="off">Off</option>
+                      </select>
+                    </div>
+                  ) : null}
+
+                  <div className="settingsNotifDivider">Preferences</div>
+
+                  <div className="settingsNotifRow">
+                    <div>
+                      <div className="settingsNotifLabel">Quiet hours</div>
+                      <small>Pause push notifications during set hours.</small>
+                    </div>
+                    <button
+                      type="button"
+                      className={`settingsSwitch ${notifDelivery.quiet_hours_enabled ? 'on' : ''}`}
+                      role="switch"
+                      aria-checked={notifDelivery.quiet_hours_enabled}
+                      aria-label="Toggle quiet hours"
+                      onClick={() => void saveNotifDelivery({ quiet_hours_enabled: !notifDelivery.quiet_hours_enabled })}
+                    >
+                      <span className="settingsSwitchKnob" />
+                    </button>
+                  </div>
+                  {notifDelivery.quiet_hours_enabled ? (
+                    <div className="settingsNotifRow">
+                      <div><div className="settingsNotifLabel">From / to</div><small>No push alerts between these times.</small></div>
+                      <div className="row" style={{ gap: 8 }}>
+                        <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_start} onChange={(e) => void saveNotifDelivery({ quiet_hours_start: Number(e.target.value) })}>
+                          {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
+                        </select>
+                        <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_end} onChange={(e) => void saveNotifDelivery({ quiet_hours_end: Number(e.target.value) })}>
+                          {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="settingsNotifRow">
+                    <div><div className="settingsNotifLabel">Minimum importance</div><small>Only show alerts at or above this level.</small></div>
+                    <select className="settingsNotifSelect" value={notifDelivery.min_priority} onChange={(e) => void saveNotifDelivery({ min_priority: e.target.value as NotificationPriority })}>
+                      <option value="low">Everything</option>
+                      <option value="normal">Normal &amp; up</option>
+                      <option value="high">Important only</option>
+                      <option value="critical">Critical only</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
