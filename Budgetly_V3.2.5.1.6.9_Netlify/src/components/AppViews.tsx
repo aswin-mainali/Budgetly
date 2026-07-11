@@ -2577,6 +2577,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [goalEmojiAuto, setGoalEmojiAuto] = useState(true)
   const [goalModalError, setGoalModalError] = useState('')
   const [modalQuickAmount, setModalQuickAmount] = useState('')
+  const isPhone = useIsPhone()
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
   const currency = data.currency
@@ -2927,43 +2928,52 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         onCancel={() => setPendingDeleteId(null)}
       />
 
-      {goalModalMode ? (
-        <div className="deleteConfirmBackdrop" role="presentation">
-          <div className="card goalEditorModal" role="dialog" aria-modal="true">
-            <h3>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
-            {goalModalError ? <div className="goalModalError">{goalModalError}</div> : null}
-            <div className="goalEditorGrid">
-              <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
-                const nextName = event.target.value
-                setGoalDraft((current) => ({ ...current, name: nextName, emoji: goalModalMode === 'add' && goalEmojiAuto ? inferGoalEmojiFromName(nextName) : current.emoji }))
-              }} /></div>
-              <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => {
-                setGoalEmojiAuto(false)
-                setGoalDraft((current) => ({ ...current, emoji: event.target.value }))
-              }}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
-              <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
-              <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
-              <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
-              <div><small>Quick amount</small><div className="goalQuickAddRow"><input className="input" inputMode="decimal" placeholder="0.00" value={modalQuickAmount} onChange={(event) => setModalQuickAmount(event.target.value)} /><button className="btn" onClick={() => {
-                const amount = Number(modalQuickAmount)
-                if (!Number.isFinite(amount) || amount <= 0) return
-                setGoalDraft((current) => {
-                  const currentAmount = Number(current.current_amount || 0)
-                  const targetAmount = Number(current.target_amount || 0)
-                  const next = currentAmount + amount
-                  const safe = Number.isFinite(targetAmount) && targetAmount > 0 ? Math.min(next, targetAmount) : next
-                  return { ...current, current_amount: String(Number(safe.toFixed(2))) }
-                })
-                setModalQuickAmount('')
-              }}>+ Add</button></div></div>
-              <div className="goalEditorFull"><small>Note</small><textarea className="input" rows={3} value={goalDraft.note} onChange={(event) => setGoalDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+      {goalModalMode ? createPortal(
+        <div className={`recurringDrawerBackdrop ${isPhone ? 'asModalBackdrop' : ''}`} role="presentation" onClick={closeGoalModal}>
+          <div className={`recurringSlideOver goalSlideOver ${isPhone ? 'asModal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="recurringSlideOverHeader">
+              <div>
+                <h3 style={{ margin: 0 }}>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
+                <div className="muted">{goalModalMode === 'add' ? 'Set a target and start saving toward it.' : 'Update this goal’s details.'}</div>
+              </div>
+              <button type="button" className="icon recurringSlideOverClose" onClick={closeGoalModal} aria-label="Close form"><CloseIcon size={18} /></button>
             </div>
-            <div className="goalInlineEditorActions">
-              <button className="btn" onClick={closeGoalModal}>Cancel</button>
-              <button className="btn primary" onClick={() => void saveGoalModal()}>Save Goal</button>
+            <div className="recurringSlideOverBody">
+              {goalModalError ? <div className="goalModalError">{goalModalError}</div> : null}
+              <div className="goalEditorGrid">
+                <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
+                  const nextName = event.target.value
+                  setGoalDraft((current) => ({ ...current, name: nextName, emoji: goalModalMode === 'add' && goalEmojiAuto ? inferGoalEmojiFromName(nextName) : current.emoji }))
+                }} /></div>
+                <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => {
+                  setGoalEmojiAuto(false)
+                  setGoalDraft((current) => ({ ...current, emoji: event.target.value }))
+                }}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
+                <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
+                <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
+                <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
+                <div><small>Quick amount</small><div className="goalQuickAddRow"><input className="input" inputMode="decimal" placeholder="0.00" value={modalQuickAmount} onChange={(event) => setModalQuickAmount(event.target.value)} /><button className="btn" onClick={() => {
+                  const amount = Number(modalQuickAmount)
+                  if (!Number.isFinite(amount) || amount <= 0) return
+                  setGoalDraft((current) => {
+                    const currentAmount = Number(current.current_amount || 0)
+                    const targetAmount = Number(current.target_amount || 0)
+                    const next = currentAmount + amount
+                    const safe = Number.isFinite(targetAmount) && targetAmount > 0 ? Math.min(next, targetAmount) : next
+                    return { ...current, current_amount: String(Number(safe.toFixed(2))) }
+                  })
+                  setModalQuickAmount('')
+                }}>+ Add</button></div></div>
+                <div className="goalEditorFull"><small>Note</small><textarea className="input" rows={3} value={goalDraft.note} onChange={(event) => setGoalDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+              </div>
+              <div className="row between recurringDrawerActions goalDrawerActions">
+                <button className="btn" onClick={closeGoalModal}>Cancel</button>
+                <button className="btn primary" onClick={() => void saveGoalModal()}>Save Goal</button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   )

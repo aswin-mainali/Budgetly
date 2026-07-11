@@ -8104,6 +8104,11 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 /* Pager (only appears for large goal counts) */
 .goalsPager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:4px}
 
+/* Add/Edit goal drawer (shares the recurring slide-over system) */
+.goalSlideOver .goalEditorGrid{margin-top:14px}
+.goalSlideOver .goalModalError{margin-top:14px}
+.goalSlideOver .goalDrawerActions{margin-top:auto;padding-top:14px}
+
 .goalsGrid .goalMenuPanel{right:36px;min-width:150px}
 
 @media (max-width: 1200px){
