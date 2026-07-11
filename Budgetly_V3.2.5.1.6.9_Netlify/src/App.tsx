@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell } from 'lucide-react'
+import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Search, Copy, Trash2, Pencil } from 'lucide-react'
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
+import { monthKey } from './lib/utils'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
@@ -317,6 +318,132 @@ export default function App() {
     return saved || 'Ctrl + Shift + Space'
   }
 
+  // Live records (transactions, categories, goals, recurring) surfaced in the command palette.
+  const dataCommandItems = useMemo<CommandItem[]>(() => {
+    const currency = budget.data.currency || 'CAD'
+    const money = (n: number) => budget.helpers.fmtMoney(n, currency)
+    const categoryName = (id: string | null) => (id ? budget.catsById.get(id)?.name ?? 'Uncategorized' : 'Uncategorized')
+    const formatDate = (iso: string) => {
+      const parsed = new Date(`${iso}T00:00:00`)
+      return Number.isNaN(parsed.getTime()) ? iso : parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    }
+    const items: CommandItem[] = []
+
+    if (admin.visibleFeatures.transactions) {
+      budget.data.transactions.forEach((tx) => {
+        const category = categoryName(tx.category_id)
+        const note = (tx.note ?? '').trim()
+        const label = note || category || (tx.type === 'income' ? 'Income' : 'Expense')
+        const sign = tx.type === 'income' ? '+' : '-'
+        items.push({
+          id: `tx-${tx.id}`,
+          group: 'transactions',
+          type: 'transaction',
+          label,
+          description: `${category} • ${formatDate(tx.date)}`,
+          keywords: [category, tx.type, tx.date, note, String(tx.amount)].filter(Boolean) as string[],
+          meta: `${sign}${money(tx.amount)}`,
+          iconClassName: tx.type === 'income' ? 'green' : 'indigo',
+          icon: <ListChecks size={16} />,
+          onSelect: () => {
+            budget.setTxType('all')
+            budget.setTxActiveMonth(monthKey(tx.date))
+            budget.setTxSearch(note || category)
+            handleViewChange('transactions')
+          },
+          subActions: [
+            { id: 'edit', label: 'Edit transaction', icon: <Pencil size={14} />, onSelect: () => { handleViewChange('transactions'); window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:edit-transaction', { detail: { id: tx.id } })), 0) } },
+            { id: 'duplicate', label: 'Duplicate', icon: <Copy size={14} />, onSelect: () => budget.duplicateTransaction(tx.id) },
+            { id: 'delete', label: 'Delete transaction', icon: <Trash2 size={14} />, destructive: true, onSelect: () => { handleViewChange('transactions'); window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:delete-transaction', { detail: { id: tx.id } })), 0) } },
+          ],
+        })
+      })
+    }
+
+    if (admin.visibleFeatures.categories) {
+      budget.data.categories.forEach((category) => {
+        items.push({
+          id: `cat-${category.id}`,
+          group: 'categories',
+          type: 'category',
+          label: `${category.emoji ? `${category.emoji} ` : ''}${category.name}`,
+          description: category.budget_monthly ? `Monthly budget ${money(category.budget_monthly)}` : 'Budget category',
+          keywords: [category.name, 'category', 'budget'],
+          meta: category.budget_monthly ? money(category.budget_monthly) : undefined,
+          iconClassName: 'green',
+          icon: <Tags size={16} />,
+          onSelect: () => handleViewChange('categories'),
+        })
+      })
+    }
+
+    if (admin.visibleFeatures.goals) {
+      budget.data.goals.forEach((goal) => {
+        const pct = goal.target_amount > 0 ? Math.round((goal.current_amount / goal.target_amount) * 100) : 0
+        items.push({
+          id: `goal-${goal.id}`,
+          group: 'goals',
+          type: 'goal',
+          label: `${goal.emoji ? `${goal.emoji} ` : ''}${goal.name}`,
+          description: `${money(goal.current_amount)} of ${money(goal.target_amount)} • ${pct}% saved`,
+          keywords: [goal.name, 'goal', 'savings', 'target'],
+          meta: `${pct}%`,
+          iconClassName: 'gold',
+          icon: <Target size={16} />,
+          onSelect: () => { setToolsSection('goals'); handleViewChange('tools') },
+        })
+      })
+    }
+
+    if (admin.visibleFeatures.recurring) {
+      budget.data.recurring.forEach((item) => {
+        items.push({
+          id: `rec-${item.id}`,
+          group: 'recurring',
+          type: 'recurring',
+          label: item.name,
+          description: `${item.recurrence_type} • ${money(item.amount)}`,
+          keywords: [item.name, 'recurring', item.recurrence_type, item.kind ?? 'expense'],
+          meta: money(item.amount),
+          iconClassName: 'blue',
+          icon: <Repeat size={16} />,
+          onSelect: () => handleViewChange('recurring'),
+        })
+      })
+    }
+
+    return items
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budget.data.transactions, budget.data.categories, budget.data.goals, budget.data.recurring, budget.data.currency, budget.catsById, admin.visibleFeatures])
+
+  const parseQuickAdd = (raw: string): CommandItem | null => {
+    if (!admin.visibleFeatures.transactions) return null
+    const text = raw.trim()
+    const amountMatch = text.match(/(?:^|\s)\$?(\d+(?:[.,]\d{1,2})?)(?=\s|$)/)
+    if (!amountMatch) return null
+    const amount = parseFloat(amountMatch[1].replace(',', '.'))
+    if (!Number.isFinite(amount) || amount <= 0) return null
+    const description = text.replace(amountMatch[0], ' ').replace(/\$/g, '').replace(/\s+/g, ' ').trim()
+    const isIncome = /\b(income|salary|paid|payday|deposit|refund|bonus)\b/i.test(description)
+    const money = budget.helpers.fmtMoney(amount, budget.data.currency || 'CAD')
+    return {
+      id: 'quickadd-transaction',
+      group: 'actions',
+      type: 'action',
+      label: `Add ${isIncome ? 'income' : 'expense'}: ${money}${description ? ` — ${description}` : ''}`,
+      description: 'Create a transaction pre-filled from your search',
+      keywords: ['add', 'quick', 'new', 'transaction'],
+      iconClassName: 'indigo',
+      icon: <Plus size={16} />,
+      onSelect: () => {
+        handleViewChange('transactions')
+        window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:focus-add-transaction', {
+          detail: { amount: String(amount), note: description, type: isIncome ? 'income' : 'expense' },
+        })), 0)
+      },
+    }
+  }
+
   const formatShortcutFromEvent = (event: KeyboardEvent) => {
     const key = event.key
     const normalizedKey = key.length === 1 ? key.toUpperCase() : key
@@ -420,7 +547,7 @@ export default function App() {
     showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled')
   }
 
-  const commandItems: CommandItem[] = [
+  const staticCommandItems: Array<Omit<CommandItem, 'group'>> = [
     { id: 'page-dashboard', type: 'page', label: 'Dashboard', description: 'View your financial overview and key insights', keywords: ['home', 'overview', 'summary'], onSelect: () => handleViewChange('dashboard'), iconClassName: 'violet', icon: <BarChart3 size={16} /> },
     { id: 'page-transactions', type: 'page', label: 'Transactions', description: 'View and manage your transactions', keywords: ['transactions', 'income', 'expense'], onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
     { id: 'page-categories', type: 'page', label: 'Categories', description: 'Manage your budget categories', keywords: ['budget', 'tags', 'category'], onSelect: () => handleViewChange('categories'), iconClassName: 'green', icon: <Tags size={16} /> },
@@ -436,18 +563,22 @@ export default function App() {
     { id: 'action-open-settings', type: 'action', label: 'Open settings', description: 'Manage account and app preferences', keywords: ['settings', 'preferences', 'account', 'general'], onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
     { id: 'action-go-this-month', type: 'action', label: 'Go to this month', description: 'Return Budgetly views to the current month', keywords: ['this month', 'current month', 'today', 'reset month'], onSelect: () => { handleViewChange('dashboard'); window.dispatchEvent(new CustomEvent('budgetly:go-to-current-month')) }, iconClassName: 'violet', icon: <CalendarDays size={16} /> },
     { id: 'action-view-goals', type: 'action', label: 'View goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
-  ].filter((item) => {
-    if (item.id.includes('dashboard')) return admin.visibleFeatures.dashboard
-    if (item.id.includes('transactions') || item.id.includes('add-transaction')) return admin.visibleFeatures.transactions
-    if (item.id.includes('categories')) return admin.visibleFeatures.categories
-    if (item.id.includes('recurring')) return admin.visibleFeatures.recurring
-    if (item.id.includes('advice')) return admin.visibleFeatures.advice
-    if (item.id.includes('goals') || item.id.includes('view-goals')) return admin.visibleFeatures.goals
-    if (item.id.includes('reports') || item.id.includes('export-report')) return admin.visibleFeatures.reports
-    if (item.id.includes('settings') || item.id.includes('theme-toggle')) return admin.visibleFeatures.settings
-    if (item.id.includes('support')) return admin.visibleFeatures.support
-    return true
-  })
+  ]
+  const commandItems: CommandItem[] = staticCommandItems
+    .filter((item) => {
+      if (item.id.includes('dashboard')) return admin.visibleFeatures.dashboard
+      if (item.id.includes('transactions') || item.id.includes('add-transaction')) return admin.visibleFeatures.transactions
+      if (item.id.includes('categories')) return admin.visibleFeatures.categories
+      if (item.id.includes('recurring')) return admin.visibleFeatures.recurring
+      if (item.id.includes('advice')) return admin.visibleFeatures.advice
+      if (item.id.includes('goals') || item.id.includes('view-goals')) return admin.visibleFeatures.goals
+      if (item.id.includes('reports') || item.id.includes('export-report')) return admin.visibleFeatures.reports
+      if (item.id.includes('settings') || item.id.includes('theme-toggle')) return admin.visibleFeatures.settings
+      if (item.id.includes('support')) return admin.visibleFeatures.support
+      return true
+    })
+    .map((item) => ({ ...item, group: item.type === 'page' ? 'pages' : 'actions' }) as CommandItem)
+    .concat(dataCommandItems)
 
   return (
     <div className="container appWrap">
@@ -479,6 +610,9 @@ export default function App() {
             <div className="mobileWordmark">
               <strong>Hi, {profileName} 👋</strong><small>{timeGreeting}</small>
             </div>
+            <button className="mobileIconBtn mobileSearchBtn" onClick={() => setUniversalSearchOpen(true)} aria-label="Open search">
+              <Search size={20} />
+            </button>
             {view === 'dashboard' ? (
               <button className="notifBellBtn mobileTopNotifBell" onClick={() => window.dispatchEvent(new Event('budgetly:toggle-notif-panel'))} aria-label="Open notifications">
                 <Bell size={19} />
@@ -552,7 +686,7 @@ export default function App() {
           </div>
         </div>
       ) : null}
-      <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} />
+      <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} shortcutLabel={getUniversalSearchShortcut()} quickAdd={parseQuickAdd} />
     </div>
   )
 }
