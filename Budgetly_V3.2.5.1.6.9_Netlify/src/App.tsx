@@ -6,7 +6,7 @@ import { supabase } from './lib/supabase'
 import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
-import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
+import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView, type AdviceNavTarget } from './components/AppViews'
 import { InvestmentsView } from './components/InvestmentsView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
@@ -403,6 +403,23 @@ export default function App() {
   const timeGreeting = getTimeGreeting()
   const profileImage = profile.image
 
+  const handleAdviceNavigate = (target: AdviceNavTarget) => {
+    if (target.view === 'goals') {
+      setToolsSection('goals')
+      handleViewChange('tools')
+      return
+    }
+    if (target.view === 'transactions') {
+      if (target.txType) {
+        budget.setTxType(target.txType)
+        budget.setTxSearch('')
+      }
+      handleViewChange('transactions')
+      return
+    }
+    handleViewChange(target.view as ViewKey)
+  }
+
   const handleOpenTransactionsByType = (type: 'income' | 'expense') => {
     budget.setTxType(type)
     budget.setTxSearch('')
@@ -495,7 +512,7 @@ export default function App() {
         {view === 'transactions' && admin.visibleFeatures.transactions ? <TransactionsView budget={budget} /> : null}
         {view === 'categories' && admin.visibleFeatures.categories ? <CategoriesView budget={budget} /> : null}
         {view === 'recurring' && admin.visibleFeatures.recurring ? <RecurringView budget={budget} /> : null}
-        {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} /> : null}
+        {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} userId={userId} onNavigate={handleAdviceNavigate} /> : null}
         {(view === 'tools' || view === 'utilities_hub') ? (
           view === 'utilities_hub' ? (
             <section className="mobileUtilitiesHub">

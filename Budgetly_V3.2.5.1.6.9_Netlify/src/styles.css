@@ -9231,3 +9231,186 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
   .mobileDashKpis .mobileRefKpi > span{ font-size:10px; letter-spacing:.05em; }
   .mobileDashKpis .kpiDelta{ font-size:10px; gap:2px; }
 }
+
+
+/* =====================================================================
+   Advice page v3.3 — financial health score, prioritized insight cards,
+   and the action-capable assistant. Uses shared design tokens.
+   ===================================================================== */
+
+.advicePagePro2 { display: grid; gap: 16px; }
+.advicePagePro2 .adviceHeader h2 { margin: 0 0 6px; }
+
+/* ---- Financial health score ---- */
+.healthCard { background: linear-gradient(135deg, rgba(33,201,122,.10), rgba(37,99,235,.08)); }
+.healthCardInner { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; }
+.healthDonut { position: relative; flex-shrink: 0; }
+.healthDonutCenter {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.healthDonutCenter strong { font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+.healthDonutCenter span { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+.healthMeta { display: grid; gap: 12px; min-width: 0; }
+.healthTopRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.healthLabel { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.healthBand { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+.healthBand.good { color: #21c97a; }
+.healthBand.caution { color: #f59e0b; }
+.healthBand.warn { color: #ef4444; }
+.healthDelta {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap;
+}
+.healthDelta.up { color: #21c97a; border-color: rgba(33,201,122,.4); background: rgba(33,201,122,.12); }
+.healthDelta.down { color: #ef4444; border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.10); }
+.healthDelta.flat { color: var(--muted); }
+.healthTrendNote { margin: 0; color: var(--text); line-height: 1.55; font-size: .96rem; }
+
+.healthComponents { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 20px; margin-top: 2px; }
+.healthComponent { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.healthComponentLabel { font-size: 12px; color: var(--muted); }
+.healthComponentValue { font-size: 13px; font-weight: 700; text-align: right; }
+.healthComponentBar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: rgba(148,163,184,.16); overflow: hidden; }
+.healthComponentBar > div { height: 100%; border-radius: 999px; background: var(--accent); transition: width .4s ease; }
+
+/* ---- Insight tabs + cards ---- */
+.insightsCard { display: grid; gap: 14px; }
+.insightTabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.insightTab {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: rgba(255,255,255,.02); color: var(--muted);
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.insightTab:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.insightTab.active { color: var(--text); border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+.insightTabCount {
+  font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; background: rgba(148,163,184,.18); color: var(--muted);
+}
+.insightTab.active .insightTabCount { background: rgba(33,201,122,.22); color: #21c97a; }
+
+.insightGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.insightCard {
+  position: relative; padding: 16px 18px; border-radius: 18px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.03); display: grid; gap: 8px; align-content: start;
+  border-left-width: 3px;
+}
+.insightCard.tier-worth { border-left-color: #f59e0b; }
+.insightCard.tier-doing { border-left-color: #21c97a; }
+.insightCard.tier-upcoming { border-left-color: #6ea0e0; }
+.insightCard.tipCard { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(37,99,235,.12)); border-left-color: #6ea0e0; }
+
+.insightDismiss {
+  position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent;
+  background: transparent; color: var(--muted); cursor: pointer; transition: all .15s ease;
+}
+.insightDismiss:hover { background: rgba(148,163,184,.14); color: var(--text); }
+
+.insightTier {
+  justify-self: start; font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 3px 9px;
+  border-radius: 999px; border: 1px solid var(--border); text-transform: none;
+}
+.insightTier.worth { color: #f59e0b; border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.12); }
+.insightTier.doing { color: #21c97a; border-color: rgba(33,201,122,.4); background: rgba(33,201,122,.12); }
+.insightTier.upcoming { color: #93a7c6; border-color: var(--border); background: rgba(148,163,184,.12); }
+
+.insightTitle { margin: 2px 0 0; font-size: .95rem; font-weight: 700; color: var(--text); }
+.insightValue { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.insightBody { margin: 0; color: var(--muted); line-height: 1.55; font-size: .9rem; }
+.insightSpark { margin: 4px 0 2px; }
+.insightAction {
+  justify-self: start; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+  padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.02);
+  color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.insightAction:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+.insightEmpty { grid-column: 1 / -1; padding: 28px; text-align: center; }
+.tipCard .tipIcon { font-size: 30px; line-height: 1; }
+.tipCard .adviceDots { margin-top: 6px; }
+
+/* ---- Assistant ---- */
+.assistantCard { display: grid; gap: 14px; }
+.assistantHeader { display: flex; align-items: center; gap: 14px; }
+.assistantAvatar { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,.22)); }
+.assistantHeader h3 { margin: 0 0 2px; font-size: 1.1rem; color: var(--text); }
+
+.assistantMessages {
+  display: grid; gap: 12px; align-content: start; max-height: 460px; overflow-y: auto; padding-right: 4px;
+  min-height: 160px;
+}
+.assistantBubbleWrap { display: grid; gap: 8px; }
+.assistantBubbleWrap.user { justify-items: end; }
+.assistantBubble {
+  max-width: 86%; padding: 12px 14px; border-radius: 16px; line-height: 1.5; font-size: .94rem;
+  border: 1px solid var(--border); color: var(--text);
+}
+.assistantBubble.bot { background: var(--panel-soft); border-bottom-left-radius: 6px; }
+.assistantBubble.user { background: var(--accent-soft); border-color: rgba(33,201,122,.28); border-bottom-right-radius: 6px; }
+
+.assistantChips { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistantChip {
+  padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,.02);
+  color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.assistantChip:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+
+.chatChart {
+  margin-top: 10px; padding: 8px 6px 4px; border-radius: 12px;
+  border: 1px solid var(--border); background: rgba(148,163,184,.06);
+}
+
+/* Proposal / clarifying card */
+.chatProposal {
+  border: 1px solid rgba(33,201,122,.4); border-radius: 16px; padding: 16px; display: grid; gap: 10px;
+  background: linear-gradient(180deg, rgba(33,201,122,.10), rgba(37,99,235,.06));
+  box-shadow: 0 12px 30px rgba(2,8,23,.22);
+}
+.chatProposalTitle { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chatProposalTitle.warn { color: #f59e0b; }
+.chatProposalNote { margin: 0; line-height: 1.55; color: var(--text); }
+.chatProposalNote strong { color: #ef4444; }
+.chatProposalRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.chatProposalRow:last-of-type { border-bottom: none; }
+.chatProposalRow span { color: var(--muted); font-size: 13px; }
+.chatProposalRow strong { font-size: 1rem; color: var(--text); }
+.chatProposalActions { display: flex; gap: 10px; margin-top: 4px; }
+.chatProposalActions .btn { flex: 1; justify-content: center; }
+
+.assistantStarters { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistantStarter {
+  padding: 8px 13px; border-radius: 999px; border: 1px dashed var(--border); background: transparent;
+  color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.assistantStarter:hover { color: var(--text); border-style: solid; border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+
+.assistantInputRow { display: grid; grid-template-columns: 1fr 52px; gap: 0; align-items: stretch; }
+.assistantInputRow .input {
+  min-height: 46px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; padding-inline: 16px;
+}
+.assistantSend {
+  min-height: 46px; border-radius: 0 14px 14px 0; padding-inline: 0; justify-content: center; font-size: 1.15rem;
+}
+
+.assistantDisclaimers { display: grid; gap: 4px; }
+.assistantGuardline { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.assistantFinePrint { font-size: 11.5px; color: var(--muted); }
+
+/* Responsive */
+@media (max-width: 720px) {
+  .healthCardInner { grid-template-columns: 1fr; justify-items: center; text-align: left; gap: 16px; }
+  .healthMeta { width: 100%; }
+  .healthComponents { grid-template-columns: 1fr; }
+  .insightGrid { grid-template-columns: 1fr; }
+  .assistantBubble { max-width: 94%; }
+}
+
+/* Light theme adjustments */
+body.light .insightCard { background: rgba(255,255,255,.7); }
+body.light .insightCard.tipCard { background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(37,99,235,.10)); }
+body.light .assistantBubble.bot { background: rgba(255,255,255,.82); }
+body.light .insightTier.upcoming { color: #52627f; }
+body.light .healthComponentBar,
+body.light .healthComponentBar { background: rgba(76,101,145,.16); }
