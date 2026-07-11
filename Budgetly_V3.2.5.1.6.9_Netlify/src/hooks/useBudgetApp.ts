@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { download, fmtMoney, monthKey, monthLabel, safeCsv } from '../lib/utils'
 import { buildCategoryColorMap, colorForCategory, UNCATEGORIZED_ID } from '../lib/categoryColors'
-import { Category, Transaction, TxType, SyncState, LocalSettings, RecurringItem, RecurrenceType, RecurringKind, Goal } from '../types'
+import { Category, Transaction, TxType, SyncState, LocalSettings, RecurringItem, RecurrenceType, RecurringKind, Goal, GoalContribution } from '../types'
 
 type DataState = {
   currency: string
@@ -10,6 +10,7 @@ type DataState = {
   transactions: Transaction[]
   recurring: RecurringItem[]
   goals: Goal[]
+  goalContributions: GoalContribution[]
   settings: LocalSettings
 }
 
@@ -37,6 +38,7 @@ const defaultSeed = (_userId: string): DataState => ({
   },
   recurring: [],
   goals: [],
+  goalContributions: [],
   transactions: [],
 })
 
@@ -158,7 +160,7 @@ const throwIfResultError = (result: unknown) => {
 
 export function useBudgetApp(userId: string | null) {
   const [sync, setSync] = useState<SyncState>(navigator.onLine ? 'synced' : 'offline')
-  const [data, setData] = useState<DataState>({ currency: 'CAD', categories: [], transactions: [], recurring: [], goals: [], settings: { allowTxnInFutureDate: false } })
+  const [data, setData] = useState<DataState>({ currency: 'CAD', categories: [], transactions: [], recurring: [], goals: [], goalContributions: [], settings: { allowTxnInFutureDate: false } })
   const [txDraft, setTxDraft] = useState<TransactionDraft>({
     date: todayIso(),
     type: 'expense',
@@ -174,6 +176,7 @@ export function useBudgetApp(userId: string | null) {
   const [pendingTxDeletes, setPendingTxDeletes] = useState<string[]>([])
   const [pendingRecurringDeletes, setPendingRecurringDeletes] = useState<string[]>([])
   const [pendingGoalDeletes, setPendingGoalDeletes] = useState<string[]>([])
+  const [pendingGoalContributions, setPendingGoalContributions] = useState<GoalContribution[]>([])
   const [categoryDirty, setCategoryDirty] = useState(false)
   const [transactionDirty, setTransactionDirty] = useState(false)
   const [recurringDirty, setRecurringDirty] = useState(false)
@@ -231,6 +234,7 @@ export function useBudgetApp(userId: string | null) {
           transactions: Array.isArray(parsed.transactions) ? parsed.transactions as Transaction[] : [],
           recurring: Array.isArray(parsed.recurring) ? parsed.recurring as RecurringItem[] : [],
           goals: Array.isArray((parsed as Partial<DataState>).goals) ? (parsed as Partial<DataState>).goals as Goal[] : [],
+          goalContributions: Array.isArray((parsed as Partial<DataState>).goalContributions) ? (parsed as Partial<DataState>).goalContributions as GoalContribution[] : [],
           settings: {
             allowTxnInFutureDate: Boolean(parsed.settings?.allowTxnInFutureDate),
           },
@@ -256,22 +260,25 @@ export function useBudgetApp(userId: string | null) {
 
       setSync('syncing')
       try {
-        const [catsRes, txRes, recurringRes, goalsRes] = await Promise.all([
+        const [catsRes, txRes, recurringRes, goalsRes, goalContribRes] = await Promise.all([
           supabase.from('categories').select('*').eq('user_id', userId).order('sort_order', { ascending: true }),
           supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
           supabase.from('recurring_items').select('*').eq('user_id', userId).order('name', { ascending: true }),
           supabase.from('goals').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
+          supabase.from('goal_contributions').select('*').eq('user_id', userId).order('created_at', { ascending: true }),
         ])
 
         if (catsRes.error) throw catsRes.error
         if (txRes.error) throw txRes.error
         if (recurringRes.error) throw recurringRes.error
         if (goalsRes.error) throw goalsRes.error
+        if (goalContribRes.error) throw goalContribRes.error
 
         const cloudCats = (catsRes.data ?? []) as Category[]
         const cloudTx = (txRes.data ?? []) as Transaction[]
         const cloudRecurring = (recurringRes.data ?? []) as RecurringItem[]
         const cloudGoals = (goalsRes.data ?? []) as Goal[]
+        const cloudGoalContributions = (goalContribRes.data ?? []) as GoalContribution[]
 
         if (cloudCats.length === 0 && cloudTx.length === 0 && cloudRecurring.length === 0 && cloudGoals.length === 0) {
           const seeded = defaultSeed(userId)
@@ -286,6 +293,7 @@ export function useBudgetApp(userId: string | null) {
           transactions: cloudTx,
           recurring: cloudRecurring,
           goals: cloudGoals,
+          goalContributions: cloudGoalContributions,
           settings: current.settings ?? { allowTxnInFutureDate: false },
         }))
         setCategoryDirty(false)
@@ -294,6 +302,7 @@ export function useBudgetApp(userId: string | null) {
         setPendingTxDeletes([])
         setPendingRecurringDeletes([])
         setPendingGoalDeletes([])
+        setPendingGoalContributions([])
         setRecurringDirty(false)
         setGoalDirty(false)
         setSync('synced')
@@ -341,6 +350,14 @@ export function useBudgetApp(userId: string | null) {
       }
     }
 
+    const refreshGoalContributions = async () => {
+      if (goalDirty) return
+      const result = await supabase.from('goal_contributions').select('*').eq('user_id', userId).order('created_at', { ascending: true })
+      if (!result.error && result.data) {
+        persistLocal((current) => ({ ...current, goalContributions: result.data as GoalContribution[] }))
+      }
+    }
+
     const channel = supabase
       .channel(`raswi:${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, () => {
@@ -354,6 +371,9 @@ export function useBudgetApp(userId: string | null) {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals', filter: `user_id=eq.${userId}` }, () => {
         void refreshGoals()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goal_contributions', filter: `user_id=eq.${userId}` }, () => {
+        void refreshGoalContributions()
       })
       .subscribe()
 
@@ -874,6 +894,7 @@ export function useBudgetApp(userId: string | null) {
       transactions: transactionsToImport,
       recurring: Array.isArray((parsed as Partial<DataState>).recurring) ? ((parsed as Partial<DataState>).recurring as RecurringItem[]).map((item) => ({ ...item, user_id: userId, id: item.id || crypto.randomUUID(), kind: item.kind === 'income' ? 'income' : 'expense', recurrence_type: item.recurrence_type === 'weekly' || item.recurrence_type === 'biweekly' ? item.recurrence_type : 'monthly', anchor_date: item.anchor_date || todayIso() })) : data.recurring,
       goals: Array.isArray((parsed as Partial<DataState>).goals) ? ((parsed as Partial<DataState>).goals as Goal[]).map((goal) => ({ ...goal, user_id: userId, id: goal.id || crypto.randomUUID(), emoji: goal.emoji || inferGoalEmoji(goal.name || ''), target_amount: clampMoney(Number(goal.target_amount ?? 0)), current_amount: clampMoney(Number(goal.current_amount ?? 0)), target_date: goal.target_date || null, note: goal.note ?? '' })) : data.goals,
+      goalContributions: Array.isArray((parsed as Partial<DataState>).goalContributions) ? ((parsed as Partial<DataState>).goalContributions as GoalContribution[]).map((contribution) => ({ ...contribution, user_id: userId, id: contribution.id || crypto.randomUUID() })) : data.goalContributions,
       settings: {
         allowTxnInFutureDate: Boolean((parsed as Partial<DataState>).settings?.allowTxnInFutureDate ?? data.settings.allowTxnInFutureDate),
       },
@@ -902,22 +923,35 @@ export function useBudgetApp(userId: string | null) {
     const name = (initial?.name ?? '').trim() || fallbackName
     const targetAmount = clampMoney(Number(initial?.target_amount ?? 1000))
     const currentAmount = clampMoney(Number(initial?.current_amount ?? 0))
+    const goalId = crypto.randomUUID()
+    const startingAmount = targetAmount > 0 ? Math.min(currentAmount, targetAmount) : currentAmount
+    // Seed an opening contribution so a goal created with money already saved
+    // has a real history point to project a pace from.
+    const seedContribution: GoalContribution | null = startingAmount > 0 ? {
+      id: crypto.randomUUID(),
+      goal_id: goalId,
+      user_id: userId,
+      amount: startingAmount,
+      created_at: new Date().toISOString(),
+    } : null
     persistLocal((current) => ({
       ...current,
       goals: [
         ...current.goals,
         {
-          id: crypto.randomUUID(),
+          id: goalId,
           user_id: userId,
           name,
           emoji: initial?.emoji || inferGoalEmoji(name),
           target_amount: targetAmount,
-          current_amount: targetAmount > 0 ? Math.min(currentAmount, targetAmount) : currentAmount,
+          current_amount: startingAmount,
           target_date: initial?.target_date || null,
           note: initial?.note ?? '',
         },
       ],
+      goalContributions: seedContribution ? [...current.goalContributions, seedContribution] : current.goalContributions,
     }))
+    if (seedContribution) setPendingGoalContributions((current) => [...current, seedContribution])
     markGoalDirty()
     notify('New goal added')
   }
@@ -951,8 +985,16 @@ export function useBudgetApp(userId: string | null) {
   }
 
   const contributeToGoal = (id: string, amount: number) => {
+    if (!userId) return
     const contribution = clampMoney(amount)
     if (!contribution) return
+    const record: GoalContribution = {
+      id: crypto.randomUUID(),
+      goal_id: id,
+      user_id: userId,
+      amount: contribution,
+      created_at: new Date().toISOString(),
+    }
     persistLocal((current) => ({
       ...current,
       goals: current.goals.map((goal) => {
@@ -961,7 +1003,9 @@ export function useBudgetApp(userId: string | null) {
         const nextCurrent = clampMoney(Number(goal.current_amount ?? 0) + contribution)
         return { ...goal, current_amount: targetAmount > 0 ? Math.min(nextCurrent, targetAmount) : nextCurrent }
       }),
+      goalContributions: [...current.goalContributions, record],
     }))
+    setPendingGoalContributions((current) => [...current, record])
     markGoalDirty()
     notify('Contribution added')
   }
@@ -970,7 +1014,10 @@ export function useBudgetApp(userId: string | null) {
     persistLocal((current) => ({
       ...current,
       goals: current.goals.filter((goal) => goal.id !== id),
+      goalContributions: current.goalContributions.filter((contribution) => contribution.goal_id !== id),
     }))
+    // Server-side cascade removes the rows; just drop any not-yet-synced inserts.
+    setPendingGoalContributions((current) => current.filter((contribution) => contribution.goal_id !== id))
     setPendingGoalDeletes((current) => (current.includes(id) ? current : [...current, id]))
     markGoalDirty()
     notify('Goal removed')
@@ -1007,10 +1054,17 @@ export function useBudgetApp(userId: string | null) {
         const result = await supabase.from('goals').upsert(goal, { onConflict: 'id' })
         throwIfResultError(result)
       }
+      // Persist any new contributions (append-only history) for goals that still exist.
+      const contributionsToInsert = pendingGoalContributions.filter((contribution) => sanitizedGoals.some((goal) => goal.id === contribution.goal_id))
+      if (contributionsToInsert.length > 0) {
+        const result = await supabase.from('goal_contributions').upsert(contributionsToInsert, { onConflict: 'id' })
+        throwIfResultError(result)
+      }
       for (const id of deleteIds) {
         const result = await supabase.from('goals').delete().eq('id', id).eq('user_id', userId)
         throwIfResultError(result)
       }
+      setPendingGoalContributions([])
       setPendingGoalDeletes([])
       setGoalDirty(false)
       setSync(categoryDirty || transactionDirty || recurringDirty ? 'pending' : 'synced')

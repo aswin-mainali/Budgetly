@@ -57,6 +57,14 @@ export type Goal = {
   updated_at?: string
 }
 
+export type GoalContribution = {
+  id: string
+  goal_id: string
+  user_id: string
+  amount: number
+  created_at: string
+}
+
 export type SyncState = 'offline' | 'pending' | 'syncing' | 'synced' | 'error'
 
 export type LocalSettings = {
