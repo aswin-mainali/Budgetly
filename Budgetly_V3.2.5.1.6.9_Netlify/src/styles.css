@@ -8764,11 +8764,28 @@ body.light .authInstallHelpClose{color:#1d4ed8}
 .universalSearchCopy strong { color:#111827; font-size:0.95rem; font-weight:700; }
 .universalSearchCopy small { color:#6b7280; font-size:0.82rem; }
 .universalSearchEmpty { padding:18px; color:#6b7280; }
-.resultTypePill { border:1px solid #d1d5db; border-radius:999px; padding:2px 8px; font-size:.72rem; color:#475569; background:#f8fafc; }
+.resultTypePill { border:1px solid #d1d5db; border-radius:999px; padding:2px 8px; font-size:.72rem; color:#475569; background:#f8fafc; flex-shrink:0; }
+.universalSearchGroupHeader { padding:8px 10px 4px; font-size:.72rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#94a3b8; }
+.universalSearchGroupHeader:not(:first-child) { margin-top:4px; border-top:1px solid #f1f5f9; padding-top:10px; }
+.universalSearchMeta { font-variant-numeric:tabular-nums; font-size:.82rem; font-weight:600; color:#475569; white-space:nowrap; flex-shrink:0; }
+.universalSearchMark { background:#fde68a; color:inherit; border-radius:3px; padding:0 1px; }
+.universalSearchSubHint { color:#94a3b8; font-size:.8rem; width:12px; text-align:center; flex-shrink:0; }
+.universalSearchItem:hover { background:#f8fafc; }
+.universalSearchSubItem { width:100%; border:0; background:transparent; display:flex; align-items:center; gap:10px; border-radius:10px; padding:7px 8px 7px 42px; text-align:left; color:#374151; font-size:.9rem; }
+.universalSearchSubItem.active { background:#f1edff; }
+.universalSearchSubItem.destructive { color:#dc2626; }
+.universalSearchSubItem.destructive.active { background:#fef2f2; }
+.universalSearchSubGlyph { display:grid; place-items:center; width:20px; color:#94a3b8; flex-shrink:0; }
+.universalSearchSubItem.destructive .universalSearchSubGlyph { color:#dc2626; }
+.universalSearchFooter { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:8px; padding:8px 6px 2px; font-size:.75rem; color:#94a3b8; }
+.universalSearchFooter kbd { display:inline-block; min-width:16px; text-align:center; border:1px solid #d1d5db; border-bottom-width:2px; border-radius:5px; padding:1px 4px; margin-right:2px; background:#f8fafc; font-size:.72rem; color:#4b5563; font-family:inherit; }
+.universalSearchFooterShortcut { margin-left:auto; }
+.universalSearchSrOnly { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media (max-width: 768px) {
   .universalSearchInputRow input { font-size:16px; }
   .universalSearchCopy strong { font-size:16px; }
   .universalSearchCopy small,.keyPill { font-size:12px; }
+  .universalSearchFooterShortcut { display:none; }
 }
   body.mobile-app.light .mobileDashTitle{color:#0f254f}
   body.mobile-app.light .mobileDashSubtitle{color:#6b7a93}
