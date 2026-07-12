@@ -4896,6 +4896,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
         </div>
       </div>
 
+      <div className="adviceColumns">
       {/* Prioritized, categorized insights */}
       <div className="card insightsCard">
         <div className="insightTabs" role="tablist">
@@ -4990,7 +4991,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
         <div className="assistantInputRow">
           <input
             className="input"
-            placeholder="Ask a question, or tell me an action to take..."
+            placeholder="Ask, or tell me an action…"
             value={chatInput}
             onChange={(event) => setChatInput(event.target.value)}
             onKeyDown={(event) => {
@@ -5004,6 +5005,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
           <div className="assistantGuardline"><ShieldCheck size={14} /> Actions always require your confirmation before anything moves</div>
           <div className="assistantFinePrint">For investment or tax advice, consult a licensed professional</div>
         </div>
+      </div>
       </div>
     </div>
   )
