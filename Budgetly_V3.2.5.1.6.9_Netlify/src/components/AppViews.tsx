@@ -1087,7 +1087,7 @@ import {
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, Bug, CheckCircle2, Inbox, CircleDot, ArrowLeft } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -5697,7 +5697,9 @@ function BugReportModal({
 function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
   type WorkflowStatus = 'pending' | 'in_progress' | 'in_review' | 'resolved'
   type BugPriority = 'high' | 'medium' | 'low'
+  const isTabletDown = useIsTabletDown()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | WorkflowStatus>('all')
   const [severityFilter, setSeverityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
@@ -5809,179 +5811,265 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   }, [searchTerm, statusFilter, severityFilter])
 
   const renderSeverityPill = (level: 'high' | 'medium' | 'low') => (
-    <span className={`bugsMetaPill bugsSeverityPill ${level}`}>{level[0].toUpperCase() + level.slice(1)}</span>
+    <span className={`bugsMetaPill bugsSeverityPill ${level}`}><span className="bugsPillDot" />{level[0].toUpperCase() + level.slice(1)}</span>
   )
 
   const renderStatusPill = (status: WorkflowStatus) => (
-    <span className={`bugsMetaPill bugsStatusPill ${status}`}>{status === 'in_progress' ? 'In Progress' : status === 'in_review' ? 'In Review' : status === 'resolved' ? 'Resolved' : 'Pending'}</span>
+    <span className={`bugsMetaPill bugsStatusPill ${status}`}><span className="bugsPillDot" />{status === 'in_progress' ? 'In Progress' : status === 'in_review' ? 'In Review' : status === 'resolved' ? 'Resolved' : 'Pending'}</span>
   )
 
+  const stats = useMemo(() => {
+    let pending = 0, inProgress = 0, inReview = 0, resolved = 0, highSeverity = 0
+    reportsWithMeta.forEach((item) => {
+      const wf = parseWorkflow(item)
+      if (wf === 'pending') pending += 1
+      else if (wf === 'in_progress') inProgress += 1
+      else if (wf === 'in_review') inReview += 1
+      else if (wf === 'resolved') resolved += 1
+      if (item.severity === 'high') highSeverity += 1
+    })
+    const total = reportsWithMeta.length
+    return {
+      total,
+      pending,
+      active: inProgress + inReview,
+      resolved,
+      highSeverity,
+      open: pending + inProgress + inReview,
+      resolutionRate: total ? Math.round((resolved / total) * 100) : 0,
+    }
+  }, [reportsWithMeta])
+
+  const statusFilters: Array<{ key: 'all' | WorkflowStatus; label: string }> = [
+    { key: 'all', label: 'All' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'in_progress', label: 'In Progress' },
+    { key: 'in_review', label: 'In Review' },
+    { key: 'resolved', label: 'Resolved' },
+  ]
+
+  const openReport = (id: string) => {
+    setSelectedId(id)
+    if (isTabletDown) setDetailOpen(true)
+  }
+
   const selectedSteps = selectedReport?.steps_to_reproduce.split('\n').map((step) => step.trim()).filter(Boolean) || []
+
+  const detailBody = selectedReport ? (
+    <>
+      <div className="bugsDetailHeader">
+        <div className="bugsTicketRow">
+          <span className="bugsTicketCode">{selectedReport.ticketCode}</span>
+          {renderSeverityPill(selectedReport.severity)}
+          {renderStatusPill(parseWorkflow(selectedReport))}
+        </div>
+        <h4>{selectedSteps[0] || 'Bug report detail'}</h4>
+        <div className="bugsDetailReporter">
+          <span className="bugsAvatar">{(selectedReport.user_email || '?').charAt(0).toUpperCase()}</span>
+          <span className="bugsDetailEmail">{selectedReport.user_email}</span>
+          {selectedReport.created_at ? <span className="bugsDetailWhen">{new Date(selectedReport.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(selectedReport.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> : null}
+        </div>
+      </div>
+
+      <div className="bugsDetailScroll">
+        <div className="bugsDetailColumns">
+          <div>
+            <div className="auditDetailHeading">Steps to Reproduce</div>
+            <div className="bugsStepsScrollBox">
+              <ol className="bugsStepsList">
+                {selectedSteps.length ? selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>) : <li className="muted">No steps provided.</li>}
+              </ol>
+            </div>
+          </div>
+          <div>
+            <div className="auditDetailHeading">Screenshot</div>
+            {selectedReport.screenshot_data_url ? (
+              <div className="bugsScreenshotCard">
+                <img src={selectedReport.screenshot_data_url} alt={selectedReport.screenshot_name || 'Bug screenshot'} />
+                <button className="bugsExpandImageBtn" aria-label="Expand screenshot" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
+                  <Maximize2 size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="bugsNoShot"><Inbox size={20} /><span>No screenshot attached</span></div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="auditDetailHeading">Internal Notes</div>
+          <textarea className="textarea bugsNotesArea" placeholder="Add internal notes or updates..." value={notesDraft[selectedReport.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
+        </div>
+      </div>
+
+      <div className="bugsDetailFooter">
+        <div className="bugsFooterField">
+          <div className="auditDetailHeading">Status</div>
+          <select className="select" value={statusDraft[selectedReport.id] || parseWorkflow(selectedReport)} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as WorkflowStatus }))}>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="in_review">In Review</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+        <div className="bugsFooterField">
+          <div className="auditDetailHeading">Priority</div>
+          <select className="select" value={priorityDraft[selectedReport.id] || parsePriority(selectedReport)} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as BugPriority }))}>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <button className="btn bugsSaveBtn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
+          const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
+          const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
+          const severity = priority
+          admin.updateBugReport(selectedReport.id, {
+            status: workflow === 'resolved' ? 'completed' : 'pending',
+            admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
+          })
+        }}>
+          {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
+        </button>
+        <button className="btn primary bugsResolveBtn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
+          const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
+          const severity = priority
+          admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
+        }}>
+          <CheckCircle2 size={15} /> Mark Resolved
+        </button>
+      </div>
+    </>
+  ) : (
+    <div className="bugsDetailEmpty">
+      <div className="bugsEmptyIcon"><Bug size={26} /></div>
+      <strong>No report selected</strong>
+      <span className="muted">Choose a report from the list to view its full details.</span>
+    </div>
+  )
 
   return (
     <>
       <div className={`card ${embedded ? 'settingsPanelCard' : ''} bugsPanelCard`}>
-        <div className="row between" style={{ marginBottom: 8, gap: 12, alignItems: 'flex-start' }}>
-          <div>
-            <h3 style={{ marginBottom: 4 }}>Bugs & Fixes</h3>
-            <div className="muted">Track, triage, and resolve reported issues to keep Budgetly stable and reliable.</div>
+        <div className="bugsConsoleTop">
+          <div className="bugsConsoleTitle">
+            <div className="bugsConsoleIcon"><Bug size={20} /></div>
+            <div>
+              <h3>Bug Tracker</h3>
+              <div className="muted">Monitor, triage, and resolve reported issues from one command center.</div>
+            </div>
           </div>
-          <button className="btn">Workspace controls</button>
+          <div className="bugsLivePill"><span className="bugsLiveDot" />{stats.open} open</div>
         </div>
+
+        <div className="bugsStatGrid">
+          <div className="bugsStatTile total">
+            <div className="bugsStatIcon"><Inbox size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.total}</span><span className="bugsStatLabel">Total Reports</span></div>
+          </div>
+          <div className="bugsStatTile pending">
+            <div className="bugsStatIcon"><Clock size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.pending}</span><span className="bugsStatLabel">Pending</span></div>
+          </div>
+          <div className="bugsStatTile active">
+            <div className="bugsStatIcon"><Activity size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.active}</span><span className="bugsStatLabel">In Progress</span></div>
+          </div>
+          <div className="bugsStatTile critical">
+            <div className="bugsStatIcon"><AlertTriangle size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.highSeverity}</span><span className="bugsStatLabel">High Severity</span></div>
+          </div>
+          <div className="bugsStatTile resolved">
+            <div className="bugsStatIcon"><CheckCircle2 size={18} /></div>
+            <div className="bugsStatMeta">
+              <span className="bugsStatValue">{stats.resolutionRate}%</span><span className="bugsStatLabel">Resolved · {stats.resolved}</span>
+              <div className="bugsStatBar"><span style={{ width: `${stats.resolutionRate}%` }} /></div>
+            </div>
+          </div>
+        </div>
+
         <div className="bugsWorkspace">
           <div className="bugsListPane">
-            <div className="bugsToolbar">
-              <input className="input bugsSearchInput" placeholder="Search bugs..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
-              <select className="select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | WorkflowStatus)}>
-                <option value="all">Status: All</option>
-                <option value="pending">Status: Pending</option>
-                <option value="in_progress">Status: In Progress</option>
-                <option value="in_review">Status: In Review</option>
-                <option value="resolved">Status: Resolved</option>
+            <div className="bugsControls">
+              <div className="bugsSearchWrap">
+                <Search size={16} className="bugsSearchIcon" />
+                <input className="bugsSearchInput" placeholder="Search by reporter, ticket, or keyword..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+              </div>
+              <select className="select bugsSeveritySelect" value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value as 'all' | 'high' | 'medium' | 'low')}>
+                <option value="all">All severities</option>
+                <option value="high">High severity</option>
+                <option value="medium">Medium severity</option>
+                <option value="low">Low severity</option>
               </select>
-              <select className="select" value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value as 'all' | 'high' | 'medium' | 'low')}>
-                <option value="all">Severity: All</option>
-                <option value="high">Severity: High</option>
-                <option value="medium">Severity: Medium</option>
-                <option value="low">Severity: Low</option>
-              </select>
-              <button className="btn">Export</button>
             </div>
 
-            <div className="bugsTableShell">
-              <div className="bugsTableHeader">
-                <div>Date</div>
-                <div>Reporter</div>
-                <div>Severity</div>
-                <div>Status</div>
-                <div>Actions</div>
-              </div>
-              <div className="bugsTableBody">
-                {pagedReports.length === 0 ? <div className="muted">No bug reports found.</div> : pagedReports.map((item) => {
-                  const timestamp = item.created_at ? new Date(item.created_at) : null
-                  const isSelected = selectedReport?.id === item.id
-                  return (
-                    <div key={item.id} className={`bugsRowBtn ${isSelected ? 'active' : ''}`} onClick={() => setSelectedId(item.id)} role="button" tabIndex={0} onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        setSelectedId(item.id)
-                      }
-                    }}>
-                      <div className="bugsDateCell">
-                        <strong>{timestamp ? timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'}</strong>
-                        <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}</span>
+            <div className="bugsFilterChips">
+              {statusFilters.map((filter) => (
+                <button key={filter.key} className={`bugsChip ${statusFilter === filter.key ? 'active' : ''}`} onClick={() => setStatusFilter(filter.key)}>
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="bugsList">
+              {pagedReports.length === 0 ? (
+                <div className="bugsListEmpty">
+                  <div className="bugsEmptyIcon"><CircleDot size={24} /></div>
+                  <strong>No bug reports found</strong>
+                  <span className="muted">Try adjusting your search or filters.</span>
+                </div>
+              ) : pagedReports.map((item) => {
+                const timestamp = item.created_at ? new Date(item.created_at) : null
+                const isSelected = !isTabletDown && selectedReport?.id === item.id
+                const firstStep = item.steps_to_reproduce.split('\n').map((s) => s.trim()).filter(Boolean)[0] || 'Bug report'
+                return (
+                  <button key={item.id} className={`bugsCard ${isSelected ? 'active' : ''}`} onClick={() => openReport(item.id)}>
+                    <span className={`bugsCardAccent ${item.severity}`} />
+                    <div className="bugsCardMain">
+                      <div className="bugsCardTop">
+                        <span className="bugsTicketCode">{item.ticketCode}</span>
+                        {renderSeverityPill(item.severity)}
                       </div>
-                      <div className="bugsEmailCell">{item.user_email}</div>
-                      <div>{renderSeverityPill(item.severity)}</div>
-                      <div>{renderStatusPill(parseWorkflow(item))}</div>
-                      <div className="bugsActionCell">
-                        <button className="btn bugsViewBtn" onClick={(event) => {
-                          event.stopPropagation()
-                          setSelectedId(item.id)
-                        }}>
-                          View
-                        </button>
+                      <div className="bugsCardTitle">{firstStep}</div>
+                      <div className="bugsCardMeta">
+                        <span className="bugsReporter"><span className="bugsAvatar sm">{(item.user_email || '?').charAt(0).toUpperCase()}</span>{item.user_email}</span>
+                        <span className="bugsCardDate">{timestamp ? timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Today'}</span>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    <div className="bugsCardSide">
+                      {renderStatusPill(parseWorkflow(item))}
+                      <ChevronRight size={16} className="bugsCardChevron" />
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="bugsPaginationRow">
-              <span className="muted">Showing {filteredReports.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredReports.length)} of {filteredReports.length} results</span>
+              <span className="muted">Showing {filteredReports.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredReports.length)} of {filteredReports.length}</span>
               <div className="bugsPaginationBtns">
-                <button className="btn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}>‹</button>
+                <button className="btn bugsPageBtn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} aria-label="Previous page"><ChevronLeft size={16} /></button>
                 {Array.from({ length: totalPages }, (_, index) => (
-                  <button key={index + 1} className={`btn ${currentPage === index + 1 ? 'primary' : ''}`} onClick={() => setCurrentPage(index + 1)}>
+                  <button key={index + 1} className={`btn bugsPageBtn ${currentPage === index + 1 ? 'primary' : ''}`} onClick={() => setCurrentPage(index + 1)}>
                     {index + 1}
                   </button>
                 ))}
-                <button className="btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}>›</button>
+                <button className="btn bugsPageBtn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} aria-label="Next page"><ChevronRight size={16} /></button>
               </div>
             </div>
           </div>
 
-          <div className="bugsDetailPane">
-            {selectedReport ? (
-              <>
-                <div className="bugsDetailHeader">
-                  <div className="bugsTicketRow">
-                    <span>{selectedReport.ticketCode}</span>
-                    {renderSeverityPill(selectedReport.severity)}
-                  </div>
-                  <h4>{selectedSteps[0] || 'Bug report detail'}</h4>
-                </div>
-
-                <div className="bugsDetailColumns">
-                  <div>
-                    <div className="auditDetailHeading">Steps to Reproduce</div>
-                    <div className="bugsStepsScrollBox">
-                      <ol className="bugsStepsList">
-                        {selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>)}
-                      </ol>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="auditDetailHeading">Screenshot</div>
-                    {selectedReport.screenshot_data_url ? (
-                      <div className="bugsScreenshotCard">
-                        <img src={selectedReport.screenshot_data_url} alt={selectedReport.screenshot_name || 'Bug screenshot'} />
-                        <button className="bugsExpandImageBtn" aria-label="Expand screenshot" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
-                          <Maximize2 size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="muted">No screenshot attached.</div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="auditDetailHeading">Internal Notes</div>
-                  <textarea className="textarea" placeholder="Add internal notes or updates..." value={notesDraft[selectedReport.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
-                </div>
-
-                <div className="bugsDetailFooter">
-                  <div>
-                    <div className="auditDetailHeading">Status</div>
-                    <select className="select" value={statusDraft[selectedReport.id] || parseWorkflow(selectedReport)} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as WorkflowStatus }))}>
-                      <option value="pending">Pending</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="in_review">In Review</option>
-                      <option value="resolved">Resolved</option>
-                    </select>
-                  </div>
-                  <div>
-                    <div className="auditDetailHeading">Priority</div>
-                    <select className="select" value={priorityDraft[selectedReport.id] || parsePriority(selectedReport)} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as BugPriority }))}>
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                    </select>
-                  </div>
-                  <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
-                    const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
-                    const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = priority
-                    admin.updateBugReport(selectedReport.id, {
-                      status: workflow === 'resolved' ? 'completed' : 'pending',
-                      admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
-                    })
-                  }}>
-                    {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
-                  </button>
-                  <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
-                    const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = priority
-                    admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
-                  }}>
-                    Mark Resolved
-                  </button>
-                </div>
-              </>
-            ) : <div className="muted">No report selected.</div>}
-          </div>
+          {!isTabletDown ? (
+            <div className="bugsDetailPane">{detailBody}</div>
+          ) : (
+            <>
+              {detailOpen ? <div className="bugsDrawerBackdrop" onClick={() => setDetailOpen(false)} /> : null}
+              <div className={`bugsDetailPane asDrawer ${detailOpen ? 'open' : ''}`}>
+                <button className="bugsDrawerBack" onClick={() => setDetailOpen(false)}><ArrowLeft size={16} /> Back to list</button>
+                {detailBody}
+              </div>
+            </>
+          )}
         </div>
       </div>
       {imageModalSrc ? (
