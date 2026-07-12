@@ -1995,10 +1995,208 @@ body.light .profileMenuPopup{
 .sidebar.collapsed .sidebarUserCard svg{display:none}
 .sidebar.collapsed .sidebarUserCard{justify-content:center;padding:9px 6px}
 
+.supportPage{
+  display:grid;
+  gap:16px;
+}
 .supportPage .muted{color: var(--muted)}
 .supportHeroCard,
 .supportInfoCard{
   min-height: 220px;
+}
+
+/* ---- Support banner (hero) ---- */
+.supportBanner{
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  padding:26px 28px;
+  background:
+    radial-gradient(760px 320px at 12% -30%, rgba(33,201,122,.18), transparent 60%),
+    radial-gradient(680px 320px at 110% 120%, rgba(96,165,250,.16), transparent 58%),
+    linear-gradient(160deg, rgba(10,27,51,.96), rgba(6,18,36,.9));
+}
+.supportBannerGlow{
+  position:absolute;
+  inset:auto -80px -120px auto;
+  width:320px;
+  height:320px;
+  border-radius:999px;
+  background:radial-gradient(circle at center, rgba(33,201,122,.30), transparent 68%);
+  filter:blur(18px);
+  pointer-events:none;
+}
+.supportBannerMain{
+  position:relative;
+  z-index:1;
+  max-width:560px;
+  min-width:260px;
+  flex:1 1 340px;
+}
+.supportBannerMain h2{
+  margin:12px 0 8px;
+  font-size:26px;
+  line-height:1.2;
+  letter-spacing:-.01em;
+}
+.supportBannerMain p{
+  margin:0 0 18px;
+  color:var(--muted);
+  line-height:1.6;
+  max-width:52ch;
+}
+.supportEyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  border-radius:999px;
+  border:1px solid rgba(33,201,122,.28);
+  background:rgba(33,201,122,.10);
+  color:#a9f2cf;
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.supportBannerActions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+.supportBannerActions .btn{
+  padding:11px 18px;
+  font-weight:600;
+}
+.supportBannerStats{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  flex:0 0 auto;
+}
+.supportStat{
+  min-width:96px;
+  padding:14px 16px;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  text-align:center;
+}
+.supportStat strong{
+  display:block;
+  font-size:18px;
+  line-height:1.1;
+}
+.supportStat small{
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+/* ---- Section headers ---- */
+.supportSectionHead{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+.supportSectionHead h3{
+  margin:0;
+  font-size:16px;
+  color:var(--text);
+}
+.supportAskGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+.supportAskCard .supportMiniCard{
+  flex-direction:row;
+  align-items:center;
+}
+
+/* ---- Contact chevron ---- */
+.supportContactRow{
+  transition:border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.supportContactRow[href]:hover{
+  transform:translateY(-1px);
+}
+.supportContactChevron{
+  margin-left:auto;
+  color:var(--muted);
+  font-size:20px;
+  line-height:1;
+}
+
+/* ---- FAQ ---- */
+.supportFaqList{
+  display:grid;
+  gap:10px;
+}
+.supportFaqItem{
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:rgba(255,255,255,.02);
+  overflow:hidden;
+  transition:border-color .15s ease, background .15s ease;
+}
+.supportFaqItem:hover{
+  border-color:rgba(99,102,241,.35);
+}
+.supportFaqItem.open{
+  border-color:rgba(33,201,122,.4);
+  background:rgba(33,201,122,.06);
+}
+.supportFaqQuestion{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  background:transparent;
+  border:0;
+  color:var(--text);
+  font-weight:600;
+  font-size:14px;
+  text-align:left;
+  cursor:pointer;
+}
+.supportFaqChevron{
+  flex:0 0 auto;
+  color:var(--muted);
+  transition:transform .18s ease;
+}
+.supportFaqItem.open .supportFaqChevron{
+  transform:rotate(180deg);
+  color:var(--accent);
+}
+.supportFaqAnswer{
+  padding:0 16px 15px;
+  color:var(--muted);
+  line-height:1.6;
+  font-size:13.5px;
+}
+.supportFaqFooter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid var(--border);
+  color:var(--muted);
+  font-size:14px;
 }
 .supportHeroLabel{
   font-size:12px;
@@ -2199,19 +2397,25 @@ body.light .sidebarUserAvatar{
 .supportSocials a{
   width:42px;
   height:42px;
-  border-radius:999px;
+  border-radius:12px;
   border:1px solid var(--border);
-  background:#f5f7fb;
-  color:#0f172a;
+  background:rgba(255,255,255,.05);
+  color:var(--muted);
   display:grid;
   place-items:center;
   text-decoration:none;
-  font-size:14px;
-  font-weight:800;
-  text-transform:lowercase;
+  transition:transform .15s ease, color .15s ease, border-color .15s ease, background .15s ease;
 }
 .supportSocials a:hover{
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  color:var(--text);
+  border-color:rgba(33,201,122,.45);
+  background:rgba(33,201,122,.12);
+}
+.supportSocials svg{display:block}
+body.light .supportSocials a{
+  background:rgba(15,23,42,.04);
+  color:#475569;
 }
 .supportMicroStatus{
   display:grid;
@@ -2221,8 +2425,22 @@ body.light .sidebarUserAvatar{
   padding-top:14px;
   border-top:1px solid var(--border);
 }
+.supportQuickActionsWide{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-top:0;
+}
 @media (max-width: 900px){
   .supportQuickActions{grid-template-columns:1fr;}
+  .supportBanner{padding:22px;}
+  .supportBannerStats{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    width:100%;
+  }
+  .supportStat{min-width:0;}
+}
+@media (max-width: 520px){
+  .supportBannerStats{grid-template-columns:1fr;}
+  .supportSectionHead{flex-direction:column;}
 }
 
 .appStatusScreen{
