@@ -9262,13 +9262,18 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .kpiSpark { margin-top: auto; }
 body.light .kpiTile { background: rgba(255,255,255,.62); }
 
-/* Body: insights feed on the left, assistant on the right. Columns share a
-   height so the assistant fills its side; a fresh chat floats its greeting +
-   prompts in the middle, and a live chat fills with the conversation. */
-.insightsBody { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(350px, 1fr); gap: 16px; align-items: stretch; }
+/* Body: insights feed on the left, assistant on the right. The assistant is a
+   sticky panel bounded to the viewport — it grows with the conversation only
+   until it fills the screen, then the message list scrolls inside it instead of
+   pushing the whole page taller. */
+.insightsBody { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(350px, 1fr); gap: 16px; align-items: start; }
 .insightsBody > .insightsCard { display: flex; flex-direction: column; gap: 14px; }
-.insightsBody > .assistantCard { display: flex; flex-direction: column; gap: 14px; }
-.insightsBody > .assistantCard .assistantMessages { flex: 1 1 auto; max-height: none; min-height: 220px; }
+.insightsBody > .assistantCard {
+  position: sticky; top: 16px; align-self: start;
+  display: flex; flex-direction: column; gap: 14px;
+  min-height: 520px; max-height: calc(100vh - 24px);
+}
+.insightsBody > .assistantCard .assistantMessages { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
 
 /* ---- Financial health score ---- */
 .healthCard { background: linear-gradient(135deg, rgba(33,201,122,.10), rgba(37,99,235,.08)); }
@@ -9463,7 +9468,7 @@ body.light .assistantExample { background: rgba(255,255,255,.6); }
 /* Below this width the assistant drops under the insights instead of sitting beside them. */
 @media (max-width: 980px) {
   .insightsBody { grid-template-columns: 1fr; }
-  .insightsBody > .assistantCard { position: static; height: auto; max-height: none; }
+  .insightsBody > .assistantCard { position: static; height: auto; min-height: 0; max-height: none; }
   .insightsBody > .assistantCard .assistantMessages { flex: 0 1 auto; max-height: 420px; min-height: 0; }
 }
 
