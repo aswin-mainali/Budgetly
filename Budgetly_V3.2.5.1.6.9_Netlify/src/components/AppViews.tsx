@@ -6048,13 +6048,13 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
             <div className="bugsPaginationRow">
               <span className="muted">Showing {filteredReports.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredReports.length)} of {filteredReports.length}</span>
               <div className="bugsPaginationBtns">
-                <button className="btn bugsPageBtn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} aria-label="Previous page"><ChevronLeft size={16} /></button>
+                <button className="bugsPageBtn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} aria-label="Previous page"><ChevronLeft size={16} /></button>
                 {Array.from({ length: totalPages }, (_, index) => (
-                  <button key={index + 1} className={`btn bugsPageBtn ${currentPage === index + 1 ? 'primary' : ''}`} onClick={() => setCurrentPage(index + 1)}>
+                  <button key={index + 1} className={`bugsPageBtn ${currentPage === index + 1 ? 'active' : ''}`} onClick={() => setCurrentPage(index + 1)}>
                     {index + 1}
                   </button>
                 ))}
-                <button className="btn bugsPageBtn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} aria-label="Next page"><ChevronRight size={16} /></button>
+                <button className="bugsPageBtn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} aria-label="Next page"><ChevronRight size={16} /></button>
               </div>
             </div>
           </div>

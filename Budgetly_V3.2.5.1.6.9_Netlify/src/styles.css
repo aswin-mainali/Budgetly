@@ -7626,8 +7626,17 @@ body.light .bugsSeverityPill.medium,body.light .bugsStatusPill.pending{color:#b4
 
 /* pagination */
 .bugsPaginationRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.bugsPaginationBtns{display:flex;gap:6px;flex-wrap:wrap}
-.bugsPageBtn{min-width:34px;height:34px;padding:0 9px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px}
+.bugsPaginationBtns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.bugsPageBtn{
+  min-width:36px;width:auto;height:36px;padding:0 10px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:10px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--text);
+  font-size:14px;font-weight:600;cursor:pointer;flex:0 0 auto;
+}
+.bugsPageBtn:hover:not(:disabled){background:rgba(255,255,255,.07);border-color:rgba(120,160,220,.42)}
+.bugsPageBtn:disabled{opacity:.4;cursor:not-allowed}
+.bugsPageBtn.active{background:linear-gradient(135deg,#3b82f6,#2563eb);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.28)}
 
 /* detail pane */
 .bugsDetailHeader{padding-bottom:14px;border-bottom:1px solid var(--border)}
@@ -7731,6 +7740,9 @@ body.light .bugUploadBox{background:#f8fbff}
   .bugsList{overflow:visible;max-height:none}
   .bugsStatLabel{white-space:normal}
   .bugsDetailColumns{grid-template-columns:minmax(0,1fr)}
+  /* mobile pagination: compact, centered, never full-width */
+  .bugsPaginationRow{flex-direction:column;align-items:center;gap:12px}
+  .bugsPaginationBtns{justify-content:center}
   /* detail becomes a slide-up sheet with a clear gap at the top */
   .bugsDetailPane.asDrawer{
     position:fixed;left:0;right:0;bottom:0;z-index:1310;
@@ -7739,12 +7751,20 @@ body.light .bugUploadBox{background:#f8fbff}
     background:var(--panel-elevated);box-shadow:0 -20px 60px rgba(2,6,23,.55);
     transform:translateY(110%);transition:transform .3s cubic-bezier(.4,0,.2,1);
     padding:0 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    /* the whole sheet scrolls as one unit so the sticky bar never
+       overlaps the ticket header */
+    display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;
   }
   .bugsDetailPane.asDrawer.open{transform:translateY(0)}
+  /* neutralise the desktop nested scrollers inside the sheet */
+  .bugsDetailPane.asDrawer .bugsDetailScroll{
+    flex:none;overflow:visible;min-height:0;padding:16px 0 0;
+  }
+  .bugsDetailPane.asDrawer .bugsStepsScrollBox{max-height:none;overflow:visible}
   .bugsDrawerBar{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     position:sticky;top:0;z-index:2;
-    margin:0 -16px 8px;padding:12px 16px 10px;
+    margin:0 -16px 8px;padding:14px 16px 10px;
     background:var(--panel-elevated);
     border-bottom:1px solid var(--border);
     border-radius:24px 24px 0 0;
