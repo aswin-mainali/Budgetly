@@ -12,8 +12,11 @@ import { InvestmentsView } from './components/InvestmentsView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
+import WelcomeWalkthrough from './components/WelcomeWalkthrough'
 
 const THEME_KEY = 'raswibudgeting:theme'
+const WALKTHROUGH_KEY_PREFIX = 'budgetly:onboarding-tour:v1:'
+const walkthroughStorageKey = (id: string) => `${WALKTHROUGH_KEY_PREFIX}${id}`
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 const IDLE_WARNING_MS = 60 * 1000
@@ -55,6 +58,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [mobileUnreadCount, setMobileUnreadCount] = useState(0)
+  const [showWalkthrough, setShowWalkthrough] = useState(false)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -238,6 +242,40 @@ export default function App() {
     setIdleCountdown(Math.ceil(IDLE_WARNING_MS / 1000))
     showToast('Session continued')
     window.dispatchEvent(new Event('mousemove'))
+  }
+
+  // Show the first-time walkthrough once per user (device-local), after their
+  // account role/feature access has loaded and the account is active.
+  useEffect(() => {
+    if (!userId || admin.loading) return
+    if (admin.profile && !admin.profile.is_active) return
+    try {
+      const seen = window.localStorage.getItem(walkthroughStorageKey(userId))
+      if (!seen) setShowWalkthrough(true)
+    } catch {
+      /* localStorage unavailable — skip the tour rather than block the app */
+    }
+  }, [userId, admin.loading, admin.profile])
+
+  // Let other views (e.g. Help & Support) replay the walkthrough on demand.
+  useEffect(() => {
+    const replay = () => setShowWalkthrough(true)
+    window.addEventListener('budgetly:start-walkthrough', replay)
+    return () => window.removeEventListener('budgetly:start-walkthrough', replay)
+  }, [])
+
+  const markWalkthroughSeen = () => {
+    if (!userId) return
+    try {
+      window.localStorage.setItem(walkthroughStorageKey(userId), new Date().toISOString())
+    } catch {
+      /* ignore storage failures */
+    }
+  }
+
+  const dismissWalkthrough = () => {
+    markWalkthroughSeen()
+    setShowWalkthrough(false)
   }
 
   const orderedViews = useMemo<ViewKey[]>(() => ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'settings', 'support'], [])
@@ -741,6 +779,25 @@ export default function App() {
             </div>
           </div>
         </div>
+      ) : null}
+      {showWalkthrough ? (
+        <WelcomeWalkthrough
+          userName={profileName}
+          features={{
+            dashboard: admin.visibleFeatures.dashboard,
+            transactions: admin.visibleFeatures.transactions,
+            categories: admin.visibleFeatures.categories,
+            recurring: admin.visibleFeatures.recurring,
+            advice: admin.visibleFeatures.advice,
+            goals: admin.visibleFeatures.goals,
+          }}
+          onClose={dismissWalkthrough}
+          onFinish={dismissWalkthrough}
+          onAddTransaction={admin.visibleFeatures.transactions ? () => {
+            handleViewChange('transactions')
+            window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:focus-add-transaction')), 0)
+          } : undefined}
+        />
       ) : null}
       <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} shortcutLabel={getUniversalSearchShortcut()} quickAdd={parseQuickAdd} />
     </div>
