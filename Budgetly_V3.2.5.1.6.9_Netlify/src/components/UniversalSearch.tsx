@@ -41,8 +41,8 @@ const GROUP_LABEL: Record<ResultGroup, string> = {
   recurring: 'Recurring',
 }
 const GROUP_CAP: Record<ResultGroup, number> = {
-  actions: 8,
-  pages: 8,
+  actions: 10,
+  pages: 14,
   transactions: 6,
   categories: 6,
   goals: 6,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Search, Copy, Trash2, Pencil } from 'lucide-react'
+import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Search, Copy, Trash2, Pencil, ShieldCheck, ScrollText, Download, Upload, KeyRound, TrendingUp } from 'lucide-react'
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
@@ -547,6 +547,16 @@ export default function App() {
     showToast(nextTheme === 'dark' ? 'Dark mode enabled' : 'Light mode enabled')
   }
 
+  const goToTools = (section: 'goals' | 'reports' | 'converter' | 'investments') => {
+    setToolsSection(section)
+    handleViewChange('tools')
+  }
+
+  const goToSettingsSection = (section: 'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs') => {
+    handleViewChange('settings')
+    window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:open-settings-section', { detail: { section } })), 0)
+  }
+
   const staticCommandItems: Array<Omit<CommandItem, 'group'>> = [
     { id: 'page-dashboard', type: 'page', label: 'Dashboard', description: 'View your financial overview and key insights', keywords: ['home', 'overview', 'summary'], onSelect: () => handleViewChange('dashboard'), iconClassName: 'violet', icon: <BarChart3 size={16} /> },
     { id: 'page-transactions', type: 'page', label: 'Transactions', description: 'View and manage your transactions', keywords: ['transactions', 'income', 'expense'], onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
@@ -562,21 +572,58 @@ export default function App() {
     { id: 'action-export-report', type: 'action', label: 'Export report', description: 'Open reports export options', keywords: ['export', 'report', 'pdf', 'download', 'summary'], onSelect: () => { setToolsSection('reports'); handleViewChange('tools') }, iconClassName: 'violet', icon: <BarChart3 size={16} /> },
     { id: 'action-open-settings', type: 'action', label: 'Open settings', description: 'Manage account and app preferences', keywords: ['settings', 'preferences', 'account', 'general'], onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
     { id: 'action-go-this-month', type: 'action', label: 'Go to this month', description: 'Return Budgetly views to the current month', keywords: ['this month', 'current month', 'today', 'reset month'], onSelect: () => { handleViewChange('dashboard'); window.dispatchEvent(new CustomEvent('budgetly:go-to-current-month')) }, iconClassName: 'violet', icon: <CalendarDays size={16} /> },
-    { id: 'action-view-goals', type: 'action', label: 'View goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
+    { id: 'action-view-goals', type: 'action', label: 'View goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => goToTools('goals'), iconClassName: 'gold', icon: <Target size={16} /> },
+    // Utilities sub-pages
+    { id: 'page-converter', type: 'page', label: 'Currency Converter', description: 'Convert currencies with live exchange rates', keywords: ['currency', 'converter', 'convert', 'exchange', 'fx', 'rates', 'utilities'], onSelect: () => goToTools('converter'), iconClassName: 'blue', icon: <ArrowLeftRight size={16} /> },
+    { id: 'page-investments', type: 'page', label: 'Investments', description: 'Track manual holdings and portfolio performance', keywords: ['investments', 'portfolio', 'holdings', 'stocks', 'assets', 'net worth', 'utilities'], onSelect: () => goToTools('investments'), iconClassName: 'green', icon: <TrendingUp size={16} /> },
+    // Settings sub-pages
+    { id: 'page-settings-general', type: 'page', label: 'Settings: General', description: 'Currency, theme, notifications, and shortcuts', keywords: ['settings', 'general', 'preferences', 'currency', 'theme', 'notifications'], onSelect: () => goToSettingsSection('general'), iconClassName: 'slate', icon: <Settings size={16} /> },
+    { id: 'page-settings-data', type: 'page', label: 'Settings: Data & Backup', description: 'Export and import your Budgetly data', keywords: ['settings', 'data', 'backup', 'export', 'import', 'csv', 'json', 'download'], onSelect: () => goToSettingsSection('data'), iconClassName: 'slate', icon: <Download size={16} /> },
+    { id: 'page-settings-account', type: 'page', label: 'Settings: Account', description: 'Manage your profile and password', keywords: ['settings', 'account', 'profile', 'password', 'email', 'name'], onSelect: () => goToSettingsSection('account'), iconClassName: 'slate', icon: <KeyRound size={16} /> },
+    { id: 'page-settings-admin', type: 'page', label: 'Super Admin', description: 'Manage users, roles, and workspace access', keywords: ['super admin', 'admin', 'users', 'roles', 'permissions', 'access', 'workspace'], onSelect: () => goToSettingsSection('admin'), iconClassName: 'violet', icon: <ShieldCheck size={16} /> },
+    { id: 'page-settings-audit', type: 'page', label: 'Audit Log', description: 'Time-stamped history of Super Admin changes', keywords: ['audit', 'audit log', 'history', 'logs', 'activity', 'changes'], onSelect: () => goToSettingsSection('audit'), iconClassName: 'slate', icon: <ScrollText size={16} /> },
+    { id: 'page-settings-bugs', type: 'page', label: 'Bugs & Fixes', description: 'Review reported bugs and their status', keywords: ['bugs', 'fixes', 'reports', 'issues', 'support'], onSelect: () => goToSettingsSection('bugs'), iconClassName: 'slate', icon: <Wrench size={16} /> },
+    // Deep actions
+    { id: 'action-change-password', type: 'action', label: 'Change password', description: 'Update your account password', keywords: ['password', 'change password', 'security', 'account'], onSelect: () => goToSettingsSection('account'), iconClassName: 'slate', icon: <KeyRound size={16} /> },
+    { id: 'action-notification-settings', type: 'action', label: 'Notification settings', description: 'Choose which alerts Budgetly sends you', keywords: ['notifications', 'alerts', 'reminders', 'preferences'], onSelect: () => goToSettingsSection('general'), iconClassName: 'slate', icon: <Bell size={16} /> },
+    { id: 'action-search-shortcut', type: 'action', label: 'Customize search shortcut', description: 'Change the universal search keyboard shortcut', keywords: ['shortcut', 'keyboard', 'search', 'hotkey', 'universal search'], onSelect: () => goToSettingsSection('general'), iconClassName: 'slate', icon: <Search size={16} /> },
+    { id: 'action-export-csv', type: 'action', label: 'Export transactions (CSV)', description: 'Download this month as a CSV file', keywords: ['export', 'csv', 'download', 'transactions', 'spreadsheet', 'data'], onSelect: () => budget.exportCSV(), iconClassName: 'violet', icon: <Download size={16} /> },
+    { id: 'action-export-json', type: 'action', label: 'Export backup (JSON)', description: 'Download a full backup of your data', keywords: ['export', 'json', 'backup', 'download', 'data'], onSelect: () => budget.exportJSON(), iconClassName: 'violet', icon: <Download size={16} /> },
+    { id: 'action-import-data', type: 'action', label: 'Import data', description: 'Restore data from a backup file', keywords: ['import', 'restore', 'backup', 'upload', 'data'], onSelect: () => goToSettingsSection('data'), iconClassName: 'violet', icon: <Upload size={16} /> },
   ]
+  const featureGate: Record<string, boolean> = {
+    'page-dashboard': admin.visibleFeatures.dashboard,
+    'action-go-this-month': admin.visibleFeatures.dashboard,
+    'page-transactions': admin.visibleFeatures.transactions,
+    'action-add-transaction': admin.visibleFeatures.transactions,
+    'page-categories': admin.visibleFeatures.categories,
+    'page-recurring': admin.visibleFeatures.recurring,
+    'page-advice': admin.visibleFeatures.advice,
+    'page-goals': admin.visibleFeatures.goals,
+    'action-view-goals': admin.visibleFeatures.goals,
+    'page-reports': admin.visibleFeatures.reports,
+    'action-export-report': admin.visibleFeatures.reports,
+    'page-converter': admin.visibleFeatures.converter,
+    'page-investments': admin.visibleFeatures.investments,
+    'page-support': admin.visibleFeatures.support,
+    'page-settings': admin.visibleFeatures.settings,
+    'action-open-settings': admin.visibleFeatures.settings,
+    'action-theme-toggle': admin.visibleFeatures.settings,
+    'page-settings-general': admin.visibleFeatures.settings,
+    'page-settings-data': admin.visibleFeatures.settings,
+    'page-settings-account': admin.visibleFeatures.settings,
+    'action-change-password': admin.visibleFeatures.settings,
+    'action-notification-settings': admin.visibleFeatures.settings,
+    'action-search-shortcut': admin.visibleFeatures.settings,
+    'action-export-csv': admin.visibleFeatures.settings,
+    'action-export-json': admin.visibleFeatures.settings,
+    'action-import-data': admin.visibleFeatures.settings,
+    'page-settings-admin': admin.isSuperAdmin,
+    'page-settings-audit': admin.isSuperAdmin,
+    'page-settings-bugs': admin.isSuperAdmin,
+  }
   const commandItems: CommandItem[] = staticCommandItems
-    .filter((item) => {
-      if (item.id.includes('dashboard')) return admin.visibleFeatures.dashboard
-      if (item.id.includes('transactions') || item.id.includes('add-transaction')) return admin.visibleFeatures.transactions
-      if (item.id.includes('categories')) return admin.visibleFeatures.categories
-      if (item.id.includes('recurring')) return admin.visibleFeatures.recurring
-      if (item.id.includes('advice')) return admin.visibleFeatures.advice
-      if (item.id.includes('goals') || item.id.includes('view-goals')) return admin.visibleFeatures.goals
-      if (item.id.includes('reports') || item.id.includes('export-report')) return admin.visibleFeatures.reports
-      if (item.id.includes('settings') || item.id.includes('theme-toggle')) return admin.visibleFeatures.settings
-      if (item.id.includes('support')) return admin.visibleFeatures.support
-      return true
-    })
+    .filter((item) => featureGate[item.id] !== false)
     .map((item) => ({ ...item, group: item.type === 'page' ? 'pages' : 'actions' }) as CommandItem)
     .concat(dataCommandItems)
 

@@ -4847,9 +4847,20 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
 
   useEffect(() => {
     const openGeneral = () => setSettingsSection('general')
+    const openSection = (event: Event) => {
+      const section = (event as CustomEvent<{ section?: string }>).detail?.section
+      const allowed = ['general', 'data', 'account', 'admin', 'audit', 'bugs']
+      if (!section || !allowed.includes(section)) return
+      if ((section === 'admin' || section === 'audit' || section === 'bugs') && !isSuperAdmin) { setSettingsSection('general'); return }
+      setSettingsSection(section as typeof settingsSection)
+    }
     window.addEventListener('budgetly:open-settings-general', openGeneral)
-    return () => window.removeEventListener('budgetly:open-settings-general', openGeneral)
-  }, [])
+    window.addEventListener('budgetly:open-settings-section', openSection as EventListener)
+    return () => {
+      window.removeEventListener('budgetly:open-settings-general', openGeneral)
+      window.removeEventListener('budgetly:open-settings-section', openSection as EventListener)
+    }
+  }, [isSuperAdmin])
 
   return (
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
