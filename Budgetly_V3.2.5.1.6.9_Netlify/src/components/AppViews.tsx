@@ -4661,6 +4661,11 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   }
   const hourOptions = Array.from({ length: 24 }, (_, h) => h)
   const fmtHour = (h: number) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`
+  // Backend-dependent controls are hidden until their delivery channel is configured
+  // (they auto-reappear once these build-time env vars are set). Push & quiet hours
+  // need Web Push (VAPID); the email digest needs the email backend.
+  const pushConfigured = Boolean(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+  const emailConfigured = Boolean(import.meta.env.VITE_EMAIL_DIGEST)
   const notificationItems: Array<{ key: keyof typeof notificationPrefs; label: string; description: string }> = [
     { key: 'bills_recurring', label: 'Bills & Recurring', description: 'Upcoming bills, recurring income, and recurring expenses.' },
     { key: 'budgets', label: 'Budgets', description: 'Budget usage, warnings, and exceeded limits.' },
@@ -5088,83 +5093,97 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                     </div>
                   ))}
 
-                  <div className="settingsNotifDivider">Delivery</div>
+                  {pushConfigured || emailConfigured ? (
+                    <>
+                      <div className="settingsNotifDivider">Delivery</div>
 
-                  <div className="settingsNotifRow">
-                    <div>
-                      <div className="settingsNotifLabel">Push notifications</div>
-                      <small>{pushSupported() ? (getPushPermission() === 'denied' ? 'Blocked in your browser settings.' : 'Get alerts on this device even when Budgetly is closed.') : 'Not supported on this browser.'}</small>
-                    </div>
-                    <button
-                      type="button"
-                      className={`settingsSwitch ${pushReady ? 'on' : ''}`}
-                      role="switch"
-                      aria-checked={pushReady}
-                      aria-label="Toggle push notifications"
-                      disabled={!pushSupported() || pushBusy || getPushPermission() === 'denied'}
-                      onClick={togglePush}
-                    >
-                      <span className="settingsSwitchKnob" />
-                    </button>
-                  </div>
+                      {pushConfigured ? (
+                        <div className="settingsNotifRow">
+                          <div>
+                            <div className="settingsNotifLabel">Push notifications</div>
+                            <small>{pushSupported() ? (getPushPermission() === 'denied' ? 'Blocked in your browser settings.' : 'Get alerts on this device even when Budgetly is closed.') : 'Not supported on this browser.'}</small>
+                          </div>
+                          <button
+                            type="button"
+                            className={`settingsSwitch ${pushReady ? 'on' : ''}`}
+                            role="switch"
+                            aria-checked={pushReady}
+                            aria-label="Toggle push notifications"
+                            disabled={!pushSupported() || pushBusy || getPushPermission() === 'denied'}
+                            onClick={togglePush}
+                          >
+                            <span className="settingsSwitchKnob" />
+                          </button>
+                        </div>
+                      ) : null}
 
-                  <div className="settingsNotifRow">
-                    <div>
-                      <div className="settingsNotifLabel">Email digest</div>
-                      <small>Periodic summary of your alerts by email.</small>
-                    </div>
-                    <button
-                      type="button"
-                      className={`settingsSwitch ${notifDelivery.channel_email ? 'on' : ''}`}
-                      role="switch"
-                      aria-checked={notifDelivery.channel_email}
-                      aria-label="Toggle email digest"
-                      onClick={() => void saveNotifDelivery({ channel_email: !notifDelivery.channel_email })}
-                    >
-                      <span className="settingsSwitchKnob" />
-                    </button>
-                  </div>
-                  {notifDelivery.channel_email ? (
-                    <div className="settingsNotifRow">
-                      <div><div className="settingsNotifLabel">Digest frequency</div><small>How often to send the summary email.</small></div>
-                      <select className="settingsNotifSelect" value={notifDelivery.email_digest_frequency} onChange={(e) => void saveNotifDelivery({ email_digest_frequency: e.target.value as 'off' | 'daily' | 'weekly' })}>
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="off">Off</option>
-                      </select>
-                    </div>
+                      {emailConfigured ? (
+                        <>
+                          <div className="settingsNotifRow">
+                            <div>
+                              <div className="settingsNotifLabel">Email digest</div>
+                              <small>Periodic summary of your alerts by email.</small>
+                            </div>
+                            <button
+                              type="button"
+                              className={`settingsSwitch ${notifDelivery.channel_email ? 'on' : ''}`}
+                              role="switch"
+                              aria-checked={notifDelivery.channel_email}
+                              aria-label="Toggle email digest"
+                              onClick={() => void saveNotifDelivery({ channel_email: !notifDelivery.channel_email })}
+                            >
+                              <span className="settingsSwitchKnob" />
+                            </button>
+                          </div>
+                          {notifDelivery.channel_email ? (
+                            <div className="settingsNotifRow">
+                              <div><div className="settingsNotifLabel">Digest frequency</div><small>How often to send the summary email.</small></div>
+                              <select className="settingsNotifSelect" value={notifDelivery.email_digest_frequency} onChange={(e) => void saveNotifDelivery({ email_digest_frequency: e.target.value as 'off' | 'daily' | 'weekly' })}>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="off">Off</option>
+                              </select>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </>
                   ) : null}
 
                   <div className="settingsNotifDivider">Preferences</div>
 
-                  <div className="settingsNotifRow">
-                    <div>
-                      <div className="settingsNotifLabel">Quiet hours</div>
-                      <small>Pause push notifications during set hours.</small>
-                    </div>
-                    <button
-                      type="button"
-                      className={`settingsSwitch ${notifDelivery.quiet_hours_enabled ? 'on' : ''}`}
-                      role="switch"
-                      aria-checked={notifDelivery.quiet_hours_enabled}
-                      aria-label="Toggle quiet hours"
-                      onClick={() => void saveNotifDelivery({ quiet_hours_enabled: !notifDelivery.quiet_hours_enabled })}
-                    >
-                      <span className="settingsSwitchKnob" />
-                    </button>
-                  </div>
-                  {notifDelivery.quiet_hours_enabled ? (
-                    <div className="settingsNotifRow">
-                      <div><div className="settingsNotifLabel">From / to</div><small>No push alerts between these times.</small></div>
-                      <div className="row" style={{ gap: 8 }}>
-                        <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_start} onChange={(e) => void saveNotifDelivery({ quiet_hours_start: Number(e.target.value) })}>
-                          {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
-                        </select>
-                        <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_end} onChange={(e) => void saveNotifDelivery({ quiet_hours_end: Number(e.target.value) })}>
-                          {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
-                        </select>
+                  {pushConfigured ? (
+                    <>
+                      <div className="settingsNotifRow">
+                        <div>
+                          <div className="settingsNotifLabel">Quiet hours</div>
+                          <small>Pause push notifications during set hours.</small>
+                        </div>
+                        <button
+                          type="button"
+                          className={`settingsSwitch ${notifDelivery.quiet_hours_enabled ? 'on' : ''}`}
+                          role="switch"
+                          aria-checked={notifDelivery.quiet_hours_enabled}
+                          aria-label="Toggle quiet hours"
+                          onClick={() => void saveNotifDelivery({ quiet_hours_enabled: !notifDelivery.quiet_hours_enabled })}
+                        >
+                          <span className="settingsSwitchKnob" />
+                        </button>
                       </div>
-                    </div>
+                      {notifDelivery.quiet_hours_enabled ? (
+                        <div className="settingsNotifRow">
+                          <div><div className="settingsNotifLabel">From / to</div><small>No push alerts between these times.</small></div>
+                          <div className="row" style={{ gap: 8 }}>
+                            <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_start} onChange={(e) => void saveNotifDelivery({ quiet_hours_start: Number(e.target.value) })}>
+                              {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
+                            </select>
+                            <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_end} onChange={(e) => void saveNotifDelivery({ quiet_hours_end: Number(e.target.value) })}>
+                              {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
                   ) : null}
 
                   <div className="settingsNotifRow">
