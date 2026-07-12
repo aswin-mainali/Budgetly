@@ -4405,6 +4405,50 @@ function ChatInlineChart({ chart, fmt }: { chart: ChatChart; fmt: (n: number) =>
   )
 }
 
+function KpiSparkArea({ data, color, gid }: { data: SparkSeries[]; color: string; gid: string }) {
+  if (!data || data.length < 2) return null
+  return (
+    <div className="kpiSpark">
+      <ResponsiveContainer width="100%" height={38}>
+        <AreaChart data={data} margin={{ top: 3, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#${gid})`} isAnimationActive={false} dot={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+type KpiTileData = {
+  key: string
+  label: string
+  value: string
+  sub?: string
+  deltaLabel?: string | null
+  deltaTone?: 'up' | 'down' | 'flat'
+  spark?: SparkSeries[]
+  color: string
+}
+
+function KpiTile({ kpi }: { kpi: KpiTileData }) {
+  return (
+    <div className="kpiTile">
+      <div className="kpiTop">
+        <span className="kpiLabel">{kpi.label}</span>
+        {kpi.deltaLabel ? <span className={`kpiDelta ${kpi.deltaTone ?? 'flat'}`}>{kpi.deltaLabel}</span> : null}
+      </div>
+      <div className="kpiValue">{kpi.value}</div>
+      {kpi.sub ? <div className="kpiSub">{kpi.sub}</div> : null}
+      <KpiSparkArea data={kpi.spark ?? []} color={kpi.color} gid={`kpi-${kpi.key}`} />
+    </div>
+  )
+}
+
 export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'budget'> & { userId?: string | null; onNavigate?: (target: AdviceNavTarget) => void }) {
   const { data, activeMonth, income, expenses, net, byCategory, sortedCategories, sortedGoals, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
@@ -4447,6 +4491,44 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
     { key: 'bills', label: 'Bill coverage' },
     { key: 'trend', label: 'Spending trend' },
   ]
+
+  // ---- Key-number KPI tiles: always populated from the current period, so the
+  //      page has substance even before comparative insights exist. ----
+  const roundN = (n: number) => Math.round(Number.isFinite(n) ? n : 0)
+  const hasPrevMonth = health.previous.income > 0 || health.previous.expenses > 0
+  const upcomingExpenseTotal = upcomingRecurringThisMonth
+    .filter((item) => item.kind !== 'income')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  const netDelta = hasPrevMonth ? net - health.previous.net : null
+  const rateDelta = hasPrevMonth ? roundN(health.current.savingsRate) - roundN(health.previous.savingsRate) : null
+  const spentDelta = hasPrevMonth ? expenses - health.previous.expenses : null
+  const kpis: KpiTileData[] = [
+    {
+      key: 'net', label: 'Net', value: fmt(net), spark: seriesNet, color: net < 0 ? '#ef4444' : '#21c97a',
+      deltaLabel: netDelta == null ? null : `${netDelta >= 0 ? '▲' : '▼'} ${fmt(Math.abs(netDelta))}`,
+      deltaTone: netDelta == null ? 'flat' : netDelta >= 0 ? 'up' : 'down',
+    },
+    {
+      key: 'rate', label: 'Savings rate', value: income > 0 ? `${roundN(health.current.savingsRate)}%` : '—', spark: seriesSavings, color: '#21c97a',
+      deltaLabel: rateDelta == null ? null : `${rateDelta >= 0 ? '▲' : '▼'} ${Math.abs(rateDelta)} pts`,
+      deltaTone: rateDelta == null ? 'flat' : rateDelta >= 0 ? 'up' : 'down',
+    },
+    {
+      key: 'spent', label: 'Spent', value: fmt(expenses), spark: seriesExpenses, color: '#60a5fa',
+      deltaLabel: spentDelta == null ? null : `${spentDelta >= 0 ? '▲' : '▼'} ${fmt(Math.abs(spentDelta))}`,
+      deltaTone: spentDelta == null ? 'flat' : spentDelta > 0 ? 'down' : 'up',
+    },
+    {
+      key: 'bills', label: 'Upcoming bills', value: fmt(upcomingExpenseTotal), sub: 'due in the next 7 days', color: '#f59e0b',
+    },
+  ]
+
+  const emptyStateCopy: Record<InsightTab, string> = {
+    spending: 'Spending trends appear once you have a few weeks of expenses logged.',
+    cashflow: 'Cash-flow insights compare months — keep logging income and expenses.',
+    savings: 'Savings insights build up as your savings rate shifts month to month.',
+    bills: 'Add recurring bills on the Recurring page to unlock bill-coverage insights.',
+  }
 
   // ---- Rotating money tip (kept exactly as before, just restyled). ----
   const evergreenTips = [
@@ -4840,8 +4922,14 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
       {items.map((insight) => (
         <InsightCardView key={insight.id} insight={insight} currency={currency} fmt={fmt} onNavigate={onNavigate} onDismiss={() => dismissInsight(insight)} />
       ))}
-      {items.length === 0 && activeTab !== 'all' ? (
-        <div className="insightEmpty muted">Nothing flagged here right now.</div>
+      {items.length === 0 ? (
+        <div className="insightEmpty">
+          <Sparkles size={22} />
+          <div className="insightEmptyTitle">{activeTab === 'all' ? 'More insights are on the way' : 'Nothing flagged here yet'}</div>
+          <p>{activeTab === 'all'
+            ? 'As you log more income and spending, tailored comparative insights will show up here.'
+            : emptyStateCopy[activeTab]}</p>
+        </div>
       ) : null}
     </div>
   )
@@ -4856,6 +4944,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
         <span className="badge">Smart guidance</span>
       </div>
 
+      <div className="insightsHero">
       {/* Financial health score */}
       <div className="card healthCard">
         <div className="healthCardInner">
@@ -4895,8 +4984,12 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
           </div>
         </div>
       </div>
+        <div className="kpiGrid">
+          {kpis.map((kpi) => <KpiTile key={kpi.key} kpi={kpi} />)}
+        </div>
+      </div>
 
-      <div className="adviceColumns">
+      <div className="insightsBody">
       {/* Prioritized, categorized insights */}
       <div className="card insightsCard">
         <div className="insightTabs" role="tablist">

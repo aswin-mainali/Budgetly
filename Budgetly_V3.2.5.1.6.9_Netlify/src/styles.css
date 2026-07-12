@@ -9241,12 +9241,34 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .advicePagePro2 { display: grid; gap: 16px; }
 .advicePagePro2 .adviceHeader h2 { margin: 0 0 6px; }
 
-/* Two-column body: insights on the left, assistant on the right. Both columns
-   stretch to the same height so the assistant fills its side (no dead space);
-   the message canvas flexes and the input stays docked at the bottom. */
-.adviceColumns { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(340px, 1fr); gap: 16px; align-items: stretch; }
-.adviceColumns > .assistantCard { display: flex; flex-direction: column; gap: 14px; }
-.adviceColumns > .assistantCard .assistantMessages { flex: 1 1 auto; max-height: none; min-height: 220px; }
+/* Hero band: health score paired with a 2x2 grid of key-number KPI tiles. */
+.insightsHero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.insightsHero > .healthCard { margin: 0; }
+.kpiGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.kpiTile {
+  border: 1px solid var(--border); border-radius: 16px; padding: 14px 15px; background: rgba(255,255,255,.03);
+  display: flex; flex-direction: column; gap: 3px; min-height: 116px;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.kpiTile:hover { transform: translateY(-2px); border-color: rgba(33,201,122,.4); box-shadow: 0 14px 30px rgba(2,8,23,.2); }
+.kpiTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kpiLabel { font-size: 12px; font-weight: 600; color: var(--muted); }
+.kpiDelta { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.kpiDelta.up { color: #21c97a; background: rgba(33,201,122,.12); }
+.kpiDelta.down { color: #ef4444; background: rgba(239,68,68,.10); }
+.kpiDelta.flat { color: var(--muted); background: rgba(148,163,184,.12); }
+.kpiValue { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--text); line-height: 1.1; }
+.kpiSub { font-size: 11px; color: var(--muted); }
+.kpiSpark { margin-top: auto; }
+body.light .kpiTile { background: rgba(255,255,255,.62); }
+
+/* Body: insights feed on the left, assistant on the right. Columns share a
+   height so the assistant fills its side; a fresh chat floats its greeting +
+   prompts in the middle, and a live chat fills with the conversation. */
+.insightsBody { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(350px, 1fr); gap: 16px; align-items: stretch; }
+.insightsBody > .insightsCard { display: flex; flex-direction: column; gap: 14px; }
+.insightsBody > .assistantCard { display: flex; flex-direction: column; gap: 14px; }
+.insightsBody > .assistantCard .assistantMessages { flex: 1 1 auto; max-height: none; min-height: 220px; }
 
 /* ---- Financial health score ---- */
 .healthCard { background: linear-gradient(135deg, rgba(33,201,122,.10), rgba(37,99,235,.08)); }
@@ -9284,11 +9306,12 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 
 /* ---- Insight tabs + cards ---- */
 .insightsCard { display: grid; gap: 14px; }
-.insightTabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.insightTabs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 0 0 auto; }
 .insightTab {
   display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
   border: 1px solid var(--border); background: rgba(255,255,255,.02); color: var(--muted);
   font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+  flex: 0 0 auto; height: 36px;
 }
 .insightTab:hover { color: var(--text); background: rgba(255,255,255,.05); }
 .insightTab.active { color: var(--text); border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
@@ -9340,7 +9363,13 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
   color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
 }
 .insightAction:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
-.insightEmpty { grid-column: 1 / -1; padding: 28px; text-align: center; }
+.insightEmpty {
+  grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  padding: 34px 22px; border: 1px dashed var(--border); border-radius: 16px; background: rgba(148,163,184,.04); color: var(--muted);
+}
+.insightEmpty svg { color: var(--accent); opacity: .85; margin-bottom: 2px; }
+.insightEmptyTitle { font-weight: 700; color: var(--text); font-size: .96rem; }
+.insightEmpty p { margin: 0; font-size: .87rem; max-width: 360px; line-height: 1.55; }
 .tipCard .tipIcon { font-size: 30px; line-height: 1; }
 .tipCard .adviceDots { margin-top: 6px; }
 
@@ -9428,10 +9457,14 @@ body.light .assistantExample { background: rgba(255,255,255,.6); }
 .assistantFinePrint { font-size: 11.5px; color: var(--muted); }
 
 /* Responsive */
+@media (max-width: 1040px) {
+  .insightsHero { grid-template-columns: 1fr; }
+}
 /* Below this width the assistant drops under the insights instead of sitting beside them. */
 @media (max-width: 980px) {
-  .adviceColumns { grid-template-columns: 1fr; }
-  .adviceColumns > .assistantCard .assistantMessages { flex: 0 1 auto; max-height: 420px; min-height: 0; }
+  .insightsBody { grid-template-columns: 1fr; }
+  .insightsBody > .assistantCard { position: static; height: auto; max-height: none; }
+  .insightsBody > .assistantCard .assistantMessages { flex: 0 1 auto; max-height: 420px; min-height: 0; }
 }
 
 @media (max-width: 720px) {
@@ -9440,6 +9473,10 @@ body.light .assistantExample { background: rgba(255,255,255,.6); }
   .healthComponents { grid-template-columns: 1fr; }
   .insightGrid { grid-template-columns: 1fr; }
   .assistantBubble { max-width: 94%; }
+}
+
+@media (max-width: 560px) {
+  .kpiGrid { grid-template-columns: 1fr; }
 }
 
 /* Light theme adjustments */
