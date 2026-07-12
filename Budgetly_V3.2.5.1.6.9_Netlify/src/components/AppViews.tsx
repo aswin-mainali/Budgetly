@@ -6065,7 +6065,10 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
             <>
               {detailOpen ? <div className="bugsDrawerBackdrop" onClick={() => setDetailOpen(false)} /> : null}
               <div className={`bugsDetailPane asDrawer ${detailOpen ? 'open' : ''}`}>
-                <button className="bugsDrawerBack" onClick={() => setDetailOpen(false)}><ArrowLeft size={16} /> Back to list</button>
+                <div className="bugsDrawerBar">
+                  <button className="bugsDrawerBack" onClick={() => setDetailOpen(false)}><ArrowLeft size={16} /> Back to list</button>
+                  <button className="bugsDrawerClose" onClick={() => setDetailOpen(false)} aria-label="Close details"><CloseIcon size={18} /></button>
+                </div>
                 {detailBody}
               </div>
             </>
