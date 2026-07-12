@@ -3,7 +3,7 @@ import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sp
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
-import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
+import { readCachedUserProfile, syncProfileCacheForUser, loadProfileFromTable, markWalkthroughCompleted } from './lib/userProfile'
 import { monthKey } from './lib/utils'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
@@ -15,8 +15,6 @@ import UniversalSearch, { CommandItem } from './components/UniversalSearch'
 import WelcomeWalkthrough from './components/WelcomeWalkthrough'
 
 const THEME_KEY = 'raswibudgeting:theme'
-const WALKTHROUGH_KEY_PREFIX = 'budgetly:onboarding-tour:v1:'
-const walkthroughStorageKey = (id: string) => `${WALKTHROUGH_KEY_PREFIX}${id}`
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 const IDLE_WARNING_MS = 60 * 1000
@@ -244,17 +242,23 @@ export default function App() {
     window.dispatchEvent(new Event('mousemove'))
   }
 
-  // Show the first-time walkthrough once per user (device-local), after their
-  // account role/feature access has loaded and the account is active.
+  // Show the first-time walkthrough once per user, after their account
+  // role/feature access has loaded and the account is active. The completion
+  // flag is persisted on the user's profile so the tour only shows once
+  // across every device and browser.
   useEffect(() => {
     if (!userId || admin.loading) return
     if (admin.profile && !admin.profile.is_active) return
-    try {
-      const seen = window.localStorage.getItem(walkthroughStorageKey(userId))
-      if (!seen) setShowWalkthrough(true)
-    } catch {
-      /* localStorage unavailable — skip the tour rather than block the app */
-    }
+    let cancelled = false
+    void (async () => {
+      try {
+        const profile = await loadProfileFromTable(userId)
+        if (!cancelled && !profile.walkthroughCompleted) setShowWalkthrough(true)
+      } catch {
+        /* If the flag can't be read, don't block the app or nag the user. */
+      }
+    })()
+    return () => { cancelled = true }
   }, [userId, admin.loading, admin.profile])
 
   // Let other views (e.g. Help & Support) replay the walkthrough on demand.
@@ -264,18 +268,9 @@ export default function App() {
     return () => window.removeEventListener('budgetly:start-walkthrough', replay)
   }, [])
 
-  const markWalkthroughSeen = () => {
-    if (!userId) return
-    try {
-      window.localStorage.setItem(walkthroughStorageKey(userId), new Date().toISOString())
-    } catch {
-      /* ignore storage failures */
-    }
-  }
-
   const dismissWalkthrough = () => {
-    markWalkthroughSeen()
     setShowWalkthrough(false)
+    if (userId) void markWalkthroughCompleted(userId).catch(() => { /* best-effort persistence */ })
   }
 
   const orderedViews = useMemo<ViewKey[]>(() => ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'settings', 'support'], [])
