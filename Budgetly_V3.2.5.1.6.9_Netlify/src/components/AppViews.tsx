@@ -4944,6 +4944,22 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
             </div>
           ))}
 
+          {chatMessages.length <= 1 && !pending ? (
+            <div className="assistantEmpty">
+              <div className="assistantEmptyTitle">Try asking me</div>
+              {[
+                { icon: '📊', label: 'Break down my spending this month', prompt: 'How much did I spend this month?' },
+                { icon: '💹', label: 'How is my savings rate trending?', prompt: 'What is my savings rate?' },
+                { icon: '🧾', label: 'What bills are coming up?', prompt: 'How much are my upcoming bills?' },
+                { icon: '⚖️', label: 'Am I saving more than last month?', prompt: 'Did I save more than last month?' },
+              ].map((example) => (
+                <button key={example.prompt} type="button" className="assistantExample" onClick={() => send(example.prompt)}>
+                  <span className="assistantExampleIcon" aria-hidden="true">{example.icon}</span> {example.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           {pending ? (
             <div className="chatProposal">
               {pending.type === 'goal_transfer' && pending.stage === 'overdraft' ? (

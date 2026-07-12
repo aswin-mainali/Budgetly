@@ -9241,14 +9241,12 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .advicePagePro2 { display: grid; gap: 16px; }
 .advicePagePro2 .adviceHeader h2 { margin: 0 0 6px; }
 
-/* Two-column body: insights on the left, assistant as a sticky rail on the right. */
-.adviceColumns { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(340px, 1fr); gap: 16px; align-items: start; }
-.adviceColumns > .assistantCard {
-  position: sticky; top: 16px; align-self: start;
-  display: flex; flex-direction: column; gap: 14px;
-  min-height: 560px; max-height: calc(100vh - 32px);
-}
-.adviceColumns > .assistantCard .assistantMessages { flex: 1 1 auto; max-height: none; }
+/* Two-column body: insights on the left, assistant on the right. Both columns
+   stretch to the same height so the assistant fills its side (no dead space);
+   the message canvas flexes and the input stays docked at the bottom. */
+.adviceColumns { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(340px, 1fr); gap: 16px; align-items: stretch; }
+.adviceColumns > .assistantCard { display: flex; flex-direction: column; gap: 14px; }
+.adviceColumns > .assistantCard .assistantMessages { flex: 1 1 auto; max-height: none; min-height: 220px; }
 
 /* ---- Financial health score ---- */
 .healthCard { background: linear-gradient(135deg, rgba(33,201,122,.10), rgba(37,99,235,.08)); }
@@ -9300,12 +9298,18 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 }
 .insightTab.active .insightTabCount { background: rgba(33,201,122,.22); color: #21c97a; }
 
-.insightGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.insightGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
 .insightCard {
   position: relative; padding: 16px 18px; border-radius: 18px; border: 1px solid var(--border);
-  background: rgba(255,255,255,.03); display: grid; gap: 8px; align-content: start;
-  border-left-width: 3px;
+  background: rgba(255,255,255,.03); display: flex; flex-direction: column; gap: 8px;
+  border-left-width: 3px; min-height: 210px;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
+.insightCard:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(2,8,23,.24); }
+/* Push the sparkline+action (or a lone action, or the tip dots) to a shared baseline. */
+.insightCard > .insightSpark { margin-top: auto; }
+.insightCard:not(:has(.insightSpark)) > .insightAction { margin-top: auto; }
+.insightCard.tipCard > .adviceDots { margin-top: auto; }
 .insightCard.tier-worth { border-left-color: #f59e0b; }
 .insightCard.tier-doing { border-left-color: #21c97a; }
 .insightCard.tier-upcoming { border-left-color: #6ea0e0; }
@@ -9319,7 +9323,7 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .insightDismiss:hover { background: rgba(148,163,184,.14); color: var(--text); }
 
 .insightTier {
-  justify-self: start; font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 3px 9px;
+  align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 3px 9px;
   border-radius: 999px; border: 1px solid var(--border); text-transform: none;
 }
 .insightTier.worth { color: #f59e0b; border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.12); }
@@ -9331,7 +9335,7 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .insightBody { margin: 0; color: var(--muted); line-height: 1.55; font-size: .9rem; }
 .insightSpark { margin: 4px 0 2px; }
 .insightAction {
-  justify-self: start; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
   padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.02);
   color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
 }
@@ -9347,9 +9351,11 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .assistantHeader h3 { margin: 0 0 2px; font-size: 1.1rem; color: var(--text); }
 
 .assistantMessages {
-  display: grid; gap: 12px; align-content: start; max-height: 460px; overflow-y: auto; padding-right: 4px;
+  display: flex; flex-direction: column; gap: 12px; max-height: 460px; overflow-y: auto; padding-right: 4px;
   min-height: 160px;
 }
+/* On a fresh conversation, float the greeting + example prompts in the middle. */
+.assistantMessages:has(.assistantEmpty) { justify-content: center; }
 .assistantBubbleWrap { display: grid; gap: 8px; }
 .assistantBubbleWrap.user { justify-items: end; }
 .assistantBubble {
@@ -9358,6 +9364,20 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 }
 .assistantBubble.bot { background: var(--panel-soft); border-bottom-left-radius: 6px; }
 .assistantBubble.user { background: var(--accent-soft); border-color: rgba(33,201,122,.28); border-bottom-right-radius: 6px; }
+
+/* Fresh-conversation empty state — greets and offers example prompts so the
+   assistant panel reads as a full, intentional surface rather than a blank box. */
+.assistantEmpty { display: grid; gap: 8px; }
+.assistantEmptyTitle { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.assistantExample {
+  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%;
+  padding: 11px 13px; border-radius: 12px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.02); color: var(--text); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+.assistantExample:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); transform: translateX(2px); }
+.assistantExampleIcon { font-size: 16px; line-height: 1; }
+body.light .assistantExample { background: rgba(255,255,255,.6); }
 
 .assistantChips { display: flex; flex-wrap: wrap; gap: 8px; }
 .assistantChip {
@@ -9411,8 +9431,7 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 /* Below this width the assistant drops under the insights instead of sitting beside them. */
 @media (max-width: 980px) {
   .adviceColumns { grid-template-columns: 1fr; }
-  .adviceColumns > .assistantCard { position: static; min-height: 0; max-height: none; }
-  .adviceColumns > .assistantCard .assistantMessages { max-height: 420px; }
+  .adviceColumns > .assistantCard .assistantMessages { flex: 0 1 auto; max-height: 420px; min-height: 0; }
 }
 
 @media (max-width: 720px) {
