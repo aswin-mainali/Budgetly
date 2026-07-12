@@ -2670,6 +2670,109 @@ body.light .deleteConfirmModal p strong{color:#111827}
   .deleteConfirmActions .btn{width:100%}
 }
 
+.cropEditorModal{
+  width:min(400px, 100%);
+  padding:24px 22px 20px;
+  border-color:rgba(16,185,129,.28);
+  box-shadow:0 28px 90px rgba(0,0,0,.42);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.cropEditorModal h3{margin:0 0 6px 0;font-size:22px;line-height:1.2;text-align:center}
+.cropEditorSubtitle{margin:0 0 18px 0;max-width:320px;text-align:center;font-size:13px;line-height:1.5}
+.cropEditorStage{
+  position:relative;
+  border-radius:16px;
+  overflow:hidden;
+  background:#0b1120;
+  touch-action:none;
+  cursor:grab;
+  user-select:none;
+  box-shadow:inset 0 0 0 1px rgba(148,163,184,.18);
+}
+.cropEditorStage:active{cursor:grabbing}
+.cropEditorImage{
+  position:absolute;
+  top:0;
+  left:0;
+  max-width:none;
+  pointer-events:none;
+  will-change:transform;
+}
+.cropEditorLoading{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:16px;
+  text-align:center;
+  color:rgba(226,232,240,.72);
+  font-size:13px;
+}
+.cropEditorMask{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:16px;
+  box-shadow:0 0 0 9999px rgba(2,6,23,.55) inset;
+  /* Circular hole that shows the crop area. */
+  -webkit-mask:radial-gradient(circle at center, transparent calc(50% - 1px), #000 50%);
+  mask:radial-gradient(circle at center, transparent calc(50% - 1px), #000 50%);
+}
+.cropEditorMask::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  box-shadow:0 0 0 2px rgba(255,255,255,.65);
+}
+.cropEditorHint{
+  position:absolute;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  background:rgba(2,6,23,.62);
+  color:#e2e8f0;
+  font-size:11px;
+  font-weight:600;
+  pointer-events:none;
+}
+.cropEditorZoomRow{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  max-width:300px;
+  margin:18px 0 4px;
+}
+.cropEditorZoomBtn{padding:8px;min-width:0}
+.cropEditorZoomSlider{
+  flex:1;
+  accent-color:#10b981;
+  cursor:pointer;
+}
+.cropEditorActions{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin-top:18px;
+  width:100%;
+}
+.cropEditorActions .btn{min-width:130px;justify-content:center}
+body.light .cropEditorModal{background:#fff;border-color:rgba(16,185,129,.24)}
+body.light .cropEditorModal h3{color:#1f2937}
+@media (max-width: 640px){
+  .cropEditorModal{padding:20px 14px 16px;border-radius:18px}
+  .cropEditorActions{flex-direction:column-reverse}
+  .cropEditorActions .btn{width:100%}
+}
+
 .settingsShell{display:grid;grid-template-columns:280px minmax(0,1fr);gap:16px;align-items:start}
 .settingsSidebarCard{position:sticky;top:12px}
 .settingsNavList{display:grid;gap:10px}
