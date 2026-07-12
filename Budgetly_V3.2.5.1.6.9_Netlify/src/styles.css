@@ -8055,14 +8055,13 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 /* Filter label between sort + status selects */
 .goalsFilterLabel{margin-left:4px}
 
-/* Goal grid */
-.goalsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
-.goalsGrid .goalCard{position:relative;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);box-shadow:0 8px 20px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:11px}
+/* Goal carousel cards */
+.goalsCarouselTrack .goalCard{position:relative;flex:0 0 calc((100% - 24px)/3);scroll-snap-align:start;border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--panel);box-shadow:0 8px 20px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:11px}
 .goalCardTop{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
 .goalCardTitleRow{display:flex;gap:10px;min-width:0;align-items:center}
-.goalsGrid .goalEmojiBadge{width:40px;height:40px;border-radius:12px;font-size:20px;flex:0 0 40px}
+.goalsCarouselTrack .goalEmojiBadge{width:40px;height:40px;border-radius:12px;font-size:20px;flex:0 0 40px}
 .goalCardTitleText{min-width:0;display:flex;flex-direction:column;gap:4px}
-.goalsGrid .goalTitle{font-size:15px;font-weight:800;margin:0;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.goalsCarouselTrack .goalTitle{font-size:15px;font-weight:800;margin:0;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
 
 /* Status pill */
 .goalStatusPill{align-self:flex-start;font-size:11px;font-weight:800;padding:2px 9px;border-radius:999px;letter-spacing:.02em}
@@ -8101,26 +8100,26 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .goalFundsInputRow{display:flex;gap:7px;align-items:center}
 .goalFundsInputRow .input{flex:1;height:36px}
 
-/* Pager (only appears for large goal counts) */
-.goalsPager{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:4px}
-
 /* Add/Edit goal drawer (shares the recurring slide-over system) */
 .goalSlideOver .goalEditorGrid{margin-top:14px}
 .goalSlideOver .goalModalError{margin-top:14px}
 .goalSlideOver .goalDrawerActions{margin-top:auto;padding-top:14px}
 
-.goalsGrid .goalMenuPanel{right:36px;min-width:150px}
+.goalsCarouselTrack .goalMenuPanel{right:36px;min-width:150px}
 
+@media (max-width: 1400px){
+  .goalsCarouselTrack .goalCard{flex-basis:calc((100% - 12px)/2)}
+}
 @media (max-width: 1200px){
   .goalsHeroCard{grid-template-columns:1fr}
-  .goalsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .goalsKpiStrip{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .goalsCarouselTrack .goalCard{flex-basis:auto;width:100%}
 }
 @media (max-width: 760px){
-  .goalsGrid{grid-template-columns:1fr}
   .goalsKpiStrip{grid-template-columns:repeat(2,minmax(0,1fr))}
   .goalsHeroInlineStats{gap:16px}
   .goalsSortControls{flex-wrap:wrap;white-space:normal}
+  .goalsCarouselTrack .goalCard{flex-basis:auto;width:100%}
 }
 
 @media (max-width: 1400px){

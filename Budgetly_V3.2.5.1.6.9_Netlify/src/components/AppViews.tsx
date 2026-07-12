@@ -2567,7 +2567,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'behind' | 'saved' | 'oldest'>('nearest')
   const [statusFilter, setStatusFilter] = useState<'all' | 'on_track' | 'behind' | 'completed'>('all')
-  const [page, setPage] = useState(0)
+  const [activeIndex, setActiveIndex] = useState(0)
   const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
   const [fundsGoalId, setFundsGoalId] = useState<string | null>(null)
   const [fundsAmount, setFundsAmount] = useState('')
@@ -2578,11 +2578,12 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const [goalModalError, setGoalModalError] = useState('')
   const [modalQuickAmount, setModalQuickAmount] = useState('')
   const isPhone = useIsPhone()
+  const isCompactLaptop = useIsCompactLaptop()
+  const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
   const currency = data.currency
   const money = (amount: number) => helpers.fmtMoney(amount, currency)
-  const PAGE_SIZE = 9
 
   // ---- Autosave: persist to Supabase shortly after any local change ----
   useEffect(() => {
@@ -2740,12 +2741,38 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     return clone
   }, [filteredGoals, sortKey, projections, data.goals])
 
-  // Only paginate once the grid gets large (~9+); otherwise show everything.
-  const paginated = displayGoals.length > PAGE_SIZE
-  const pageCount = paginated ? Math.ceil(displayGoals.length / PAGE_SIZE) : 1
-  useEffect(() => { setPage((current) => Math.min(current, Math.max(0, pageCount - 1))) }, [pageCount])
-  useEffect(() => { setPage(0) }, [sortKey, statusFilter])
-  const visibleGoals = paginated ? displayGoals.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE) : displayGoals
+  // Carousel: page through the goals, cards-per-page based on screen size.
+  const cardsPerPage = isPhone ? 1 : (isCompactLaptop ? 2 : 3)
+  const pages = Math.max(1, Math.ceil(displayGoals.length / cardsPerPage))
+
+  useEffect(() => {
+    const maxIndex = Math.max(0, pages - 1)
+    setActiveIndex((current) => Math.min(current, maxIndex))
+  }, [pages])
+
+  useEffect(() => {
+    const node = carouselRef.current
+    if (!node) return
+    node.scrollTo({ left: 0, behavior: 'auto' })
+    setActiveIndex(0)
+  }, [sortKey, statusFilter])
+
+  const scrollToIndex = (index: number) => {
+    const node = carouselRef.current
+    if (!node) return
+    const clamped = Math.max(0, Math.min(index, pages - 1))
+    const cardWidth = node.clientWidth
+    node.scrollTo({ left: clamped * cardWidth, behavior: 'smooth' })
+    setActiveIndex(clamped)
+  }
+
+  const onCarouselScroll = () => {
+    const node = carouselRef.current
+    if (!node) return
+    const step = node.clientWidth || 1
+    const nextIndex = Math.round(node.scrollLeft / step)
+    if (nextIndex !== activeIndex) setActiveIndex(nextIndex)
+  }
 
   const fmtProjDate = (date: Date) => date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
 
@@ -2808,9 +2835,15 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           </div>
         </div>
 
-        {/* ---- Goal grid ---- */}
-        <div className="goalsGrid">
-          {visibleGoals.map((goal) => {
+        {/* ---- Goal carousel ---- */}
+        <div className="goalsCarouselShell">
+          {!isPhone ? (
+            <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex - 1)} disabled={activeIndex <= 0} aria-label="Previous goals">
+              <ChevronLeft size={18} />
+            </button>
+          ) : null}
+          <div className="goalsCarouselTrack" ref={carouselRef} onScroll={onCarouselScroll}>
+          {displayGoals.map((goal) => {
             const projection = projections.get(goal.id)
             const targetAmount = Number(goal.target_amount || 0)
             const currentAmount = Number(goal.current_amount || 0)
@@ -2900,23 +2933,21 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
               </div>
             )
           })}
+          </div>
+          {!isPhone ? (
+            <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex + 1)} disabled={activeIndex >= pages - 1} aria-label="Next goals">
+              <ChevronRight size={18} />
+            </button>
+          ) : null}
         </div>
 
         {displayGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>{sortedGoals.length === 0 ? 'No goals yet. Add one to start tracking progress.' : 'No goals match this filter.'}</div> : null}
 
-        {paginated ? (
-          <div className="goalsPager">
-            <button className="icon goalsNavBtn" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page <= 0} aria-label="Previous page">
-              <ChevronLeft size={18} />
-            </button>
-            <div className="goalsCarouselDots">
-              {Array.from({ length: pageCount }).map((_, index) => (
-                <button key={index} className={`goalsDot${page === index ? ' active' : ''}`} onClick={() => setPage(index)} aria-label={`View goals page ${index + 1}`} />
-              ))}
-            </div>
-            <button className="icon goalsNavBtn" onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))} disabled={page >= pageCount - 1} aria-label="Next page">
-              <ChevronRight size={18} />
-            </button>
+        {!isPhone && pages > 1 ? (
+          <div className="goalsCarouselDots">
+            {Array.from({ length: pages }).map((_, index) => (
+              <button key={index} className={`goalsDot${activeIndex === index ? ' active' : ''}`} onClick={() => scrollToIndex(index)} aria-label={`View goal page ${index + 1}`} />
+            ))}
           </div>
         ) : null}
       </div>
