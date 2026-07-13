@@ -2367,13 +2367,41 @@ body.light .sidebarUserAvatar{
   font-size:18px;
   flex:0 0 auto;
 }
+/* Accent-tinted icon chips reinforce the coordinated pair */
+.supportAskCard .supportMiniIcon{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:14px;
+  border:1px solid rgba(33,201,122,.28);
+  background:rgba(33,201,122,.12);
+  font-size:20px;
+  flex:0 0 auto;
+}
+.supportContactCard .supportContactIcon{
+  border-color:rgba(96,165,250,.30);
+  background:rgba(96,165,250,.14);
+}
+/* Coordinated pair: same base darkness, mirrored accent glow that echoes the hero */
+.supportAskCard{
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(520px 200px at 0% 0%, rgba(33,201,122,.10), transparent 62%),
+    linear-gradient(180deg, rgba(9,24,47,.92), rgba(6,18,36,.85));
+}
 .supportContactCard{
-  background: linear-gradient(180deg, rgba(9,18,43,.9), rgba(3,7,18,.88));
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(520px 200px at 100% 0%, rgba(96,165,250,.12), transparent 62%),
+    linear-gradient(180deg, rgba(9,24,47,.92), rgba(6,18,36,.85));
 }
 .supportContactRows{
   display:grid;
   gap:12px;
-  margin-top:14px;
+  margin-top:2px;
 }
 .supportContactRow{
   text-decoration:none;
@@ -2416,6 +2444,25 @@ body.light .sidebarUserAvatar{
 body.light .supportSocials a{
   background:rgba(15,23,42,.04);
   color:#475569;
+}
+/* Light-theme coordinated pair (overrides body.light .card) */
+body.light .supportAskCard{
+  background:
+    radial-gradient(520px 200px at 0% 0%, rgba(33,201,122,.10), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,250,255,.92));
+}
+body.light .supportContactCard{
+  background:
+    radial-gradient(520px 200px at 100% 0%, rgba(96,165,250,.12), transparent 62%),
+    linear-gradient(180deg, rgba(255,255,255,.96), rgba(244,248,255,.92));
+}
+body.light .supportAskCard .supportMiniIcon{
+  border-color:rgba(33,201,122,.30);
+  background:rgba(33,201,122,.14);
+}
+body.light .supportContactCard .supportContactIcon{
+  border-color:rgba(96,165,250,.35);
+  background:rgba(96,165,250,.16);
 }
 .supportMicroStatus{
   display:grid;
