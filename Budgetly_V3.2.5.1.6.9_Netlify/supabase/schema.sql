@@ -213,9 +213,14 @@ create table if not exists public.user_account_profiles (
   first_name text not null default '',
   last_name text not null default '',
   image_url text,
+  walkthrough_completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Ensure the walkthrough column exists on pre-existing installs.
+alter table public.user_account_profiles
+  add column if not exists walkthrough_completed_at timestamptz;
 
 
 

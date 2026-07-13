@@ -3,7 +3,7 @@ import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sp
 import Auth from './components/Auth'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
-import { readCachedUserProfile, syncProfileCacheForUser } from './lib/userProfile'
+import { readCachedUserProfile, syncProfileCacheForUser, loadProfileFromTable, markWalkthroughCompleted } from './lib/userProfile'
 import { monthKey } from './lib/utils'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
@@ -12,6 +12,7 @@ import { InvestmentsView } from './components/InvestmentsView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
+import WelcomeWalkthrough, { TourDestination } from './components/WelcomeWalkthrough'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -55,6 +56,7 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastItem[]>([])
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [mobileUnreadCount, setMobileUnreadCount] = useState(0)
+  const [showWalkthrough, setShowWalkthrough] = useState(false)
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -240,6 +242,37 @@ export default function App() {
     window.dispatchEvent(new Event('mousemove'))
   }
 
+  // Show the first-time walkthrough once per user, after their account
+  // role/feature access has loaded and the account is active. The completion
+  // flag is persisted on the user's profile so the tour only shows once
+  // across every device and browser.
+  useEffect(() => {
+    if (!userId || admin.loading) return
+    if (admin.profile && !admin.profile.is_active) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const profile = await loadProfileFromTable(userId)
+        if (!cancelled && !profile.walkthroughCompleted) setShowWalkthrough(true)
+      } catch {
+        /* If the flag can't be read, don't block the app or nag the user. */
+      }
+    })()
+    return () => { cancelled = true }
+  }, [userId, admin.loading, admin.profile])
+
+  // Let other views (e.g. Help & Support) replay the walkthrough on demand.
+  useEffect(() => {
+    const replay = () => setShowWalkthrough(true)
+    window.addEventListener('budgetly:start-walkthrough', replay)
+    return () => window.removeEventListener('budgetly:start-walkthrough', replay)
+  }, [])
+
+  const dismissWalkthrough = () => {
+    setShowWalkthrough(false)
+    if (userId) void markWalkthroughCompleted(userId).catch(() => { /* best-effort persistence */ })
+  }
+
   const orderedViews = useMemo<ViewKey[]>(() => ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'settings', 'support'], [])
   const firstAllowedView = useMemo(() => {
     if (admin.isSuperAdmin) return 'dashboard' as ViewKey
@@ -304,6 +337,16 @@ export default function App() {
       setToolsSection((current) => current || 'goals')
     }
     if (isMobile) setCollapsed(true)
+  }
+
+  // Navigation used by the guided walkthrough as it moves between pages.
+  const handleTourNavigate = (dest: TourDestination) => {
+    if (dest === 'tools') {
+      setToolsSection('goals')
+      handleViewChange('tools')
+      return
+    }
+    handleViewChange(dest)
   }
 
   // Route a clicked notification (action_target) to the right view / tools section.
@@ -714,10 +757,10 @@ export default function App() {
 
         {isMobile ? (
           <nav className="mobileTabBar mobileTabBarPlus" aria-label="Mobile navigation">
-            {admin.visibleFeatures.dashboard ? <button className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Dashboard</span></button> : null}
-            {admin.visibleFeatures.categories ? <button className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
-            <button className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /><span>Add</span></button>
-            <button className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
+            {admin.visibleFeatures.dashboard ? <button data-tour="m-nav-dashboard" className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Dashboard</span></button> : null}
+            {admin.visibleFeatures.categories ? <button data-tour="m-nav-categories" className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
+            <button data-tour="m-nav-transactions" className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /><span>Add</span></button>
+            <button data-tour="m-nav-tools" className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
             {admin.visibleFeatures.settings ? <button className={view === 'settings' ? 'active' : ''} onClick={() => handleViewChange('settings')}><Settings size={18} /><span>Settings</span></button> : null}
           </nav>
         ) : null}
@@ -741,6 +784,22 @@ export default function App() {
             </div>
           </div>
         </div>
+      ) : null}
+      {showWalkthrough ? (
+        <WelcomeWalkthrough
+          userName={profileName}
+          features={{
+            dashboard: admin.visibleFeatures.dashboard,
+            transactions: admin.visibleFeatures.transactions,
+            categories: admin.visibleFeatures.categories,
+            recurring: admin.visibleFeatures.recurring,
+            advice: admin.visibleFeatures.advice,
+            goals: admin.visibleFeatures.goals,
+          }}
+          onNavigate={handleTourNavigate}
+          onClose={dismissWalkthrough}
+          onFinish={dismissWalkthrough}
+        />
       ) : null}
       <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} shortcutLabel={getUniversalSearchShortcut()} quickAdd={parseQuickAdd} />
     </div>

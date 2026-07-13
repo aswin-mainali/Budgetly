@@ -2622,6 +2622,170 @@ body.light .sidebarUserAvatar{
   .idleModal .btn{width:100%}
 }
 
+/* First sign-in guided walkthrough (spotlight tour) */
+.tourRoot{
+  position:fixed;
+  inset:0;
+  z-index:4000;
+  animation:walkthroughFade .2s ease;
+}
+@keyframes walkthroughFade{from{opacity:0}to{opacity:1}}
+.tourOverlay{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,.55);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  cursor:default;
+}
+body.light .tourOverlay{
+  background:rgba(15,23,42,.34);
+}
+.tourRing{
+  position:fixed;
+  border-radius:14px;
+  pointer-events:none;
+  box-shadow:0 0 0 3px rgba(33,201,122,.8), 0 0 0 6px rgba(33,201,122,.28), 0 10px 30px rgba(0,0,0,.35);
+  transition:top .25s ease, left .25s ease, width .25s ease, height .25s ease;
+}
+.tourTooltip{
+  position:fixed;
+  padding:24px 22px 18px;
+  border-color:rgba(110,152,214,.28);
+  box-shadow:0 30px 90px rgba(0,0,0,.5);
+  animation:walkthroughRise .26s cubic-bezier(.2,.8,.2,1);
+}
+.tourTooltipCentered{
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  width:min(480px, calc(100vw - 32px));
+  padding:28px 26px 22px;
+}
+.tourTooltipAnchored{
+  width:min(360px, calc(100vw - 28px));
+}
+@keyframes walkthroughRise{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+.tourTooltipCentered{animation:walkthroughRiseCentered .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes walkthroughRiseCentered{from{opacity:0;transform:translate(-50%, calc(-50% + 12px)) scale(.98)}to{opacity:1;transform:translate(-50%, -50%)}}
+.walkthroughClose{
+  position:absolute;
+  top:14px;
+  right:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.03);
+  color:var(--muted);
+  cursor:pointer;
+  transition:color .15s ease, background .15s ease;
+}
+.walkthroughClose:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.walkthroughIcon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:56px;
+  height:56px;
+  border-radius:16px;
+  margin-bottom:14px;
+  color:#fff;
+}
+.walkthroughIcon-violet{background:linear-gradient(135deg,#8b5cf6,#6d28d9)}
+.walkthroughIcon-indigo{background:linear-gradient(135deg,#6366f1,#4338ca)}
+.walkthroughIcon-green{background:linear-gradient(135deg,#22c55e,#15803d)}
+.walkthroughIcon-gold{background:linear-gradient(135deg,#f59e0b,#b45309)}
+.walkthroughIcon-blue{background:linear-gradient(135deg,#3b82f6,#1d4ed8)}
+.walkthroughIcon-teal{background:linear-gradient(135deg,#14b8a6,#0f766e)}
+.walkthroughIcon-purple{background:linear-gradient(135deg,#a855f7,#7e22ce)}
+.walkthroughEyebrow{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--accent);
+}
+.walkthroughTitle{margin:6px 0 8px;font-size:22px;line-height:1.25}
+.walkthroughBody{margin:0;color:var(--muted);line-height:1.6;font-size:14px}
+.walkthroughPoints{
+  list-style:none;
+  margin:16px 0 0;
+  padding:0;
+  display:grid;
+  gap:10px;
+}
+.walkthroughPoints li{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  font-size:13.5px;
+  color:var(--text);
+  line-height:1.45;
+}
+.walkthroughCheck{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  width:20px;
+  height:20px;
+  border-radius:999px;
+  margin-top:1px;
+  color:#fff;
+  background:var(--accent);
+}
+.walkthroughCheck-violet{background:#8b5cf6}
+.walkthroughCheck-indigo{background:#6366f1}
+.walkthroughCheck-green{background:#22c55e}
+.walkthroughCheck-gold{background:#f59e0b}
+.walkthroughCheck-blue{background:#3b82f6}
+.walkthroughCheck-teal{background:#14b8a6}
+.walkthroughCheck-purple{background:#a855f7}
+.walkthroughDots{
+  display:flex;
+  gap:7px;
+  justify-content:center;
+  margin:22px 0 18px;
+}
+.walkthroughDot{
+  width:8px;
+  height:8px;
+  padding:0;
+  border:0;
+  border-radius:999px;
+  background:var(--border);
+  cursor:pointer;
+  transition:background .2s ease, width .2s ease;
+}
+.walkthroughDot.done{background:color-mix(in srgb, var(--accent) 55%, transparent)}
+.walkthroughDot.active{width:22px;background:var(--accent)}
+.walkthroughFooter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.walkthroughFooterRight{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.walkthroughStepCount{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.walkthroughFooter .btn{display:inline-flex;align-items:center;gap:6px}
+@media (max-width: 640px){
+  .tourTooltip{padding:20px 16px 16px;border-radius:18px}
+  .tourTooltipCentered{padding:24px 18px 18px}
+  .tourTooltipAnchored{width:min(340px, calc(100vw - 20px))}
+  .walkthroughTitle{font-size:19px}
+  .walkthroughStepCount{display:none}
+  .walkthroughFooter .btn{padding-left:12px;padding-right:12px}
+}
+
 
 
 .deleteConfirmBackdrop{

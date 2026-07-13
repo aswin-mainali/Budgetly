@@ -6614,6 +6614,13 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
                 <small>Send issue details</small>
               </span>
             </button>
+            <button className="supportQuickAction" onClick={() => window.dispatchEvent(new Event('budgetly:start-walkthrough'))}>
+              <span className="supportQuickIcon">🧭</span>
+              <span>
+                <strong>Take a tour</strong>
+                <small>Replay the walkthrough</small>
+              </span>
+            </button>
             <a className="supportQuickAction" href="/starter-guide.pdf" target="_blank" rel="noreferrer">
               <span className="supportQuickIcon">📘</span>
               <span>
