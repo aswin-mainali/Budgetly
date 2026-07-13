@@ -7979,7 +7979,7 @@ body.light .goalsGalleryScrollArea::-webkit-scrollbar-thumb,
 .goalsSortSelect{border-radius:10px;min-width:170px;height:36px}
 .goalsGalleryHeader{margin-top:-2px}
 .goalsSortControls{gap:10px;flex-wrap:nowrap;white-space:nowrap}
-.goalsCarouselShell{display:flex;align-items:center;gap:12px}
+.goalsCarouselShell{display:flex;align-items:center;gap:12px;margin-top:14px}
 .goalsNavBtn{width:34px;height:34px;border-radius:999px;border:1px solid var(--line);background:var(--panel)}
 .goalsNavBtn:disabled{opacity:.45;cursor:not-allowed}
 .goalsCarouselTrack{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;align-items:flex-start}
