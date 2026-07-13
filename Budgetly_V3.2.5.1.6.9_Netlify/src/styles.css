@@ -2153,71 +2153,132 @@ body.light .profileMenuPopup{
   font-weight:600;
 }
 
-/* ---- Support channels ---- */
-.supportChannels{
+/* ---- Hero quick channels ---- */
+.supportHeroChannels{
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
-  gap:12px;
+  grid-template-columns:repeat(4, minmax(0,1fr));
+  gap:10px;
+  margin-top:22px;
+  max-width:640px;
 }
-.supportChannel{
+.supportHeroChannel{
   display:flex;
   align-items:center;
-  gap:13px;
-  padding:16px;
-  border-radius:18px;
+  gap:10px;
+  padding:11px 12px;
+  border-radius:14px;
   border:1px solid var(--border);
-  background:linear-gradient(180deg, rgba(9,24,47,.9), rgba(6,18,36,.82));
+  background:rgba(255,255,255,.04);
   color:var(--text);
   text-align:left;
   text-decoration:none;
   cursor:pointer;
-  box-shadow:0 12px 26px rgba(0,0,0,.20);
-  transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  min-width:0;
+  transition:transform .15s ease, border-color .15s ease, background .15s ease;
 }
-.supportChannel:hover:not(:disabled){
-  transform:translateY(-3px);
-  border-color:rgba(33,201,122,.4);
-  box-shadow:0 20px 40px rgba(0,0,0,.30);
-}
-.supportChannel:disabled{opacity:.55;cursor:not-allowed}
-.supportChannelIcon{
-  width:46px;
-  height:46px;
-  flex:0 0 auto;
-  display:grid;
-  place-items:center;
-  border-radius:14px;
-  font-size:20px;
-  border:1px solid var(--border);
+.supportHeroChannel:hover:not(:disabled){
+  transform:translateY(-2px);
+  border-color:rgba(33,201,122,.42);
   background:rgba(255,255,255,.06);
 }
-.supportChannelIcon[data-tone="green"]{border-color:rgba(33,201,122,.3);background:rgba(33,201,122,.14)}
-.supportChannelIcon[data-tone="amber"]{border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.14)}
-.supportChannelIcon[data-tone="blue"]{border-color:rgba(96,165,250,.32);background:rgba(96,165,250,.14)}
-.supportChannelIcon[data-tone="violet"]{border-color:rgba(139,124,246,.34);background:rgba(139,124,246,.16)}
-.supportChannelBody{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 auto}
-.supportChannelBody strong{font-size:14.5px}
-.supportChannelBody small{color:var(--muted);font-size:12.5px;line-height:1.4}
-.supportChannelMeta{
-  flex:0 0 auto;
-  align-self:flex-start;
-  font-size:11px;
-  font-weight:600;
-  color:var(--muted);
-  padding:4px 9px;
-  border-radius:999px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.03);
-  white-space:nowrap;
+.supportHeroChannel:disabled{opacity:.55;cursor:not-allowed}
+.supportHeroChannelIcon{
+  width:36px;height:36px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:11px;font-size:17px;border:1px solid var(--border);background:rgba(255,255,255,.06);
 }
+.supportHeroChannelIcon[data-tone="green"]{border-color:rgba(33,201,122,.3);background:rgba(33,201,122,.14)}
+.supportHeroChannelIcon[data-tone="amber"]{border-color:rgba(245,158,11,.32);background:rgba(245,158,11,.14)}
+.supportHeroChannelIcon[data-tone="blue"]{border-color:rgba(96,165,250,.32);background:rgba(96,165,250,.14)}
+.supportHeroChannelIcon[data-tone="violet"]{border-color:rgba(139,124,246,.34);background:rgba(139,124,246,.16)}
+.supportHeroChannelText{display:flex;flex-direction:column;min-width:0}
+.supportHeroChannelText strong{font-size:13px;line-height:1.25}
+.supportHeroChannelText small{color:var(--muted);font-size:11px;line-height:1.3}
 
-/* ---- Main two-column layout ---- */
-.supportMain{
+/* ---- Shell: sticky rail + content ---- */
+.supportShell{
   display:grid;
-  grid-template-columns:minmax(0, 1.9fr) minmax(0, 1fr);
+  grid-template-columns:272px minmax(0,1fr);
   gap:16px;
   align-items:start;
 }
+.supportRail{position:sticky;top:16px}
+.supportRailCard{
+  background:
+    radial-gradient(340px 200px at 0% 0%, rgba(33,201,122,.10), transparent 62%),
+    linear-gradient(180deg, rgba(9,24,47,.92), rgba(6,18,36,.85));
+}
+.supportRailHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:12px;
+}
+.supportRailHead .supportHeroLabel{margin-bottom:0}
+.supportNav{display:grid;gap:5px}
+.supportNavItem{
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:100%;
+  padding:9px 10px;
+  border-radius:13px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--muted);
+  text-align:left;
+  cursor:pointer;
+  font:inherit;
+  transition:background .15s ease, border-color .15s ease, color .15s ease;
+}
+.supportNavItem:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.supportNavItem.active{
+  border-color:rgba(33,201,122,.35);
+  background:rgba(33,201,122,.12);
+  color:#eafff4;
+}
+.supportNavIcon{
+  width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;
+  border-radius:10px;font-size:16px;border:1px solid var(--border);background:rgba(255,255,255,.05);
+}
+.supportNavItem.active .supportNavIcon{border-color:rgba(33,201,122,.32);background:rgba(33,201,122,.18)}
+.supportNavText{display:flex;flex-direction:column;flex:1 1 auto;min-width:0;gap:1px}
+.supportNavText strong{font-size:13.5px;font-weight:600}
+.supportNavText small{color:var(--muted);font-size:11px}
+.supportNavCount{
+  flex:0 0 auto;font-size:12px;font-weight:600;color:var(--muted);
+  min-width:24px;height:22px;padding:0 7px;display:grid;place-items:center;
+  border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.03);
+}
+.supportNavItem.active .supportNavCount{color:#a9f2cf;border-color:rgba(33,201,122,.32);background:rgba(33,201,122,.14)}
+.supportRailCta{
+  margin-top:16px;padding-top:16px;border-top:1px solid var(--border);
+  display:grid;gap:9px;
+}
+.supportRailCtaHead{display:flex;flex-direction:column;gap:3px;margin-bottom:2px}
+.supportRailCtaHead strong{font-size:14px}
+.supportRailCtaHead small{color:var(--muted);font-size:12px;line-height:1.45}
+.supportRailCta .btn{justify-content:center;font-weight:600}
+
+.supportContent{display:grid;gap:16px;align-content:start;min-width:0}
+
+/* ---- Contact band ---- */
+.supportContactBand{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0,1fr)) auto;
+  gap:12px;
+  align-items:center;
+}
+.supportContactTile{
+  display:flex;align-items:center;gap:11px;min-width:0;
+  padding:12px 14px;border-radius:14px;border:1px solid var(--border);
+  background:rgba(255,255,255,.03);color:var(--text);text-decoration:none;
+  transition:border-color .15s ease, transform .15s ease, background .15s ease;
+}
+.supportContactTile[href]:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.06)}
+.supportContactTile strong{display:block;font-size:13.5px}
+.supportContactTile small{display:block;color:var(--muted);font-size:12px;line-height:1.4}
+.supportContactSocials{display:flex;gap:9px;justify-self:end}
 
 /* ---- Section headers ---- */
 .supportSectionHead{
@@ -2594,21 +2655,47 @@ body.light .supportContactCard .supportContactIcon{
   padding-top:14px;
   border-top:1px solid var(--border);
 }
+/* ---- Contact-band socials reuse the pill treatment ---- */
+.supportContactSocials a{
+  width:40px;height:40px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,.05);color:var(--muted);display:grid;place-items:center;
+  text-decoration:none;transition:transform .15s ease, color .15s ease, border-color .15s ease, background .15s ease;
+}
+.supportContactSocials a:hover{transform:translateY(-2px);color:var(--text);border-color:rgba(33,201,122,.45);background:rgba(33,201,122,.12)}
+.supportContactSocials svg{display:block}
+
 /* ---- Support responsive ---- */
-@media (max-width: 940px){
-  .supportMain{grid-template-columns:1fr;}
+@media (max-width: 1040px){
+  .supportShell{grid-template-columns:1fr;}
+  .supportRail{position:static;}
+  /* Rail becomes a horizontal topic bar */
+  .supportNav{grid-auto-flow:column;grid-auto-columns:minmax(150px,1fr);overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:4px;}
+  .supportNavItem{scroll-snap-align:start;}
+  .supportNavText small{display:none;}
+  .supportRailCta{grid-template-columns:1fr 1fr auto;align-items:center;}
+  .supportRailCtaHead{grid-column:1/-1;}
+}
+@media (max-width: 720px){
+  .supportHeroChannels{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .supportContactBand{grid-template-columns:1fr;}
+  .supportContactSocials{justify-self:start;}
 }
 @media (max-width: 560px){
-  .supportChannels{grid-template-columns:1fr;}
-  .supportChannelMeta{display:none;}
   .supportSectionHead{flex-direction:column;}
-  .supportStatsRow{grid-template-columns:1fr;}
   .supportFaqCat{display:none;}
   .supportSearchInput{font-size:14px;}
+  .supportNav{grid-auto-columns:max-content;}
+  .supportNavText small{display:block;}
+  .supportRailCta{grid-template-columns:1fr;}
+}
+@media (max-width: 420px){
+  .supportHeroChannels{grid-template-columns:1fr;}
 }
 @media (prefers-reduced-motion: reduce){
   .supportAgentDot{animation:none;}
-  .supportChannel,
+  .supportHeroChannel,
+  .supportNavItem,
+  .supportContactTile,
   .supportContactRow,
   .supportFaqAnswerWrap,
   .supportFaqChevron{transition:none;}

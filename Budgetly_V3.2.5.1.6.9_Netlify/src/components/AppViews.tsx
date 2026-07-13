@@ -6043,6 +6043,13 @@ const SUPPORT_FAQS: SupportFaq[] = [
 ]
 
 const SUPPORT_FAQ_CATEGORIES = ['All', 'Getting started', 'Account', 'Data & sync', 'Security']
+const SUPPORT_CATEGORY_META: Record<string, { icon: string; blurb: string }> = {
+  All: { icon: '📚', blurb: 'Everything' },
+  'Getting started': { icon: '🚀', blurb: 'Setup & basics' },
+  Account: { icon: '👤', blurb: 'Login & billing' },
+  'Data & sync': { icon: '🔄', blurb: 'Sync & exports' },
+  Security: { icon: '🔒', blurb: 'Privacy & safety' },
+}
 const SUPPORT_POPULAR = ['Import transactions', 'Sync issues', 'Export reports', 'Reset password']
 
 export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'email' | 'admin'> & { userId?: string | null }) {
@@ -6069,6 +6076,12 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
       }),
     [normalizedQuery, faqCategory],
   )
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: SUPPORT_FAQS.length }
+    for (const faq of SUPPORT_FAQS) counts[faq.category] = (counts[faq.category] ?? 0) + 1
+    return counts
+  }, [])
 
   const openChat = () => {
     if (!TAWK_ENABLED) return
@@ -6178,7 +6191,7 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
           </span>
           <h2>How can we help you today?</h2>
           <p>
-            Search our knowledge base, browse quick answers, or reach the team directly — your account,
+            Search our knowledge base, browse by topic, or reach the team directly — your account,
             sync, and reporting questions are covered.
           </p>
 
@@ -6217,163 +6230,168 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
               </button>
             ))}
           </div>
+
+          <div className="supportHeroChannels">
+            {supportChannels.map((channel) => {
+              const inner = (
+                <>
+                  <span className="supportHeroChannelIcon" data-tone={channel.tone}>{channel.icon}</span>
+                  <span className="supportHeroChannelText">
+                    <strong>{channel.title}</strong>
+                    <small>{channel.meta}</small>
+                  </span>
+                </>
+              )
+              return 'href' in channel && channel.href ? (
+                <a
+                  key={channel.key}
+                  className="supportHeroChannel"
+                  href={channel.href}
+                  {...(channel.href.startsWith('/') ? { target: '_blank', rel: 'noreferrer' } : {})}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <button
+                  key={channel.key}
+                  type="button"
+                  className="supportHeroChannel"
+                  onClick={'onClick' in channel ? channel.onClick : undefined}
+                  disabled={'disabled' in channel ? channel.disabled : false}
+                >
+                  {inner}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </section>
 
-      <div className="supportChannels">
-        {supportChannels.map((channel) =>
-          'href' in channel && channel.href ? (
-            <a
-              key={channel.key}
-              className="supportChannel"
-              href={channel.href}
-              {...(channel.href.startsWith('/') ? { target: '_blank', rel: 'noreferrer' } : {})}
-            >
-              <span className="supportChannelIcon" data-tone={channel.tone}>{channel.icon}</span>
-              <span className="supportChannelBody">
-                <strong>{channel.title}</strong>
-                <small>{channel.desc}</small>
-              </span>
-              <span className="supportChannelMeta">{channel.meta}</span>
-            </a>
-          ) : (
-            <button
-              key={channel.key}
-              type="button"
-              className="supportChannel"
-              onClick={'onClick' in channel ? channel.onClick : undefined}
-              disabled={'disabled' in channel ? channel.disabled : false}
-            >
-              <span className="supportChannelIcon" data-tone={channel.tone}>{channel.icon}</span>
-              <span className="supportChannelBody">
-                <strong>{channel.title}</strong>
-                <small>{channel.desc}</small>
-              </span>
-              <span className="supportChannelMeta">{channel.meta}</span>
-            </button>
-          ),
-        )}
-      </div>
-
-      <div className="supportMain">
-        <section className="card supportFaqCard">
-          <div className="supportSectionHead">
-            <div>
-              <div className="supportHeroLabel">Knowledge base</div>
-              <h3>Frequently asked questions</h3>
-            </div>
-            <span className="badge">
-              {filteredFaqs.length} {filteredFaqs.length === 1 ? 'article' : 'articles'}
-            </span>
-          </div>
-
-          <div className="supportCatChips" role="tablist" aria-label="Filter FAQs by category">
-            {SUPPORT_FAQ_CATEGORIES.map((category) => (
-              <button
-                key={category}
-                type="button"
-                role="tab"
-                aria-selected={faqCategory === category}
-                className={`supportChip${faqCategory === category ? ' active' : ''}`}
-                onClick={() => setFaqCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-
-          {filteredFaqs.length === 0 ? (
-            <div className="supportFaqEmpty">
-              <div className="supportFaqEmptyIcon" aria-hidden="true">🔍</div>
-              <strong>No results{faqQuery ? <> for “{faqQuery.trim()}”</> : null}</strong>
-              <span>Try a different search or category — or ask our team directly.</span>
-              <button className="btn primary" onClick={openChat} disabled={!TAWK_ENABLED}>
-                Start a chat
-              </button>
-            </div>
-          ) : (
-            <div className="supportFaqList">
-              {filteredFaqs.map((faq) => {
-                const open = openFaq === faq.q
-                return (
-                  <div key={faq.q} className={`supportFaqItem${open ? ' open' : ''}`}>
-                    <button
-                      type="button"
-                      className="supportFaqQuestion"
-                      aria-expanded={open}
-                      onClick={() => setOpenFaq(open ? null : faq.q)}
-                    >
-                      <span className="supportFaqQText">
-                        <span className="supportFaqCat">{faq.category}</span>
-                        {faq.q}
-                      </span>
-                      <span className="supportFaqChevron" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                      </span>
-                    </button>
-                    <div className="supportFaqAnswerWrap">
-                      <div className="supportFaqAnswer">{faq.a}</div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </section>
-
-        <aside className="supportAside">
-          <section className="card supportContactCard">
-            <div className="supportSectionHead">
-              <div>
-                <div className="supportHeroLabel">Contact panel</div>
-                <h3>Reach us directly</h3>
-              </div>
+      <div className="supportShell">
+        <aside className="supportRail">
+          <section className="card supportRailCard">
+            <div className="supportRailHead">
+              <div className="supportHeroLabel">Browse topics</div>
               <span className="supportLiveTag">
                 <span className="supportAgentDot" />
                 {chatReady ? 'Live' : '24/7'}
               </span>
             </div>
 
-            <div className="supportContactRows">
-              <a className="supportContactRow" href="tel:+16729719810">
-                <span className="supportContactIcon">📞</span>
-                <span>
-                  <strong>Call support</strong>
-                  <small>+1 672 971 9810</small>
-                </span>
-                <span className="supportContactChevron" aria-hidden="true">›</span>
-              </a>
+            <nav className="supportNav" aria-label="Help topics">
+              {SUPPORT_FAQ_CATEGORIES.map((category) => {
+                const meta = SUPPORT_CATEGORY_META[category]
+                const active = faqCategory === category
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    className={`supportNavItem${active ? ' active' : ''}`}
+                    aria-pressed={active}
+                    onClick={() => setFaqCategory(category)}
+                  >
+                    <span className="supportNavIcon">{meta?.icon ?? '•'}</span>
+                    <span className="supportNavText">
+                      <strong>{category}</strong>
+                      <small>{meta?.blurb}</small>
+                    </span>
+                    <span className="supportNavCount">{categoryCounts[category] ?? 0}</span>
+                  </button>
+                )
+              })}
+            </nav>
 
-              <a className="supportContactRow" href="mailto:CodeVerseSolutions@gmail.com">
-                <span className="supportContactIcon">✉️</span>
-                <span>
-                  <strong>Email us</strong>
-                  <small>CodeVerseSolutions@gmail.com</small>
-                </span>
-                <span className="supportContactChevron" aria-hidden="true">›</span>
-              </a>
-
-              <div className="supportContactRow">
-                <span className="supportContactIcon">📍</span>
-                <span>
-                  <strong>Location</strong>
-                  <small>Vancouver, Canada</small>
-                </span>
+            <div className="supportRailCta">
+              <div className="supportRailCtaHead">
+                <strong>Still need help?</strong>
+                <small>Our team replies in ~5 min when online.</small>
               </div>
+              <button className="btn primary" onClick={openChat} disabled={!TAWK_ENABLED}>
+                💬 Start live chat
+              </button>
+              <a className="btn" href="mailto:CodeVerseSolutions@gmail.com?subject=Budgetly%20Support%20Request">
+                Email support
+              </a>
+            </div>
+          </section>
+        </aside>
+
+        <main className="supportContent">
+          <section className="card supportFaqCard">
+            <div className="supportSectionHead">
+              <div>
+                <div className="supportHeroLabel">
+                  {faqCategory === 'All' ? 'Knowledge base' : `${SUPPORT_CATEGORY_META[faqCategory]?.icon ?? ''} ${faqCategory}`}
+                </div>
+                <h3>{faqQuery ? 'Search results' : 'Frequently asked questions'}</h3>
+              </div>
+              <span className="badge">
+                {filteredFaqs.length} {filteredFaqs.length === 1 ? 'article' : 'articles'}
+              </span>
             </div>
 
-            <div className="supportStatsRow">
-              <div className="supportStat">
-                <strong>~5 min</strong>
-                <small>Average reply</small>
+            {filteredFaqs.length === 0 ? (
+              <div className="supportFaqEmpty">
+                <div className="supportFaqEmptyIcon" aria-hidden="true">🔍</div>
+                <strong>No results{faqQuery ? <> for “{faqQuery.trim()}”</> : null}</strong>
+                <span>Try a different search or topic — or ask our team directly.</span>
+                <button className="btn primary" onClick={openChat} disabled={!TAWK_ENABLED}>
+                  Start a chat
+                </button>
               </div>
-              <div className="supportStat">
-                <strong>24 / 7</strong>
-                <small>Coverage</small>
+            ) : (
+              <div className="supportFaqList">
+                {filteredFaqs.map((faq) => {
+                  const open = openFaq === faq.q
+                  return (
+                    <div key={faq.q} className={`supportFaqItem${open ? ' open' : ''}`}>
+                      <button
+                        type="button"
+                        className="supportFaqQuestion"
+                        aria-expanded={open}
+                        onClick={() => setOpenFaq(open ? null : faq.q)}
+                      >
+                        <span className="supportFaqQText">
+                          <span className="supportFaqCat">{faq.category}</span>
+                          {faq.q}
+                        </span>
+                        <span className="supportFaqChevron" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </span>
+                      </button>
+                      <div className="supportFaqAnswerWrap">
+                        <div className="supportFaqAnswer">{faq.a}</div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-            </div>
+            )}
+          </section>
 
-            <div className="supportSocials">
+          <section className="card supportContactBand">
+            <a className="supportContactTile" href="tel:+16729719810">
+              <span className="supportContactIcon">📞</span>
+              <span>
+                <strong>Call support</strong>
+                <small>+1 672 971 9810</small>
+              </span>
+            </a>
+            <a className="supportContactTile" href="mailto:CodeVerseSolutions@gmail.com">
+              <span className="supportContactIcon">✉️</span>
+              <span>
+                <strong>Email us</strong>
+                <small>CodeVerseSolutions@gmail.com</small>
+              </span>
+            </a>
+            <div className="supportContactTile">
+              <span className="supportContactIcon">📍</span>
+              <span>
+                <strong>Vancouver, Canada</strong>
+                <small>Mon–Sun · 24/7 online</small>
+              </span>
+            </div>
+            <div className="supportContactSocials">
               <a href="#" aria-label="LinkedIn" title="LinkedIn">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-.95 1.83-1.95 3.77-1.95C20.4 8.75 21 11 21 14.1V21h-4v-6.1c0-1.45-.03-3.3-2-3.3-2 0-2.3 1.57-2.3 3.2V21H9z"/></svg>
               </a>
@@ -6390,15 +6408,15 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.7 19.4c-.24 1.06-.87 1.32-1.76.82l-4.86-3.58-2.35 2.26c-.26.26-.48.48-.98.48l.35-4.94 8.98-8.11c.39-.35-.09-.55-.6-.2L6.4 13.02l-4.78-1.5c-1.04-.32-1.06-1.04.22-1.54l18.68-7.2c.86-.32 1.62.2 1.38 1.52z"/></svg>
               </a>
             </div>
-
-            {!TAWK_ENABLED ? (
-              <div className="supportNotice">
-                Add <code>VITE_TAWK_PROPERTY_ID</code> and <code>VITE_TAWK_WIDGET_ID</code> in Netlify or your
-                local <code>.env</code> to activate the live chat widget.
-              </div>
-            ) : null}
           </section>
-        </aside>
+
+          {!TAWK_ENABLED ? (
+            <div className="supportNotice">
+              Add <code>VITE_TAWK_PROPERTY_ID</code> and <code>VITE_TAWK_WIDGET_ID</code> in Netlify or your
+              local <code>.env</code> to activate the live chat widget.
+            </div>
+          ) : null}
+        </main>
       </div>
 
       <BugReportModal open={bugModalOpen} email={email || ''} onClose={() => setBugModalOpen(false)} onSubmit={submitBugReport} busy={bugBusy} />
