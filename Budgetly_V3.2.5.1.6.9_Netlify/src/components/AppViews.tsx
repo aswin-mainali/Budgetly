@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, Bell, CalendarDays, ChevronDown, ChevronUp, FileText, LineChart, Settings, Tag, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Bell, BellOff, CalendarDays, ChevronDown, ChevronUp, Clock, FileText, LineChart, Settings, Tag, Target, TrendingUp, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction, RecurringItem } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -9,7 +9,8 @@ import { colorForCategory, budgetStatusColor } from '../lib/categoryColors'
 import { buildHealthModel, healthBand, monthShortLabel, type HealthComponents } from '../lib/adviceInsights'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
-import { clearReadNotifications, generateBudgetNotifications, generateGoalNotifications, generateInvestmentNotifications, generateMonthlyReportNotifications, generateRecurringNotifications, generateSubscriptionNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, type BudgetlyNotification, updateNotificationPreferences } from '../services/notificationService'
+import { clearReadNotifications, generateAllNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, meetsPriorityThreshold, muteNotification, snoozeNotification, type BudgetlyNotification, type NotificationPriority, updateNotificationPreferences } from '../services/notificationService'
+import { disablePush, enablePush, getPushPermission, isPushEnabled, pushSupported } from '../services/pushNotifications'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -1085,9 +1086,10 @@ import {
   BarChart, Bar, XAxis, YAxis,
   PieChart, Pie, Cell,
   LineChart, Line, AreaChart, Area, ComposedChart,
+  RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1197,6 +1199,7 @@ type SharedProps = {
   onSignOut?: () => void
   admin?: ReturnType<typeof useSuperAdmin>
   onOpenTransactionsByType?: (type: TxType) => void
+  onNavigate?: (target: string) => void
 }
 
 
@@ -1659,7 +1662,7 @@ function loadTawkWidget() {
 }
 
 
-export function DashboardView({ budget, theme, onOpenTransactionsByType, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'email' | 'userId'>) {
+export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavigate, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'onNavigate' | 'email' | 'userId'>) {
   const { data, months, activeMonth, setActiveMonth, income, expenses, net, prevIncome, prevExpenses, prevNet, categoryColorMap, byCategory, daily, monthlyTrend, sortedCategories, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
@@ -1685,6 +1688,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
   const [recurringPage, setRecurringPage] = useState(1)
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifications, setNotifications] = useState<BudgetlyNotification[]>([])
+  const [notifPrefs, setNotifPrefs] = useState<{ min_priority: NotificationPriority } | null>(null)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const bellRef = useRef<HTMLButtonElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const profile = readCachedUserProfile()
@@ -1701,14 +1706,9 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     if (!userId) return
     const boot = async () => {
       try {
-        if (import.meta.env.DEV) console.log('Generating notifications for user:', userId)
         const prefs = await getNotificationPreferences(userId)
-        if (prefs.bills_recurring) await generateRecurringNotifications(userId)
-        if (prefs.budgets) await generateBudgetNotifications(userId)
-        if (prefs.subscriptions) await generateSubscriptionNotifications(userId)
-        if (prefs.goals) await generateGoalNotifications(userId)
-        if (prefs.investments) await generateInvestmentNotifications(userId)
-        if (prefs.monthly_reports) await generateMonthlyReportNotifications(userId)
+        setNotifPrefs({ min_priority: prefs.min_priority })
+        await generateAllNotifications(userId)
         const loaded = await getNotifications(userId)
         if (import.meta.env.DEV) console.log('Notifications loaded:', loaded.length)
         setNotifications(loaded)
@@ -1719,6 +1719,28 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
     }
     void boot()
   }, [userId])
+  // Live updates: refresh the bell whenever a row changes for this user (server-side
+  // generation, another tab, push-triggered inserts) without needing a reload.
+  useEffect(() => {
+    if (!userId) return
+    const channel = supabase
+      .channel(`notifications:${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, () => {
+        void getNotifications(userId).then(setNotifications)
+      })
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [userId])
+  // Deep-link from a clicked system/push notification into the right view.
+  useEffect(() => {
+    const onSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'budgetly:notification-click' && event.data?.url) {
+        try { const u = new URL(event.data.url, window.location.origin); const target = u.searchParams.get('view'); if (target) onNavigate?.(target) } catch { /* ignore */ }
+      }
+    }
+    navigator.serviceWorker?.addEventListener('message', onSwMessage)
+    return () => navigator.serviceWorker?.removeEventListener('message', onSwMessage)
+  }, [onNavigate])
   useEffect(() => {
     const onDown = (event: MouseEvent) => {
       if (!notifOpen) return
@@ -1763,39 +1785,75 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, email, 
   }
   const getNotificationIcon = (item: BudgetlyNotification) => {
     const key = `${item.category}:${item.type}`.toLowerCase()
+    if (key.includes('anomaly')) return { icon: AlertTriangle, className: 'notifIcon budget' }
     if (key.includes('bills_recurring') || key.includes('recurring')) return { icon: CalendarDays, className: 'notifIcon recurring' }
     if (key.includes('subscription')) return { icon: Tag, className: 'notifIcon subscription' }
-    if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
+    if (key.includes('goal')) return { icon: Target, className: 'notifIcon goals' }
+    if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('forecast') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
+    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
     if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
     if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
-    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
     if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
     return { icon: Bell, className: 'notifIcon system' }
   }
-  const renderNotificationPanel = () => (
-    <div ref={panelRef} className="notification-popover">
-      <div className="notifHeader">
-        <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
-        <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); setNotifications(await getNotifications(userId)) }}>Mark all as read</button>
+  const refreshNotifications = async () => { if (userId) setNotifications(await getNotifications(userId)) }
+  const openNotification = async (item: BudgetlyNotification) => {
+    if (item.status === 'unread') await markNotificationAsRead(item.id)
+    await refreshNotifications()
+    if (item.action_target) { onNavigate?.(item.action_target); setNotifOpen(false) }
+  }
+  const renderNotifRow = (item: BudgetlyNotification, highlight: boolean, groupCount = 0, onExpand?: () => void) => {
+    const meta = getNotificationIcon(item)
+    const Icon = meta.icon
+    return (
+      <div key={item.id} className={`notifRow ${item.status === 'unread' && highlight ? 'unreadHighlight' : ''} ${item.priority === 'high' || item.priority === 'critical' ? 'notifRowUrgent' : ''}`}>
+        <button type="button" className="notifRowMain" onClick={() => void openNotification(item)}>
+          <span className={meta.className}><Icon size={23} /></span>
+          <span className="notifContent">
+            <span className="notifTitle">{item.title}{groupCount > 1 ? <span className="notifGroupCount">{groupCount}</span> : null}</span>
+            <span className="notifSubtitle">{item.message}</span>
+            {groupCount > 1 ? <button type="button" className="notifShowMore" onClick={(e) => { e.stopPropagation(); onExpand?.() }}>Show {groupCount - 1} more</button> : null}
+          </span>
+          <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
+        </button>
+        <div className="notifRowActions">
+          <button type="button" className="notifActionBtn" title="Snooze 24h" aria-label="Snooze for 24 hours" onClick={async () => { if (userId) { await snoozeNotification(userId, item, 24); await refreshNotifications() } }}><Clock size={15} /></button>
+          <button type="button" className="notifActionBtn" title="Mute this type" aria-label="Mute this type of notification" onClick={async () => { if (userId) { await muteNotification(userId, item, 'type'); await refreshNotifications() } }}><BellOff size={15} /></button>
+          <button type="button" className="notifActionBtn" title="Dismiss" aria-label="Dismiss" onClick={async () => { await markNotificationAsRead(item.id); await refreshNotifications() }}><X size={15} /></button>
+        </div>
       </div>
-      <div className="notifList notification-mobile-list">
-        {uniqueNotifications.map((item, index) => {
-          const meta = getNotificationIcon(item)
-          const Icon = meta.icon
-          return <button key={item.id} className={`notifRow ${item.status === 'unread' && index === 0 ? 'unreadHighlight' : ''}`} onClick={async () => { await markNotificationAsRead(item.id); if (userId) setNotifications(await getNotifications(userId)) }}>
-            <span className={meta.className}><Icon size={23} /></span>
-            <span className="notifContent">
-              <span className="notifTitle">{item.title}</span>
-              <span className="notifSubtitle">{item.message}</span>
-            </span>
-            <span className="notifRight"><span className="notifTime">{formatRelativeTime(item.created_at)}</span>{item.status === 'unread' ? <span className="notifDot unread" /> : <span className="notifDot" />}</span>
-          </button>
-        })}
-        {uniqueNotifications.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+    )
+  }
+  const renderNotificationPanel = () => {
+    // Collapse related alerts (same group_key) into a single expandable thread.
+    const groups: Array<{ key: string; items: BudgetlyNotification[] }> = []
+    const groupIndex = new Map<string, number>()
+    for (const n of uniqueNotifications) {
+      if (notifPrefs && !meetsPriorityThreshold(n.priority ?? 'normal', notifPrefs.min_priority)) continue
+      const gk = n.group_key || `single-${n.id}`
+      if (groupIndex.has(gk)) groups[groupIndex.get(gk)!].items.push(n)
+      else { groupIndex.set(gk, groups.length); groups.push({ key: gk, items: [n] }) }
+    }
+    return (
+      <div ref={panelRef} className="notification-popover">
+        <div className="notifHeader">
+          <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
+          <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); await refreshNotifications() }}>Mark all as read</button>
+        </div>
+        <div className="notifList notification-mobile-list">
+          {groups.map((group, index) => {
+            const expanded = expandedGroups.has(group.key)
+            const primary = group.items[0]
+            const rows = [renderNotifRow(primary, index === 0, expanded ? 0 : group.items.length, () => setExpandedGroups((prev) => new Set(prev).add(group.key)))]
+            if (expanded) for (const extra of group.items.slice(1)) rows.push(renderNotifRow(extra, false))
+            return rows
+          })}
+          {groups.length === 0 ? <div className="notifEmpty"><span className="notifIcon system"><Bell size={22} /></span><strong>You’re all caught up</strong><small>No new financial alerts right now.</small></div> : null}
+        </div>
+        <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); await refreshNotifications() }}>Clear read notifications</button>
       </div>
-      <button className="notifFooter" onClick={async () => { if (!userId) return; await clearReadNotifications(userId); setNotifications(await getNotifications(userId)) }}>Clear read notifications</button>
-    </div>
-  )
+    )
+  }
   const cashFlowSeries = useMemo(() => {
     const buckets = Array.from({ length: 4 }, (_, index) => ({
       label: `Week ${index + 1}`,
@@ -2510,12 +2568,66 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 
+// Ring / status colors, kept in sync with the CSS design tokens
+// (--accent success, --warn amber, neutral for not-started).
+const GOAL_RING_COLORS = { success: '#21c97a', warn: '#f59e0b', neutral: '#8aa0c2' }
+const GOAL_RING_TRACK = 'rgba(129,151,189,0.20)'
+
+function ringColorFor(status: GoalProjection['status']) {
+  if (status === 'behind') return GOAL_RING_COLORS.warn
+  if (status === 'no_contributions') return GOAL_RING_COLORS.neutral
+  return GOAL_RING_COLORS.success // completed + on_track
+}
+
+// Radial progress ring built on recharts RadialBarChart.
+function GoalDonut({ progress, color }: { progress: number; color: string }) {
+  const value = Math.max(0, Math.min(100, progress))
+  return (
+    <div className="goalRing">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadialBarChart innerRadius="72%" outerRadius="100%" data={[{ value }]} startAngle={90} endAngle={-270}>
+          <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+          <RadialBar background={{ fill: GOAL_RING_TRACK }} dataKey="value" cornerRadius={12} fill={color} angleAxisId={0} isAnimationActive={false} />
+        </RadialBarChart>
+      </ResponsiveContainer>
+      <div className="goalRingLabel">{Math.round(value)}<span>%</span></div>
+    </div>
+  )
+}
+
+// Cumulative-saved sparkline built on recharts AreaChart.
+function GoalSparkline({ series, color, gradientId }: { series: { index: number; value: number }[]; color: string; gradientId: string }) {
+  return (
+    <ResponsiveContainer width="100%" height={40}>
+      <AreaChart data={series} margin={{ top: 3, right: 0, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#${gradientId})`} dot={false} isAnimationActive={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+const GOAL_STATUS_META: Record<GoalProjection['status'], { label: string; cls: string }> = {
+  completed: { label: 'Completed', cls: 'done' },
+  on_track: { label: 'On track', cls: 'ok' },
+  behind: { label: 'Behind', cls: 'late' },
+  no_contributions: { label: 'Not started', cls: 'idle' },
+}
+
 export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedGoals, addGoal, deleteGoal, updateGoalField, saveGoals, goalDirty, helpers, data } = budget
+  const { sortedGoals, addGoal, deleteGoal, updateGoalField, contributeToGoal, saveGoals, goalDirty, helpers, data } = budget
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'saved' | 'oldest'>('nearest')
+  const [sortKey, setSortKey] = useState<'nearest' | 'progress' | 'behind' | 'saved' | 'oldest'>('nearest')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'on_track' | 'behind' | 'completed'>('all')
   const [activeIndex, setActiveIndex] = useState(0)
   const [menuGoalId, setMenuGoalId] = useState<string | null>(null)
+  const [fundsGoalId, setFundsGoalId] = useState<string | null>(null)
+  const [fundsAmount, setFundsAmount] = useState('')
   const [goalModalMode, setGoalModalMode] = useState<'add' | 'edit' | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({ name: '', emoji: '🎯', target_amount: '1000', current_amount: '0', target_date: '', note: '' })
@@ -2527,6 +2639,9 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const carouselRef = useRef<HTMLDivElement | null>(null)
   const pendingDeleteGoal = useMemo(() => sortedGoals.find((goal) => goal.id === pendingDeleteId) ?? null, [sortedGoals, pendingDeleteId])
 
+  const currency = data.currency
+  const money = (amount: number) => helpers.fmtMoney(amount, currency)
+
   // ---- Autosave: persist to Supabase shortly after any local change ----
   useEffect(() => {
     if (!goalDirty) return
@@ -2537,6 +2652,17 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
   const totalTarget = sortedGoals.reduce((sum, goal) => sum + Number(goal.target_amount || 0), 0)
   const totalSaved = sortedGoals.reduce((sum, goal) => sum + Number(goal.current_amount || 0), 0)
   const averageProgress = sortedGoals.length > 0 && totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0
+
+  // ---- Real pace / projection per goal, from contribution history ----
+  const contributions = data.goalContributions ?? []
+  const projections = useMemo(() => {
+    const now = new Date()
+    const map = new Map<string, GoalProjection>()
+    for (const goal of sortedGoals) map.set(goal.id, computeGoalProjection(goal, contributions, now))
+    return map
+  }, [sortedGoals, contributions])
+
+  const insight = useMemo(() => summarizeGoals(sortedGoals, projections, money), [sortedGoals, projections, currency])
 
   const confirmDeleteGoal = async () => {
     if (!pendingDeleteId) return
@@ -2574,6 +2700,20 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     setModalQuickAmount('')
   }
 
+  const openFundsPopover = (goalId: string) => {
+    setFundsGoalId((current) => (current === goalId ? null : goalId))
+    setFundsAmount('')
+    setMenuGoalId(null)
+  }
+
+  const submitFunds = (goalId: string) => {
+    const amount = Number(fundsAmount)
+    if (!Number.isFinite(amount) || amount <= 0) return
+    contributeToGoal(goalId, amount)
+    setFundsGoalId(null)
+    setFundsAmount('')
+  }
+
   const saveGoalModal = async () => {
     if (goalModalMode === 'add') {
       const name = goalDraft.name.trim()
@@ -2607,17 +2747,37 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     }
   }
 
+  const filteredGoals = useMemo(() => {
+    if (statusFilter === 'all') return sortedGoals
+    return sortedGoals.filter((goal) => {
+      const status = projections.get(goal.id)?.status
+      if (statusFilter === 'completed') return status === 'completed'
+      if (statusFilter === 'on_track') return status === 'on_track'
+      if (statusFilter === 'behind') return status === 'behind'
+      return true
+    })
+  }, [sortedGoals, statusFilter, projections])
+
   const displayGoals = useMemo(() => {
-    const clone = [...sortedGoals]
+    const clone = [...filteredGoals]
     if (sortKey === 'progress') {
+      clone.sort((a, b) => (projections.get(b.id)?.progress ?? 0) - (projections.get(a.id)?.progress ?? 0))
+      return clone
+    }
+    if (sortKey === 'behind') {
+      // Behind goals first, ranked by how much extra/month they need to catch up.
+      const rank = (id: string) => {
+        const p = projections.get(id)
+        if (!p) return 0
+        if (p.status === 'behind') return 3
+        if (p.status === 'no_contributions') return 2
+        if (p.status === 'on_track') return 1
+        return 0 // completed last
+      }
       clone.sort((a, b) => {
-        const targetA = Number(a.target_amount || 0)
-        const targetB = Number(b.target_amount || 0)
-        const currentA = Number(a.current_amount || 0)
-        const currentB = Number(b.current_amount || 0)
-        const progressA = targetA > 0 ? currentA / targetA : 0
-        const progressB = targetB > 0 ? currentB / targetB : 0
-        return progressB - progressA
+        const diff = rank(b.id) - rank(a.id)
+        if (diff !== 0) return diff
+        return (projections.get(b.id)?.extraMonthlyToCatchUp ?? 0) - (projections.get(a.id)?.extraMonthlyToCatchUp ?? 0)
       })
       return clone
     }
@@ -2636,8 +2796,9 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       return aDate - bDate
     })
     return clone
-  }, [sortedGoals, sortKey, data.goals])
+  }, [filteredGoals, sortKey, projections, data.goals])
 
+  // Carousel: page through the goals, cards-per-page based on screen size.
   const cardsPerPage = isPhone ? 1 : (isCompactLaptop ? 2 : 3)
   const pages = Math.max(1, Math.ceil(displayGoals.length / cardsPerPage))
 
@@ -2651,7 +2812,7 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     if (!node) return
     node.scrollTo({ left: 0, behavior: 'auto' })
     setActiveIndex(0)
-  }, [sortKey])
+  }, [sortKey, statusFilter])
 
   const scrollToIndex = (index: number) => {
     const node = carouselRef.current
@@ -2670,6 +2831,8 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
     if (nextIndex !== activeIndex) setActiveIndex(nextIndex)
   }
 
+  const fmtProjDate = (date: Date) => date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+
   return (
     <div className="card dataPageCard goalsPage goalsGalleryPage">
       <div className="goalsHeroHeader">
@@ -2683,36 +2846,53 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
       </div>
 
       <div className="goalsGalleryScrollArea">
+        {/* ---- Hero banner: computed insight + relocated stats + illustration ---- */}
         <div className="goalsHeroCard">
           <div className="goalsHeroText">
             <span className="goalsHeroStar">★</span>
-            <h3>Big goals start with small steps.</h3>
-            <p>Keep saving, stay consistent and make it happen.</p>
+            <h3>{insight.summary}</h3>
+            {insight.suggestion ? <p className="goalsHeroSuggestion">{insight.suggestion}</p> : <p>Keep saving, stay consistent and make it happen.</p>}
+            <div className="goalsHeroInlineStats">
+              <div className="goalsHeroInlineStat"><strong className="tnum">{money(totalSaved)}</strong><span>Total saved</span></div>
+              <div className="goalsHeroInlineStat"><strong className="tnum">{money(totalTarget)}</strong><span>Total target</span></div>
+              <div className="goalsHeroInlineStat"><strong className="tnum">{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div>
+            </div>
           </div>
           <div className="goalsHeroMountain" aria-hidden="true">
             <img src="/goal-mountain.svg" alt="" />
           </div>
-          <div className="goalsHeroStats">
-            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon green">🐷</span><div><strong>{helpers.fmtMoney(totalSaved, data.currency)}</strong><span>Total saved</span></div></div>
-            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon amber">🪙</span><div><strong>{helpers.fmtMoney(totalTarget, data.currency)}</strong><span>Total target</span></div></div>
-            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon blue">◔</span><div><strong>{Math.max(0, Math.min(100, averageProgress))}%</strong><span>Average progress</span></div></div>
-            <div className="goalsHeroStatItem"><span className="goalsHeroStatIcon purple">◬</span><div><strong>{displayGoals.length}</strong><span>Active goals</span></div></div>
-          </div>
+        </div>
+
+        {/* ---- KPI strip ---- */}
+        <div className="goalsKpiStrip">
+          <div className="goalsKpiCard"><span className="goalsKpiValue tnum">{insight.activeCount}</span><span className="goalsKpiLabel">Active goals</span></div>
+          <div className="goalsKpiCard ok"><span className="goalsKpiValue tnum">{insight.onTrackCount}</span><span className="goalsKpiLabel">On track</span></div>
+          <div className="goalsKpiCard late"><span className="goalsKpiValue tnum">{insight.behindCount}</span><span className="goalsKpiLabel">Behind pace</span></div>
+          <div className="goalsKpiCard done"><span className="goalsKpiValue tnum">{insight.completedCount}</span><span className="goalsKpiLabel">Completed</span></div>
         </div>
 
         <div className="goalsGalleryHeader">
           <h3>My Goals</h3>
           <div className="goalsSortRow goalsSortControls">
             <span className="muted">Sort by:</span>
-            <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as 'nearest' | 'progress' | 'saved' | 'oldest')}>
+            <select className="select goalsSortSelect" value={sortKey} onChange={(event) => setSortKey(event.target.value as typeof sortKey)}>
               <option value="nearest">Nearest target</option>
-              <option value="progress">Highest progress</option>
+              <option value="progress">Progress</option>
+              <option value="behind">Behind pace first</option>
               <option value="saved">Most saved</option>
               <option value="oldest">Oldest</option>
+            </select>
+            <span className="muted goalsFilterLabel">Status:</span>
+            <select className="select goalsSortSelect" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}>
+              <option value="all">All</option>
+              <option value="on_track">On track</option>
+              <option value="behind">Behind</option>
+              <option value="completed">Completed</option>
             </select>
           </div>
         </div>
 
+        {/* ---- Goal carousel ---- */}
         <div className="goalsCarouselShell">
           {!isPhone ? (
             <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex - 1)} disabled={activeIndex <= 0} aria-label="Previous goals">
@@ -2720,66 +2900,96 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
             </button>
           ) : null}
           <div className="goalsCarouselTrack" ref={carouselRef} onScroll={onCarouselScroll}>
-            {displayGoals.map((goal) => {
-              const targetAmount = Number(goal.target_amount || 0)
-              const currentAmount = Number(goal.current_amount || 0)
-              const progress = targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0
-              const targetDate = goal.target_date ? new Date(`${goal.target_date}T00:00:00`).toLocaleDateString() : 'No date'
-              const remaining = Math.max(0, targetAmount - currentAmount)
-              return (
-                <div key={goal.id} className="goalCarouselCard">
-                  <div className="goalCarouselTop">
-                    <div className="goalCarouselTitleRow">
-                      <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
-                      <div>
-                        <div className="goalTitle">{goal.name || 'Untitled goal'}</div>
-                        <div className="muted">{helpers.fmtMoney(currentAmount, data.currency)} saved of {helpers.fmtMoney(targetAmount, data.currency)}</div>
+          {displayGoals.map((goal) => {
+            const projection = projections.get(goal.id)
+            const targetAmount = Number(goal.target_amount || 0)
+            const currentAmount = Number(goal.current_amount || 0)
+            const progress = projection?.progress ?? (targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0)
+            const status = projection?.status ?? 'no_contributions'
+            const ringColor = ringColorFor(status)
+            const statusMeta = GOAL_STATUS_META[status]
+            return (
+              <div key={goal.id} className="goalCard">
+                <div className="goalCardTop">
+                  <div className="goalCardTitleRow">
+                    <div className="goalEmojiBadge">{goal.emoji || '🎯'}</div>
+                    <div className="goalCardTitleText">
+                      <div className="goalTitle">{goal.name || 'Untitled goal'}</div>
+                      <span className={`goalStatusPill ${statusMeta.cls}`}>{statusMeta.label}</span>
+                    </div>
+                  </div>
+                  <div className="row goalHeaderActions">
+                    <button className="icon" title="More options" onClick={() => setMenuGoalId((current) => current === goal.id ? null : goal.id)}>
+                      <MoreHorizontal size={16} />
+                    </button>
+                    {menuGoalId === goal.id ? (
+                      <div className="goalMenuPanel">
+                        <button className="btn" onClick={() => { openEditGoalModal(goal); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
+                        <button className="btn danger" onClick={() => { setPendingDeleteId(goal.id); setMenuGoalId(null) }}><Trash2 size={14} /> Delete goal</button>
                       </div>
-                    </div>
-                    <div className="row goalHeaderActions">
-                      <button className="icon" title="More options" onClick={() => setMenuGoalId((current) => current === goal.id ? null : goal.id)}>
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {menuGoalId === goal.id ? (
-                        <div className="goalMenuPanel">
-                          <button className="btn" onClick={() => { openEditGoalModal(goal); setMenuGoalId(null) }}><Pencil size={14} /> Edit goal</button>
-                        </div>
-                      ) : null}
-                      <button className="icon danger" onClick={() => setPendingDeleteId(goal.id)} title="Delete goal">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="goalGaugeRow">
-                    <div className="goalGauge">
-                      <svg viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="45" className="goalGaugeTrack" />
-                        <circle
-                          cx="60"
-                          cy="60"
-                          r="45"
-                          className="goalGaugeValue"
-                          style={{ strokeDasharray: `${(progress / 100) * 282.74} 282.74` }}
-                        />
-                      </svg>
-                      <div className="goalGaugeCenter">{progress}%</div>
-                    </div>
-                    <div className="goalGaugeMeta">
-                      <div><small>{helpers.fmtMoney(remaining, data.currency)}</small><strong>remaining</strong></div>
-                      <div><small>Target date</small><strong>{targetDate}</strong></div>
-                    </div>
-                  </div>
-                  <div className="goalLinearProgress">
-                    <div style={{ width: `${progress}%` }} />
-                  </div>
-                  <div className="goalStatusStrip">
-                    <TrendingUp size={14} />
-                    {progress >= 70 ? 'You’re on track to reach your goal!' : 'Keep going! Small steps lead to big results.'}
+                    ) : null}
                   </div>
                 </div>
-              )
-            })}
+
+                <div className="goalCardBody">
+                  <GoalDonut progress={progress} color={ringColor} />
+                  <div className="goalCardMeta">
+                    <div className="goalAmountRow">
+                      <span className="goalAmountSaved tnum">{money(currentAmount)}</span>
+                      <span className="goalAmountTarget tnum">of {money(targetAmount)}</span>
+                    </div>
+                    {status === 'completed' ? (
+                      <div className="goalProjLine ok"><TrendingUp size={13} /> Goal reached 🎉</div>
+                    ) : status === 'no_contributions' ? (
+                      <div className="goalProjLine idle"><CalendarDays size={13} /> No contributions yet</div>
+                    ) : projection?.projectedDate ? (
+                      <div className={`goalProjLine ${projection.onTrack ? 'ok' : 'late'}`}>
+                        <CalendarDays size={13} /> Projected {fmtProjDate(projection.projectedDate)}
+                      </div>
+                    ) : (
+                      <div className="goalProjLine idle"><CalendarDays size={13} /> Projection unavailable</div>
+                    )}
+                    {goal.target_date ? (
+                      <div className="goalTargetLine muted">Target {new Date(`${goal.target_date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</div>
+                    ) : <div className="goalTargetLine muted">No target date</div>}
+                  </div>
+                </div>
+
+                <div className="goalSparkRow">
+                  <GoalSparkline series={projection?.series ?? [{ index: 0, value: 0 }]} color={ringColor} gradientId={`goalSpark-${goal.id}`} />
+                </div>
+
+                <div className="goalCardFooter">
+                  <button className="btn goalAddFundsBtn" onClick={() => openFundsPopover(goal.id)}>
+                    <Plus size={14} /> Add funds
+                  </button>
+                </div>
+
+                {fundsGoalId === goal.id ? (
+                  <div className="goalFundsPopover">
+                    <div className="goalFundsChips">
+                      {[10, 50, 100].map((preset) => (
+                        <button key={preset} className="btn goalFundsChip" onClick={() => contributeToGoal(goal.id, preset)}>+{money(preset)}</button>
+                      ))}
+                    </div>
+                    <div className="goalFundsInputRow">
+                      <input
+                        className="input"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        autoFocus
+                        value={fundsAmount}
+                        onChange={(event) => setFundsAmount(event.target.value)}
+                        onKeyDown={(event) => { if (event.key === 'Enter') submitFunds(goal.id) }}
+                      />
+                      <button className="btn primary" onClick={() => submitFunds(goal.id)}>Add</button>
+                      <button className="icon" title="Close" onClick={() => setFundsGoalId(null)}><CloseIcon size={15} /></button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )
+          })}
           </div>
           {!isPhone ? (
             <button className="icon goalsNavBtn" onClick={() => scrollToIndex(activeIndex + 1)} disabled={activeIndex >= pages - 1} aria-label="Next goals">
@@ -2788,9 +2998,9 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
           ) : null}
         </div>
 
-        {displayGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>No goals yet. Add one to start tracking progress.</div> : null}
+        {displayGoals.length === 0 ? <div className="muted" style={{ padding: 18, textAlign: 'center' }}>{sortedGoals.length === 0 ? 'No goals yet. Add one to start tracking progress.' : 'No goals match this filter.'}</div> : null}
 
-        {!isPhone ? (
+        {!isPhone && pages > 1 ? (
           <div className="goalsCarouselDots">
             {Array.from({ length: pages }).map((_, index) => (
               <button key={index} className={`goalsDot${activeIndex === index ? ' active' : ''}`} onClick={() => scrollToIndex(index)} aria-label={`View goal page ${index + 1}`} />
@@ -2806,43 +3016,52 @@ export function GoalsView({ budget }: Pick<SharedProps, 'budget'>) {
         onCancel={() => setPendingDeleteId(null)}
       />
 
-      {goalModalMode ? (
-        <div className="deleteConfirmBackdrop" role="presentation">
-          <div className="card goalEditorModal" role="dialog" aria-modal="true">
-            <h3>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
-            {goalModalError ? <div className="goalModalError">{goalModalError}</div> : null}
-            <div className="goalEditorGrid">
-              <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
-                const nextName = event.target.value
-                setGoalDraft((current) => ({ ...current, name: nextName, emoji: goalModalMode === 'add' && goalEmojiAuto ? inferGoalEmojiFromName(nextName) : current.emoji }))
-              }} /></div>
-              <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => {
-                setGoalEmojiAuto(false)
-                setGoalDraft((current) => ({ ...current, emoji: event.target.value }))
-              }}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
-              <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
-              <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
-              <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
-              <div><small>Quick amount</small><div className="goalQuickAddRow"><input className="input" inputMode="decimal" placeholder="0.00" value={modalQuickAmount} onChange={(event) => setModalQuickAmount(event.target.value)} /><button className="btn" onClick={() => {
-                const amount = Number(modalQuickAmount)
-                if (!Number.isFinite(amount) || amount <= 0) return
-                setGoalDraft((current) => {
-                  const currentAmount = Number(current.current_amount || 0)
-                  const targetAmount = Number(current.target_amount || 0)
-                  const next = currentAmount + amount
-                  const safe = Number.isFinite(targetAmount) && targetAmount > 0 ? Math.min(next, targetAmount) : next
-                  return { ...current, current_amount: String(Number(safe.toFixed(2))) }
-                })
-                setModalQuickAmount('')
-              }}>+ Add</button></div></div>
-              <div className="goalEditorFull"><small>Note</small><textarea className="input" rows={3} value={goalDraft.note} onChange={(event) => setGoalDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+      {goalModalMode ? createPortal(
+        <div className={`recurringDrawerBackdrop ${isPhone ? 'asModalBackdrop' : ''}`} role="presentation" onClick={closeGoalModal}>
+          <div className={`recurringSlideOver goalSlideOver ${isPhone ? 'asModal' : ''}`} role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <div className="recurringSlideOverHeader">
+              <div>
+                <h3 style={{ margin: 0 }}>{goalModalMode === 'add' ? 'Add Goal' : 'Edit Goal'}</h3>
+                <div className="muted">{goalModalMode === 'add' ? 'Set a target and start saving toward it.' : 'Update this goal’s details.'}</div>
+              </div>
+              <button type="button" className="icon recurringSlideOverClose" onClick={closeGoalModal} aria-label="Close form"><CloseIcon size={18} /></button>
             </div>
-            <div className="goalInlineEditorActions">
-              <button className="btn" onClick={closeGoalModal}>Cancel</button>
-              <button className="btn primary" onClick={() => void saveGoalModal()}>Save Goal</button>
+            <div className="recurringSlideOverBody">
+              {goalModalError ? <div className="goalModalError">{goalModalError}</div> : null}
+              <div className="goalEditorGrid">
+                <div><small>Name</small><input className="input" value={goalDraft.name} onChange={(event) => {
+                  const nextName = event.target.value
+                  setGoalDraft((current) => ({ ...current, name: nextName, emoji: goalModalMode === 'add' && goalEmojiAuto ? inferGoalEmojiFromName(nextName) : current.emoji }))
+                }} /></div>
+                <div><small>Emoji</small><select className="select" value={goalDraft.emoji} onChange={(event) => {
+                  setGoalEmojiAuto(false)
+                  setGoalDraft((current) => ({ ...current, emoji: event.target.value }))
+                }}>{CATEGORY_EMOJIS.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></div>
+                <div><small>Target amount</small><input className="input" inputMode="decimal" value={goalDraft.target_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, target_amount: event.target.value }))} /></div>
+                <div><small>Saved so far</small><input className="input" inputMode="decimal" value={goalDraft.current_amount} onChange={(event) => setGoalDraft((current) => ({ ...current, current_amount: event.target.value }))} /></div>
+                <div><small>Target date</small><input className="input" type="date" value={goalDraft.target_date} onChange={(event) => setGoalDraft((current) => ({ ...current, target_date: event.target.value }))} /></div>
+                <div><small>Quick amount</small><div className="goalQuickAddRow"><input className="input" inputMode="decimal" placeholder="0.00" value={modalQuickAmount} onChange={(event) => setModalQuickAmount(event.target.value)} /><button className="btn" onClick={() => {
+                  const amount = Number(modalQuickAmount)
+                  if (!Number.isFinite(amount) || amount <= 0) return
+                  setGoalDraft((current) => {
+                    const currentAmount = Number(current.current_amount || 0)
+                    const targetAmount = Number(current.target_amount || 0)
+                    const next = currentAmount + amount
+                    const safe = Number.isFinite(targetAmount) && targetAmount > 0 ? Math.min(next, targetAmount) : next
+                    return { ...current, current_amount: String(Number(safe.toFixed(2))) }
+                  })
+                  setModalQuickAmount('')
+                }}>+ Add</button></div></div>
+                <div className="goalEditorFull"><small>Note</small><textarea className="input" rows={3} value={goalDraft.note} onChange={(event) => setGoalDraft((current) => ({ ...current, note: event.target.value }))} /></div>
+              </div>
+              <div className="row between recurringDrawerActions goalDrawerActions">
+                <button className="btn" onClick={closeGoalModal}>Cancel</button>
+                <button className="btn primary" onClick={() => void saveGoalModal()}>Save Goal</button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </div>
   )
@@ -5122,13 +5341,43 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
+  const [cropEditorSource, setCropEditorSource] = useState('')
   const [universalSearchShortcut, setUniversalSearchShortcut] = useState(UNIVERSAL_SHORTCUT_DEFAULT)
   const [shortcutListening, setShortcutListening] = useState(false)
   const [shortcutError, setShortcutError] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
   const [notificationPrefs, setNotificationPrefs] = useState({ bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true })
   const [notificationsExpanded, setNotificationsExpanded] = useState(false)
-  useEffect(() => { if (!userId) return; void getNotificationPreferences(userId).then((prefs) => setNotificationPrefs(prefs)) }, [userId])
+  const [notifDelivery, setNotifDelivery] = useState({ channel_push: false, channel_email: false, quiet_hours_enabled: false, quiet_hours_start: 22, quiet_hours_end: 7, email_digest_frequency: 'weekly' as 'off' | 'daily' | 'weekly', min_priority: 'low' as NotificationPriority })
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushReady, setPushReady] = useState(false)
+  useEffect(() => { if (!userId) return; void getNotificationPreferences(userId).then((prefs) => { setNotificationPrefs(prefs); setNotifDelivery({ channel_push: prefs.channel_push, channel_email: prefs.channel_email, quiet_hours_enabled: prefs.quiet_hours_enabled, quiet_hours_start: prefs.quiet_hours_start, quiet_hours_end: prefs.quiet_hours_end, email_digest_frequency: prefs.email_digest_frequency, min_priority: prefs.min_priority }) }) }, [userId])
+  useEffect(() => { if (!pushSupported()) return; void isPushEnabled().then(setPushReady) }, [])
+  const saveNotifDelivery = async (patch: Partial<typeof notifDelivery>) => {
+    if (!userId) return
+    const next = { ...notifDelivery, ...patch }
+    setNotifDelivery(next)
+    await updateNotificationPreferences(userId, patch)
+  }
+  const togglePush = async () => {
+    if (!userId || pushBusy) return
+    setPushBusy(true)
+    try {
+      if (pushReady) { await disablePush(userId); setPushReady(false); setNotifDelivery((p) => ({ ...p, channel_push: false })) }
+      else {
+        const res = await enablePush(userId)
+        if (res.ok) { setPushReady(true); setNotifDelivery((p) => ({ ...p, channel_push: true })) }
+        else if (typeof window !== 'undefined') window.alert(res.reason === 'denied' ? 'Notifications are blocked in your browser settings.' : res.reason === 'missing_vapid_key' ? 'Push is not configured yet (missing VAPID key).' : 'Could not enable push notifications.')
+      }
+    } finally { setPushBusy(false) }
+  }
+  const hourOptions = Array.from({ length: 24 }, (_, h) => h)
+  const fmtHour = (h: number) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`
+  // Backend-dependent controls are hidden until their delivery channel is configured
+  // (they auto-reappear once these build-time env vars are set). Push & quiet hours
+  // need Web Push (VAPID); the email digest needs the email backend.
+  const pushConfigured = Boolean(import.meta.env.VITE_VAPID_PUBLIC_KEY)
+  const emailConfigured = Boolean(import.meta.env.VITE_EMAIL_DIGEST)
   const notificationItems: Array<{ key: keyof typeof notificationPrefs; label: string; description: string }> = [
     { key: 'bills_recurring', label: 'Bills & Recurring', description: 'Upcoming bills, recurring income, and recurring expenses.' },
     { key: 'budgets', label: 'Budgets', description: 'Budget usage, warnings, and exceeded limits.' },
@@ -5261,28 +5510,46 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     }
   }, [pendingProfileImagePreview])
 
-  const handleProfilePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget
     const file = event.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
       setProfileError('Please upload a JPG or PNG image.')
-      event.currentTarget.value = ''
+      input.value = ''
       return
     }
     if (file.size > 5 * 1024 * 1024) {
       setProfileError('Profile photo must be 5MB or smaller.')
-      event.currentTarget.value = ''
+      input.value = ''
       return
     }
 
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      setProfileError('')
+      setProfileSuccess('')
+      setCropEditorSource(dataUrl)
+    } catch {
+      setProfileError('Could not read that image. Please try another file.')
+    } finally {
+      input.value = ''
+    }
+  }
+
+  const handleCropEditorCancel = () => {
+    setCropEditorSource('')
+  }
+
+  const handleCropEditorApply = (file: File) => {
     if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
     const preview = URL.createObjectURL(file)
     setPendingProfileImageFile(file)
     setPendingProfileImagePreview(preview)
     setProfileImage(preview)
+    setCropEditorSource('')
     setProfileError('')
-    setProfileSuccess('Profile photo selected. Click save profile to upload and keep changes.')
-    event.currentTarget.value = ''
+    setProfileSuccess('Profile photo ready. Click save profile to upload and keep changes.')
   }
 
   const handleProfilePhotoRemove = () => {
@@ -5396,9 +5663,20 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
 
   useEffect(() => {
     const openGeneral = () => setSettingsSection('general')
+    const openSection = (event: Event) => {
+      const section = (event as CustomEvent<{ section?: string }>).detail?.section
+      const allowed = ['general', 'data', 'account', 'admin', 'audit', 'bugs']
+      if (!section || !allowed.includes(section)) return
+      if ((section === 'admin' || section === 'audit' || section === 'bugs') && !isSuperAdmin) { setSettingsSection('general'); return }
+      setSettingsSection(section as typeof settingsSection)
+    }
     window.addEventListener('budgetly:open-settings-general', openGeneral)
-    return () => window.removeEventListener('budgetly:open-settings-general', openGeneral)
-  }, [])
+    window.addEventListener('budgetly:open-settings-section', openSection as EventListener)
+    return () => {
+      window.removeEventListener('budgetly:open-settings-general', openGeneral)
+      window.removeEventListener('budgetly:open-settings-section', openSection as EventListener)
+    }
+  }, [isSuperAdmin])
 
   return (
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
@@ -5555,6 +5833,109 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                       </button>
                     </div>
                   ))}
+
+                  {pushConfigured || emailConfigured ? (
+                    <>
+                      <div className="settingsNotifDivider">Delivery</div>
+
+                      {pushConfigured ? (
+                        <div className="settingsNotifRow">
+                          <div>
+                            <div className="settingsNotifLabel">Push notifications</div>
+                            <small>{pushSupported() ? (getPushPermission() === 'denied' ? 'Blocked in your browser settings.' : 'Get alerts on this device even when Budgetly is closed.') : 'Not supported on this browser.'}</small>
+                          </div>
+                          <button
+                            type="button"
+                            className={`settingsSwitch ${pushReady ? 'on' : ''}`}
+                            role="switch"
+                            aria-checked={pushReady}
+                            aria-label="Toggle push notifications"
+                            disabled={!pushSupported() || pushBusy || getPushPermission() === 'denied'}
+                            onClick={togglePush}
+                          >
+                            <span className="settingsSwitchKnob" />
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {emailConfigured ? (
+                        <>
+                          <div className="settingsNotifRow">
+                            <div>
+                              <div className="settingsNotifLabel">Email digest</div>
+                              <small>Periodic summary of your alerts by email.</small>
+                            </div>
+                            <button
+                              type="button"
+                              className={`settingsSwitch ${notifDelivery.channel_email ? 'on' : ''}`}
+                              role="switch"
+                              aria-checked={notifDelivery.channel_email}
+                              aria-label="Toggle email digest"
+                              onClick={() => void saveNotifDelivery({ channel_email: !notifDelivery.channel_email })}
+                            >
+                              <span className="settingsSwitchKnob" />
+                            </button>
+                          </div>
+                          {notifDelivery.channel_email ? (
+                            <div className="settingsNotifRow">
+                              <div><div className="settingsNotifLabel">Digest frequency</div><small>How often to send the summary email.</small></div>
+                              <select className="settingsNotifSelect" value={notifDelivery.email_digest_frequency} onChange={(e) => void saveNotifDelivery({ email_digest_frequency: e.target.value as 'off' | 'daily' | 'weekly' })}>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="off">Off</option>
+                              </select>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
+                    </>
+                  ) : null}
+
+                  <div className="settingsNotifDivider">Preferences</div>
+
+                  {pushConfigured ? (
+                    <>
+                      <div className="settingsNotifRow">
+                        <div>
+                          <div className="settingsNotifLabel">Quiet hours</div>
+                          <small>Pause push notifications during set hours.</small>
+                        </div>
+                        <button
+                          type="button"
+                          className={`settingsSwitch ${notifDelivery.quiet_hours_enabled ? 'on' : ''}`}
+                          role="switch"
+                          aria-checked={notifDelivery.quiet_hours_enabled}
+                          aria-label="Toggle quiet hours"
+                          onClick={() => void saveNotifDelivery({ quiet_hours_enabled: !notifDelivery.quiet_hours_enabled })}
+                        >
+                          <span className="settingsSwitchKnob" />
+                        </button>
+                      </div>
+                      {notifDelivery.quiet_hours_enabled ? (
+                        <div className="settingsNotifRow">
+                          <div><div className="settingsNotifLabel">From / to</div><small>No push alerts between these times.</small></div>
+                          <div className="row" style={{ gap: 8 }}>
+                            <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_start} onChange={(e) => void saveNotifDelivery({ quiet_hours_start: Number(e.target.value) })}>
+                              {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
+                            </select>
+                            <select className="settingsNotifSelect" value={notifDelivery.quiet_hours_end} onChange={(e) => void saveNotifDelivery({ quiet_hours_end: Number(e.target.value) })}>
+                              {hourOptions.map((h) => <option key={h} value={h}>{fmtHour(h)}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+
+                  <div className="settingsNotifRow">
+                    <div><div className="settingsNotifLabel">Minimum importance</div><small>Only show alerts at or above this level.</small></div>
+                    <select className="settingsNotifSelect" value={notifDelivery.min_priority} onChange={(e) => void saveNotifDelivery({ min_priority: e.target.value as NotificationPriority })}>
+                      <option value="low">Everything</option>
+                      <option value="normal">Normal &amp; up</option>
+                      <option value="high">Important only</option>
+                      <option value="critical">Critical only</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -5776,6 +6157,8 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
           </div>
         ) : null}
       </div>
+
+      <ProfileImageCropEditor source={cropEditorSource} onCancel={handleCropEditorCancel} onApply={handleCropEditorApply} />
     </div>
   )
 }
@@ -5957,6 +6340,233 @@ function readFileAsDataUrl(file: File) {
   })
 }
 
+// Diameter (in device pixels) of the square profile image written to storage.
+const PROFILE_CROP_OUTPUT_SIZE = 512
+// On-screen size of the square crop viewport.
+const PROFILE_CROP_VIEWPORT = 300
+const PROFILE_CROP_MIN_ZOOM = 1
+const PROFILE_CROP_MAX_ZOOM = 4
+
+function ProfileImageCropEditor({
+  source,
+  onCancel,
+  onApply,
+}: {
+  source: string
+  onCancel: () => void
+  onApply: (file: File) => void
+}) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
+  const [baseScale, setBaseScale] = useState(1)
+  const [zoom, setZoom] = useState(1)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null)
+
+  // Keep the displayed image no smaller than the viewport so the crop is always filled.
+  const clampOffset = (next: { x: number; y: number }, scale: number, currentZoom: number) => {
+    if (!image) return next
+    const displayW = image.naturalWidth * scale * currentZoom
+    const displayH = image.naturalHeight * scale * currentZoom
+    const minX = PROFILE_CROP_VIEWPORT - displayW
+    const minY = PROFILE_CROP_VIEWPORT - displayH
+    return {
+      x: Math.min(0, Math.max(minX, next.x)),
+      y: Math.min(0, Math.max(minY, next.y)),
+    }
+  }
+
+  useEffect(() => {
+    if (!source) return
+    setImage(null)
+    setError('')
+    setZoom(1)
+    const img = new Image()
+    img.onload = () => {
+      if (!img.naturalWidth || !img.naturalHeight) {
+        setError('That image could not be loaded. Please try another file.')
+        return
+      }
+      // "Cover" scale: the smallest scale that still fills the square viewport.
+      const scale = Math.max(
+        PROFILE_CROP_VIEWPORT / img.naturalWidth,
+        PROFILE_CROP_VIEWPORT / img.naturalHeight,
+      )
+      const displayW = img.naturalWidth * scale
+      const displayH = img.naturalHeight * scale
+      setImage(img)
+      setBaseScale(scale)
+      setOffset({
+        x: (PROFILE_CROP_VIEWPORT - displayW) / 2,
+        y: (PROFILE_CROP_VIEWPORT - displayH) / 2,
+      })
+    }
+    img.onerror = () => setError('That image could not be loaded. Please try another file.')
+    img.src = source
+  }, [source])
+
+  const applyZoom = (nextZoomRaw: number) => {
+    if (!image) return
+    const nextZoom = Math.min(PROFILE_CROP_MAX_ZOOM, Math.max(PROFILE_CROP_MIN_ZOOM, nextZoomRaw))
+    // Zoom around the centre of the viewport so the framed subject stays put.
+    const centre = PROFILE_CROP_VIEWPORT / 2
+    const ratio = nextZoom / zoom
+    const nextOffset = {
+      x: centre - (centre - offset.x) * ratio,
+      y: centre - (centre - offset.y) * ratio,
+    }
+    setZoom(nextZoom)
+    setOffset(clampOffset(nextOffset, baseScale, nextZoom))
+  }
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!image) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: offset.x,
+      originY: offset.y,
+    }
+  }
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const nextOffset = {
+      x: drag.originX + (event.clientX - drag.startX),
+      y: drag.originY + (event.clientY - drag.startY),
+    }
+    setOffset(clampOffset(nextOffset, baseScale, zoom))
+  }
+
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null
+      try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* noop */ }
+    }
+  }
+
+  const handleApply = async () => {
+    if (!image) return
+    setBusy(true)
+    setError('')
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = PROFILE_CROP_OUTPUT_SIZE
+      canvas.height = PROFILE_CROP_OUTPUT_SIZE
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas is not supported in this browser.')
+
+      // Map the visible viewport back into source-image pixels.
+      const effectiveScale = baseScale * zoom
+      const sourceSize = PROFILE_CROP_VIEWPORT / effectiveScale
+      const sourceX = -offset.x / effectiveScale
+      const sourceY = -offset.y / effectiveScale
+
+      ctx.imageSmoothingQuality = 'high'
+      ctx.fillStyle = '#0b1120'
+      ctx.fillRect(0, 0, PROFILE_CROP_OUTPUT_SIZE, PROFILE_CROP_OUTPUT_SIZE)
+      ctx.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        PROFILE_CROP_OUTPUT_SIZE,
+        PROFILE_CROP_OUTPUT_SIZE,
+      )
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((result) => resolve(result), 'image/jpeg', 0.92)
+      })
+      if (!blob) throw new Error('Could not process that image. Please try again.')
+
+      const file = new File([blob], `profile-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      onApply(file)
+    } catch (err: any) {
+      setError(err?.message || 'Could not process that image. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!source) return null
+
+  const displayW = image ? image.naturalWidth * baseScale * zoom : 0
+  const displayH = image ? image.naturalHeight * baseScale * zoom : 0
+
+  return createPortal(
+    <div className="deleteConfirmBackdrop" role="presentation">
+      <div className="card cropEditorModal" role="dialog" aria-modal="true" aria-labelledby="crop-editor-title">
+        <h3 id="crop-editor-title">Edit profile photo</h3>
+        <p className="muted cropEditorSubtitle">Drag to reposition and use the slider to zoom. The area inside the circle is what people will see.</p>
+
+        <div
+          className="cropEditorStage"
+          style={{ width: PROFILE_CROP_VIEWPORT, height: PROFILE_CROP_VIEWPORT }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          {image ? (
+            <img
+              className="cropEditorImage"
+              src={source}
+              alt="Crop preview"
+              draggable={false}
+              style={{
+                width: displayW,
+                height: displayH,
+                transform: `translate(${offset.x}px, ${offset.y}px)`,
+              }}
+            />
+          ) : (
+            <div className="cropEditorLoading">{error ? error : 'Loading image…'}</div>
+          )}
+          <div className="cropEditorMask" aria-hidden="true" />
+          {image ? <div className="cropEditorHint" aria-hidden="true"><Move size={14} /> Drag to reposition</div> : null}
+        </div>
+
+        <div className="cropEditorZoomRow">
+          <button className="btn ghost cropEditorZoomBtn" type="button" onClick={() => applyZoom(zoom - 0.25)} disabled={!image || busy} aria-label="Zoom out">
+            <ZoomOut size={16} />
+          </button>
+          <input
+            className="cropEditorZoomSlider"
+            type="range"
+            min={PROFILE_CROP_MIN_ZOOM}
+            max={PROFILE_CROP_MAX_ZOOM}
+            step={0.01}
+            value={zoom}
+            onChange={(event) => applyZoom(Number(event.target.value))}
+            disabled={!image || busy}
+            aria-label="Zoom"
+          />
+          <button className="btn ghost cropEditorZoomBtn" type="button" onClick={() => applyZoom(zoom + 0.25)} disabled={!image || busy} aria-label="Zoom in">
+            <ZoomIn size={16} />
+          </button>
+        </div>
+
+        {error && image ? <div className="passwordFeedback error">{error}</div> : null}
+
+        <div className="cropEditorActions">
+          <button className="btn" type="button" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button className="btn primary" type="button" onClick={() => void handleApply()} disabled={!image || busy}>
+            <Check size={16} /> {busy ? 'Applying…' : 'Apply'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 function BugReportModal({
   open,
   email,
@@ -6046,7 +6656,9 @@ function BugReportModal({
 function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
   type WorkflowStatus = 'pending' | 'in_progress' | 'in_review' | 'resolved'
   type BugPriority = 'high' | 'medium' | 'low'
+  const isTabletDown = useIsTabletDown()
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | WorkflowStatus>('all')
   const [severityFilter, setSeverityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
@@ -6158,179 +6770,268 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   }, [searchTerm, statusFilter, severityFilter])
 
   const renderSeverityPill = (level: 'high' | 'medium' | 'low') => (
-    <span className={`bugsMetaPill bugsSeverityPill ${level}`}>{level[0].toUpperCase() + level.slice(1)}</span>
+    <span className={`bugsMetaPill bugsSeverityPill ${level}`}><span className="bugsPillDot" />{level[0].toUpperCase() + level.slice(1)}</span>
   )
 
   const renderStatusPill = (status: WorkflowStatus) => (
-    <span className={`bugsMetaPill bugsStatusPill ${status}`}>{status === 'in_progress' ? 'In Progress' : status === 'in_review' ? 'In Review' : status === 'resolved' ? 'Resolved' : 'Pending'}</span>
+    <span className={`bugsMetaPill bugsStatusPill ${status}`}><span className="bugsPillDot" />{status === 'in_progress' ? 'In Progress' : status === 'in_review' ? 'In Review' : status === 'resolved' ? 'Resolved' : 'Pending'}</span>
   )
 
+  const stats = useMemo(() => {
+    let pending = 0, inProgress = 0, inReview = 0, resolved = 0, highSeverity = 0
+    reportsWithMeta.forEach((item) => {
+      const wf = parseWorkflow(item)
+      if (wf === 'pending') pending += 1
+      else if (wf === 'in_progress') inProgress += 1
+      else if (wf === 'in_review') inReview += 1
+      else if (wf === 'resolved') resolved += 1
+      if (item.severity === 'high') highSeverity += 1
+    })
+    const total = reportsWithMeta.length
+    return {
+      total,
+      pending,
+      active: inProgress + inReview,
+      resolved,
+      highSeverity,
+      open: pending + inProgress + inReview,
+      resolutionRate: total ? Math.round((resolved / total) * 100) : 0,
+    }
+  }, [reportsWithMeta])
+
+  const statusFilters: Array<{ key: 'all' | WorkflowStatus; label: string }> = [
+    { key: 'all', label: 'All' },
+    { key: 'pending', label: 'Pending' },
+    { key: 'in_progress', label: 'In Progress' },
+    { key: 'in_review', label: 'In Review' },
+    { key: 'resolved', label: 'Resolved' },
+  ]
+
+  const openReport = (id: string) => {
+    setSelectedId(id)
+    if (isTabletDown) setDetailOpen(true)
+  }
+
   const selectedSteps = selectedReport?.steps_to_reproduce.split('\n').map((step) => step.trim()).filter(Boolean) || []
+
+  const detailBody = selectedReport ? (
+    <>
+      <div className="bugsDetailHeader">
+        <div className="bugsTicketRow">
+          <span className="bugsTicketCode">{selectedReport.ticketCode}</span>
+          {renderSeverityPill(selectedReport.severity)}
+          {renderStatusPill(parseWorkflow(selectedReport))}
+        </div>
+        <h4>{selectedSteps[0] || 'Bug report detail'}</h4>
+        <div className="bugsDetailReporter">
+          <span className="bugsAvatar">{(selectedReport.user_email || '?').charAt(0).toUpperCase()}</span>
+          <span className="bugsDetailEmail">{selectedReport.user_email}</span>
+          {selectedReport.created_at ? <span className="bugsDetailWhen">{new Date(selectedReport.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date(selectedReport.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> : null}
+        </div>
+      </div>
+
+      <div className="bugsDetailScroll">
+        <div className="bugsDetailColumns">
+          <div>
+            <div className="auditDetailHeading">Steps to Reproduce</div>
+            <div className="bugsStepsScrollBox">
+              <ol className="bugsStepsList">
+                {selectedSteps.length ? selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>) : <li className="muted">No steps provided.</li>}
+              </ol>
+            </div>
+          </div>
+          <div>
+            <div className="auditDetailHeading">Screenshot</div>
+            {selectedReport.screenshot_data_url ? (
+              <div className="bugsScreenshotCard">
+                <img src={selectedReport.screenshot_data_url} alt={selectedReport.screenshot_name || 'Bug screenshot'} />
+                <button className="bugsExpandImageBtn" aria-label="Expand screenshot" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
+                  <Maximize2 size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="bugsNoShot"><Inbox size={20} /><span>No screenshot attached</span></div>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="auditDetailHeading">Internal Notes</div>
+          <textarea className="textarea bugsNotesArea" placeholder="Add internal notes or updates..." value={notesDraft[selectedReport.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
+        </div>
+      </div>
+
+      <div className="bugsDetailFooter">
+        <div className="bugsFooterField">
+          <div className="auditDetailHeading">Status</div>
+          <select className="select" value={statusDraft[selectedReport.id] || parseWorkflow(selectedReport)} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as WorkflowStatus }))}>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="in_review">In Review</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </div>
+        <div className="bugsFooterField">
+          <div className="auditDetailHeading">Priority</div>
+          <select className="select" value={priorityDraft[selectedReport.id] || parsePriority(selectedReport)} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as BugPriority }))}>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <button className="btn bugsSaveBtn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
+          const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
+          const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
+          const severity = priority
+          admin.updateBugReport(selectedReport.id, {
+            status: workflow === 'resolved' ? 'completed' : 'pending',
+            admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
+          })
+        }}>
+          {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
+        </button>
+        <button className="btn primary bugsResolveBtn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
+          const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
+          const severity = priority
+          admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
+        }}>
+          <CheckCircle2 size={15} /> Mark Resolved
+        </button>
+      </div>
+    </>
+  ) : (
+    <div className="bugsDetailEmpty">
+      <div className="bugsEmptyIcon"><Bug size={26} /></div>
+      <strong>No report selected</strong>
+      <span className="muted">Choose a report from the list to view its full details.</span>
+    </div>
+  )
 
   return (
     <>
       <div className={`card ${embedded ? 'settingsPanelCard' : ''} bugsPanelCard`}>
-        <div className="row between" style={{ marginBottom: 8, gap: 12, alignItems: 'flex-start' }}>
-          <div>
-            <h3 style={{ marginBottom: 4 }}>Bugs & Fixes</h3>
-            <div className="muted">Track, triage, and resolve reported issues to keep Budgetly stable and reliable.</div>
+        <div className="bugsConsoleTop">
+          <div className="bugsConsoleTitle">
+            <div className="bugsConsoleIcon"><Bug size={20} /></div>
+            <div>
+              <h3>Bug Tracker</h3>
+              <div className="muted">Monitor, triage, and resolve reported issues from one command center.</div>
+            </div>
           </div>
-          <button className="btn">Workspace controls</button>
+          <div className="bugsLivePill"><span className="bugsLiveDot" />{stats.open} open</div>
         </div>
+
+        <div className="bugsStatGrid">
+          <div className="bugsStatTile total">
+            <div className="bugsStatIcon"><Inbox size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.total}</span><span className="bugsStatLabel">Total Reports</span></div>
+          </div>
+          <div className="bugsStatTile pending">
+            <div className="bugsStatIcon"><Clock size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.pending}</span><span className="bugsStatLabel">Pending</span></div>
+          </div>
+          <div className="bugsStatTile active">
+            <div className="bugsStatIcon"><Activity size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.active}</span><span className="bugsStatLabel">In Progress</span></div>
+          </div>
+          <div className="bugsStatTile critical">
+            <div className="bugsStatIcon"><AlertTriangle size={18} /></div>
+            <div className="bugsStatMeta"><span className="bugsStatValue">{stats.highSeverity}</span><span className="bugsStatLabel">High Severity</span></div>
+          </div>
+          <div className="bugsStatTile resolved">
+            <div className="bugsStatIcon"><CheckCircle2 size={18} /></div>
+            <div className="bugsStatMeta">
+              <span className="bugsStatValue">{stats.resolutionRate}%</span><span className="bugsStatLabel">Resolved · {stats.resolved}</span>
+              <div className="bugsStatBar"><span style={{ width: `${stats.resolutionRate}%` }} /></div>
+            </div>
+          </div>
+        </div>
+
         <div className="bugsWorkspace">
           <div className="bugsListPane">
-            <div className="bugsToolbar">
-              <input className="input bugsSearchInput" placeholder="Search bugs..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
-              <select className="select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | WorkflowStatus)}>
-                <option value="all">Status: All</option>
-                <option value="pending">Status: Pending</option>
-                <option value="in_progress">Status: In Progress</option>
-                <option value="in_review">Status: In Review</option>
-                <option value="resolved">Status: Resolved</option>
+            <div className="bugsControls">
+              <div className="bugsSearchWrap">
+                <Search size={16} className="bugsSearchIcon" />
+                <input className="bugsSearchInput" placeholder="Search by reporter, ticket, or keyword..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+              </div>
+              <select className="select bugsSeveritySelect" value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value as 'all' | 'high' | 'medium' | 'low')}>
+                <option value="all">All severities</option>
+                <option value="high">High severity</option>
+                <option value="medium">Medium severity</option>
+                <option value="low">Low severity</option>
               </select>
-              <select className="select" value={severityFilter} onChange={(event) => setSeverityFilter(event.target.value as 'all' | 'high' | 'medium' | 'low')}>
-                <option value="all">Severity: All</option>
-                <option value="high">Severity: High</option>
-                <option value="medium">Severity: Medium</option>
-                <option value="low">Severity: Low</option>
-              </select>
-              <button className="btn">Export</button>
             </div>
 
-            <div className="bugsTableShell">
-              <div className="bugsTableHeader">
-                <div>Date</div>
-                <div>Reporter</div>
-                <div>Severity</div>
-                <div>Status</div>
-                <div>Actions</div>
-              </div>
-              <div className="bugsTableBody">
-                {pagedReports.length === 0 ? <div className="muted">No bug reports found.</div> : pagedReports.map((item) => {
-                  const timestamp = item.created_at ? new Date(item.created_at) : null
-                  const isSelected = selectedReport?.id === item.id
-                  return (
-                    <div key={item.id} className={`bugsRowBtn ${isSelected ? 'active' : ''}`} onClick={() => setSelectedId(item.id)} role="button" tabIndex={0} onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault()
-                        setSelectedId(item.id)
-                      }
-                    }}>
-                      <div className="bugsDateCell">
-                        <strong>{timestamp ? timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Today'}</strong>
-                        <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}</span>
+            <div className="bugsFilterChips">
+              {statusFilters.map((filter) => (
+                <button key={filter.key} className={`bugsChip ${statusFilter === filter.key ? 'active' : ''}`} onClick={() => setStatusFilter(filter.key)}>
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="bugsList">
+              {pagedReports.length === 0 ? (
+                <div className="bugsListEmpty">
+                  <div className="bugsEmptyIcon"><CircleDot size={24} /></div>
+                  <strong>No bug reports found</strong>
+                  <span className="muted">Try adjusting your search or filters.</span>
+                </div>
+              ) : pagedReports.map((item) => {
+                const timestamp = item.created_at ? new Date(item.created_at) : null
+                const isSelected = !isTabletDown && selectedReport?.id === item.id
+                const firstStep = item.steps_to_reproduce.split('\n').map((s) => s.trim()).filter(Boolean)[0] || 'Bug report'
+                return (
+                  <button key={item.id} className={`bugsCard ${isSelected ? 'active' : ''}`} onClick={() => openReport(item.id)}>
+                    <span className={`bugsCardAccent ${item.severity}`} />
+                    <div className="bugsCardMain">
+                      <div className="bugsCardTop">
+                        <span className="bugsTicketCode">{item.ticketCode}</span>
+                        {renderSeverityPill(item.severity)}
                       </div>
-                      <div className="bugsEmailCell">{item.user_email}</div>
-                      <div>{renderSeverityPill(item.severity)}</div>
-                      <div>{renderStatusPill(parseWorkflow(item))}</div>
-                      <div className="bugsActionCell">
-                        <button className="btn bugsViewBtn" onClick={(event) => {
-                          event.stopPropagation()
-                          setSelectedId(item.id)
-                        }}>
-                          View
-                        </button>
+                      <div className="bugsCardTitle">{firstStep}</div>
+                      <div className="bugsCardMeta">
+                        <span className="bugsReporter"><span className="bugsAvatar sm">{(item.user_email || '?').charAt(0).toUpperCase()}</span>{item.user_email}</span>
+                        <span className="bugsCardDate">{timestamp ? timestamp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Today'}</span>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    <div className="bugsCardSide">
+                      {renderStatusPill(parseWorkflow(item))}
+                      <ChevronRight size={16} className="bugsCardChevron" />
+                    </div>
+                  </button>
+                )
+              })}
             </div>
 
             <div className="bugsPaginationRow">
-              <span className="muted">Showing {filteredReports.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredReports.length)} of {filteredReports.length} results</span>
+              <span className="muted">Showing {filteredReports.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredReports.length)} of {filteredReports.length}</span>
               <div className="bugsPaginationBtns">
-                <button className="btn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}>‹</button>
+                <button className="bugsPageBtn" disabled={currentPage === 1} onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))} aria-label="Previous page"><ChevronLeft size={16} /></button>
                 {Array.from({ length: totalPages }, (_, index) => (
-                  <button key={index + 1} className={`btn ${currentPage === index + 1 ? 'primary' : ''}`} onClick={() => setCurrentPage(index + 1)}>
+                  <button key={index + 1} className={`bugsPageBtn ${currentPage === index + 1 ? 'active' : ''}`} onClick={() => setCurrentPage(index + 1)}>
                     {index + 1}
                   </button>
                 ))}
-                <button className="btn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}>›</button>
+                <button className="bugsPageBtn" disabled={currentPage === totalPages} onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))} aria-label="Next page"><ChevronRight size={16} /></button>
               </div>
             </div>
           </div>
 
-          <div className="bugsDetailPane">
-            {selectedReport ? (
-              <>
-                <div className="bugsDetailHeader">
-                  <div className="bugsTicketRow">
-                    <span>{selectedReport.ticketCode}</span>
-                    {renderSeverityPill(selectedReport.severity)}
-                  </div>
-                  <h4>{selectedSteps[0] || 'Bug report detail'}</h4>
+          {!isTabletDown ? (
+            <div className="bugsDetailPane">{detailBody}</div>
+          ) : (
+            <>
+              {detailOpen ? <div className="bugsDrawerBackdrop" onClick={() => setDetailOpen(false)} /> : null}
+              <div className={`bugsDetailPane asDrawer ${detailOpen ? 'open' : ''}`}>
+                <div className="bugsDrawerBar">
+                  <button className="bugsDrawerBack" onClick={() => setDetailOpen(false)}><ArrowLeft size={16} /> Back to list</button>
+                  <button className="bugsDrawerClose" onClick={() => setDetailOpen(false)} aria-label="Close details"><CloseIcon size={18} /></button>
                 </div>
-
-                <div className="bugsDetailColumns">
-                  <div>
-                    <div className="auditDetailHeading">Steps to Reproduce</div>
-                    <div className="bugsStepsScrollBox">
-                      <ol className="bugsStepsList">
-                        {selectedSteps.map((step, index) => <li key={`${selectedReport.id}-${index}`}>{step}</li>)}
-                      </ol>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="auditDetailHeading">Screenshot</div>
-                    {selectedReport.screenshot_data_url ? (
-                      <div className="bugsScreenshotCard">
-                        <img src={selectedReport.screenshot_data_url} alt={selectedReport.screenshot_name || 'Bug screenshot'} />
-                        <button className="bugsExpandImageBtn" aria-label="Expand screenshot" onClick={() => setImageModalSrc(selectedReport.screenshot_data_url || null)}>
-                          <Maximize2 size={14} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="muted">No screenshot attached.</div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="auditDetailHeading">Internal Notes</div>
-                  <textarea className="textarea" placeholder="Add internal notes or updates..." value={notesDraft[selectedReport.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
-                </div>
-
-                <div className="bugsDetailFooter">
-                  <div>
-                    <div className="auditDetailHeading">Status</div>
-                    <select className="select" value={statusDraft[selectedReport.id] || parseWorkflow(selectedReport)} onChange={(event) => setStatusDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as WorkflowStatus }))}>
-                      <option value="pending">Pending</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="in_review">In Review</option>
-                      <option value="resolved">Resolved</option>
-                    </select>
-                  </div>
-                  <div>
-                    <div className="auditDetailHeading">Priority</div>
-                    <select className="select" value={priorityDraft[selectedReport.id] || parsePriority(selectedReport)} onChange={(event) => setPriorityDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value as BugPriority }))}>
-                      <option value="high">High</option>
-                      <option value="medium">Medium</option>
-                      <option value="low">Low</option>
-                    </select>
-                  </div>
-                  <button className="btn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
-                    const workflow = statusDraft[selectedReport.id] || parseWorkflow(selectedReport)
-                    const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = priority
-                    admin.updateBugReport(selectedReport.id, {
-                      status: workflow === 'resolved' ? 'completed' : 'pending',
-                      admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
-                    })
-                  }}>
-                    {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
-                  </button>
-                  <button className="btn primary" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
-                    const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
-                    const severity = priority
-                    admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
-                  }}>
-                    Mark Resolved
-                  </button>
-                </div>
-              </>
-            ) : <div className="muted">No report selected.</div>}
-          </div>
+                {detailBody}
+              </div>
+            </>
+          )}
         </div>
       </div>
       {imageModalSrc ? (
@@ -6459,6 +7160,13 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
               <span>
                 <strong>Report bug</strong>
                 <small>Send issue details</small>
+              </span>
+            </button>
+            <button className="supportQuickAction" onClick={() => window.dispatchEvent(new Event('budgetly:start-walkthrough'))}>
+              <span className="supportQuickIcon">🧭</span>
+              <span>
+                <strong>Take a tour</strong>
+                <small>Replay the walkthrough</small>
               </span>
             </button>
             <a className="supportQuickAction" href="/starter-guide.pdf" target="_blank" rel="noreferrer">

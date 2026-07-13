@@ -197,6 +197,7 @@ export default function Sidebar(props: {
               <div key={item.key} className="toolsNavItem">
                 <button
                   ref={toolsButtonRef}
+                  data-tour="nav-tools"
                   className={`toolsNavButton ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     setToolsExpanded((current) => !current)
@@ -234,7 +235,7 @@ export default function Sidebar(props: {
             )
           }
           return (
-          <button key={item.key} className={isActive ? 'active' : ''} onClick={() => setView(item.key)}>
+          <button key={item.key} data-tour={`nav-${item.key}`} className={isActive ? 'active' : ''} onClick={() => setView(item.key)}>
             {item.icon} <span className="navLabel">{item.label}</span>
           </button>
         )})}

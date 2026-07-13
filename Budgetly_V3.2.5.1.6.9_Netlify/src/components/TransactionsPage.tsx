@@ -120,6 +120,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const [dateTo, setDateTo] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [prefill, setPrefill] = useState<{ amount?: string; note?: string; type?: TxType } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null)
   const [lastDeleted, setLastDeleted] = useState<Transaction | null>(null)
   const [importing, setImporting] = useState(false)
@@ -137,13 +138,33 @@ export function TransactionsView({ budget }: { budget: Budget }) {
     return () => window.clearTimeout(timer)
   }, [transactionDirty, saveTransactions])
 
-  // ---- Open drawer from the global command palette action ----
+  // ---- Open drawer / edit / delete from the global command palette ----
   useEffect(() => {
-    const openAdd = () => openAddDrawer()
+    const openAdd = (event: Event) => {
+      const detail = (event as CustomEvent<{ amount?: string; note?: string; type?: TxType }>).detail
+      setPrefill(detail && (detail.amount || detail.note || detail.type) ? { amount: detail.amount, note: detail.note, type: detail.type } : null)
+      openAddDrawer()
+    }
+    const editById = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string }>).detail?.id
+      const tx = id ? data.transactions.find((item) => item.id === id) : null
+      if (tx) openEditDrawer(tx)
+    }
+    const deleteById = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string }>).detail?.id
+      const tx = id ? data.transactions.find((item) => item.id === id) : null
+      if (tx) setPendingDelete(tx)
+    }
     window.addEventListener('budgetly:focus-add-transaction', openAdd)
-    return () => window.removeEventListener('budgetly:focus-add-transaction', openAdd)
+    window.addEventListener('budgetly:edit-transaction', editById)
+    window.addEventListener('budgetly:delete-transaction', deleteById)
+    return () => {
+      window.removeEventListener('budgetly:focus-add-transaction', openAdd)
+      window.removeEventListener('budgetly:edit-transaction', editById)
+      window.removeEventListener('budgetly:delete-transaction', deleteById)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [data.transactions])
 
   useEffect(() => () => { if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current) }, [])
 
@@ -268,6 +289,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const closeDrawer = () => {
     setDrawerOpen(false)
     setEditingId(null)
+    setPrefill(null)
     window.setTimeout(() => addButtonRef.current?.focus(), 0)
   }
 
@@ -418,6 +440,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
           </button>
           <button
             ref={addButtonRef}
+            data-tour="add-transaction"
             type="button"
             className="txp-btn txp-btn-primary"
             onClick={openAddDrawer}
@@ -617,6 +640,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
       <AddTransactionDrawer
         open={drawerOpen}
         editingTx={editingTx}
+        prefill={prefill}
         categories={categories}
         currencySymbol={symbol}
         allowFuture={data.settings.allowTxnInFutureDate}
@@ -1007,10 +1031,11 @@ type DrawerForm = {
 }
 
 function AddTransactionDrawer({
-  open, editingTx, categories, currencySymbol: symbol, allowFuture, onClose, onCreate, onUpdate, onCreateRecurring,
+  open, editingTx, prefill, categories, currencySymbol: symbol, allowFuture, onClose, onCreate, onUpdate, onCreateRecurring,
 }: {
   open: boolean
   editingTx: Transaction | null
+  prefill: { amount?: string; note?: string; type?: TxType } | null
   categories: Budget['categories']
   currencySymbol: string
   allowFuture: boolean
@@ -1049,11 +1074,11 @@ function AddTransactionDrawer({
         merchant, note: noteText, recurring: false,
       })
     } else {
-      setForm((prev) => ({ type: 'expense', amount: '', category_id: '', date: prev.date || todayIso(), merchant: '', note: '', recurring: false }))
+      setForm((prev) => ({ type: prefill?.type ?? 'expense', amount: prefill?.amount ?? '', category_id: '', date: prev.date || todayIso(), merchant: '', note: prefill?.note ?? '', recurring: false }))
     }
     setError(null)
     window.setTimeout(() => firstFieldRef.current?.focus(), 60)
-  }, [open, editingTx])
+  }, [open, editingTx, prefill])
 
   // Escape + focus trap + background scroll lock while open.
   useEffect(() => {

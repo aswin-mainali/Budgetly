@@ -7,18 +7,21 @@ export type UserAccountProfile = {
   firstName: string
   lastName: string
   image: string
+  walkthroughCompleted: boolean
 }
 
 let inMemoryProfile: UserAccountProfile = {
   firstName: '',
   lastName: '',
   image: '',
+  walkthroughCompleted: false,
 }
 
 const normalizeProfile = (value?: Partial<UserAccountProfile> | null): UserAccountProfile => ({
   firstName: (value?.firstName || '').trim(),
   lastName: (value?.lastName || '').trim(),
   image: (value?.image || '').trim(),
+  walkthroughCompleted: Boolean(value?.walkthroughCompleted),
 })
 
 const emitProfileUpdated = () => {
@@ -41,7 +44,7 @@ export const clearCachedUserProfile = () => {
 export const loadProfileFromTable = async (userId: string): Promise<UserAccountProfile> => {
   const result = await supabase
     .from('user_account_profiles')
-    .select('first_name,last_name,image_url')
+    .select('first_name,last_name,image_url,walkthrough_completed_at')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -51,6 +54,7 @@ export const loadProfileFromTable = async (userId: string): Promise<UserAccountP
     firstName: result.data?.first_name ?? '',
     lastName: result.data?.last_name ?? '',
     image: result.data?.image_url ?? '',
+    walkthroughCompleted: result.data?.walkthrough_completed_at != null,
   })
 }
 
@@ -70,7 +74,10 @@ export const syncProfileCacheForUser = async (user: User | null) => {
   }
 }
 
-export const saveProfileToTable = async (userId: string, profile: UserAccountProfile) => {
+export const saveProfileToTable = async (
+  userId: string,
+  profile: Pick<UserAccountProfile, 'firstName' | 'lastName' | 'image'>,
+) => {
   const payload = {
     user_id: userId,
     first_name: profile.firstName.trim(),
@@ -78,12 +85,24 @@ export const saveProfileToTable = async (userId: string, profile: UserAccountPro
     image_url: profile.image.trim() || null,
   }
 
+  // Note: the walkthrough flag is intentionally omitted from the payload so
+  // editing the profile never resets it (the column keeps its stored value).
   const { error } = await supabase.from('user_account_profiles').upsert(payload, { onConflict: 'user_id' })
   if (error) throw new Error(error.message || 'Failed to save account profile.')
 
-  const normalized = normalizeProfile(profile)
+  const normalized = normalizeProfile({ ...profile, walkthroughCompleted: inMemoryProfile.walkthroughCompleted })
   cacheUserProfile(normalized)
   return normalized
+}
+
+// Persist that the user has completed or dismissed the first sign-in walkthrough.
+export const markWalkthroughCompleted = async (userId: string) => {
+  const { error } = await supabase
+    .from('user_account_profiles')
+    .upsert({ user_id: userId, walkthrough_completed_at: new Date().toISOString() }, { onConflict: 'user_id' })
+  if (error) throw new Error(error.message || 'Failed to save walkthrough state.')
+
+  cacheUserProfile({ ...inMemoryProfile, walkthroughCompleted: true })
 }
 
 const fileExtension = (fileName: string) => {

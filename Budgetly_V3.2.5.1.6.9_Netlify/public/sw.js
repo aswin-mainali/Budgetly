@@ -68,3 +68,38 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
 })
+
+// --- Web Push -------------------------------------------------------------
+// Payloads are sent by the send-push Edge Function as JSON:
+//   { title, body, tag, url, category, priority }
+self.addEventListener('push', (event) => {
+  let payload = {}
+  try { payload = event.data ? event.data.json() : {} } catch (_) { payload = { title: 'Budgetly', body: event.data ? event.data.text() : '' } }
+  const title = payload.title || 'Budgetly'
+  const options = {
+    body: payload.body || '',
+    tag: payload.tag || payload.category || 'budgetly',
+    icon: '/pwa-192.png',
+    badge: '/favicon-32.png',
+    data: { url: payload.url || '/', category: payload.category || null },
+    renotify: Boolean(payload.tag),
+    requireInteraction: payload.priority === 'critical' || payload.priority === 'high',
+  }
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.postMessage({ type: 'budgetly:notification-click', url: targetUrl })
+          return client.focus()
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl)
+    })
+  )
+})
