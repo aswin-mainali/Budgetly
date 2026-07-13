@@ -1087,7 +1087,7 @@ import {
   LineChart, Line, AreaChart, Area, ComposedChart,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, Bug, CheckCircle2, Inbox, CircleDot, ArrowLeft } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -4630,6 +4630,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [profileBusy, setProfileBusy] = useState(false)
   const [profileError, setProfileError] = useState('')
   const [profileSuccess, setProfileSuccess] = useState('')
+  const [cropEditorSource, setCropEditorSource] = useState('')
   const [universalSearchShortcut, setUniversalSearchShortcut] = useState(UNIVERSAL_SHORTCUT_DEFAULT)
   const [shortcutListening, setShortcutListening] = useState(false)
   const [shortcutError, setShortcutError] = useState('')
@@ -4798,28 +4799,46 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     }
   }, [pendingProfileImagePreview])
 
-  const handleProfilePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget
     const file = event.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) {
       setProfileError('Please upload a JPG or PNG image.')
-      event.currentTarget.value = ''
+      input.value = ''
       return
     }
     if (file.size > 5 * 1024 * 1024) {
       setProfileError('Profile photo must be 5MB or smaller.')
-      event.currentTarget.value = ''
+      input.value = ''
       return
     }
 
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      setProfileError('')
+      setProfileSuccess('')
+      setCropEditorSource(dataUrl)
+    } catch {
+      setProfileError('Could not read that image. Please try another file.')
+    } finally {
+      input.value = ''
+    }
+  }
+
+  const handleCropEditorCancel = () => {
+    setCropEditorSource('')
+  }
+
+  const handleCropEditorApply = (file: File) => {
     if (pendingProfileImagePreview) URL.revokeObjectURL(pendingProfileImagePreview)
     const preview = URL.createObjectURL(file)
     setPendingProfileImageFile(file)
     setPendingProfileImagePreview(preview)
     setProfileImage(preview)
+    setCropEditorSource('')
     setProfileError('')
-    setProfileSuccess('Profile photo selected. Click save profile to upload and keep changes.')
-    event.currentTarget.value = ''
+    setProfileSuccess('Profile photo ready. Click save profile to upload and keep changes.')
   }
 
   const handleProfilePhotoRemove = () => {
@@ -5427,6 +5446,8 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
           </div>
         ) : null}
       </div>
+
+      <ProfileImageCropEditor source={cropEditorSource} onCancel={handleCropEditorCancel} onApply={handleCropEditorApply} />
     </div>
   )
 }
@@ -5606,6 +5627,233 @@ function readFileAsDataUrl(file: File) {
     reader.onerror = () => reject(new Error('Failed to read file.'))
     reader.readAsDataURL(file)
   })
+}
+
+// Diameter (in device pixels) of the square profile image written to storage.
+const PROFILE_CROP_OUTPUT_SIZE = 512
+// On-screen size of the square crop viewport.
+const PROFILE_CROP_VIEWPORT = 300
+const PROFILE_CROP_MIN_ZOOM = 1
+const PROFILE_CROP_MAX_ZOOM = 4
+
+function ProfileImageCropEditor({
+  source,
+  onCancel,
+  onApply,
+}: {
+  source: string
+  onCancel: () => void
+  onApply: (file: File) => void
+}) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null)
+  const [baseScale, setBaseScale] = useState(1)
+  const [zoom, setZoom] = useState(1)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null)
+
+  // Keep the displayed image no smaller than the viewport so the crop is always filled.
+  const clampOffset = (next: { x: number; y: number }, scale: number, currentZoom: number) => {
+    if (!image) return next
+    const displayW = image.naturalWidth * scale * currentZoom
+    const displayH = image.naturalHeight * scale * currentZoom
+    const minX = PROFILE_CROP_VIEWPORT - displayW
+    const minY = PROFILE_CROP_VIEWPORT - displayH
+    return {
+      x: Math.min(0, Math.max(minX, next.x)),
+      y: Math.min(0, Math.max(minY, next.y)),
+    }
+  }
+
+  useEffect(() => {
+    if (!source) return
+    setImage(null)
+    setError('')
+    setZoom(1)
+    const img = new Image()
+    img.onload = () => {
+      if (!img.naturalWidth || !img.naturalHeight) {
+        setError('That image could not be loaded. Please try another file.')
+        return
+      }
+      // "Cover" scale: the smallest scale that still fills the square viewport.
+      const scale = Math.max(
+        PROFILE_CROP_VIEWPORT / img.naturalWidth,
+        PROFILE_CROP_VIEWPORT / img.naturalHeight,
+      )
+      const displayW = img.naturalWidth * scale
+      const displayH = img.naturalHeight * scale
+      setImage(img)
+      setBaseScale(scale)
+      setOffset({
+        x: (PROFILE_CROP_VIEWPORT - displayW) / 2,
+        y: (PROFILE_CROP_VIEWPORT - displayH) / 2,
+      })
+    }
+    img.onerror = () => setError('That image could not be loaded. Please try another file.')
+    img.src = source
+  }, [source])
+
+  const applyZoom = (nextZoomRaw: number) => {
+    if (!image) return
+    const nextZoom = Math.min(PROFILE_CROP_MAX_ZOOM, Math.max(PROFILE_CROP_MIN_ZOOM, nextZoomRaw))
+    // Zoom around the centre of the viewport so the framed subject stays put.
+    const centre = PROFILE_CROP_VIEWPORT / 2
+    const ratio = nextZoom / zoom
+    const nextOffset = {
+      x: centre - (centre - offset.x) * ratio,
+      y: centre - (centre - offset.y) * ratio,
+    }
+    setZoom(nextZoom)
+    setOffset(clampOffset(nextOffset, baseScale, nextZoom))
+  }
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!image) return
+    event.currentTarget.setPointerCapture(event.pointerId)
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: offset.x,
+      originY: offset.y,
+    }
+  }
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const nextOffset = {
+      x: drag.originX + (event.clientX - drag.startX),
+      y: drag.originY + (event.clientY - drag.startY),
+    }
+    setOffset(clampOffset(nextOffset, baseScale, zoom))
+  }
+
+  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) {
+      dragRef.current = null
+      try { event.currentTarget.releasePointerCapture(event.pointerId) } catch { /* noop */ }
+    }
+  }
+
+  const handleApply = async () => {
+    if (!image) return
+    setBusy(true)
+    setError('')
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = PROFILE_CROP_OUTPUT_SIZE
+      canvas.height = PROFILE_CROP_OUTPUT_SIZE
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas is not supported in this browser.')
+
+      // Map the visible viewport back into source-image pixels.
+      const effectiveScale = baseScale * zoom
+      const sourceSize = PROFILE_CROP_VIEWPORT / effectiveScale
+      const sourceX = -offset.x / effectiveScale
+      const sourceY = -offset.y / effectiveScale
+
+      ctx.imageSmoothingQuality = 'high'
+      ctx.fillStyle = '#0b1120'
+      ctx.fillRect(0, 0, PROFILE_CROP_OUTPUT_SIZE, PROFILE_CROP_OUTPUT_SIZE)
+      ctx.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceSize,
+        sourceSize,
+        0,
+        0,
+        PROFILE_CROP_OUTPUT_SIZE,
+        PROFILE_CROP_OUTPUT_SIZE,
+      )
+
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((result) => resolve(result), 'image/jpeg', 0.92)
+      })
+      if (!blob) throw new Error('Could not process that image. Please try again.')
+
+      const file = new File([blob], `profile-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      onApply(file)
+    } catch (err: any) {
+      setError(err?.message || 'Could not process that image. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!source) return null
+
+  const displayW = image ? image.naturalWidth * baseScale * zoom : 0
+  const displayH = image ? image.naturalHeight * baseScale * zoom : 0
+
+  return createPortal(
+    <div className="deleteConfirmBackdrop" role="presentation">
+      <div className="card cropEditorModal" role="dialog" aria-modal="true" aria-labelledby="crop-editor-title">
+        <h3 id="crop-editor-title">Edit profile photo</h3>
+        <p className="muted cropEditorSubtitle">Drag to reposition and use the slider to zoom. The area inside the circle is what people will see.</p>
+
+        <div
+          className="cropEditorStage"
+          style={{ width: PROFILE_CROP_VIEWPORT, height: PROFILE_CROP_VIEWPORT }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          {image ? (
+            <img
+              className="cropEditorImage"
+              src={source}
+              alt="Crop preview"
+              draggable={false}
+              style={{
+                width: displayW,
+                height: displayH,
+                transform: `translate(${offset.x}px, ${offset.y}px)`,
+              }}
+            />
+          ) : (
+            <div className="cropEditorLoading">{error ? error : 'Loading image…'}</div>
+          )}
+          <div className="cropEditorMask" aria-hidden="true" />
+          {image ? <div className="cropEditorHint" aria-hidden="true"><Move size={14} /> Drag to reposition</div> : null}
+        </div>
+
+        <div className="cropEditorZoomRow">
+          <button className="btn ghost cropEditorZoomBtn" type="button" onClick={() => applyZoom(zoom - 0.25)} disabled={!image || busy} aria-label="Zoom out">
+            <ZoomOut size={16} />
+          </button>
+          <input
+            className="cropEditorZoomSlider"
+            type="range"
+            min={PROFILE_CROP_MIN_ZOOM}
+            max={PROFILE_CROP_MAX_ZOOM}
+            step={0.01}
+            value={zoom}
+            onChange={(event) => applyZoom(Number(event.target.value))}
+            disabled={!image || busy}
+            aria-label="Zoom"
+          />
+          <button className="btn ghost cropEditorZoomBtn" type="button" onClick={() => applyZoom(zoom + 0.25)} disabled={!image || busy} aria-label="Zoom in">
+            <ZoomIn size={16} />
+          </button>
+        </div>
+
+        {error && image ? <div className="passwordFeedback error">{error}</div> : null}
+
+        <div className="cropEditorActions">
+          <button className="btn" type="button" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button className="btn primary" type="button" onClick={() => void handleApply()} disabled={!image || busy}>
+            <Check size={16} /> {busy ? 'Applying…' : 'Apply'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
 }
 
 function BugReportModal({
