@@ -6302,7 +6302,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
                 </button>
               </div>
             ) : (
-              <div className="bugsNoShot"><Inbox size={20} /><span>No screenshot attached</span></div>
+              <div className="bugsNoShot"><FileText size={20} /><span>No screenshot attached</span></div>
             )}
           </div>
         </div>
@@ -6347,13 +6347,13 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
           const severity = priority
           admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
         }}>
-          <CheckCircle2 size={15} /> Mark Resolved
+          <Check size={15} /> Mark Resolved
         </button>
       </div>
     </>
   ) : (
     <div className="bugsDetailEmpty">
-      <div className="bugsEmptyIcon"><Bug size={26} /></div>
+      <div className="bugsEmptyIcon"><Wrench size={26} /></div>
       <strong>No report selected</strong>
       <span className="muted">Choose a report from the list to view its full details.</span>
     </div>
@@ -6364,7 +6364,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
       <div className={`card ${embedded ? 'settingsPanelCard' : ''} bugsPanelCard`}>
         <div className="bugsConsoleTop">
           <div className="bugsConsoleTitle">
-            <div className="bugsConsoleIcon"><Bug size={20} /></div>
+            <div className="bugsConsoleIcon"><Wrench size={20} /></div>
             <div>
               <h3>Bug Tracker</h3>
               <div className="muted">Monitor, triage, and resolve reported issues from one command center.</div>
@@ -6375,7 +6375,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
 
         <div className="bugsStatGrid">
           <div className="bugsStatTile total">
-            <div className="bugsStatIcon"><Inbox size={18} /></div>
+            <div className="bugsStatIcon"><FileText size={18} /></div>
             <div className="bugsStatMeta"><span className="bugsStatValue">{stats.total}</span><span className="bugsStatLabel">Total Reports</span></div>
           </div>
           <div className="bugsStatTile pending">
@@ -6391,7 +6391,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
             <div className="bugsStatMeta"><span className="bugsStatValue">{stats.highSeverity}</span><span className="bugsStatLabel">High Severity</span></div>
           </div>
           <div className="bugsStatTile resolved">
-            <div className="bugsStatIcon"><CheckCircle2 size={18} /></div>
+            <div className="bugsStatIcon"><Check size={18} /></div>
             <div className="bugsStatMeta">
               <span className="bugsStatValue">{stats.resolutionRate}%</span><span className="bugsStatLabel">Resolved · {stats.resolved}</span>
               <div className="bugsStatBar"><span style={{ width: `${stats.resolutionRate}%` }} /></div>
@@ -6425,7 +6425,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
             <div className="bugsList">
               {pagedReports.length === 0 ? (
                 <div className="bugsListEmpty">
-                  <div className="bugsEmptyIcon"><CircleDot size={24} /></div>
+                  <div className="bugsEmptyIcon"><Search size={24} /></div>
                   <strong>No bug reports found</strong>
                   <span className="muted">Try adjusting your search or filters.</span>
                 </div>
@@ -6477,7 +6477,7 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
               {detailOpen ? <div className="bugsDrawerBackdrop" onClick={() => setDetailOpen(false)} /> : null}
               <div className={`bugsDetailPane asDrawer ${detailOpen ? 'open' : ''}`}>
                 <div className="bugsDrawerBar">
-                  <button className="bugsDrawerBack" onClick={() => setDetailOpen(false)}><ArrowLeft size={16} /> Back to list</button>
+                  <button className="bugsDrawerBack" onClick={() => setDetailOpen(false)}><ChevronLeft size={16} /> Back to list</button>
                   <button className="bugsDrawerClose" onClick={() => setDetailOpen(false)} aria-label="Close details"><CloseIcon size={18} /></button>
                 </div>
                 {detailBody}
