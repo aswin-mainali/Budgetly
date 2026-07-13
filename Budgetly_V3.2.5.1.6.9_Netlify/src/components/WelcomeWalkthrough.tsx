@@ -298,15 +298,28 @@ export default function WelcomeWalkthrough({ userName = '', features, onNavigate
     height: rect.height + SPOTLIGHT_PADDING * 2,
   } : undefined
 
+  // When a target is spotlighted, cut a hole out of the blurred overlay so the
+  // highlighted element stays crisp while everything else is dimmed and blurred.
+  const overlayStyle: React.CSSProperties | undefined = rect ? (() => {
+    const p = SPOTLIGHT_PADDING
+    const hx = rect.left - p
+    const hy = rect.top - p
+    const hr = rect.right + p
+    const hb = rect.bottom + p
+    const clip = `polygon(evenodd, 0px 0px, 100% 0px, 100% 100%, 0px 100%, 0px 0px, ${hx}px ${hy}px, ${hr}px ${hy}px, ${hr}px ${hb}px, ${hx}px ${hb}px, ${hx}px ${hy}px)`
+    return { clipPath: clip, WebkitClipPath: clip }
+  })() : undefined
+
   const tooltipStyle: React.CSSProperties = isCentered
     ? {}
     : { top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? 'visible' : 'hidden' }
 
   return (
     <div className="tourRoot" role="dialog" aria-modal="true" aria-labelledby="tour-title">
-      {/* Full-screen click blocker so the app underneath can't be interacted with. */}
-      <div className="tourBlocker" onClick={(e) => e.stopPropagation()} />
-      {rect ? <div className="tourSpotlight" style={holeStyle} /> : null}
+      {/* Blurred, dimmed full-screen overlay. Blocks interaction with the app,
+          and (for spotlight steps) has a clip-path hole over the target. */}
+      <div className="tourOverlay" style={overlayStyle} onClick={(e) => e.stopPropagation()} />
+      {rect ? <div className="tourRing" style={holeStyle} /> : null}
 
       <div
         ref={tipRef}

@@ -2630,17 +2630,22 @@ body.light .sidebarUserAvatar{
   animation:walkthroughFade .2s ease;
 }
 @keyframes walkthroughFade{from{opacity:0}to{opacity:1}}
-.tourBlocker{
+.tourOverlay{
   position:fixed;
   inset:0;
-  background:transparent;
+  background:rgba(2,6,23,.55);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
   cursor:default;
 }
-.tourSpotlight{
+body.light .tourOverlay{
+  background:rgba(15,23,42,.34);
+}
+.tourRing{
   position:fixed;
   border-radius:14px;
   pointer-events:none;
-  box-shadow:0 0 0 3px rgba(33,201,122,.75), 0 0 0 6px rgba(33,201,122,.28), 0 0 0 9999px rgba(2,6,23,.72);
+  box-shadow:0 0 0 3px rgba(33,201,122,.8), 0 0 0 6px rgba(33,201,122,.28), 0 10px 30px rgba(0,0,0,.35);
   transition:top .25s ease, left .25s ease, width .25s ease, height .25s ease;
 }
 .tourTooltip{
