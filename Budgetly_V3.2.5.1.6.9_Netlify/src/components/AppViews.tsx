@@ -4935,7 +4935,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
   )
 
   return (
-    <div className="card advicePage advicePagePro2">
+    <div className="card advicePage advicePagePro2 insightsPageV3">
       <div className="row between adviceHeader" style={{ alignItems: 'flex-start', gap: 12 }}>
         <div>
           <h2>Insights</h2>
@@ -4944,54 +4944,141 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
         <span className="badge">Smart guidance</span>
       </div>
 
-      <div className="insightsHero">
-      {/* Financial health score */}
-      <div className="card healthCard">
-        <div className="healthCardInner">
-          <HealthDonut score={health.score} tone={band.tone} isPhone={isPhone} />
-          <div className="healthMeta">
-            <div className="healthTopRow">
-              <div>
-                <div className="healthLabel">Financial health score</div>
-                <div className={`healthBand ${band.tone}`}>{band.label}</div>
-              </div>
-              <div className={`healthDelta ${health.scoreDelta > 0 ? 'up' : health.scoreDelta < 0 ? 'down' : 'flat'}`}>
-                {health.scoreDelta > 0 ? <ArrowUpRight size={15} /> : health.scoreDelta < 0 ? <ArrowDownRight size={15} /> : <Minus size={15} />}
-                {health.scoreDelta === 0 ? 'No change' : `${Math.abs(health.scoreDelta)} pt${Math.abs(health.scoreDelta) === 1 ? '' : 's'}`}
-              </div>
+      {/* Hero row: financial health score + assistant, side by side, equal height */}
+      <div className="insightsTopRow">
+        {/* Financial health score */}
+        <div className="card healthCard heroHealth">
+          <div className="heroHealthHead">
+            <div>
+              <div className="healthLabel">Financial health score</div>
+              <div className={`healthBand ${band.tone}`}>{band.label}</div>
+            </div>
+            <div className={`healthDelta ${health.scoreDelta > 0 ? 'up' : health.scoreDelta < 0 ? 'down' : 'flat'}`}>
+              {health.scoreDelta > 0 ? <ArrowUpRight size={15} /> : health.scoreDelta < 0 ? <ArrowDownRight size={15} /> : <Minus size={15} />}
+              {health.scoreDelta === 0 ? 'No change' : `${Math.abs(health.scoreDelta)} pt${Math.abs(health.scoreDelta) === 1 ? '' : 's'}`}
+            </div>
+          </div>
+          <div className="heroHealthBody">
+            <div className="heroHealthDonut">
+              <HealthDonut score={health.score} tone={band.tone} isPhone={isPhone} />
             </div>
             <p className="healthTrendNote">{health.trendNote}</p>
-            <div className="healthComponents">
-              {componentMeta.map(({ key, label }) => {
-                const value = health.components[key]
-                if (value == null) return (
-                  <div key={key} className="healthComponent">
-                    <span className="healthComponentLabel">{label}</span>
-                    <span className="healthComponentValue muted">—</span>
-                    <div className="healthComponentBar"><div style={{ width: '0%' }} /></div>
+          </div>
+          <div className="heroHealthComponents">
+            {componentMeta.map(({ key, label }) => {
+              const value = health.components[key]
+              const tone = value == null ? 'var(--muted)' : value >= 75 ? '#21c97a' : value >= 50 ? '#f59e0b' : '#ef4444'
+              return (
+                <div key={key} className="heroComp">
+                  <div className="heroCompTop">
+                    <span className="heroCompLabel">{label}</span>
+                    <span className="heroCompValue">{value == null ? '—' : Math.round(value)}</span>
                   </div>
-                )
-                const tone = value >= 75 ? '#21c97a' : value >= 50 ? '#f59e0b' : '#ef4444'
-                return (
-                  <div key={key} className="healthComponent">
-                    <span className="healthComponentLabel">{label}</span>
-                    <span className="healthComponentValue">{Math.round(value)}</span>
-                    <div className="healthComponentBar"><div style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: tone }} /></div>
-                  </div>
-                )
-              })}
+                  <div className="heroCompBar"><div style={{ width: value == null ? '0%' : `${Math.max(0, Math.min(100, value))}%`, background: tone }} /></div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Assistant */}
+        <div className="card assistantCard">
+          <div className="assistantHeader">
+            <img src="/advice-bot.png" alt="Budgetly assistant" className="assistantAvatar" />
+            <div>
+              <h3>Financial assistant</h3>
+              <div className="muted">Ask a question, or ask me to move money into a goal or change a budget.</div>
             </div>
+          </div>
+
+          <div className="assistantMessages" ref={messagesRef}>
+            {chatMessages.map((message, index) => (
+              <div key={index} className={`assistantBubbleWrap ${message.role}`}>
+                <div className={`assistantBubble ${message.role}`}>
+                  {message.text}
+                  {message.chart ? <ChatInlineChart chart={message.chart} fmt={fmt} /> : null}
+                </div>
+                {message.role === 'bot' && message.chips && message.chips.length ? (
+                  <div className="assistantChips">
+                    {message.chips.map((chip) => (
+                      <button key={chip} type="button" className="assistantChip" onClick={() => handleChip(chip)}>{chip}</button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+
+            {pending ? (
+              <div className="chatProposal">
+                {pending.type === 'goal_transfer' && pending.stage === 'overdraft' ? (
+                  <>
+                    <div className="chatProposalTitle warn">Heads up</div>
+                    <p className="chatProposalNote">
+                      Moving {fmt(pending.amount)} into {pending.goalName} would take your Net to <strong>{fmt(net - pending.amount)}</strong> — below zero for {monthLabel}. Do you still want to proceed?
+                    </p>
+                    <div className="chatProposalActions">
+                      <button type="button" className="btn primary" onClick={() => setPending({ ...pending, stage: 'confirm' })}>Yes, proceed anyway</button>
+                      <button type="button" className="btn" onClick={cancelPending}>No, cancel</button>
+                    </div>
+                  </>
+                ) : pending.type === 'goal_transfer' ? (
+                  <>
+                    <div className="chatProposalTitle">Confirm transfer</div>
+                    <div className="chatProposalRow"><span>To</span><strong>{pending.goalEmoji} {pending.goalName}</strong></div>
+                    <div className="chatProposalRow"><span>Amount</span><strong>{fmt(pending.amount)}</strong></div>
+                    <div className="chatProposalActions">
+                      <button type="button" className="btn primary" onClick={() => executeGoalTransfer(pending)}>Confirm</button>
+                      <button type="button" className="btn" onClick={cancelPending}>Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="chatProposalTitle">Confirm budget change</div>
+                    <div className="chatProposalRow"><span>Category</span><strong>{pending.categoryName}</strong></div>
+                    <div className="chatProposalRow"><span>New monthly budget</span><strong>{fmt(pending.amount)}</strong></div>
+                    <div className="chatProposalActions">
+                      <button type="button" className="btn primary" onClick={() => executeBudgetSet(pending)}>Confirm</button>
+                      <button type="button" className="btn" onClick={cancelPending}>Cancel</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="assistantStarters">
+            {starterPrompts.map((prompt) => (
+              <button key={prompt} type="button" className="assistantStarter" onClick={() => send(prompt)}>{prompt}</button>
+            ))}
+          </div>
+
+          <div className="assistantInputRow">
+            <input
+              className="input"
+              placeholder="Ask, or tell me an action…"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') { event.preventDefault(); send() }
+              }}
+            />
+            <button type="button" className="btn primary assistantSend" onClick={() => send()} aria-label="Send">➤</button>
+          </div>
+
+          <div className="assistantDisclaimers">
+            <div className="assistantGuardline"><ShieldCheck size={14} /> Actions always require your confirmation before anything moves</div>
+            <div className="assistantFinePrint">For investment or tax advice, consult a licensed professional</div>
           </div>
         </div>
       </div>
-        <div className="kpiGrid">
-          {kpis.map((kpi) => <KpiTile key={kpi.key} kpi={kpi} />)}
-        </div>
+
+      {/* Key-number KPI strip */}
+      <div className="kpiStrip">
+        {kpis.map((kpi) => <KpiTile key={kpi.key} kpi={kpi} />)}
       </div>
 
-      <div className="insightsBody">
-      {/* Prioritized, categorized insights */}
-      <div className="card insightsCard">
+      {/* Prioritized, categorized insights (full width) */}
+      <div className="card insightsCard insightsFull">
         <div className="insightTabs" role="tablist">
           {ADVICE_TABS.map((tab) => (
             <button
@@ -5008,113 +5095,6 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
           ))}
         </div>
         {renderInsightGrid(tabInsights)}
-      </div>
-
-      {/* Assistant */}
-      <div className="card assistantCard">
-        <div className="assistantHeader">
-          <img src="/advice-bot.png" alt="Budgetly assistant" className="assistantAvatar" />
-          <div>
-            <h3>Financial assistant</h3>
-            <div className="muted">Ask a question, or ask me to move money into a goal or change a budget.</div>
-          </div>
-        </div>
-
-        <div className="assistantMessages" ref={messagesRef}>
-          {chatMessages.map((message, index) => (
-            <div key={index} className={`assistantBubbleWrap ${message.role}`}>
-              <div className={`assistantBubble ${message.role}`}>
-                {message.text}
-                {message.chart ? <ChatInlineChart chart={message.chart} fmt={fmt} /> : null}
-              </div>
-              {message.role === 'bot' && message.chips && message.chips.length ? (
-                <div className="assistantChips">
-                  {message.chips.map((chip) => (
-                    <button key={chip} type="button" className="assistantChip" onClick={() => handleChip(chip)}>{chip}</button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ))}
-
-          {chatMessages.length <= 1 && !pending ? (
-            <div className="assistantEmpty">
-              <div className="assistantEmptyTitle">Try asking me</div>
-              {[
-                { icon: '📊', label: 'Break down my spending this month', prompt: 'How much did I spend this month?' },
-                { icon: '💹', label: 'How is my savings rate trending?', prompt: 'What is my savings rate?' },
-                { icon: '🧾', label: 'What bills are coming up?', prompt: 'How much are my upcoming bills?' },
-                { icon: '⚖️', label: 'Am I saving more than last month?', prompt: 'Did I save more than last month?' },
-              ].map((example) => (
-                <button key={example.prompt} type="button" className="assistantExample" onClick={() => send(example.prompt)}>
-                  <span className="assistantExampleIcon" aria-hidden="true">{example.icon}</span> {example.label}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {pending ? (
-            <div className="chatProposal">
-              {pending.type === 'goal_transfer' && pending.stage === 'overdraft' ? (
-                <>
-                  <div className="chatProposalTitle warn">Heads up</div>
-                  <p className="chatProposalNote">
-                    Moving {fmt(pending.amount)} into {pending.goalName} would take your Net to <strong>{fmt(net - pending.amount)}</strong> — below zero for {monthLabel}. Do you still want to proceed?
-                  </p>
-                  <div className="chatProposalActions">
-                    <button type="button" className="btn primary" onClick={() => setPending({ ...pending, stage: 'confirm' })}>Yes, proceed anyway</button>
-                    <button type="button" className="btn" onClick={cancelPending}>No, cancel</button>
-                  </div>
-                </>
-              ) : pending.type === 'goal_transfer' ? (
-                <>
-                  <div className="chatProposalTitle">Confirm transfer</div>
-                  <div className="chatProposalRow"><span>To</span><strong>{pending.goalEmoji} {pending.goalName}</strong></div>
-                  <div className="chatProposalRow"><span>Amount</span><strong>{fmt(pending.amount)}</strong></div>
-                  <div className="chatProposalActions">
-                    <button type="button" className="btn primary" onClick={() => executeGoalTransfer(pending)}>Confirm</button>
-                    <button type="button" className="btn" onClick={cancelPending}>Cancel</button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="chatProposalTitle">Confirm budget change</div>
-                  <div className="chatProposalRow"><span>Category</span><strong>{pending.categoryName}</strong></div>
-                  <div className="chatProposalRow"><span>New monthly budget</span><strong>{fmt(pending.amount)}</strong></div>
-                  <div className="chatProposalActions">
-                    <button type="button" className="btn primary" onClick={() => executeBudgetSet(pending)}>Confirm</button>
-                    <button type="button" className="btn" onClick={cancelPending}>Cancel</button>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="assistantStarters">
-          {starterPrompts.map((prompt) => (
-            <button key={prompt} type="button" className="assistantStarter" onClick={() => send(prompt)}>{prompt}</button>
-          ))}
-        </div>
-
-        <div className="assistantInputRow">
-          <input
-            className="input"
-            placeholder="Ask, or tell me an action…"
-            value={chatInput}
-            onChange={(event) => setChatInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') { event.preventDefault(); send() }
-            }}
-          />
-          <button type="button" className="btn primary assistantSend" onClick={() => send()} aria-label="Send">➤</button>
-        </div>
-
-        <div className="assistantDisclaimers">
-          <div className="assistantGuardline"><ShieldCheck size={14} /> Actions always require your confirmation before anything moves</div>
-          <div className="assistantFinePrint">For investment or tax advice, consult a licensed professional</div>
-        </div>
-      </div>
       </div>
     </div>
   )
