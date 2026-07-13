@@ -1,17 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   BarChart3,
   ListChecks,
   Tags,
-  Repeat,
-  Target,
-  Sparkles,
   Wrench,
   ArrowRight,
   ArrowLeft,
   Check,
   X,
   Sparkle,
+  ShieldCheck,
 } from 'lucide-react'
 
 export type WalkthroughFeatures = {
@@ -23,139 +21,171 @@ export type WalkthroughFeatures = {
   goals: boolean
 }
 
+// Where the tour asks the host app to navigate before a step is shown.
+export type TourDestination = 'dashboard' | 'categories' | 'transactions' | 'tools'
+
 type WalkthroughStep = {
   id: string
   feature?: keyof WalkthroughFeatures
+  navigate?: TourDestination
+  // CSS selectors (in priority order) for the element to spotlight. When none
+  // resolve to a visible element, the step falls back to a centered card.
+  target?: string[]
   accent: string
   icon: React.ReactNode
   eyebrow: string
   title: string
   body: string
-  points: string[]
+  points?: string[]
+  primaryLabel?: string
 }
 
 const buildSteps = (userName: string): WalkthroughStep[] => [
   {
     id: 'welcome',
+    navigate: 'dashboard',
     accent: 'violet',
     icon: <Sparkle size={26} />,
     eyebrow: 'Welcome to Budgetly',
-    title: userName ? `Hi ${userName}, let's get you set up 👋` : "Welcome aboard, let's get you set up 👋",
-    body: 'Budgetly is your clean, private workspace for tracking money, planning budgets, and staying ahead of your goals. This quick tour takes less than a minute.',
+    title: userName ? `Hi ${userName}, welcome to Budgetly 👋` : "Welcome to Budgetly 👋",
+    body: "Let's take a quick guided tour together. I'll move between pages and show you exactly where to start — it takes less than a minute.",
     points: [
-      'Everything syncs securely to the cloud',
-      'Works on desktop and as an installable app',
-      'You can replay this tour anytime from Help & Support',
+      "I'll walk you through each screen step by step",
+      'You can skip anytime, or replay it later',
+      'Ready? Let\'s go 🚀',
     ],
   },
   {
-    id: 'dashboard',
-    feature: 'dashboard',
-    accent: 'indigo',
-    icon: <BarChart3 size={26} />,
-    eyebrow: 'Step 1',
-    title: 'Your dashboard, at a glance',
-    body: 'The dashboard is your financial home base. See income, spending, and balance for the month, plus insights and notifications.',
+    id: 'about',
+    accent: 'purple',
+    icon: <ShieldCheck size={26} />,
+    eyebrow: 'What is Budgetly',
+    title: 'Your private money workspace',
+    body: 'Budgetly brings budgeting, recurring bills, savings goals, investments, and reports into one clean place — so you always know where your money goes.',
     points: [
-      'Track spending vs. income each month',
-      'Spot trends with clean, live charts',
-      'Jump straight to what needs attention',
-    ],
-  },
-  {
-    id: 'transactions',
-    feature: 'transactions',
-    accent: 'green',
-    icon: <ListChecks size={26} />,
-    eyebrow: 'Step 2',
-    title: 'Add your income & expenses',
-    body: 'Log transactions in seconds. Every entry keeps your budgets and reports up to date automatically.',
-    points: [
-      'Record income and expenses with notes',
-      'Search, filter, and edit past entries',
-      'Tip: press Ctrl + Alt + T to jump here fast',
+      '🔒 Encrypted sign-in and bank-grade security',
+      '☁️ Synced privately to the cloud — only you can see it',
+      '📊 Live insights that update as you go',
     ],
   },
   {
     id: 'categories',
     feature: 'categories',
+    navigate: 'categories',
+    target: ['[data-tour="nav-categories"]', '[data-tour="m-nav-categories"]'],
     accent: 'gold',
     icon: <Tags size={26} />,
-    eyebrow: 'Step 3',
-    title: 'Set budgets with categories',
-    body: 'Group your spending into categories and give each one a monthly budget. Budgetly shows you how much room is left.',
-    points: [
-      'Create categories with emojis and colors',
-      'Set a monthly budget per category',
-      'See at a glance where your money goes',
-    ],
+    eyebrow: 'Step 1 · Categories',
+    title: 'Start by creating categories',
+    body: 'This is the Categories page. Create categories for your expenses first — like Rent, Groceries, or Transport — and give each one a monthly budget.',
   },
   {
-    id: 'recurring',
-    feature: 'recurring',
-    accent: 'blue',
-    icon: <Repeat size={26} />,
-    eyebrow: 'Step 4',
-    title: 'Never miss a recurring bill',
-    body: 'Add rent, subscriptions, and paychecks once. Budgetly keeps track of what repeats and when.',
-    points: [
-      'Track weekly, monthly, or yearly items',
-      'Stay ahead of upcoming due dates',
-      'Keep your forecasts accurate',
-    ],
-  },
-  {
-    id: 'tools',
-    feature: 'goals',
-    accent: 'teal',
-    icon: <Target size={26} />,
-    eyebrow: 'Step 5',
-    title: 'Goals & utilities',
-    body: 'Set savings goals and watch your progress grow. The Utilities area also holds reports, a currency converter, and investments.',
-    points: [
-      'Create savings goals and track progress',
-      'Export monthly reports as PDF',
-      'Convert currencies with live rates',
-    ],
-  },
-  {
-    id: 'advice',
-    feature: 'advice',
-    accent: 'purple',
-    icon: <Sparkles size={26} />,
-    eyebrow: 'Step 6',
-    title: 'Personalized insights',
-    body: 'Head to Advice for tailored tips based on your spending, so you can make smarter money decisions over time.',
-    points: [
-      'Get insights drawn from your own data',
-      'Spot opportunities to save',
-      'Build better habits month over month',
-    ],
-  },
-  {
-    id: 'finish',
+    id: 'transactions',
+    feature: 'transactions',
+    navigate: 'transactions',
+    target: ['[data-tour="add-transaction"]', '[data-tour="m-nav-transactions"]'],
     accent: 'green',
-    icon: <Check size={26} />,
-    eyebrow: "You're all set",
-    title: 'Ready to take control 🎉',
-    body: 'That\'s the tour! The best first step is to add your very first transaction. Explore at your own pace — help is always in the Help & Support tab.',
-    points: [
-      'Add your first transaction to get started',
-      'Set up a category budget when you\'re ready',
-      'Replay this tour anytime from Help & Support',
-    ],
+    icon: <ListChecks size={26} />,
+    eyebrow: 'Step 2 · Transactions',
+    title: 'Add your first transaction',
+    body: 'Now log money in and out. Use “Add Transaction” to record your first income or expense — it instantly updates your budgets and reports.',
+  },
+  {
+    id: 'dashboard',
+    feature: 'dashboard',
+    navigate: 'dashboard',
+    target: ['[data-tour="nav-dashboard"]', '[data-tour="m-nav-dashboard"]'],
+    accent: 'indigo',
+    icon: <BarChart3 size={26} />,
+    eyebrow: 'Step 3 · Dashboard',
+    title: 'Watch it all come together',
+    body: 'Back on your Dashboard. As you add transactions, your balance, spending charts, and insights fill in and update here automatically.',
+  },
+  {
+    id: 'explore',
+    navigate: 'dashboard',
+    target: ['[data-tour="nav-tools"]', '[data-tour="m-nav-tools"]'],
+    accent: 'teal',
+    icon: <Wrench size={26} />,
+    eyebrow: "You're all set 🎉",
+    title: 'Explore the rest anytime',
+    body: 'Under Utilities you can set up Recurring bills, savings Goals, track Investments, and view Reports. Dive in whenever you\'re ready!',
+    primaryLabel: 'Finish',
   },
 ]
 
 type Props = {
   userName?: string
   features?: Partial<WalkthroughFeatures>
+  onNavigate: (dest: TourDestination) => void
   onClose: () => void
   onFinish: () => void
-  onAddTransaction?: () => void
 }
 
-export default function WelcomeWalkthrough({ userName = '', features, onClose, onFinish, onAddTransaction }: Props) {
+const SPOTLIGHT_PADDING = 8
+
+const isElementVisible = (el: Element): boolean => {
+  const style = window.getComputedStyle(el)
+  if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false
+  const rect = el.getBoundingClientRect()
+  if (rect.width <= 0 || rect.height <= 0) return false
+  // Must be at least partially on screen (off-canvas mobile drawer fails this).
+  return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth
+}
+
+const resolveTarget = (selectors: string[]): HTMLElement | null => {
+  for (const selector of selectors) {
+    const matches = Array.from(document.querySelectorAll(selector))
+    const visible = matches.find(isElementVisible)
+    if (visible) return visible as HTMLElement
+  }
+  return null
+}
+
+type Placement = 'center' | 'top' | 'bottom' | 'left' | 'right'
+type Position = { top: number; left: number; placement: Placement }
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+
+const computePosition = (rect: DOMRect, tipWidth: number, tipHeight: number): Position => {
+  const pad = 14
+  const gap = 16
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+
+  let placement: Placement
+  let top: number
+  let left: number
+
+  const spaceRight = vw - rect.right
+  const spaceLeft = rect.left
+
+  if (spaceRight >= tipWidth + gap + pad) {
+    placement = 'right'
+    left = rect.right + gap
+    top = rect.top + rect.height / 2 - tipHeight / 2
+  } else if (spaceLeft >= tipWidth + gap + pad) {
+    placement = 'left'
+    left = rect.left - gap - tipWidth
+    top = rect.top + rect.height / 2 - tipHeight / 2
+  } else if (vh - rect.bottom >= tipHeight + gap + pad) {
+    placement = 'bottom'
+    top = rect.bottom + gap
+    left = rect.left + rect.width / 2 - tipWidth / 2
+  } else {
+    placement = 'top'
+    top = rect.top - gap - tipHeight
+    left = rect.left + rect.width / 2 - tipWidth / 2
+  }
+
+  return {
+    placement,
+    top: clamp(top, pad, Math.max(pad, vh - tipHeight - pad)),
+    left: clamp(left, pad, Math.max(pad, vw - tipWidth - pad)),
+  }
+}
+
+export default function WelcomeWalkthrough({ userName = '', features, onNavigate, onClose, onFinish }: Props) {
   const steps = useMemo(() => {
     const all = buildSteps(userName.trim())
     return all.filter((step) => {
@@ -166,35 +196,91 @@ export default function WelcomeWalkthrough({ userName = '', features, onClose, o
   }, [userName, features])
 
   const [index, setIndex] = useState(0)
-  const current = steps[Math.min(index, steps.length - 1)]
-  const isFirst = index === 0
-  const isLast = index >= steps.length - 1
+  const [rect, setRect] = useState<DOMRect | null>(null)
+  const [pos, setPos] = useState<Position | null>(null)
+  const tipRef = useRef<HTMLDivElement | null>(null)
+
+  const boundedIndex = Math.min(index, steps.length - 1)
+  const current = steps[boundedIndex]
+  const isFirst = boundedIndex === 0
+  const isLast = boundedIndex >= steps.length - 1
 
   const goNext = () => setIndex((i) => Math.min(i + 1, steps.length - 1))
   const goBack = () => setIndex((i) => Math.max(i - 1, 0))
-
   const finish = () => onFinish()
-  const finishAndAdd = () => {
-    onFinish()
-    onAddTransaction?.()
-  }
+
+  // Navigate for the current step, then locate its spotlight target (polling
+  // until the destination view has mounted). Falls back to a centered card.
+  useEffect(() => {
+    const step = steps[boundedIndex]
+    if (!step) return
+    setPos(null)
+    if (step.navigate) onNavigate(step.navigate)
+
+    if (!step.target) {
+      setRect(null)
+      return
+    }
+
+    let cancelled = false
+    let raf = 0
+    let tries = 0
+    const timers: number[] = []
+
+    const remeasure = () => {
+      if (cancelled) return
+      const el = resolveTarget(step.target!)
+      if (el) setRect(el.getBoundingClientRect())
+    }
+
+    const attempt = () => {
+      if (cancelled) return
+      const el = resolveTarget(step.target!)
+      if (el) {
+        try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } catch { /* noop */ }
+        setRect(el.getBoundingClientRect())
+        // Re-measure shortly after in case layout settles post-navigation.
+        timers.push(window.setTimeout(remeasure, 250))
+        timers.push(window.setTimeout(remeasure, 550))
+      } else if (tries++ < 60) {
+        raf = window.requestAnimationFrame(attempt)
+      } else {
+        setRect(null)
+      }
+    }
+
+    attempt()
+    window.addEventListener('resize', remeasure)
+    window.addEventListener('scroll', remeasure, true)
+
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(raf)
+      timers.forEach((t) => window.clearTimeout(t))
+      window.removeEventListener('resize', remeasure)
+      window.removeEventListener('scroll', remeasure, true)
+    }
+    // onNavigate is intentionally excluded — it may be a fresh closure each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boundedIndex, steps])
+
+  // Position the tooltip once we know the target rect and the tooltip's size.
+  useLayoutEffect(() => {
+    const tip = tipRef.current
+    if (!tip) return
+    if (!rect) {
+      setPos({ top: 0, left: 0, placement: 'center' })
+      return
+    }
+    const { width, height } = tip.getBoundingClientRect()
+    setPos(computePosition(rect, width, height))
+  }, [rect, boundedIndex])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onClose()
-        return
-      }
-      if (event.key === 'ArrowRight') {
-        event.preventDefault()
-        if (!isLast) goNext()
-        return
-      }
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault()
-        if (!isFirst) goBack()
-      }
+      if (event.key === 'Escape') { event.preventDefault(); onClose(); return }
+      if (event.key === 'ArrowRight') { event.preventDefault(); if (!isLast) goNext(); return }
+      if (event.key === 'ArrowLeft') { event.preventDefault(); if (!isFirst) goBack() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -202,15 +288,32 @@ export default function WelcomeWalkthrough({ userName = '', features, onClose, o
 
   if (!current) return null
 
+  const placement = pos?.placement ?? 'center'
+  const isCentered = placement === 'center' || !rect
+
+  const holeStyle: React.CSSProperties | undefined = rect ? {
+    top: rect.top - SPOTLIGHT_PADDING,
+    left: rect.left - SPOTLIGHT_PADDING,
+    width: rect.width + SPOTLIGHT_PADDING * 2,
+    height: rect.height + SPOTLIGHT_PADDING * 2,
+  } : undefined
+
+  const tooltipStyle: React.CSSProperties = isCentered
+    ? {}
+    : { top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? 'visible' : 'hidden' }
+
   return (
-    <div className="walkthroughBackdrop" role="presentation">
+    <div className="tourRoot" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+      {/* Full-screen click blocker so the app underneath can't be interacted with. */}
+      <div className="tourBlocker" onClick={(e) => e.stopPropagation()} />
+      {rect ? <div className="tourSpotlight" style={holeStyle} /> : null}
+
       <div
-        className="card walkthroughModal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="walkthrough-title"
+        ref={tipRef}
+        className={`card tourTooltip ${isCentered ? 'tourTooltipCentered' : `tourTooltipAnchored tourPlacement-${placement}`}`}
+        style={tooltipStyle}
       >
-        <button className="walkthroughClose" type="button" onClick={onClose} aria-label="Close walkthrough">
+        <button className="walkthroughClose" type="button" onClick={onClose} aria-label="Close tour">
           <X size={18} />
         </button>
 
@@ -219,27 +322,29 @@ export default function WelcomeWalkthrough({ userName = '', features, onClose, o
         </div>
 
         <span className="walkthroughEyebrow">{current.eyebrow}</span>
-        <h2 id="walkthrough-title" className="walkthroughTitle">{current.title}</h2>
+        <h2 id="tour-title" className="walkthroughTitle">{current.title}</h2>
         <p className="walkthroughBody">{current.body}</p>
 
-        <ul className="walkthroughPoints">
-          {current.points.map((point) => (
-            <li key={point}>
-              <span className={`walkthroughCheck walkthroughCheck-${current.accent}`}><Check size={13} /></span>
-              <span>{point}</span>
-            </li>
-          ))}
-        </ul>
+        {current.points ? (
+          <ul className="walkthroughPoints">
+            {current.points.map((point) => (
+              <li key={point}>
+                <span className={`walkthroughCheck walkthroughCheck-${current.accent}`}><Check size={13} /></span>
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         <div className="walkthroughDots" role="tablist" aria-label="Tour progress">
           {steps.map((step, dotIndex) => (
             <button
               key={step.id}
               type="button"
-              className={`walkthroughDot ${dotIndex === index ? 'active' : ''} ${dotIndex < index ? 'done' : ''}`}
+              className={`walkthroughDot ${dotIndex === boundedIndex ? 'active' : ''} ${dotIndex < boundedIndex ? 'done' : ''}`}
               onClick={() => setIndex(dotIndex)}
               aria-label={`Go to step ${dotIndex + 1}`}
-              aria-selected={dotIndex === index}
+              aria-selected={dotIndex === boundedIndex}
               role="tab"
             />
           ))}
@@ -247,31 +352,19 @@ export default function WelcomeWalkthrough({ userName = '', features, onClose, o
 
         <div className="walkthroughFooter">
           {isFirst ? (
-            <button className="btn ghost walkthroughSkip" type="button" onClick={onClose}>
-              Skip tour
-            </button>
+            <button className="btn ghost walkthroughSkip" type="button" onClick={onClose}>Skip tour</button>
           ) : (
-            <button className="btn ghost" type="button" onClick={goBack}>
-              <ArrowLeft size={16} /> Back
-            </button>
+            <button className="btn ghost" type="button" onClick={goBack}><ArrowLeft size={16} /> Back</button>
           )}
 
           <div className="walkthroughFooterRight">
-            <span className="walkthroughStepCount">{index + 1} / {steps.length}</span>
+            <span className="walkthroughStepCount">{boundedIndex + 1} / {steps.length}</span>
             {isLast ? (
-              onAddTransaction ? (
-                <button className="btn primary" type="button" onClick={finishAndAdd}>
-                  Add first transaction <ArrowRight size={16} />
-                </button>
-              ) : (
-                <button className="btn primary" type="button" onClick={finish}>
-                  Get started <Check size={16} />
-                </button>
-              )
-            ) : (
-              <button className="btn primary" type="button" onClick={goNext}>
-                Next <ArrowRight size={16} />
+              <button className="btn primary" type="button" onClick={finish}>
+                {current.primaryLabel ?? 'Finish'} <Check size={16} />
               </button>
+            ) : (
+              <button className="btn primary" type="button" onClick={goNext}>Next <ArrowRight size={16} /></button>
             )}
           </div>
         </div>

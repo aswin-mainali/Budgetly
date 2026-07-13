@@ -440,6 +440,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
           </button>
           <button
             ref={addButtonRef}
+            data-tour="add-transaction"
             type="button"
             className="txp-btn txp-btn-primary"
             onClick={openAddDrawer}

@@ -12,7 +12,7 @@ import { InvestmentsView } from './components/InvestmentsView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
-import WelcomeWalkthrough from './components/WelcomeWalkthrough'
+import WelcomeWalkthrough, { TourDestination } from './components/WelcomeWalkthrough'
 
 const THEME_KEY = 'raswibudgeting:theme'
 
@@ -337,6 +337,16 @@ export default function App() {
       setToolsSection((current) => current || 'goals')
     }
     if (isMobile) setCollapsed(true)
+  }
+
+  // Navigation used by the guided walkthrough as it moves between pages.
+  const handleTourNavigate = (dest: TourDestination) => {
+    if (dest === 'tools') {
+      setToolsSection('goals')
+      handleViewChange('tools')
+      return
+    }
+    handleViewChange(dest)
   }
 
   // Route a clicked notification (action_target) to the right view / tools section.
@@ -747,10 +757,10 @@ export default function App() {
 
         {isMobile ? (
           <nav className="mobileTabBar mobileTabBarPlus" aria-label="Mobile navigation">
-            {admin.visibleFeatures.dashboard ? <button className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Dashboard</span></button> : null}
-            {admin.visibleFeatures.categories ? <button className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
-            <button className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /><span>Add</span></button>
-            <button className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
+            {admin.visibleFeatures.dashboard ? <button data-tour="m-nav-dashboard" className={view === 'dashboard' ? 'active' : ''} onClick={() => handleViewChange('dashboard')}><BarChart3 size={18} /><span>Dashboard</span></button> : null}
+            {admin.visibleFeatures.categories ? <button data-tour="m-nav-categories" className={view === 'categories' ? 'active' : ''} onClick={() => handleViewChange('categories')}><Tags size={18} /><span>Categories</span></button> : null}
+            <button data-tour="m-nav-transactions" className={`mobilePlusTab ${view === 'transactions' ? 'active' : ''}`} onClick={() => handleViewChange('transactions')} aria-label="Add transaction"><Plus size={24} /><span>Add</span></button>
+            <button data-tour="m-nav-tools" className={(view === 'utilities_hub' || view === 'tools') ? 'active' : ''} onClick={() => setView('utilities_hub')}><Wrench size={18} /><span>Utilities</span></button>
             {admin.visibleFeatures.settings ? <button className={view === 'settings' ? 'active' : ''} onClick={() => handleViewChange('settings')}><Settings size={18} /><span>Settings</span></button> : null}
           </nav>
         ) : null}
@@ -786,12 +796,9 @@ export default function App() {
             advice: admin.visibleFeatures.advice,
             goals: admin.visibleFeatures.goals,
           }}
+          onNavigate={handleTourNavigate}
           onClose={dismissWalkthrough}
           onFinish={dismissWalkthrough}
-          onAddTransaction={admin.visibleFeatures.transactions ? () => {
-            handleViewChange('transactions')
-            window.setTimeout(() => window.dispatchEvent(new CustomEvent('budgetly:focus-add-transaction')), 0)
-          } : undefined}
         />
       ) : null}
       <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} shortcutLabel={getUniversalSearchShortcut()} quickAdd={parseQuickAdd} />
