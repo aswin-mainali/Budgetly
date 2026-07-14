@@ -108,18 +108,53 @@ export type UserFeatureAccess = {
 
 export type BugReportStatus = 'pending' | 'completed'
 
+export type BugWorkflowStatus = 'pending' | 'in_progress' | 'in_review' | 'resolved'
+
+export type BugSeverity = 'low' | 'medium' | 'high' | 'critical'
+
+export type BugCategory =
+  | 'ui' | 'data' | 'sync' | 'performance' | 'crash' | 'account' | 'other'
+
+export type BugDiagnostics = {
+  app_version?: string
+  page?: string
+  user_agent?: string
+  platform?: string
+  language?: string
+  screen?: string
+  viewport?: string
+  timezone?: string
+  online?: boolean
+  captured_at?: string
+}
+
 export type BugReport = {
   id: string
   user_id: string
   user_email: string
+  title?: string | null
+  category?: BugCategory | string | null
+  user_severity?: BugSeverity | null
   steps_to_reproduce: string
   contact_when_resolved: boolean
   screenshot_name?: string | null
   screenshot_data_url?: string | null
   status: BugReportStatus
+  workflow_status?: BugWorkflowStatus | null
+  reference_code?: string | null
+  diagnostics?: BugDiagnostics | null
   admin_notes?: string | null
   created_at?: string
   updated_at?: string
+}
+
+export type BugReportEvent = {
+  id: string
+  report_id: string
+  status: string
+  note?: string | null
+  actor: 'user' | 'admin' | 'system'
+  created_at: string
 }
 
 export type AdminAuditLog = {

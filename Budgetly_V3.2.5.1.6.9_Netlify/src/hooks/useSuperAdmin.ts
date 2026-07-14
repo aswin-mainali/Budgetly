@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { FeatureAccess, FeatureKey, Profile, UserFeatureAccess, AdminAuditLog, BugReport, BugReportStatus } from '../types'
+import { FeatureAccess, FeatureKey, Profile, UserFeatureAccess, AdminAuditLog, BugReport, BugReportStatus, BugWorkflowStatus } from '../types'
 
 const notify = (message: string) => {
   if (typeof window === 'undefined') return
@@ -108,7 +108,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
       supabase.from('user_feature_access').select('*'),
       supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
       supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
-      supabase.from('bug_reports').select('id,user_id,user_email,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
+      supabase.from('bug_reports').select('id,user_id,user_email,title,category,user_severity,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,workflow_status,reference_code,diagnostics,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
       // Real per-user "last active" = auth.users.last_sign_in_at, exposed to super
       // admins via a SECURITY DEFINER function. Best-effort: ignored if the
       // admin_user_activity() function has not been created yet (pre-migration).
@@ -301,13 +301,42 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
   }, [isSuperAdmin, writeAudit, loadAdminData, selectedUserId])
 
-  const updateBugReport = useCallback(async (reportId: string, updates: Partial<Pick<BugReport, 'status' | 'admin_notes'>>) => {
+  const updateBugReport = useCallback(async (
+    reportId: string,
+    updates: Partial<Pick<BugReport, 'status' | 'admin_notes' | 'workflow_status'>>,
+    options?: { publicNote?: string; notifyByEmail?: boolean },
+  ) => {
     if (!isSuperAdmin) return
     setBusyAction(`bug:${reportId}`)
     setError(null)
     try {
       const { error: updateError } = await supabase.from('bug_reports').update(updates).eq('id', reportId)
       if (updateError) throw new Error(updateError.message)
+
+      const publicNote = options?.publicNote?.trim()
+      if (publicNote) {
+        // Recorded as a public timeline entry the reporter can read.
+        await supabase.from('bug_report_events').insert({
+          report_id: reportId,
+          status: (updates.workflow_status as BugWorkflowStatus) ?? 'pending',
+          note: publicNote,
+          actor: 'admin',
+        })
+      }
+
+      // Email the reporter about the status change (best-effort; the edge function
+      // enforces the reporter's contact-me opt-in and only mails meaningful states).
+      if (options?.notifyByEmail && updates.workflow_status && updates.workflow_status !== 'pending') {
+        try {
+          await supabase.functions.invoke('bug-status-email', {
+            body: { report_id: reportId, note: publicNote ?? undefined },
+          })
+        } catch {
+          // A mail hiccup shouldn't block the status update; the in-app
+          // notification (via DB trigger) still reaches the reporter.
+        }
+      }
+
       await refresh()
       notify('Bug report updated')
     } catch (err: any) {

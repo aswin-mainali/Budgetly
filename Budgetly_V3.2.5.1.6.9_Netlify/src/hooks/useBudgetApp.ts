@@ -1023,6 +1023,93 @@ export function useBudgetApp(userId: string | null) {
     notify('Goal removed')
   }
 
+  // ---- Assistant-driven actions (confirmed in chat before they run here) ----
+
+  // Category used to record money moved into a goal as an expense, so the amount
+  // is reflected as a real deduction from Net (income - expenses) for the period.
+  const GOAL_CONTRIB_CATEGORY_NAME = 'Goal Contributions'
+
+  type GoalTransferResult =
+    | { ok: true; goalName: string; amount: number; newSaved: number; newNet: number }
+    | { ok: false; error: string }
+
+  // Move `amount` into a goal: increase the goal's saved amount by `amount` and
+  // record a matching expense so the same Net figure the Dashboard shows drops by
+  // exactly `amount`. Local-first (autosaved to Supabase); returns the resulting
+  // state so the assistant can confirm it back to the user.
+  const transferToGoal = (goalId: string, amount: number): GoalTransferResult => {
+    if (!userId) return { ok: false, error: 'You are signed out.' }
+    const contribution = clampMoney(Number(amount))
+    if (!Number.isFinite(contribution) || contribution <= 0) return { ok: false, error: 'Enter an amount greater than zero.' }
+    const goal = data.goals.find((item) => item.id === goalId)
+    if (!goal) return { ok: false, error: 'That goal could not be found.' }
+
+    const existingCategory = data.categories.find((category) => category.name.trim().toLowerCase() === GOAL_CONTRIB_CATEGORY_NAME.toLowerCase())
+    const nextSort = (data.categories.reduce((max, category) => Math.max(max, category.sort_order ?? 0), 0) || 0) + 1
+    const categoryId = existingCategory ? existingCategory.id : crypto.randomUUID()
+    const newCategory: Category | null = existingCategory
+      ? null
+      : {
+          id: categoryId,
+          user_id: userId,
+          name: GOAL_CONTRIB_CATEGORY_NAME,
+          color: categoryColorFor({ id: categoryId, name: GOAL_CONTRIB_CATEGORY_NAME, color: null }, nextSort),
+          emoji: '📈',
+          budget_monthly: 0,
+          sort_order: nextSort,
+        }
+
+    const expense: Transaction = {
+      id: crypto.randomUUID(),
+      user_id: userId,
+      date: todayIso(),
+      type: 'expense',
+      category_id: categoryId,
+      amount: contribution,
+      note: `Moved to ${goal.name}`,
+    }
+
+    const newSaved = clampMoney(Number(goal.current_amount ?? 0) + contribution)
+
+    persistLocal((current) => ({
+      ...current,
+      categories: newCategory ? [...current.categories, newCategory] : current.categories,
+      transactions: [expense, ...current.transactions],
+      goals: current.goals.map((item) =>
+        item.id === goalId ? { ...item, current_amount: clampMoney(Number(item.current_amount ?? 0) + contribution) } : item,
+      ),
+    }))
+
+    if (newCategory) markCategoryDirty()
+    markTransactionDirty()
+    markGoalDirty()
+    notify(`Moved ${fmtMoney(contribution, data.currency)} to ${goal.name}`)
+
+    // The expense is dated today (current period), so Net drops by exactly `amount`.
+    return { ok: true, goalName: goal.name, amount: contribution, newSaved, newNet: net - contribution }
+  }
+
+  type BudgetUpdateResult =
+    | { ok: true; categoryName: string; newBudget: number; previousBudget: number }
+    | { ok: false; error: string }
+
+  // Set a category's monthly budget limit. Local-first (autosaved to Supabase).
+  const setCategoryBudget = (categoryId: string, amount: number): BudgetUpdateResult => {
+    if (!userId) return { ok: false, error: 'You are signed out.' }
+    const value = clampMoney(Number(amount))
+    if (!Number.isFinite(value)) return { ok: false, error: 'Enter a valid amount.' }
+    const category = data.categories.find((item) => item.id === categoryId)
+    if (!category) return { ok: false, error: 'That category could not be found.' }
+    const previousBudget = clampMoney(Number(category.budget_monthly ?? 0))
+    persistLocal((current) => ({
+      ...current,
+      categories: current.categories.map((item) => (item.id === categoryId ? { ...item, budget_monthly: value } : item)),
+    }))
+    markCategoryDirty()
+    notify(`Budget for ${category.name} set to ${fmtMoney(value, data.currency)}`)
+    return { ok: true, categoryName: category.name, newBudget: value, previousBudget }
+  }
+
   const saveGoals = async () => {
     if (!userId || !goalDirty) return false
     if (!navigator.onLine) {
@@ -1039,7 +1126,9 @@ export function useBudgetApp(userId: string | null) {
         name: goal.name.trim() || 'Untitled goal',
         emoji: goal.emoji || inferGoalEmoji(goal.name.trim() || 'Goal'),
         target_amount: targetAmount,
-        current_amount: targetAmount > 0 ? Math.min(currentAmount, targetAmount) : currentAmount,
+        // Saved amount is never capped at the target: moving money into a goal via
+        // the assistant may legitimately over-fund it, and the UI clamps display to 100%.
+        current_amount: currentAmount,
         target_date: goal.target_date || null,
         note: goal.note?.trim() || null,
       }
@@ -1304,6 +1393,8 @@ export function useBudgetApp(userId: string | null) {
     addGoal,
     updateGoalField,
     contributeToGoal,
+    transferToGoal,
+    setCategoryBudget,
     deleteGoal,
     saveGoals,
     goalDirty,
