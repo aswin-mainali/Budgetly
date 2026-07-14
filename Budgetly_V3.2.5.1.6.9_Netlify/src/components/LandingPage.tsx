@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   LogIn,
   UserPlus,
+  Sparkles,
+  ArrowRight,
+  Check,
   BarChart3,
   ListChecks,
   Tags,
@@ -10,384 +13,346 @@ import {
   FileBarChart,
   ArrowLeftRight,
   TrendingUp,
-  Sparkles,
+  Lightbulb,
   ShieldCheck,
-  CloudCog,
-  Smartphone,
-  CheckCircle2,
-  ArrowRight,
+  Zap,
+  RefreshCw,
+  Wallet,
 } from 'lucide-react'
 
 import dashboardImg from '../assets/landing/dashboard.png'
 import transactionImg from '../assets/landing/transaction.png'
-import categoryImg from '../assets/landing/category.png'
-import recurringImg from '../assets/landing/recurring.png'
 import goalsImg from '../assets/landing/goals.png'
 import reportsImg from '../assets/landing/reports.png'
-import currencyImg from '../assets/landing/currency.png'
 import investmentImg from '../assets/landing/investment.png'
-import adviceImg from '../assets/landing/advice.png'
+import categoryImg from '../assets/landing/category.png'
 
 type LandingPageProps = {
   onSignIn: () => void
   onSignUp: () => void
 }
 
+// The single animated preview cycles through a curated set of real screenshots.
+const SHOWCASE = [
+  { img: dashboardImg, label: 'Dashboard' },
+  { img: transactionImg, label: 'Transactions' },
+  { img: goalsImg, label: 'Goals' },
+  { img: reportsImg, label: 'Reports' },
+  { img: investmentImg, label: 'Investments' },
+  { img: categoryImg, label: 'Categories' },
+]
+
 type Feature = {
   icon: React.ReactNode
   title: string
   description: string
-  image: string
   accent: string
+  variant?: 'hero'
 }
 
+// DOM order is tuned for the bento auto-flow: the hero card fills a 2×2 block,
+// the next four sit beside it, and the final four form the bottom row.
 const FEATURES: Feature[] = [
   {
-    icon: <BarChart3 size={20} />,
-    title: 'Dashboard at a glance',
-    description: 'See income, expenses, and what is left to spend in one clean overview built for quick decisions.',
-    image: dashboardImg,
+    icon: <BarChart3 size={22} />,
+    title: 'A dashboard that actually makes sense',
+    description:
+      'Income, expenses, and what is left to spend — surfaced in one clean overview with live charts so you always know where you stand.',
     accent: 'violet',
-  },
-  {
-    icon: <ListChecks size={20} />,
-    title: 'Effortless transactions',
-    description: 'Log income and expenses in seconds, search instantly, and keep every dollar accounted for.',
-    image: transactionImg,
-    accent: 'indigo',
-  },
-  {
-    icon: <Tags size={20} />,
-    title: 'Smart categories',
-    description: 'Group spending into custom categories with monthly budgets so you always know where money goes.',
-    image: categoryImg,
-    accent: 'green',
-  },
-  {
-    icon: <Repeat size={20} />,
-    title: 'Recurring bills',
-    description: 'Track subscriptions and recurring payments so a bill never sneaks up on you again.',
-    image: recurringImg,
-    accent: 'blue',
+    variant: 'hero',
   },
   {
     icon: <Target size={20} />,
     title: 'Savings goals',
-    description: 'Set goals, contribute over time, and watch your progress climb toward every milestone.',
-    image: goalsImg,
+    description: 'Set targets, contribute over time, and watch your progress climb.',
     accent: 'gold',
   },
   {
     icon: <FileBarChart size={20} />,
     title: 'Monthly reports',
-    description: 'Understand your habits with clear monthly reports and export them whenever you need.',
-    image: reportsImg,
+    description: 'Clear breakdowns of your habits, ready to export any time.',
     accent: 'violet',
   },
   {
-    icon: <ArrowLeftRight size={20} />,
-    title: 'Currency converter',
-    description: 'Convert between currencies with live exchange rates, perfect for travel and global budgets.',
-    image: currencyImg,
-    accent: 'blue',
+    icon: <Lightbulb size={20} />,
+    title: 'Personalized advice',
+    description: 'Tailored tips that help you spend smarter and save more.',
+    accent: 'purple',
   },
   {
     icon: <TrendingUp size={20} />,
     title: 'Investment tracking',
-    description: 'Follow your holdings and portfolio performance to see your net worth grow over time.',
-    image: investmentImg,
+    description: 'Follow your holdings and watch your net worth grow.',
     accent: 'green',
   },
   {
-    icon: <Sparkles size={20} />,
-    title: 'Personalized advice',
-    description: 'Get tailored insights and tips that help you spend smarter and save more each month.',
-    image: adviceImg,
-    accent: 'purple',
+    icon: <ListChecks size={20} />,
+    title: 'Effortless transactions',
+    description: 'Log income and expenses in seconds and search instantly.',
+    accent: 'indigo',
+  },
+  {
+    icon: <Tags size={20} />,
+    title: 'Smart categories',
+    description: 'Custom categories with monthly budgets you control.',
+    accent: 'green',
+  },
+  {
+    icon: <Repeat size={20} />,
+    title: 'Recurring bills',
+    description: 'Never let a subscription or bill sneak up on you again.',
+    accent: 'blue',
+  },
+  {
+    icon: <ArrowLeftRight size={20} />,
+    title: 'Currency converter',
+    description: 'Live exchange rates for travel and global budgets.',
+    accent: 'blue',
   },
 ]
 
-const TRUST_POINTS = [
-  { icon: <ShieldCheck size={16} />, label: 'Secure, private sign-in' },
-  { icon: <CloudCog size={16} />, label: 'Synced across your devices' },
-  { icon: <Smartphone size={16} />, label: 'Installable as an app' },
+const STATS = [
+  { icon: <Wallet size={18} />, value: '9-in-1', label: 'tools in one app' },
+  { icon: <ShieldCheck size={18} />, value: 'Private', label: 'your data stays yours' },
+  { icon: <RefreshCw size={18} />, value: 'Live', label: 'synced across devices' },
+  { icon: <Zap size={18} />, value: 'Free', label: 'to get started' },
 ]
 
-const HIGHLIGHTS = [
-  'Free to get started in minutes',
-  'Works on desktop, tablet, and mobile',
-  'Your data stays yours, always',
+const STEPS = [
+  {
+    icon: <UserPlus size={20} />,
+    title: 'Create your account',
+    description: 'Sign up in under a minute — just your name, email, and a password.',
+  },
+  {
+    icon: <ListChecks size={20} />,
+    title: 'Add your money',
+    description: 'Log income, expenses, bills, and goals. Import a backup if you have one.',
+  },
+  {
+    icon: <TrendingUp size={20} />,
+    title: 'Watch it grow',
+    description: 'Get a live picture of your finances and personalized advice to improve.',
+  },
 ]
+
+const HERO_POINTS = ['Free to start', 'No credit card', 'Works on every device']
 
 export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
-  const [activeFeature, setActiveFeature] = useState(0)
+  const [shot, setShot] = useState(0)
+  const [paused, setPaused] = useState(false)
 
-  // Gently rotate the highlighted preview so the page feels alive without
-  // demanding any interaction from a first-time visitor.
+  // The hero preview is the page's single moving element — a gentle auto-cycle
+  // through real product screenshots, pausable on hover.
   useEffect(() => {
+    if (paused) return
     const timer = window.setInterval(() => {
-      setActiveFeature((current) => (current + 1) % FEATURES.length)
-    }, 4500)
+      setShot((current) => (current + 1) % SHOWCASE.length)
+    }, 3200)
     return () => window.clearInterval(timer)
-  }, [])
-
-  // --- Interactive 3D feature showcase --------------------------------------
-  const [showcaseIndex, setShowcaseIndex] = useState(0)
-  const [showcasePaused, setShowcasePaused] = useState(false)
-  const stageRef = useRef<HTMLDivElement | null>(null)
-  const total = FEATURES.length
-  const prevIndex = (showcaseIndex - 1 + total) % total
-  const nextIndex = (showcaseIndex + 1) % total
-
-  const selectShowcase = useCallback((index: number) => {
-    setShowcaseIndex(((index % total) + total) % total)
-  }, [total])
-
-  // Auto-advance the showcase, pausing while the visitor is interacting with it.
-  useEffect(() => {
-    if (showcasePaused) return
-    const timer = window.setInterval(() => {
-      setShowcaseIndex((current) => (current + 1) % total)
-    }, 3800)
-    return () => window.clearInterval(timer)
-  }, [showcasePaused, total])
-
-  // Tilt the whole 3D stage toward the pointer for a parallax, hands-on feel.
-  const handleStagePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    const stage = stageRef.current
-    if (!stage) return
-    const rect = stage.getBoundingClientRect()
-    const px = (event.clientX - rect.left) / rect.width - 0.5
-    const py = (event.clientY - rect.top) / rect.height - 0.5
-    stage.style.setProperty('--rx', `${(-py * 6).toFixed(2)}deg`)
-    stage.style.setProperty('--ry', `${(px * 9).toFixed(2)}deg`)
-    stage.style.setProperty('--px', `${(px * 16).toFixed(1)}px`)
-    stage.style.setProperty('--py', `${(py * 12).toFixed(1)}px`)
-  }, [])
-
-  const resetStageTilt = useCallback(() => {
-    const stage = stageRef.current
-    if (!stage) return
-    stage.style.setProperty('--rx', '0deg')
-    stage.style.setProperty('--ry', '0deg')
-    stage.style.setProperty('--px', '0px')
-    stage.style.setProperty('--py', '0px')
-  }, [])
-
-  const active = FEATURES[showcaseIndex]
+  }, [paused])
 
   return (
-    <div className="landingWrap">
-      <div className="landingBackdrop" aria-hidden="true">
-        <span className="landingGlow landingGlowOne" />
-        <span className="landingGlow landingGlowTwo" />
-        <span className="landingGridMask" />
+    <div className="lp">
+      <div className="lpAurora" aria-hidden="true">
+        <span className="lpAuroraBlob lpAuroraOne" />
+        <span className="lpAuroraBlob lpAuroraTwo" />
+        <span className="lpAuroraBlob lpAuroraThree" />
+        <span className="lpGrid" />
       </div>
 
-      <header className="landingNav">
-        <div className="landingBrand">
-          <span className="landingBrandMark">Budgetly</span>
-          <span className="landingBrandDot" aria-hidden="true" />
-        </div>
-        <nav className="landingNavActions">
-          <button type="button" className="landingNavSignIn" onClick={onSignIn}>
+      <header className="lpNav">
+        <a className="lpBrand" href="#top">
+          <span className="lpBrandMark">Budgetly</span>
+        </a>
+        <nav className="lpNavLinks">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+        </nav>
+        <div className="lpNavCtas">
+          <button type="button" className="lpBtnGhost" onClick={onSignIn}>
             <LogIn size={16} /> Sign in
           </button>
-          <button type="button" className="landingNavSignUp" onClick={onSignUp}>
+          <button type="button" className="lpBtnPrimary" onClick={onSignUp}>
             <UserPlus size={16} /> Sign up
           </button>
-        </nav>
+        </div>
       </header>
 
-      <main className="landingMain">
-        <section className="landingHero">
-          <div className="landingHeroCopy">
-            <span className="landingKicker">
-              <Sparkles size={14} /> Smart money, simplified
-            </span>
-            <h1 className="landingHeroTitle">
-              Take control of your money with <span>Budgetly</span>.
-            </h1>
-            <p className="landingHeroSubtitle">
-              Budgetly is your all-in-one personal finance workspace. Track spending, plan budgets,
-              set savings goals, follow investments, and get personalized advice — all in one clean,
-              beautiful place.
-            </p>
+      <main className="lpMain" id="top">
+        {/* HERO ---------------------------------------------------------- */}
+        <section className="lpHero">
+          <span className="lpBadge">
+            <Sparkles size={14} /> Smart money, simplified
+          </span>
+          <h1 className="lpHeroTitle">
+            Take control of your money,<br />
+            <span>all in one place.</span>
+          </h1>
+          <p className="lpHeroSub">
+            Budgetly is the personal finance workspace for budgets, bills, goals, investments, and
+            advice — beautifully organized so you can spend with confidence and save on autopilot.
+          </p>
 
-            <div className="landingHeroCtas">
-              <button type="button" className="landingPrimaryBtn" onClick={onSignUp}>
-                <UserPlus size={18} /> Create your free account
-              </button>
-              <button type="button" className="landingSecondaryBtn" onClick={onSignIn}>
-                <LogIn size={18} /> I already have an account
-              </button>
-            </div>
-
-            <ul className="landingHighlights">
-              {HIGHLIGHTS.map((point) => (
-                <li key={point}>
-                  <CheckCircle2 size={16} /> {point}
-                </li>
-              ))}
-            </ul>
+          <div className="lpHeroCtas">
+            <button type="button" className="lpBtnPrimary lpBtnLg" onClick={onSignUp}>
+              <UserPlus size={18} /> Create your free account
+            </button>
+            <button type="button" className="lpBtnOutline lpBtnLg" onClick={onSignIn}>
+              <LogIn size={18} /> Sign in
+            </button>
           </div>
 
-          <div className="landingHeroPreview">
-            <div className="landingPreviewCard">
-              <div className="landingPreviewFrame">
-                {FEATURES.map((feature, index) => (
+          <ul className="lpHeroPoints">
+            {HERO_POINTS.map((point) => (
+              <li key={point}>
+                <Check size={15} /> {point}
+              </li>
+            ))}
+          </ul>
+
+          {/* The one moving image */}
+          <div
+            className="lpShowcase"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+          >
+            <div className="lpShowcaseGlow" aria-hidden="true" />
+
+            <div className="lpWindow">
+              <div className="lpWindowBar" aria-hidden="true">
+                <span className="lpDot lpDotRed" />
+                <span className="lpDot lpDotYellow" />
+                <span className="lpDot lpDotGreen" />
+                <span className="lpWindowPill">budgetly.app — {SHOWCASE[shot].label}</span>
+              </div>
+              <div className="lpWindowBody">
+                {SHOWCASE.map((item, index) => (
                   <img
-                    key={feature.title}
-                    src={feature.image}
-                    alt={feature.title}
-                    className={index === activeFeature ? 'landingPreviewImg active' : 'landingPreviewImg'}
+                    key={item.label}
+                    src={item.img}
+                    alt={`Budgetly ${item.label}`}
+                    className={index === shot ? 'lpShot active' : 'lpShot'}
                     loading={index === 0 ? 'eager' : 'lazy'}
                   />
                 ))}
               </div>
-              <div className="landingPreviewCaption">
-                <span className={`landingFeatureIcon ${FEATURES[activeFeature].accent}`}>
-                  {FEATURES[activeFeature].icon}
-                </span>
-                <div>
-                  <strong>{FEATURES[activeFeature].title}</strong>
-                  <p>{FEATURES[activeFeature].description}</p>
-                </div>
+            </div>
+
+            <div className="lpFloatCard lpFloatOne" aria-hidden="true">
+              <span className="lpFloatIcon green"><TrendingUp size={16} /></span>
+              <div>
+                <strong>+18.2%</strong>
+                <small>Net worth this year</small>
               </div>
-              <div className="landingPreviewDots" role="tablist" aria-label="Feature previews">
-                {FEATURES.map((feature, index) => (
-                  <button
-                    key={feature.title}
-                    type="button"
-                    role="tab"
-                    aria-selected={index === activeFeature}
-                    aria-label={feature.title}
-                    className={index === activeFeature ? 'active' : ''}
-                    onClick={() => setActiveFeature(index)}
-                  />
-                ))}
+            </div>
+            <div className="lpFloatCard lpFloatTwo" aria-hidden="true">
+              <span className="lpRing" style={{ ['--pct' as string]: '62%' }}>
+                <span>62%</span>
+              </span>
+              <div>
+                <strong>Goal: New car</strong>
+                <small>On track for Sep</small>
               </div>
+            </div>
+
+            <div className="lpShowcaseDots" role="tablist" aria-label="Preview screens">
+              {SHOWCASE.map((item, index) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  role="tab"
+                  aria-selected={index === shot}
+                  aria-label={item.label}
+                  className={index === shot ? 'active' : ''}
+                  onClick={() => setShot(index)}
+                />
+              ))}
             </div>
           </div>
         </section>
 
-        <div className="landingTrustRow">
-          {TRUST_POINTS.map((point) => (
-            <div key={point.label} className="landingTrustItem">
-              {point.icon}
-              <span>{point.label}</span>
+        {/* STATS --------------------------------------------------------- */}
+        <section className="lpStats">
+          {STATS.map((stat) => (
+            <div key={stat.label} className="lpStat">
+              <span className="lpStatIcon">{stat.icon}</span>
+              <div>
+                <strong>{stat.value}</strong>
+                <span>{stat.label}</span>
+              </div>
             </div>
           ))}
-        </div>
+        </section>
 
-        <section className="landingShowcase" id="features">
-          <div className="landingSectionHead">
-            <span className="landingSectionEyebrow">Everything you need</span>
+        {/* FEATURES BENTO ------------------------------------------------ */}
+        <section className="lpSection" id="features">
+          <div className="lpSectionHead">
+            <span className="lpEyebrow">Everything you need</span>
             <h2>One app for your whole financial life</h2>
-            <p>From day-to-day spending to long-term goals and investments, Budgetly brings it all together — explore it live below.</p>
+            <p>From daily spending to long-term goals and investments — Budgetly brings it all together.</p>
           </div>
 
-          <div
-            className="landingShowcaseInner"
-            onMouseEnter={() => setShowcasePaused(true)}
-            onMouseLeave={() => setShowcasePaused(false)}
-          >
-            <div className="landingShowcaseRail" role="tablist" aria-label="Budgetly features">
-              {FEATURES.map((feature, index) => {
-                const isActive = index === showcaseIndex
-                return (
-                  <button
-                    key={feature.title}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    className={isActive ? 'landingRailItem active' : 'landingRailItem'}
-                    onClick={() => selectShowcase(index)}
-                    onFocus={() => selectShowcase(index)}
-                  >
-                    <span className={`landingFeatureIcon ${feature.accent}`}>{feature.icon}</span>
-                    <span className="landingRailText">
-                      <strong>{feature.title}</strong>
-                      <small>{feature.description}</small>
-                    </span>
-                    <span className="landingRailProgress" aria-hidden="true">
-                      <span
-                        className="landingRailProgressBar"
-                        style={{ animationPlayState: isActive && !showcasePaused ? 'running' : 'paused' }}
-                      />
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+          <div className="lpBento">
+            {FEATURES.map((feature) => (
+              <article
+                key={feature.title}
+                className={`lpCard ${feature.variant === 'hero' ? 'lpCardHero' : ''}`}
+              >
+                <span className={`lpCardIcon ${feature.accent}`}>{feature.icon}</span>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
 
-            <div
-              className="landingStage"
-              ref={stageRef}
-              onPointerMove={handleStagePointerMove}
-              onPointerLeave={resetStageTilt}
-            >
-              <span className={`landingStageGlow ${active.accent}`} aria-hidden="true" />
-
-              <div className="landingStageScene">
-                <div className={`landingStageCard peek prev ${FEATURES[prevIndex].accent}`} aria-hidden="true">
-                  <img src={FEATURES[prevIndex].image} alt="" loading="lazy" />
-                </div>
-                <div className={`landingStageCard peek next ${FEATURES[nextIndex].accent}`} aria-hidden="true">
-                  <img src={FEATURES[nextIndex].image} alt="" loading="lazy" />
-                </div>
-
-                <div className="landingStageCard landingStageMain">
-                  <div className="landingStageChrome" aria-hidden="true">
-                    <span /><span /><span />
-                  </div>
-                  <div className="landingStageShots">
-                    {FEATURES.map((feature, index) => (
-                      <img
-                        key={feature.title}
-                        src={feature.image}
-                        alt={feature.title}
-                        className={index === showcaseIndex ? 'landingStageShot active' : 'landingStageShot'}
-                        loading={index < 2 ? 'eager' : 'lazy'}
-                      />
-                    ))}
-                  </div>
-                  <div className="landingStageCaption">
-                    <span className={`landingFeatureIcon ${active.accent}`}>{active.icon}</span>
-                    <div>
-                      <strong>{active.title}</strong>
-                      <p>{active.description}</p>
+                {feature.variant === 'hero' ? (
+                  <div className="lpCardVisual" aria-hidden="true">
+                    <div className="lpVizBars">
+                      <span style={{ height: 46 }} />
+                      <span style={{ height: 78 }} />
+                      <span style={{ height: 58 }} />
+                      <span style={{ height: 104 }} />
+                      <span style={{ height: 70 }} />
+                      <span style={{ height: 90 }} />
                     </div>
+                    <div className="lpVizDonut" />
                   </div>
-                </div>
-              </div>
-
-              <div className="landingStageDots" role="tablist" aria-label="Choose a feature">
-                {FEATURES.map((feature, index) => (
-                  <button
-                    key={feature.title}
-                    type="button"
-                    role="tab"
-                    aria-selected={index === showcaseIndex}
-                    aria-label={feature.title}
-                    className={index === showcaseIndex ? 'active' : ''}
-                    onClick={() => selectShowcase(index)}
-                  />
-                ))}
-              </div>
-            </div>
+                ) : null}
+              </article>
+            ))}
           </div>
         </section>
 
-        <section className="landingCta">
-          <div className="landingCtaInner">
+        {/* HOW IT WORKS -------------------------------------------------- */}
+        <section className="lpSection" id="how">
+          <div className="lpSectionHead">
+            <span className="lpEyebrow">Get started in minutes</span>
+            <h2>Up and running in three simple steps</h2>
+          </div>
+
+          <div className="lpSteps">
+            {STEPS.map((step, index) => (
+              <div key={step.title} className="lpStep">
+                <span className="lpStepNum">{index + 1}</span>
+                <span className="lpStepIcon">{step.icon}</span>
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA ----------------------------------------------------------- */}
+        <section className="lpCta">
+          <div className="lpCtaInner">
+            <span className="lpBadge lpBadgeOnDark">
+              <Sparkles size={14} /> Start today, it's free
+            </span>
             <h2>Ready to make budgeting effortless?</h2>
-            <p>Join Budgetly today and start building healthier money habits in minutes.</p>
-            <div className="landingCtaButtons">
-              <button type="button" className="landingPrimaryBtn" onClick={onSignUp}>
+            <p>Join Budgetly and start building healthier money habits in minutes.</p>
+            <div className="lpHeroCtas lpCtaButtons">
+              <button type="button" className="lpBtnPrimary lpBtnLg" onClick={onSignUp}>
                 Get started free <ArrowRight size={18} />
               </button>
-              <button type="button" className="landingSecondaryBtn" onClick={onSignIn}>
+              <button type="button" className="lpBtnOutline lpBtnLg" onClick={onSignIn}>
                 Sign in
               </button>
             </div>
@@ -395,9 +360,16 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
         </section>
       </main>
 
-      <footer className="landingFooter">
-        <span className="landingBrandMark">Budgetly</span>
-        <span className="landingFooterCopy">© {new Date().getFullYear()} Budgetly. Smart money, simplified.</span>
+      <footer className="lpFooter">
+        <div className="lpFooterBrand">
+          <span className="lpBrandMark">Budgetly</span>
+          <p>Smart money, simplified.</p>
+        </div>
+        <div className="lpFooterActions">
+          <button type="button" className="lpBtnGhost" onClick={onSignIn}>Sign in</button>
+          <button type="button" className="lpBtnPrimary" onClick={onSignUp}>Sign up</button>
+        </div>
+        <span className="lpFooterCopy">© {new Date().getFullYear()} Budgetly. All rights reserved.</span>
       </footer>
     </div>
   )
