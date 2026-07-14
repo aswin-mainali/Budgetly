@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Search, Copy, Trash2, Pencil, ShieldCheck, ScrollText, Download, Upload, KeyRound, TrendingUp } from 'lucide-react'
 import Auth from './components/Auth'
+import LandingPage from './components/LandingPage'
 import Sidebar, { ViewKey } from './components/Sidebar'
 import { supabase } from './lib/supabase'
 import { readCachedUserProfile, syncProfileCacheForUser, loadProfileFromTable, markWalkthroughCompleted } from './lib/userProfile'
@@ -57,6 +58,9 @@ export default function App() {
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [mobileUnreadCount, setMobileUnreadCount] = useState(0)
   const [showWalkthrough, setShowWalkthrough] = useState(false)
+  // Controls the logged-out experience: the marketing landing page first, then
+  // the sign-in / sign-up form once the visitor chooses to continue.
+  const [authEntry, setAuthEntry] = useState<'landing' | 'signin' | 'signup'>('landing')
   const warningTimerRef = useRef<number | null>(null)
   const signOutTimerRef = useRef<number | null>(null)
   const countdownTimerRef = useRef<number | null>(null)
@@ -559,7 +563,17 @@ export default function App() {
   }, [admin.visibleFeatures, isMobile])
 
   if (!sessionChecked) return null
-  if (!userId) return <Auth />
+  if (!userId) {
+    if (authEntry === 'landing') {
+      return (
+        <LandingPage
+          onSignIn={() => setAuthEntry('signin')}
+          onSignUp={() => setAuthEntry('signup')}
+        />
+      )
+    }
+    return <Auth initialMode={authEntry} onBack={() => setAuthEntry('landing')} />
+  }
   if (admin.loading) return <div className="appStatusScreen"><div className="card"><h2>Loading workspace</h2><div className="muted">Checking your account role, feature access, and workspace permissions.</div></div></div>
   if (admin.profile && !admin.profile.is_active) {
     return (

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { saveProfileToTable } from '../lib/userProfile'
 import {
   Mail,
   Lock,
@@ -12,13 +13,23 @@ import {
   Smartphone,
   BadgeCheck,
   Download,
+  User,
+  ArrowLeft,
 } from 'lucide-react'
 import { usePwaInstall } from '../hooks/usePwaInstall'
 
-export default function Auth() {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
+type AuthProps = {
+  initialMode?: 'signin' | 'signup'
+  onBack?: () => void
+}
+
+export default function Auth({ initialMode = 'signin', onBack }: AuthProps) {
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(initialMode)
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -46,10 +57,36 @@ export default function Auth() {
       if (!email) throw new Error('Email required.')
       if (mode !== 'forgot' && !password) throw new Error('Email + password required.')
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const trimmedFirst = firstName.trim()
+        const trimmedLast = lastName.trim()
+        if (!trimmedFirst) throw new Error('First name required.')
+        if (!trimmedLast) throw new Error('Last name required.')
+        if (password.length < 6) throw new Error('Password must be at least 6 characters.')
+        if (password !== confirmPassword) throw new Error('Passwords do not match.')
+
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          // Store the name on the auth user so it can be restored even when
+          // email confirmation defers the first sign-in (see userProfile backfill).
+          options: { data: { first_name: trimmedFirst, last_name: trimmedLast } },
+        })
         if (error) throw error
-        setMsg('Account created. Now sign in.')
-        setMode('signin')
+
+        // When email confirmation is disabled Supabase returns a session
+        // immediately, so we can persist the profile row right away.
+        if (data.session && data.user) {
+          try {
+            await saveProfileToTable(data.user.id, { firstName: trimmedFirst, lastName: trimmedLast, image: '' })
+          } catch {
+            /* Non-fatal: the profile will be backfilled from user metadata on next load. */
+          }
+          // onAuthStateChange will pick up the session and load the app.
+        } else {
+          setMsg('Account created. Please check your email to confirm, then sign in.')
+          setConfirmPassword('')
+          setMode('signin')
+        }
       } else if (mode === 'forgot') {
         const redirectTo = new URL('/reset-password', window.location.origin).toString()
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
@@ -128,6 +165,11 @@ export default function Auth() {
         </section>
 
         <section className="card authCardModern authCardEnhanced">
+          {onBack ? (
+            <button type="button" className="authBackButton" onClick={onBack} disabled={busy}>
+              <ArrowLeft size={16} /> Back to home
+            </button>
+          ) : null}
           <div className="authPanelHeader authPanelHeaderEnhanced">
             <div>
               <small className="authEyebrow">Personal finance workspace</small>
@@ -151,6 +193,7 @@ export default function Auth() {
               onClick={() => {
                 setMsg(null)
                 setPassword('')
+                setConfirmPassword('')
                 setMode(mode === 'signin' ? 'signup' : 'signin')
               }}
               disabled={busy}
@@ -160,6 +203,37 @@ export default function Auth() {
           </div>
 
           <form onSubmit={onSubmit} className="authFormModern authFormEnhanced">
+            {mode === 'signup' ? (
+              <div className="authNameRow">
+                <label className="authField">
+                  <small>First name</small>
+                  <div className="authInputWrap authInputWrapEnhanced">
+                    <User size={16} />
+                    <input
+                      className="input authInputModern"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder="Jane"
+                      autoComplete="given-name"
+                    />
+                  </div>
+                </label>
+                <label className="authField">
+                  <small>Last name</small>
+                  <div className="authInputWrap authInputWrapEnhanced">
+                    <User size={16} />
+                    <input
+                      className="input authInputModern"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder="Doe"
+                      autoComplete="family-name"
+                    />
+                  </div>
+                </label>
+              </div>
+            ) : null}
+
             <label className="authField">
               <small>Email</small>
               <div className="authInputWrap authInputWrapEnhanced">
@@ -212,6 +286,23 @@ export default function Auth() {
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
+                </div>
+              </label>
+            ) : null}
+
+            {mode === 'signup' ? (
+              <label className="authField">
+                <small>Confirm password</small>
+                <div className="authInputWrap authInputWrapEnhanced">
+                  <Lock size={16} />
+                  <input
+                    className="input authInputModern"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter your password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                  />
                 </div>
               </label>
             ) : null}

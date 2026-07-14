@@ -66,6 +66,27 @@ export const syncProfileCacheForUser = async (user: User | null) => {
 
   try {
     const profile = await loadProfileFromTable(user.id)
+
+    // Backfill the profile row from the name captured at sign-up (stored in the
+    // auth user metadata) the first time a confirmed account loads without one.
+    if (!profile.firstName && !profile.lastName) {
+      const meta = (user.user_metadata ?? {}) as Record<string, unknown>
+      const metaFirst = typeof meta.first_name === 'string' ? meta.first_name.trim() : ''
+      const metaLast = typeof meta.last_name === 'string' ? meta.last_name.trim() : ''
+      if (metaFirst || metaLast) {
+        try {
+          const saved = await saveProfileToTable(user.id, {
+            firstName: metaFirst,
+            lastName: metaLast,
+            image: profile.image,
+          })
+          return saved
+        } catch {
+          /* Non-fatal: fall through and cache whatever we loaded. */
+        }
+      }
+    }
+
     cacheUserProfile(profile)
     return profile
   } catch {
