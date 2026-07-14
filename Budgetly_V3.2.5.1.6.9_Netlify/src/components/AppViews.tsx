@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Bell, BellOff, CalendarDays, ChevronDown, ChevronUp, Clock, FileText, LineChart, Settings, Tag, Target, TrendingUp, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
-import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction, RecurringItem, BugReport, BugReportEvent } from '../types'
+import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction, RecurringItem } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
@@ -1089,7 +1089,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Circle, Loader2, ImageIcon, Trash, Info, Send } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -6020,17 +6020,13 @@ function ProfileImageCropEditor({
 }
 
 // ===== Shared bug-report taxonomy (used by the report form and the status tracker) =====
-type BugCategoryKey = 'ui' | 'data' | 'sync' | 'performance' | 'crash' | 'account' | 'other'
-type BugSeverityKey = 'low' | 'medium' | 'high' | 'critical'
-type BugWorkflow = 'pending' | 'in_progress' | 'in_review' | 'resolved'
+type BugCategoryKey = 'sync' | 'performance' | 'crash' | 'other'
+type BugSeverityKey = 'low' | 'medium' | 'high'
 
 const BUG_CATEGORIES: { key: BugCategoryKey; label: string; emoji: string; hint: string }[] = [
-  { key: 'ui', label: 'Display / UI', emoji: '🎨', hint: 'Something looks broken or misaligned' },
-  { key: 'data', label: 'Wrong numbers', emoji: '🔢', hint: 'Totals, balances, or reports are off' },
   { key: 'sync', label: 'Sync / saving', emoji: '🔄', hint: 'Changes not saving or syncing' },
   { key: 'performance', label: 'Slow / laggy', emoji: '🐌', hint: 'Performance or freezing' },
   { key: 'crash', label: 'Crash / error', emoji: '💥', hint: 'The app crashed or errored out' },
-  { key: 'account', label: 'Login / account', emoji: '🔐', hint: 'Sign-in or account access' },
   { key: 'other', label: 'Something else', emoji: '🐞', hint: 'Anything not listed' },
 ]
 
@@ -6038,15 +6034,7 @@ const BUG_SEVERITIES: { key: BugSeverityKey; label: string; desc: string; color:
   { key: 'low', label: 'Low', desc: 'Minor annoyance', color: '#22c55e' },
   { key: 'medium', label: 'Medium', desc: 'Gets in the way', color: '#f59e0b' },
   { key: 'high', label: 'High', desc: 'Hard to use', color: '#f97316' },
-  { key: 'critical', label: 'Critical', desc: "Can't use the app", color: '#ef4444' },
 ]
-
-const BUG_WORKFLOW_META: Record<BugWorkflow, { label: string; color: string; step: number }> = {
-  pending: { label: 'Submitted', color: '#64748b', step: 0 },
-  in_progress: { label: 'In progress', color: '#f59e0b', step: 1 },
-  in_review: { label: 'In review', color: '#6366f1', step: 2 },
-  resolved: { label: 'Resolved', color: '#22c55e', step: 3 },
-}
 
 const APP_VERSION = 'Budgetly V3.2.5.1.6.9'
 
@@ -6070,7 +6058,6 @@ function collectDiagnostics() {
 const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024
 
 type BugReportPayload = {
-  title: string
   category: BugCategoryKey
   severity: BugSeverityKey
   steps: string
@@ -6090,8 +6077,7 @@ function BugReportModal({
   onClose: () => void
   onSubmit: (payload: BugReportPayload) => Promise<{ reference_code?: string | null } | null>
 }) {
-  const [title, setTitle] = useState('')
-  const [category, setCategory] = useState<BugCategoryKey>('ui')
+  const [category, setCategory] = useState<BugCategoryKey>('other')
   const [severity, setSeverity] = useState<BugSeverityKey>('medium')
   const [steps, setSteps] = useState('')
   const [contact, setContact] = useState(true)
@@ -6106,7 +6092,7 @@ function BugReportModal({
   const diagnostics = useMemo(() => (open ? collectDiagnostics() : {}), [open])
 
   const resetAll = () => {
-    setTitle(''); setCategory('ui'); setSeverity('medium'); setSteps('')
+    setCategory('other'); setSeverity('medium'); setSteps('')
     setContact(true); setFile(null); setPreview(null); setDragging(false)
     setShowDiagnostics(false); setError(''); setSubmitting(false); setSubmittedRef(null)
   }
@@ -6131,18 +6117,16 @@ function BugReportModal({
   }
 
   const stepsCount = steps.trim().length
-  const titleCount = title.trim().length
   const stepsValid = stepsCount >= 15
-  const canSubmit = titleCount >= 3 && stepsValid && !submitting
+  const canSubmit = stepsValid && !submitting
 
   const submit = async () => {
-    if (titleCount < 3) { setError('Add a short summary (at least a few words).'); return }
     if (!stepsValid) { setError('Please describe the steps in a bit more detail (at least 15 characters).'); return }
     setError('')
     setSubmitting(true)
     try {
       const result = await onSubmit({
-        title: title.trim(), category, severity, steps: steps.trim(), file, contact,
+        category, severity, steps: steps.trim(), file, contact,
         diagnostics: { ...diagnostics, category, user_severity: severity },
       })
       if (result) {
@@ -6172,8 +6156,7 @@ function BugReportModal({
             </div>
           ) : null}
           <p className="muted" style={{ textAlign: 'center', margin: '4px 0 0' }}>
-            Track its status anytime under <strong>“My reports”</strong> below
-            {contact ? <>, and we’ll email <strong>{email}</strong> when it’s resolved.</> : '.'}
+            {contact ? <>We’ll email <strong>{email}</strong> as soon as it’s resolved.</> : 'Our team will look into it shortly.'}
           </p>
           <div className="bugReportActions" style={{ justifyContent: 'center' }}>
             <button className="btn primary" onClick={onClose}>Done</button>
@@ -6194,17 +6177,6 @@ function BugReportModal({
         <div className="bugReportField">
           <label>Your email <span>*</span></label>
           <div className="bugReportReadonly">✉️ {email}</div>
-        </div>
-
-        <div className="bugReportField">
-          <label>What's the issue? <span>*</span></label>
-          <input
-            className="input"
-            value={title}
-            maxLength={80}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="A one-line summary, e.g. “Dashboard total is wrong after deleting a transaction”"
-          />
         </div>
 
         <div className="bugReportField">
@@ -6309,175 +6281,6 @@ function BugReportModal({
           </button>
         </div>
       </div>
-    </div>
-  )
-}
-
-function bugWorkflowOf(report: BugReport): BugWorkflow {
-  const w = report.workflow_status
-  if (w === 'pending' || w === 'in_progress' || w === 'in_review' || w === 'resolved') return w
-  return report.status === 'completed' ? 'resolved' : 'pending'
-}
-
-function BugStatusBadge({ status }: { status: BugWorkflow }) {
-  const meta = BUG_WORKFLOW_META[status]
-  return (
-    <span className="bugStatusBadge" style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}14` }}>
-      {status === 'resolved' ? <CheckCircle2 size={13} /> : status === 'pending' ? <Circle size={13} /> : <Loader2 size={13} />}
-      {meta.label}
-    </span>
-  )
-}
-
-function BugProgressTrack({ status }: { status: BugWorkflow }) {
-  const current = BUG_WORKFLOW_META[status].step
-  const steps: BugWorkflow[] = ['pending', 'in_progress', 'in_review', 'resolved']
-  return (
-    <div className="bugProgressTrack" role="img" aria-label={`Status: ${BUG_WORKFLOW_META[status].label}`}>
-      {steps.map((s, i) => {
-        const meta = BUG_WORKFLOW_META[s]
-        const done = i <= current
-        return (
-          <div key={s} className="bugProgressStep">
-            <span className="bugProgressDot" style={done ? { background: meta.color, borderColor: meta.color } : undefined} />
-            {i < steps.length - 1 ? <span className="bugProgressLine" style={i < current ? { background: BUG_WORKFLOW_META[steps[i + 1]].color } : undefined} /> : null}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function MyBugReports({ userId, refreshKey, onReportBug }: { userId?: string | null; refreshKey: number; onReportBug: () => void }) {
-  const [reports, setReports] = useState<BugReport[]>([])
-  const [events, setEvents] = useState<Record<string, BugReportEvent[]>>({})
-  const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    if (!userId) { setReports([]); setLoading(false); return }
-    setLoading(true)
-    ;(async () => {
-      const { data: rows } = await supabase
-        .from('bug_reports')
-        .select('id,title,category,user_severity,steps_to_reproduce,status,workflow_status,reference_code,contact_when_resolved,created_at,updated_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(20)
-      if (cancelled) return
-      const list = (rows ?? []) as BugReport[]
-      setReports(list)
-      if (list.length) {
-        const { data: evRows } = await supabase
-          .from('bug_report_events')
-          .select('id,report_id,status,note,actor,created_at')
-          .in('report_id', list.map((r) => r.id))
-          .order('created_at', { ascending: true })
-        if (cancelled) return
-        const grouped: Record<string, BugReportEvent[]> = {}
-        for (const ev of (evRows ?? []) as BugReportEvent[]) (grouped[ev.report_id] ??= []).push(ev)
-        setEvents(grouped)
-      } else {
-        setEvents({})
-      }
-      setLoading(false)
-    })()
-    return () => { cancelled = true }
-  }, [userId, refreshKey])
-
-  const fmtDate = (iso?: string) => {
-    if (!iso) return ''
-    try { return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) } catch { return iso }
-  }
-  const fmtDateTime = (iso?: string) => {
-    if (!iso) return ''
-    try { return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) } catch { return iso }
-  }
-  const eventLabel = (status: string) => status === 'submitted' ? 'Report submitted' : `Status → ${BUG_WORKFLOW_META[status as BugWorkflow]?.label ?? status}`
-
-  return (
-    <div className="card myReportsCard">
-      <div className="row between" style={{ alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div>
-          <h3 style={{ margin: 0 }}>My bug reports</h3>
-          <div className="muted">Track the status of issues you've reported. We'll email you when they're resolved.</div>
-        </div>
-        <button className="btn" onClick={onReportBug}><Bug size={15} /> Report a bug</button>
-      </div>
-
-      {loading ? (
-        <div className="myReportsEmpty"><Loader2 size={22} className="bugSpin" /><span>Loading your reports…</span></div>
-      ) : reports.length === 0 ? (
-        <div className="myReportsEmpty">
-          <div className="myReportsEmptyIcon"><Bug size={24} /></div>
-          <strong>No reports yet</strong>
-          <span className="muted">When you report a bug, you'll be able to follow its progress here.</span>
-        </div>
-      ) : (
-        <div className="myReportsList">
-          {reports.map((r) => {
-            const status = bugWorkflowOf(r)
-            const cat = BUG_CATEGORIES.find((c) => c.key === r.category) ?? BUG_CATEGORIES[BUG_CATEGORIES.length - 1]
-            const sev = BUG_SEVERITIES.find((s) => s.key === r.user_severity)
-            const isOpen = expanded === r.id
-            const timeline = events[r.id] ?? []
-            return (
-              <div key={r.id} className={`myReportItem ${isOpen ? 'open' : ''}`}>
-                <button className="myReportHead" onClick={() => setExpanded(isOpen ? null : r.id)} aria-expanded={isOpen}>
-                  <div className="myReportHeadMain">
-                    <div className="myReportTitleRow">
-                      {r.reference_code ? <span className="myReportRef">{r.reference_code}</span> : null}
-                      <strong className="myReportTitle">{r.title || r.steps_to_reproduce?.slice(0, 60) || 'Bug report'}</strong>
-                    </div>
-                    <div className="myReportMeta">
-                      <span title={cat.hint}>{cat.emoji} {cat.label}</span>
-                      {sev ? <span className="myReportSev"><span className="bugSeverityDot" style={{ background: sev.color }} /> {sev.label}</span> : null}
-                      <span>· {fmtDate(r.created_at)}</span>
-                    </div>
-                  </div>
-                  <div className="myReportHeadRight">
-                    <BugStatusBadge status={status} />
-                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </div>
-                </button>
-
-                {isOpen ? (
-                  <div className="myReportBody">
-                    <BugProgressTrack status={status} />
-                    <div className="myReportSteps">
-                      <div className="auditDetailHeading">What you reported</div>
-                      <p className="bugDetailText">{r.steps_to_reproduce}</p>
-                    </div>
-                    <div className="myReportTimeline">
-                      <div className="auditDetailHeading">Activity</div>
-                      {timeline.length === 0 ? (
-                        <div className="muted" style={{ fontSize: 13 }}>Submitted {fmtDateTime(r.created_at)} — waiting for the team to pick it up.</div>
-                      ) : (
-                        <ul className="bugTimeline">
-                          {timeline.map((ev) => (
-                            <li key={ev.id} className="bugTimelineItem">
-                              <span className="bugTimelineDot" style={{ background: BUG_WORKFLOW_META[ev.status as BugWorkflow]?.color ?? '#94a3b8' }} />
-                              <div>
-                                <div className="bugTimelineLabel">{eventLabel(ev.status)}</div>
-                                {ev.note ? <div className="bugTimelineNote">“{ev.note}”</div> : null}
-                                <div className="bugTimelineTime">{fmtDateTime(ev.created_at)}</div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    {status === 'resolved' ? (
-                      <div className="myReportResolved"><CheckCircle2 size={16} /> This issue has been resolved{r.contact_when_resolved ? ' — a confirmation was emailed to you.' : '.'}</div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
@@ -6897,7 +6700,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
   const useCompactDashboard = !isPhone && isCompactLaptop
   const [chatReady, setChatReady] = useState(false)
   const [bugModalOpen, setBugModalOpen] = useState(false)
-  const [myReportsRefreshKey, setMyReportsRefreshKey] = useState(0)
 
   const openChat = () => {
     if (!TAWK_ENABLED) return
@@ -6937,7 +6739,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
       const { data, error } = await supabase.from('bug_reports').insert({
         user_id: userId,
         user_email: email,
-        title: payload.title,
         category: payload.category,
         user_severity: payload.severity,
         steps_to_reproduce: payload.steps,
@@ -6949,7 +6750,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
       }).select('reference_code').single()
       if (error) throw error
       if (admin?.refresh) await admin.refresh()
-      setMyReportsRefreshKey((k) => k + 1)
       window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Bug report submitted' } }))
       return data ?? {}
     } catch (error: any) {
@@ -7108,8 +6908,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
           </div>
         </div>
       </div>
-
-      <MyBugReports userId={userId} refreshKey={myReportsRefreshKey} onReportBug={() => setBugModalOpen(true)} />
 
       <BugReportModal open={bugModalOpen} email={email || ''} onClose={() => setBugModalOpen(false)} onSubmit={submitBugReport} />
     </div>
