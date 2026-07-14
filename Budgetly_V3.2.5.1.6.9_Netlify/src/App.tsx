@@ -7,7 +7,7 @@ import { readCachedUserProfile, syncProfileCacheForUser, loadProfileFromTable, m
 import { monthKey } from './lib/utils'
 import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
-import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView } from './components/AppViews'
+import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView, type AdviceNavTarget } from './components/AppViews'
 import { InvestmentsView } from './components/InvestmentsView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
@@ -582,6 +582,23 @@ export default function App() {
   const timeGreeting = getTimeGreeting()
   const profileImage = profile.image
 
+  const handleAdviceNavigate = (target: AdviceNavTarget) => {
+    if (target.view === 'goals') {
+      setToolsSection('goals')
+      handleViewChange('tools')
+      return
+    }
+    if (target.view === 'transactions') {
+      if (target.txType) {
+        budget.setTxType(target.txType)
+        budget.setTxSearch('')
+      }
+      handleViewChange('transactions')
+      return
+    }
+    handleViewChange(target.view as ViewKey)
+  }
+
   const handleOpenTransactionsByType = (type: 'income' | 'expense') => {
     budget.setTxType(type)
     budget.setTxSearch('')
@@ -614,7 +631,7 @@ export default function App() {
     { id: 'page-transactions', type: 'page', label: 'Transactions', description: 'View and manage your transactions', keywords: ['transactions', 'income', 'expense'], onSelect: () => handleViewChange('transactions'), iconClassName: 'indigo', icon: <ListChecks size={16} /> },
     { id: 'page-categories', type: 'page', label: 'Categories', description: 'Manage your budget categories', keywords: ['budget', 'tags', 'category'], onSelect: () => handleViewChange('categories'), iconClassName: 'green', icon: <Tags size={16} /> },
     { id: 'page-recurring', type: 'page', label: 'Recurring', description: 'View and manage recurring transactions', keywords: ['recurring', 'schedule', 'repeat'], onSelect: () => handleViewChange('recurring'), iconClassName: 'blue', icon: <Repeat size={16} /> },
-    { id: 'page-advice', type: 'page', label: 'Advice', description: 'Get personalized financial insights and tips', keywords: ['advice', 'tips', 'insights'], onSelect: () => handleViewChange('advice'), iconClassName: 'purple', icon: <Sparkles size={16} /> },
+    { id: 'page-advice', type: 'page', label: 'Insights', description: 'Get personalized financial insights and tips', keywords: ['advice', 'tips', 'insights'], onSelect: () => handleViewChange('advice'), iconClassName: 'purple', icon: <Sparkles size={16} /> },
     { id: 'page-goals', type: 'page', label: 'Goals', description: 'Track and manage your savings goals', keywords: ['goals', 'savings', 'targets'], onSelect: () => { setToolsSection('goals'); handleViewChange('tools') }, iconClassName: 'gold', icon: <Target size={16} /> },
     { id: 'page-reports', type: 'page', label: 'Reports', description: 'View monthly insights and summaries', keywords: ['reports', 'summary', 'analytics'], onSelect: () => { setToolsSection('reports'); handleViewChange('tools') }, iconClassName: 'violet', icon: <BarChart3 size={16} /> },
     { id: 'page-settings', type: 'page', label: 'Settings', description: 'Manage account and app preferences', keywords: ['settings', 'preferences', 'account', 'general'], onSelect: () => handleViewChange('settings'), iconClassName: 'slate', icon: <Settings size={16} /> },
@@ -728,7 +745,7 @@ export default function App() {
         {view === 'transactions' && admin.visibleFeatures.transactions ? <TransactionsView budget={budget} /> : null}
         {view === 'categories' && admin.visibleFeatures.categories ? <CategoriesView budget={budget} /> : null}
         {view === 'recurring' && admin.visibleFeatures.recurring ? <RecurringView budget={budget} /> : null}
-        {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} /> : null}
+        {view === 'advice' && admin.visibleFeatures.advice ? <AdviceView budget={budget} userId={userId} onNavigate={handleAdviceNavigate} /> : null}
         {(view === 'tools' || view === 'utilities_hub') ? (
           view === 'utilities_hub' ? (
             <section className="mobileUtilitiesHub">

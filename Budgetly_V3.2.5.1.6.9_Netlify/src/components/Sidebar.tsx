@@ -12,7 +12,7 @@ const NAV_ITEMS: Array<{ key: Exclude<ViewKey, 'super_admin'>; label: string; ic
   { key: 'transactions', label: 'Transactions', icon: <ListChecks size={18} />, visible: (features) => features.transactions },
   { key: 'recurring', label: 'Recurring', icon: <Repeat size={18} />, visible: (features) => features.recurring },
   { key: 'tools', label: 'Utilities', icon: <Wrench size={18} />, visible: () => true },
-  { key: 'advice', label: 'Advice', icon: <Sparkles size={18} />, visible: (features) => features.advice },
+  { key: 'advice', label: 'Insights', icon: <Sparkles size={18} />, visible: (features) => features.advice },
   { key: 'settings', label: 'Settings', icon: <Settings size={18} />, visible: (features) => features.settings },
 ]
 

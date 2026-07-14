@@ -6,7 +6,7 @@ import { useBudgetApp } from '../hooks/useBudgetApp'
 import { useSuperAdmin, type AdminManagedUser } from '../hooks/useSuperAdmin'
 import { downloadPdfFromJpeg } from '../lib/utils'
 import { colorForCategory, budgetStatusColor } from '../lib/categoryColors'
-import { computeGoalProjection, summarizeGoals, type GoalProjection } from '../lib/goalProjection'
+import { buildHealthModel, healthBand, monthShortLabel, type HealthComponents } from '../lib/adviceInsights'
 import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 import { clearReadNotifications, generateAllNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, meetsPriorityThreshold, muteNotification, snoozeNotification, type BudgetlyNotification, type NotificationPriority, updateNotificationPreferences } from '../services/notificationService'
@@ -4463,55 +4463,293 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
 
 
 
-export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { data, activeMonth, income, expenses, net, byCategory, sortedCategories, upcomingRecurringThisMonth, helpers } = budget
-  const isPhone = useIsPhone()
-  const isCompactLaptop = useIsCompactLaptop()
-  const useCompactDashboard = !isPhone && isCompactLaptop
+// Where an insight's "See more" action should take the user.
+export type AdviceNavTarget =
+  | { view: 'categories' }
+  | { view: 'recurring' }
+  | { view: 'goals' }
+  | { view: 'transactions'; txType?: 'income' | 'expense' }
+  | { view: 'dashboard' }
 
-  const topCategory = byCategory[0]
-  const totalBudget = sortedCategories.reduce((sum, category) => sum + Number(category.budget_monthly || 0), 0)
-  const budgetUsage = totalBudget > 0 ? Math.min(100, Math.round((expenses / totalBudget) * 100)) : 0
-  const savingsRate = income > 0 ? Math.round((Math.max(net, 0) / income) * 100) : 0
-  const recurringExpenseTotal = upcomingRecurringThisMonth
+type InsightTier = 'worth' | 'doing' | 'upcoming'
+type InsightTab = 'spending' | 'cashflow' | 'savings' | 'bills'
+
+type SparkSeries = { label: string; value: number }
+
+type AdviceInsight = {
+  id: string
+  tab: InsightTab
+  tier: InsightTier
+  title: string
+  value: string
+  body: string
+  spark?: { data: SparkSeries[]; color: string }
+  action?: { label: string; target: AdviceNavTarget }
+  signature: string
+}
+
+const TIER_META: Record<InsightTier, { label: string }> = {
+  worth: { label: 'Worth knowing' },
+  doing: { label: 'Doing well' },
+  upcoming: { label: 'Upcoming' },
+}
+
+const ADVICE_TABS: Array<{ key: 'all' | InsightTab; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'spending', label: 'Spending' },
+  { key: 'cashflow', label: 'Cash flow' },
+  { key: 'savings', label: 'Savings' },
+  { key: 'bills', label: 'Bills' },
+]
+
+function HealthDonut({ score, tone, isPhone }: { score: number; tone: 'good' | 'caution' | 'warn'; isPhone: boolean }) {
+  const color = tone === 'good' ? '#21c97a' : tone === 'caution' ? '#f59e0b' : '#ef4444'
+  const clamped = Math.max(0, Math.min(100, score))
+  const rows = [
+    { name: 'score', value: clamped },
+    { name: 'rest', value: Math.max(0.0001, 100 - clamped) },
+  ]
+  const size = isPhone ? 168 : 196
+  return (
+    <div className="healthDonut" style={{ width: size, height: size }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={rows}
+            dataKey="value"
+            innerRadius={isPhone ? 60 : 72}
+            outerRadius={isPhone ? 80 : 94}
+            startAngle={90}
+            endAngle={-270}
+            stroke="none"
+            isAnimationActive={false}
+          >
+            <Cell fill={color} />
+            <Cell fill="rgba(148,163,184,.16)" />
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="healthDonutCenter">
+        <strong style={{ color }}>{Math.round(score)}</strong>
+        <span>/ 100</span>
+      </div>
+    </div>
+  )
+}
+
+function InsightSparkline({ data, color, currency, fmt }: { data: SparkSeries[]; color: string; currency: string; fmt: (n: number) => string }) {
+  if (data.length < 2) return null
+  return (
+    <div className="insightSpark">
+      <ResponsiveContainer width="100%" height={46}>
+        <LineChart data={data} margin={{ top: 6, right: 4, left: 4, bottom: 0 }}>
+          <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Tooltip
+            cursor={{ stroke: 'rgba(148,163,184,.3)' }}
+            contentStyle={{ background: 'var(--panel-elevated)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
+            formatter={(value: number) => fmt(Number(value))}
+            labelStyle={{ color: 'var(--muted)' }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function InsightCardView({ insight, currency, fmt, onNavigate, onDismiss }: {
+  insight: AdviceInsight
+  currency: string
+  fmt: (n: number) => string
+  onNavigate?: (target: AdviceNavTarget) => void
+  onDismiss: () => void
+}) {
+  return (
+    <div className={`insightCard tier-${insight.tier}`}>
+      <button type="button" className="insightDismiss" onClick={onDismiss} aria-label="Dismiss insight">
+        <CloseIcon size={15} />
+      </button>
+      <span className={`insightTier ${insight.tier}`}>{TIER_META[insight.tier].label}</span>
+      <h4 className="insightTitle">{insight.title}</h4>
+      <div className="insightValue">{insight.value}</div>
+      <p className="insightBody">{insight.body}</p>
+      {insight.spark ? <InsightSparkline data={insight.spark.data} color={insight.spark.color} currency={currency} fmt={fmt} /> : null}
+      {insight.action && onNavigate ? (
+        <button type="button" className="insightAction" onClick={() => onNavigate(insight.action!.target)}>
+          {insight.action.label} <ChevronRight size={15} />
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
+type ChatChart = { kind: 'line' | 'bar'; data: SparkSeries[]; color: string }
+type ChatMsg = { role: 'bot' | 'user'; text: string; chart?: ChatChart; chips?: string[] }
+type PendingAction =
+  | { type: 'goal_transfer'; stage: 'confirm' | 'overdraft'; goalId: string; goalName: string; goalEmoji: string; amount: number }
+  | { type: 'budget_set'; stage: 'confirm'; categoryId: string; categoryName: string; amount: number; previousBudget: number }
+
+function ChatInlineChart({ chart, fmt }: { chart: ChatChart; fmt: (n: number) => string }) {
+  return (
+    <div className="chatChart">
+      <ResponsiveContainer width="100%" height={124}>
+        {chart.kind === 'bar' ? (
+          <BarChart data={chart.data} margin={{ top: 8, right: 6, left: 6, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="rgba(148,163,184,.14)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+            <Tooltip
+              cursor={{ fill: 'rgba(148,163,184,.08)' }}
+              contentStyle={{ background: 'var(--panel-elevated)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
+              formatter={(value: number) => fmt(Number(value))}
+            />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} isAnimationActive={false}>
+              {chart.data.map((row, index) => (
+                <Cell key={index} fill={row.value < 0 ? '#ef4444' : chart.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        ) : (
+          <LineChart data={chart.data} margin={{ top: 8, right: 6, left: 6, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="rgba(148,163,184,.14)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+            <Tooltip
+              cursor={{ stroke: 'rgba(148,163,184,.3)' }}
+              contentStyle={{ background: 'var(--panel-elevated)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
+              formatter={(value: number) => fmt(Number(value))}
+            />
+            <Line type="monotone" dataKey="value" stroke={chart.color} strokeWidth={2.5} dot={{ r: 2.5 }} isAnimationActive={false} />
+          </LineChart>
+        )}
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function KpiSparkArea({ data, color, gid }: { data: SparkSeries[]; color: string; gid: string }) {
+  if (!data || data.length < 2) return null
+  return (
+    <div className="kpiSpark">
+      <ResponsiveContainer width="100%" height={38}>
+        <AreaChart data={data} margin={{ top: 3, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2} fill={`url(#${gid})`} isAnimationActive={false} dot={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+type KpiTileData = {
+  key: string
+  label: string
+  value: string
+  sub?: string
+  deltaLabel?: string | null
+  deltaTone?: 'up' | 'down' | 'flat'
+  spark?: SparkSeries[]
+  color: string
+}
+
+function KpiTile({ kpi }: { kpi: KpiTileData }) {
+  return (
+    <div className="kpiTile">
+      <div className="kpiTop">
+        <span className="kpiLabel">{kpi.label}</span>
+        {kpi.deltaLabel ? <span className={`kpiDelta ${kpi.deltaTone ?? 'flat'}`}>{kpi.deltaLabel}</span> : null}
+      </div>
+      <div className="kpiValue">{kpi.value}</div>
+      {kpi.sub ? <div className="kpiSub">{kpi.sub}</div> : null}
+      <KpiSparkArea data={kpi.spark ?? []} color={kpi.color} gid={`kpi-${kpi.key}`} />
+    </div>
+  )
+}
+
+export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'budget'> & { userId?: string | null; onNavigate?: (target: AdviceNavTarget) => void }) {
+  const { data, activeMonth, income, expenses, net, byCategory, sortedCategories, sortedGoals, upcomingRecurringThisMonth, helpers } = budget
+  const isPhone = useIsPhone()
+  const currency = data.currency
+  const fmt = (n: number) => helpers.fmtMoney(n, currency)
+  const monthLabel = helpers.monthLabel(activeMonth)
+
+  // ---- Autosave: assistant actions mutate local state; persist to Supabase shortly after. ----
+  useEffect(() => {
+    if (!budget.goalDirty) return
+    const timer = window.setTimeout(() => { void budget.saveGoals() }, 400)
+    return () => window.clearTimeout(timer)
+  }, [budget.goalDirty, budget.saveGoals])
+  useEffect(() => {
+    if (!budget.transactionDirty) return
+    const timer = window.setTimeout(() => { void budget.saveTransactions() }, 500)
+    return () => window.clearTimeout(timer)
+  }, [budget.transactionDirty, budget.saveTransactions])
+  useEffect(() => {
+    if (!budget.categoryDirty) return
+    const timer = window.setTimeout(() => { void budget.saveCategories() }, 450)
+    return () => window.clearTimeout(timer)
+  }, [budget.categoryDirty, budget.saveCategories])
+
+  // ---- Financial health model (all derived from real transactions/categories/recurring). ----
+  const refDay = new Date().getDate()
+  const health = useMemo(
+    () => buildHealthModel(data.transactions, data.categories, data.recurring, activeMonth, refDay),
+    [data.transactions, data.categories, data.recurring, activeMonth, refDay],
+  )
+  const band = healthBand(health.score)
+
+  const seriesExpenses = health.series.map((row) => ({ label: monthShortLabel(row.monthKey), value: Math.round(row.expenses) }))
+  const seriesSavings = health.series.map((row) => ({ label: monthShortLabel(row.monthKey), value: Math.round(row.savingsRate) }))
+  const seriesNet = health.series.map((row) => ({ label: monthShortLabel(row.monthKey), value: Math.round(row.net) }))
+
+  const componentMeta: Array<{ key: keyof HealthComponents; label: string }> = [
+    { key: 'savings', label: 'Savings rate' },
+    { key: 'budget', label: 'Budget adherence' },
+    { key: 'bills', label: 'Bill coverage' },
+    { key: 'trend', label: 'Spending trend' },
+  ]
+
+  // ---- Key-number KPI tiles: always populated from the current period, so the
+  //      page has substance even before comparative insights exist. ----
+  const roundN = (n: number) => Math.round(Number.isFinite(n) ? n : 0)
+  const hasPrevMonth = health.previous.income > 0 || health.previous.expenses > 0
+  const upcomingExpenseTotal = upcomingRecurringThisMonth
     .filter((item) => item.kind !== 'income')
     .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+  const netDelta = hasPrevMonth ? net - health.previous.net : null
+  const rateDelta = hasPrevMonth ? roundN(health.current.savingsRate) - roundN(health.previous.savingsRate) : null
+  const spentDelta = hasPrevMonth ? expenses - health.previous.expenses : null
+  const kpis: KpiTileData[] = [
+    {
+      key: 'net', label: 'Net', value: fmt(net), spark: seriesNet, color: net < 0 ? '#ef4444' : '#21c97a',
+      deltaLabel: netDelta == null ? null : `${netDelta >= 0 ? '▲' : '▼'} ${fmt(Math.abs(netDelta))}`,
+      deltaTone: netDelta == null ? 'flat' : netDelta >= 0 ? 'up' : 'down',
+    },
+    {
+      key: 'rate', label: 'Savings rate', value: income > 0 ? `${roundN(health.current.savingsRate)}%` : '—', spark: seriesSavings, color: '#21c97a',
+      deltaLabel: rateDelta == null ? null : `${rateDelta >= 0 ? '▲' : '▼'} ${Math.abs(rateDelta)} pts`,
+      deltaTone: rateDelta == null ? 'flat' : rateDelta >= 0 ? 'up' : 'down',
+    },
+    {
+      key: 'spent', label: 'Spent', value: fmt(expenses), spark: seriesExpenses, color: '#60a5fa',
+      deltaLabel: spentDelta == null ? null : `${spentDelta >= 0 ? '▲' : '▼'} ${fmt(Math.abs(spentDelta))}`,
+      deltaTone: spentDelta == null ? 'flat' : spentDelta > 0 ? 'down' : 'up',
+    },
+    {
+      key: 'bills', label: 'Upcoming bills', value: fmt(upcomingExpenseTotal), sub: 'due in the next 7 days', color: '#f59e0b',
+    },
+  ]
 
-  const budgetInsight = {
-    title: 'Budget status',
-    value: totalBudget > 0 ? `${budgetUsage}% of monthly budget used` : 'No category budgets set',
-    body: totalBudget > 0
-      ? budgetUsage >= 90
-        ? 'You are very close to your total budget limit. Reduce non-essential spending now instead of waiting until month-end.'
-        : budgetUsage >= 70
-          ? 'You are moving through your budget quickly. Track the next few expense decisions more carefully.'
-          : 'Your budget usage is still under control. Keep spending intentional so you do not lose that position later in the month.'
-      : 'Set monthly budgets for your categories. Without limits, the app can track spending but cannot judge whether you are on budget.',
-    tone: budgetUsage >= 90 ? 'warn' : budgetUsage >= 70 ? 'caution' : 'good',
+  const emptyStateCopy: Record<InsightTab, string> = {
+    spending: 'Spending trends appear once you have a few weeks of expenses logged.',
+    cashflow: 'Cash-flow insights compare months — keep logging income and expenses.',
+    savings: 'Savings insights build up as your savings rate shifts month to month.',
+    bills: 'Add recurring bills on the Recurring page to unlock bill-coverage insights.',
   }
 
-  const savingsInsight = {
-    title: 'Savings signal',
-    value: income > 0 ? `${savingsRate}% current savings rate` : 'No income recorded this month',
-    body: income > 0
-      ? net < 0
-        ? 'You spent more than you earned this month. Fix recurring leaks first before chasing tiny savings tips.'
-        : savingsRate < 10
-          ? 'Your savings rate is low. Start by moving a fixed amount aside right after income arrives, not at the end of the month.'
-          : 'Your savings rate is decent. The next improvement is consistency, not random large contributions once in a while.'
-      : 'Add your income entries consistently. Without income data, the app cannot judge whether your spending pattern is sustainable.',
-    tone: net < 0 ? 'warn' : savingsRate < 10 ? 'caution' : 'good',
-  }
-
-  const recurringInsight = {
-    title: 'Upcoming fixed costs',
-    value: `${helpers.fmtMoney(recurringExpenseTotal, data.currency)} upcoming recurring expenses`,
-    body: recurringExpenseTotal > 0
-      ? 'Recurring bills deserve attention before flexible spending. If fixed costs are heavy, lower your optional categories before they hit.'
-      : 'No recurring expenses are scheduled for the rest of this month. That gives you more room, but it does not remove the need for disciplined spending.',
-    tone: recurringExpenseTotal > 0 ? 'neutral' : 'good',
-  }
-
+  // ---- Rotating money tip (kept exactly as before, just restyled). ----
   const evergreenTips = [
     { title: 'Pay yourself first', body: 'Treat savings like a bill with a fixed due date. If you wait to save whatever is left over, there usually will not be much left.', icon: '💰' },
     { title: 'Review subscriptions regularly', body: 'Small recurring charges drain more money than a single larger purchase. Audit subscriptions, bills, and auto-payments regularly.', icon: '🔁' },
@@ -4519,7 +4757,6 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
     { title: 'Cut the category that gives the biggest impact', body: 'If you want results fast, reduce the category where most of your money is going. Tiny cuts everywhere feel productive but often change very little.', icon: '✂️' },
     { title: 'Review weekly, not just monthly', body: 'Monthly reviews are too slow if your spending is drifting. A quick weekly check helps you correct course before the damage gets locked in.', icon: '📅' },
   ]
-
   const [tipIndex, setTipIndex] = useState(0)
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -4527,247 +4764,558 @@ export function AdviceView({ budget }: Pick<SharedProps, 'budget'>) {
     }, 7000)
     return () => window.clearInterval(timer)
   }, [evergreenTips.length])
-
   const tip = evergreenTips[tipIndex]
 
-  const [chatOpen, setChatOpen] = useState(false)
-  const [chatInput, setChatInput] = useState('')
-  const [chatMessages, setChatMessages] = useState<Array<{ role: 'bot' | 'user'; text: string }>>([])
-  const faqQuestions = [
-    'How much did I spend on food this month?',
-    'Which category is highest?',
-    'Did I save more than last month?',
-    'What is my income this month?',
-    'How much are my recurring bills?'
-  ]
+  // ---- Build comparative, prioritized insights from the model. ----
+  const insights = useMemo<AdviceInsight[]>(() => {
+    const list: AdviceInsight[] = []
+    const { current, previous, pacePct } = health
+    const round = (n: number) => Math.round(Number.isFinite(n) ? n : 0)
 
-  const getPrevMonth = (month: string) => {
-    const [y, m] = month.split('-').map(Number)
-    const date = new Date(y, (m || 1) - 2, 1)
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    // Spending pace vs last month
+    if (expenses > 0 || current.spendToRefDay > 0) {
+      const paceKnown = pacePct != null
+      const faster = (pacePct ?? 0) > 0
+      const tier: InsightTier = !paceKnown ? 'upcoming' : (pacePct ?? 0) > 2 ? 'worth' : (pacePct ?? 0) < -2 ? 'doing' : 'upcoming'
+      list.push({
+        id: 'spending-pace',
+        tab: 'spending',
+        tier,
+        title: 'Spending pace',
+        value: `${fmt(current.spendToRefDay)} spent so far`,
+        body: paceKnown
+          ? `You're spending ${Math.abs(round(pacePct ?? 0))}% ${faster ? 'faster' : 'slower'} than the same point last month.`
+          : 'Not enough history yet to compare this month against last month.',
+        spark: { data: seriesExpenses, color: '#60a5fa' },
+        action: { label: 'See spending by category', target: { view: 'categories' } },
+        signature: `pace:${round(pacePct ?? 0)}:${round(current.spendToRefDay)}`,
+      })
+    }
+
+    // Budget adherence
+    if (health.categoriesWithBudget > 0) {
+      const pct = round(health.budgetAdherencePct ?? 0)
+      const tier: InsightTier = pct >= 80 ? 'doing' : pct >= 50 ? 'upcoming' : 'worth'
+      list.push({
+        id: 'budget-adherence',
+        tab: 'spending',
+        tier,
+        title: 'Budget adherence',
+        value: `${health.categoriesUnder}/${health.categoriesWithBudget} categories under budget`,
+        body: pct >= 80
+          ? 'Most of your budgets are holding. Keep the next few spending decisions intentional.'
+          : pct >= 50
+            ? 'About half your categories are over their limit. Tighten the ones drifting the most.'
+            : 'More than half your categories are over budget. Trim the biggest offenders before month-end.',
+        action: { label: 'Adjust budgets', target: { view: 'categories' } },
+        signature: `budget:${health.categoriesUnder}/${health.categoriesWithBudget}`,
+      })
+    }
+
+    // Top category share
+    const topCategory = byCategory[0]
+    if (topCategory && expenses > 0) {
+      const share = round((topCategory.total / expenses) * 100)
+      const tier: InsightTier = share >= 40 ? 'worth' : 'upcoming'
+      list.push({
+        id: 'top-category',
+        tab: 'spending',
+        tier,
+        title: 'Biggest category',
+        value: `${topCategory.emoji ?? '🏷️'} ${topCategory.name} — ${fmt(topCategory.total)}`,
+        body: `${topCategory.name} is ${share}% of your spending this month${share >= 40 ? '. That is a lot riding on one category.' : '.'}`,
+        action: { label: 'See spending by category', target: { view: 'categories' } },
+        signature: `top:${topCategory.id}:${share}`,
+      })
+    }
+
+    // Savings rate
+    {
+      const rate = round(current.savingsRate)
+      const prevRate = round(previous.savingsRate)
+      const hasPrev = previous.income > 0 || previous.expenses > 0
+      const delta = rate - prevRate
+      const tier: InsightTier = rate >= 15 ? 'doing' : rate < 5 ? 'worth' : 'upcoming'
+      list.push({
+        id: 'savings-rate',
+        tab: 'savings',
+        tier,
+        title: 'Savings rate',
+        value: income > 0 ? `${rate}% of income kept` : 'No income recorded yet',
+        body: !hasPrev
+          ? 'Log a few months and this will show whether your savings rate is trending up or down.'
+          : `${delta >= 0 ? 'Up' : 'Down'} ${Math.abs(delta)} pts from last month (${prevRate}% → ${rate}%).`,
+        spark: { data: seriesSavings, color: '#21c97a' },
+        action: { label: 'Review goals', target: { view: 'goals' } },
+        signature: `savings:${rate}`,
+      })
+    }
+
+    // Net / cash flow
+    {
+      const hasPrev = previous.income > 0 || previous.expenses > 0
+      const ahead = current.net >= previous.net
+      const tier: InsightTier = current.net < 0 ? 'worth' : hasPrev && ahead ? 'doing' : 'upcoming'
+      list.push({
+        id: 'net-cashflow',
+        tab: 'cashflow',
+        tier,
+        title: 'Net cash flow',
+        value: `${fmt(current.net)} net this month`,
+        body: `${fmt(current.income)} in, ${fmt(current.expenses)} out.` + (hasPrev ? ` That's ${ahead ? 'ahead of' : 'behind'} last month's ${fmt(previous.net)}.` : ''),
+        spark: { data: seriesNet, color: current.net < 0 ? '#ef4444' : '#60a5fa' },
+        action: { label: 'View transactions', target: { view: 'transactions' } },
+        signature: `net:${round(current.net)}`,
+      })
+    }
+
+    // Bills / upcoming
+    {
+      const upcomingExpense = upcomingRecurringThisMonth
+        .filter((item) => item.kind !== 'income')
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      const monthlyBills = health.recurringMonthlyExpense
+      const tight = monthlyBills > 0 && current.net < monthlyBills
+      const tier: InsightTier = tight ? 'worth' : 'upcoming'
+      list.push({
+        id: 'bills-coverage',
+        tab: 'bills',
+        tier,
+        title: 'Upcoming bills',
+        value: upcomingExpense > 0 ? `${fmt(upcomingExpense)} due in the next 7 days` : `${fmt(monthlyBills)}/mo in recurring bills`,
+        body: monthlyBills <= 0
+          ? 'No recurring bills are set up. Add them so the app can watch your bill coverage.'
+          : tight
+            ? `Your recurring bills (${fmt(monthlyBills)}/mo) are close to or above your current net. Keep some room free.`
+            : `Your net comfortably covers your recurring bills (${fmt(monthlyBills)}/mo).`,
+        action: { label: 'Review recurring', target: { view: 'recurring' } },
+        signature: `bills:${round(upcomingExpense)}:${round(current.net)}:${round(monthlyBills)}`,
+      })
+    }
+
+    return list
+  }, [health, expenses, income, byCategory, upcomingRecurringThisMonth, currency])
+
+  // ---- Dismiss persistence: hide an insight until its signature changes. ----
+  const dismissKey = `budgetly:advice:dismissed:${userId ?? 'anon'}`
+  const [dismissed, setDismissed] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem(dismissKey) || '{}') } catch { return {} }
+  })
+  useEffect(() => {
+    try { localStorage.setItem(dismissKey, JSON.stringify(dismissed)) } catch { /* ignore */ }
+  }, [dismissed, dismissKey])
+  const dismissInsight = (insight: AdviceInsight) => {
+    setDismissed((current) => ({ ...current, [insight.id]: insight.signature }))
   }
 
-  const monthOf = (date: string) => date.slice(0, 7)
-  const previousMonth = getPrevMonth(activeMonth)
-  const previousMonthTx = data.transactions.filter((tx) => monthOf(tx.date) === previousMonth)
-  const previousNet = previousMonthTx.reduce((sum, tx) => {
-    const amount = Number(tx.amount || 0)
-    return sum + (tx.type === 'income' ? amount : -amount)
-  }, 0)
+  const [activeTab, setActiveTab] = useState<'all' | InsightTab>('all')
+  const visibleInsights = insights.filter((insight) => dismissed[insight.id] !== insight.signature)
+  const tabInsights = activeTab === 'all' ? visibleInsights : visibleInsights.filter((insight) => insight.tab === activeTab)
+  const tabCount = (key: 'all' | InsightTab) => (key === 'all' ? visibleInsights.length : visibleInsights.filter((i) => i.tab === key).length)
+
+  // ---- Chat assistant ----
+  const [chatInput, setChatInput] = useState('')
+  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([
+    { role: 'bot', text: `Hi! I can answer questions about your ${monthLabel} money, and — with your confirmation — move money into a goal or adjust a category budget for you.` },
+  ])
+  const [pending, setPending] = useState<PendingAction | null>(null)
+  const messagesRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const node = messagesRef.current
+    if (node) node.scrollTop = node.scrollHeight
+  }, [chatMessages, pending])
+
+  const parseAmount = (text: string): number | null => {
+    const match = text.replace(/,/g, '').match(/\$?\s*(\d+(?:\.\d{1,2})?)/)
+    return match ? Number(match[1]) : null
+  }
+  const findGoal = (text: string) => {
+    let best: (typeof sortedGoals)[number] | null = null
+    let bestLen = 0
+    for (const goal of sortedGoals) {
+      const name = goal.name.trim().toLowerCase()
+      if (name && text.includes(name) && name.length > bestLen) { best = goal; bestLen = name.length }
+    }
+    if (best) return best
+    if (text.includes('emergency')) return sortedGoals.find((goal) => goal.name.toLowerCase().includes('emergency')) ?? null
+    return null
+  }
+  const findCategory = (text: string) => {
+    let best: (typeof sortedCategories)[number] | null = null
+    let bestLen = 0
+    for (const category of sortedCategories) {
+      const name = category.name.trim().toLowerCase()
+      if (name && text.includes(name) && name.length > bestLen) { best = category; bestLen = name.length }
+    }
+    return best
+  }
+
+  const pushBot = (text: string, extra?: { chart?: ChatChart; chips?: string[] }) => {
+    setChatMessages((current) => [...current, { role: 'bot', text, chart: extra?.chart, chips: extra?.chips }])
+  }
 
   const foodSpend = byCategory.find((row) => row.name.toLowerCase().includes('food') || row.name.toLowerCase().includes('grocer'))?.total ?? 0
   const housingSpend = byCategory.find((row) => row.name.toLowerCase().includes('rent') || row.name.toLowerCase().includes('housing') || row.name.toLowerCase().includes('mortgage'))?.total ?? 0
   const transportSpend = byCategory.find((row) => row.name.toLowerCase().includes('car') || row.name.toLowerCase().includes('transport'))?.total ?? 0
+  const topCategory = byCategory[0]
 
-  const answerFinancialQuestion = (rawQuestion: string) => {
-    const q = rawQuestion.trim().toLowerCase()
-    if (!q) return `Ask something about ${helpers.monthLabel(activeMonth)} spending, savings, categories, or recurring bills.`
+  const answerQuestion = (raw: string): { text: string; chart?: ChatChart; chips?: string[] } => {
+    const q = raw.trim().toLowerCase()
+    const prevNet = health.previous.net
+    if (!q) return { text: `Ask me about your ${monthLabel} spending, savings, categories, or recurring bills.` }
 
-    if ((q.includes('welcome') || q.includes('help')) && q.length < 20) {
-      return `I can help with your ${helpers.monthLabel(activeMonth)} income, expenses, savings, categories, and recurring bills.`
+    if ((q.includes('food') || q.includes('grocery')) && (q.includes('spend') || q.includes('spent') || q.includes('how much') || q.includes('expense'))) {
+      return { text: `You spent ${fmt(foodSpend)} on food this month.`, chips: ['Compare to last month', 'See spending by category'] }
     }
-
-    if ((q.includes('food') || q.includes('grocery')) && (q.includes('spend') || q.includes('spent') || q.includes('expense') || q.includes('how much'))) {
-      return `You spent ${helpers.fmtMoney(foodSpend, data.currency)} on food this month.`
+    if ((q.includes('housing') || q.includes('rent') || q.includes('mortgage')) && (q.includes('spend') || q.includes('spent') || q.includes('how much') || q.includes('expense'))) {
+      return { text: `You spent ${fmt(housingSpend)} on housing this month.`, chips: ['See spending by category', 'Review recurring'] }
     }
-
-    if ((q.includes('housing') || q.includes('rent') || q.includes('mortgage')) && (q.includes('spend') || q.includes('spent') || q.includes('expense') || q.includes('how much'))) {
-      return `You spent ${helpers.fmtMoney(housingSpend, data.currency)} on housing this month.`
+    if ((q.includes('transport') || q.includes('car') || q.includes('gas')) && (q.includes('spend') || q.includes('spent') || q.includes('how much') || q.includes('expense'))) {
+      return { text: `You spent ${fmt(transportSpend)} on transportation this month.`, chips: ['See spending by category'] }
     }
-
-    if ((q.includes('transport') || q.includes('car') || q.includes('gas')) && (q.includes('spend') || q.includes('spent') || q.includes('expense') || q.includes('how much'))) {
-      return `You spent ${helpers.fmtMoney(transportSpend, data.currency)} on transportation this month.`
+    if ((q.includes('highest') || q.includes('top') || q.includes('biggest')) && q.includes('categor')) {
+      if (!topCategory) return { text: 'There is no expense category data yet for this month.' }
+      return { text: `Your highest spending category is ${topCategory.emoji ?? '🏷️'} ${topCategory.name} at ${fmt(topCategory.total)} this month.`, chips: ['See spending by category', 'Compare to last month'] }
     }
-
-    if ((q.includes('highest') || q.includes('top') || q.includes('biggest')) && q.includes('category')) {
-      if (!topCategory) return 'There is no expense category data yet for this month.'
-      return `Your highest spending category is ${topCategory.emoji ?? '🏷️'} ${topCategory.name} at ${helpers.fmtMoney(topCategory.total, data.currency)} this month.`
+    if (q.includes('income') || q.includes('earn') || q.includes('salary')) {
+      return { text: `Your income for ${monthLabel} is ${fmt(income)}.`, chips: ['What is my net this month?', 'What is my savings rate?'] }
     }
-
-    if (q.includes('income') || q.includes('earn') || q.includes('salary') || q.includes('pay')) {
-      return `Your income for ${helpers.monthLabel(activeMonth)} is ${helpers.fmtMoney(income, data.currency)}.`
+    if ((q.includes('savings rate') || q.includes('saving rate')) || (q.includes('savings') && q.includes('rate'))) {
+      return {
+        text: `Your savings rate this month is ${Math.round(health.current.savingsRate)}% of income. Here's the last few months:`,
+        chart: { kind: 'line', data: seriesSavings, color: '#21c97a' },
+        chips: ['Review goals', 'What is my net this month?'],
+      }
     }
-
-    if (q.includes('expense') || q.includes('spent') || q.includes('spending') || q.includes('cost')) {
-      return `Your total expenses for ${helpers.monthLabel(activeMonth)} are ${helpers.fmtMoney(expenses, data.currency)}.`
+    if ((q.includes('save more') || q.includes('saved more') || q.includes('more than last month')) || (q.includes('compare') && q.includes('last month')) || (q.includes('compare') && q.includes('last'))) {
+      const verdict = net > prevNet ? 'Yes' : net < prevNet ? 'No' : 'About the same'
+      return {
+        text: `${verdict}. Your net this month is ${fmt(net)} versus ${fmt(prevNet)} last month. Recent months:`,
+        chart: { kind: 'bar', data: seriesNet, color: '#60a5fa' },
+        chips: ['What is my savings rate?', 'Show transactions'],
+      }
     }
-
-    if (q.includes('net') || q.includes('balance') || q.includes('saved') || q.includes('saving') || q.includes('left over')) {
-      return `Your current net for ${helpers.monthLabel(activeMonth)} is ${helpers.fmtMoney(net, data.currency)}.`
+    if (q.includes('net') || q.includes('balance') || q.includes('left over') || (q.includes('saved') && !q.includes('goal'))) {
+      return {
+        text: `Your current net for ${monthLabel} is ${fmt(net)} (${fmt(income)} income − ${fmt(expenses)} expenses).`,
+        chart: { kind: 'bar', data: seriesNet, color: net < 0 ? '#ef4444' : '#60a5fa' },
+        chips: ['Compare to last month', 'What is my savings rate?'],
+      }
     }
-
-    if ((q.includes('save more') || q.includes('saved more') || q.includes('more than last month')) || (q.includes('compare') && q.includes('last month'))) {
-      if (!data.transactions.length) return 'There is not enough transaction history yet to compare with last month.'
-      if (net > previousNet) return `Yes. Your net this month is ${helpers.fmtMoney(net, data.currency)} versus ${helpers.fmtMoney(previousNet, data.currency)} last month.`
-      if (net < previousNet) return `No. Your net this month is ${helpers.fmtMoney(net, data.currency)} versus ${helpers.fmtMoney(previousNet, data.currency)} last month.`
-      return `You saved the same amount as last month: ${helpers.fmtMoney(net, data.currency)}.`
-    }
-
     if (q.includes('recurring') || q.includes('bill') || q.includes('upcoming')) {
-      const recurringItems = upcomingRecurringThisMonth.slice(0, 4)
-      if (!recurringItems.length) return 'You have no recurring items coming up this month.'
-      const recurringTotal = upcomingRecurringThisMonth.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-      return `Upcoming recurring items total ${helpers.fmtMoney(recurringTotal, data.currency)} this month. Next items: ${recurringItems.map((item) => `${item.emoji ?? '🔁'} ${item.name}`).join(', ')}.`
+      const items = upcomingRecurringThisMonth.slice(0, 4)
+      if (!items.length) return { text: 'You have no recurring items coming up in the next 7 days.', chips: ['Review recurring'] }
+      const total = upcomingRecurringThisMonth.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      return { text: `Upcoming recurring items total ${fmt(total)}. Next up: ${items.map((item) => `${item.emoji ?? '🔁'} ${item.name}`).join(', ')}.`, chips: ['Review recurring'] }
     }
-
     if (q.includes('budget')) {
-      if (!totalBudget) return 'You have not set monthly category budgets yet.'
-      return `You have used about ${budgetUsage}% of your total category budgets in ${helpers.monthLabel(activeMonth)}.`
+      if (!health.categoriesWithBudget) return { text: 'You have not set monthly category budgets yet.', chips: ['Adjust budgets'] }
+      return { text: `${health.categoriesUnder} of ${health.categoriesWithBudget} budgeted categories are under budget this month.`, chips: ['See spending by category', 'Adjust budgets'] }
     }
-
-    if (q.includes('advice') || q.includes('tip')) {
-      return `${budgetInsight.body} ${savingsInsight.body}`
+    if (q.includes('expense') || q.includes('spent') || q.includes('spending') || q.includes('cost') || q.includes('how much')) {
+      return {
+        text: `Your total expenses for ${monthLabel} are ${fmt(expenses)}.`,
+        chart: { kind: 'line', data: seriesExpenses, color: '#60a5fa' },
+        chips: ['See spending by category', 'Compare to last month'],
+      }
     }
-
-    return `I can help with spending by category, total income, total expenses, savings vs last month, and recurring bills for ${helpers.monthLabel(activeMonth)}.`
+    if (q.includes('health') || q.includes('score') || q.includes('how am i doing')) {
+      return { text: `Your financial health score is ${health.score}/100 (${band.label}). ${health.trendNote}`, chips: ['What is my savings rate?', 'How much are my upcoming bills?'] }
+    }
+    if (q.includes('goal')) {
+      if (!sortedGoals.length) return { text: 'You have no goals yet. Create one on the Goals page and I can move money into it.', chips: ['Review goals'] }
+      const summary = sortedGoals.slice(0, 4).map((goal) => `${goal.emoji ?? '🎯'} ${goal.name} (${fmt(Number(goal.current_amount || 0))}/${fmt(Number(goal.target_amount || 0))})`).join(', ')
+      return { text: `Your goals: ${summary}.`, chips: ['Review goals', 'What is my net this month?'] }
+    }
+    return { text: `I can help with spending by category, income, expenses, savings rate, net vs last month, and recurring bills for ${monthLabel}. I can also move money into a goal or change a budget — just ask.`, chips: ['What is my savings rate?', 'How much are my upcoming bills?'] }
   }
 
-  const openChat = () => {
-    setChatOpen(true)
-    setChatMessages((current) => current.length ? current : [{ role: 'bot', text: 'Welcome to the Chat, how can I help you with?' }])
+  const cancelPending = () => {
+    setPending(null)
+    pushBot('Cancelled — nothing was moved.')
   }
 
-  const sendChatQuestion = (preset?: string) => {
-    const question = (preset ?? chatInput).trim()
-    if (!question) return
-    const answer = answerFinancialQuestion(question)
-    setChatMessages((current) => [...current, { role: 'user', text: question }, { role: 'bot', text: answer }])
+  const executeGoalTransfer = (action: Extract<PendingAction, { type: 'goal_transfer' }>) => {
+    setPending(null)
+    const result = budget.transferToGoal(action.goalId, action.amount)
+    if (!result.ok) { pushBot(`I couldn't complete that: ${result.error}`); return }
+    const negNote = result.newNet < 0
+      ? ` Heads up: your Net is now negative (${fmt(result.newNet)}) for ${monthLabel} — worth adding income or trimming spending soon.`
+      : ''
+    pushBot(
+      `Done ✅ Moved ${fmt(result.amount)} into ${result.goalName}. It's now saved ${fmt(result.newSaved)}, and your Net for ${monthLabel} is ${fmt(result.newNet)}.${negNote}`,
+      { chips: ['Review goals', 'What is my net this month?'] },
+    )
+  }
+
+  const executeBudgetSet = (action: Extract<PendingAction, { type: 'budget_set' }>) => {
+    setPending(null)
+    const result = budget.setCategoryBudget(action.categoryId, action.amount)
+    if (!result.ok) { pushBot(`I couldn't complete that: ${result.error}`); return }
+    pushBot(
+      `Done ✅ ${result.categoryName}'s monthly budget is now ${fmt(result.newBudget)} (was ${fmt(result.previousBudget)}).`,
+      { chips: ['See spending by category', 'Adjust budgets'] },
+    )
+  }
+
+  const send = (preset?: string) => {
+    const raw = (preset ?? chatInput).trim()
+    if (!raw) return
     setChatInput('')
+    const lower = raw.toLowerCase()
+    const outgoing: ChatMsg[] = [{ role: 'user', text: raw }]
+
+    // Any unresolved proposal is abandoned the moment the user sends a new message.
+    if (pending) {
+      outgoing.push({ role: 'bot', text: 'Okay — I set that pending action aside. Nothing was moved.' })
+      setPending(null)
+    }
+
+    const amount = parseAmount(lower)
+
+    // Budget adjustment intent
+    if (lower.includes('budget') && amount != null) {
+      const category = findCategory(lower)
+      if (category) {
+        setChatMessages((current) => [...current, ...outgoing])
+        setPending({ type: 'budget_set', stage: 'confirm', categoryId: category.id, categoryName: category.name, amount: Math.round(amount), previousBudget: Number(category.budget_monthly || 0) })
+        return
+      }
+    }
+
+    // Move-money-into-a-goal intent
+    const moveVerb = /\b(move|add|put|transfer|contribute|deposit|send|allocate|stash|save|top up|topup)\b/.test(lower)
+    if (moveVerb && amount != null) {
+      const goal = findGoal(lower)
+      if (goal) {
+        setChatMessages((current) => [...current, ...outgoing])
+        const stage = amount > net ? 'overdraft' : 'confirm'
+        setPending({ type: 'goal_transfer', stage, goalId: goal.id, goalName: goal.name, goalEmoji: goal.emoji ?? '🎯', amount: Math.round(amount * 100) / 100 })
+        return
+      }
+      if (lower.includes('goal') || lower.includes('fund') || lower.includes('saving')) {
+        if (sortedGoals.length) {
+          outgoing.push({ role: 'bot', text: 'Which goal would you like to move money into?', chips: sortedGoals.map((goal) => `Add ${fmt(amount)} to ${goal.name}`) })
+        } else {
+          outgoing.push({ role: 'bot', text: 'You don’t have any goals yet. Create one on the Goals page and I can move money into it.', chips: ['Review goals'] })
+        }
+        setChatMessages((current) => [...current, ...outgoing])
+        return
+      }
+    }
+
+    // Otherwise: it's a question
+    const answer = answerQuestion(raw)
+    outgoing.push({ role: 'bot', text: answer.text, chart: answer.chart, chips: answer.chips })
+    setChatMessages((current) => [...current, ...outgoing])
   }
+
+  const handleChip = (chip: string) => {
+    // Navigation-style chips jump to the relevant page; the rest are re-asked as prompts.
+    const nav: Record<string, AdviceNavTarget> = {
+      'See spending by category': { view: 'categories' },
+      'Adjust budgets': { view: 'categories' },
+      'Review recurring': { view: 'recurring' },
+      'Review goals': { view: 'goals' },
+      'Show transactions': { view: 'transactions' },
+    }
+    if (nav[chip] && onNavigate) { onNavigate(nav[chip]); return }
+    send(chip)
+  }
+
+  const starterPrompts = ['How much did I spend this month?', 'What is my savings rate?', 'How much are my upcoming bills?', 'Add $50 to my emergency fund']
+
+  const renderInsightGrid = (items: AdviceInsight[]) => (
+    <div className="insightGrid">
+      {activeTab === 'all' ? (
+        <div className="insightCard tipCard">
+          <span className="insightTier upcoming">Money tip</span>
+          <div className="tipIcon" aria-hidden="true">{tip.icon}</div>
+          <h4 className="insightTitle">{tip.title}</h4>
+          <p className="insightBody">{tip.body}</p>
+          <div className="adviceDots" aria-hidden="true">
+            {evergreenTips.map((_, index) => <span key={index} className={index === tipIndex ? 'active' : ''} />)}
+          </div>
+        </div>
+      ) : null}
+      {items.map((insight) => (
+        <InsightCardView key={insight.id} insight={insight} currency={currency} fmt={fmt} onNavigate={onNavigate} onDismiss={() => dismissInsight(insight)} />
+      ))}
+      {items.length === 0 ? (
+        <div className="insightEmpty">
+          <Sparkles size={22} />
+          <div className="insightEmptyTitle">{activeTab === 'all' ? 'More insights are on the way' : 'Nothing flagged here yet'}</div>
+          <p>{activeTab === 'all'
+            ? 'As you log more income and spending, tailored comparative insights will show up here.'
+            : emptyStateCopy[activeTab]}</p>
+        </div>
+      ) : null}
+    </div>
+  )
 
   return (
-    <div className="card advicePage">
+    <div className="card advicePage advicePagePro2 insightsPageV3">
       <div className="row between adviceHeader" style={{ alignItems: 'flex-start', gap: 12 }}>
         <div>
-          <h2>Advice</h2>
-          <div className="muted">Practical money tips and changing insights based on your budget activity.</div>
+          <h2>Insights</h2>
+          <div className="muted">Your financial health, tracked insights, and an assistant that can act with your confirmation.</div>
         </div>
         <span className="badge">Smart guidance</span>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <div className={`grid ${isPhone ? '' : 'adviceMatchGrid'}`} style={{ marginTop: 0 }}>
-        <div className="adviceMatchLeft">
-          <div className="card adviceHeroCard adviceMatchTopTip">
-            <div className="adviceHeroLabel">Rotating money tip</div>
-            <div className="adviceHeroIcon">{tip.icon}</div>
-            <h3>{tip.title}</h3>
-            <p>{tip.body}</p>
-            <div className="adviceDots" aria-hidden="true">
-              {evergreenTips.map((_, index) => <span key={index} className={index === tipIndex ? 'active' : ''} />)}
+      {/* Hero row: financial health score + assistant, side by side, equal height */}
+      <div className="insightsTopRow">
+        {/* Financial health score */}
+        <div className="card healthCard heroHealth">
+          <div className="heroHealthHead">
+            <div>
+              <div className="healthLabel">Financial health score</div>
+              <div className={`healthBand ${band.tone}`}>{band.label}</div>
+            </div>
+            <div className={`healthDelta ${health.scoreDelta > 0 ? 'up' : health.scoreDelta < 0 ? 'down' : 'flat'}`}>
+              {health.scoreDelta > 0 ? <ArrowUpRight size={15} /> : health.scoreDelta < 0 ? <ArrowDownRight size={15} /> : <Minus size={15} />}
+              {health.scoreDelta === 0 ? 'No change' : `${Math.abs(health.scoreDelta)} pt${Math.abs(health.scoreDelta) === 1 ? '' : 's'}`}
             </div>
           </div>
-
-          <div className={`card adviceInsightCard ${budgetInsight.tone}`}>
-            <div className="adviceInsightLabel">Insight</div>
-            <h3>{budgetInsight.title}</h3>
-            <div className="adviceInsightValue">{budgetInsight.value}</div>
-            <p>{budgetInsight.body}</p>
-          </div>
-
-          <div className={`grid ${isPhone ? '' : 'adviceInsightStack'}`}>
-            <div className={`card adviceInsightCard ${savingsInsight.tone}`}>
-              <div className="adviceInsightLabel">Insight</div>
-              <h3>{savingsInsight.title}</h3>
-              <div className="adviceInsightValue">{savingsInsight.value}</div>
-              <p>{savingsInsight.body}</p>
+          <div className="heroHealthBody">
+            <div className="heroHealthDonut">
+              <HealthDonut score={health.score} tone={band.tone} isPhone={isPhone} />
             </div>
-
-            <div className={`card adviceInsightCard ${recurringInsight.tone}`}>
-              <div className="adviceInsightLabel">Insight</div>
-              <h3>{recurringInsight.title}</h3>
-              <div className="adviceInsightValue">{recurringInsight.value}</div>
-              <p>{recurringInsight.body}</p>
-            </div>
+            <p className="healthTrendNote">{health.trendNote}</p>
           </div>
-
+          <div className="heroHealthComponents">
+            {componentMeta.map(({ key, label }) => {
+              const value = health.components[key]
+              const tone = value == null ? 'var(--muted)' : value >= 75 ? '#21c97a' : value >= 50 ? '#f59e0b' : '#ef4444'
+              return (
+                <div key={key} className="heroComp">
+                  <div className="heroCompTop">
+                    <span className="heroCompLabel">{label}</span>
+                    <span className="heroCompValue">{value == null ? '—' : Math.round(value)}</span>
+                  </div>
+                  <div className="heroCompBar"><div style={{ width: value == null ? '0%' : `${Math.max(0, Math.min(100, value))}%`, background: tone }} /></div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
-        <div className="card adviceMatchChat">
-          <div className="row between adviceChatHeader" style={{ alignItems: 'center' }}>
-            <h3 style={{ margin: 0 }}>Need financial help?</h3>
-            <button
-              type="button"
-              className="btn adviceChatTrigger"
-              onClick={() => (chatOpen ? setChatOpen(false) : openChat())}
-            >
-              {chatOpen ? 'Close chat' : 'Click to chat'}
-            </button>
+        {/* Assistant */}
+        <div className="card assistantCard">
+          <div className="assistantHeader">
+            <img src="/advice-bot.png" alt="Budgetly assistant" className="assistantAvatar" />
+            <div>
+              <h3>Financial assistant</h3>
+              <div className="muted">Ask a question, or ask me to move money into a goal or change a budget.</div>
+            </div>
           </div>
 
-          <div className="adviceMatchChatTop">
-            <img src="/advice-bot.png" alt="Budgetly assistant bot" className="adviceBotImage" />
-            <div className="adviceBotQuestion">How much did I spend on food this month?</div>
-          </div>
-
-          {!chatOpen ? (
-            <>
-              <div className="adviceChatBubble bot adviceMatchClosedBubble">
-                You spent {helpers.fmtMoney(foodSpend, data.currency)} on food this month. Keep an eye on your food budget to stay within your financial goals.
-              </div>
-
-              <div className="adviceMatchInputDock">
-                <div className="adviceMatchInputRow">
-                  <input className="input" placeholder="Ask a question..." value="" readOnly />
-                  <button type="button" className="btn primary adviceMatchSend">➤</button>
+          <div className="assistantMessages" ref={messagesRef}>
+            {chatMessages.map((message, index) => (
+              <div key={index} className={`assistantBubbleWrap ${message.role}`}>
+                <div className={`assistantBubble ${message.role}`}>
+                  {message.text}
+                  {message.chart ? <ChatInlineChart chart={message.chart} fmt={fmt} /> : null}
                 </div>
-                <div className="adviceChatDockMini">
-                  <span className="adviceMiniDot active" />
-                  <span className="adviceMiniDot" />
-                  <span className="adviceMiniDot" />
-                  <span className="adviceMiniIcon">☰</span>
-                  <span className="adviceMiniIcon">⚙</span>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="adviceChatRailMessages adviceMatchMessages">
-                {chatMessages.map((message, index) => (
-                  <div key={`${message.role}-${index}`} className={`adviceChatBubble ${message.role}`}>
-                    {message.text}
+                {message.role === 'bot' && message.chips && message.chips.length ? (
+                  <div className="assistantChips">
+                    {message.chips.map((chip) => (
+                      <button key={chip} type="button" className="assistantChip" onClick={() => handleChip(chip)}>{chip}</button>
+                    ))}
                   </div>
-                ))}
-
-                <div className="adviceFaqGrid">
-                  {faqQuestions.map((question) => (
-                    <button key={question} type="button" className="adviceFaqChip" onClick={() => sendChatQuestion(question)}>
-                      {question}
-                    </button>
-                  ))}
-                </div>
+                ) : null}
               </div>
+            ))}
 
-              <div className="adviceMatchInputDock">
-                <div className="adviceMatchInputRow">
-                  <input
-                    className="input"
-                    placeholder="Ask a question..."
-                    value={chatInput}
-                    onChange={(event) => setChatInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
-                        sendChatQuestion()
-                      }
-                    }}
-                  />
-                  <button type="button" className="btn primary adviceMatchSend" onClick={() => sendChatQuestion()}>➤</button>
-                </div>
-                <div className="adviceChatDockMini">
-                  <span className="adviceMiniDot active" />
-                  <span className="adviceMiniDot" />
-                  <span className="adviceMiniDot" />
-                  <span className="adviceMiniIcon">☰</span>
-                  <span className="adviceMiniIcon">⚙</span>
-                </div>
+            {pending ? (
+              <div className="chatProposal">
+                {pending.type === 'goal_transfer' && pending.stage === 'overdraft' ? (
+                  <>
+                    <div className="chatProposalTitle warn">Heads up</div>
+                    <p className="chatProposalNote">
+                      Moving {fmt(pending.amount)} into {pending.goalName} would take your Net to <strong>{fmt(net - pending.amount)}</strong> — below zero for {monthLabel}. Do you still want to proceed?
+                    </p>
+                    <div className="chatProposalActions">
+                      <button type="button" className="btn primary" onClick={() => setPending({ ...pending, stage: 'confirm' })}>Yes, proceed anyway</button>
+                      <button type="button" className="btn" onClick={cancelPending}>No, cancel</button>
+                    </div>
+                  </>
+                ) : pending.type === 'goal_transfer' ? (
+                  <>
+                    <div className="chatProposalTitle">Confirm transfer</div>
+                    <div className="chatProposalRow"><span>To</span><strong>{pending.goalEmoji} {pending.goalName}</strong></div>
+                    <div className="chatProposalRow"><span>Amount</span><strong>{fmt(pending.amount)}</strong></div>
+                    <div className="chatProposalActions">
+                      <button type="button" className="btn primary" onClick={() => executeGoalTransfer(pending)}>Confirm</button>
+                      <button type="button" className="btn" onClick={cancelPending}>Cancel</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="chatProposalTitle">Confirm budget change</div>
+                    <div className="chatProposalRow"><span>Category</span><strong>{pending.categoryName}</strong></div>
+                    <div className="chatProposalRow"><span>New monthly budget</span><strong>{fmt(pending.amount)}</strong></div>
+                    <div className="chatProposalActions">
+                      <button type="button" className="btn primary" onClick={() => executeBudgetSet(pending)}>Confirm</button>
+                      <button type="button" className="btn" onClick={cancelPending}>Cancel</button>
+                    </div>
+                  </>
+                )}
               </div>
-            </>
-          )}
+            ) : null}
+          </div>
+
+          <div className="assistantStarters">
+            {starterPrompts.map((prompt) => (
+              <button key={prompt} type="button" className="assistantStarter" onClick={() => send(prompt)}>{prompt}</button>
+            ))}
+          </div>
+
+          <div className="assistantInputRow">
+            <input
+              className="input"
+              placeholder="Ask, or tell me an action…"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') { event.preventDefault(); send() }
+              }}
+            />
+            <button type="button" className="btn primary assistantSend" onClick={() => send()} aria-label="Send">➤</button>
+          </div>
+
+          <div className="assistantDisclaimers">
+            <div className="assistantGuardline"><ShieldCheck size={14} /> Actions always require your confirmation before anything moves</div>
+            <div className="assistantFinePrint">For investment or tax advice, consult a licensed professional</div>
+          </div>
         </div>
       </div>
+
+      {/* Key-number KPI strip */}
+      <div className="kpiStrip">
+        {kpis.map((kpi) => <KpiTile key={kpi.key} kpi={kpi} />)}
+      </div>
+
+      {/* Prioritized, categorized insights (full width) */}
+      <div className="card insightsCard insightsFull">
+        <div className="insightTabs" role="tablist">
+          {ADVICE_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              className={`insightTab ${activeTab === tab.key ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              {tab.label}
+              <span className="insightTabCount">{tabCount(tab.key)}</span>
+            </button>
+          ))}
+        </div>
+        {renderInsightGrid(tabInsights)}
+      </div>
     </div>
-  </div>
   )
 }
 
@@ -6896,7 +7444,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
       recurring: 'Recurring',
       reports: 'Reports',
       goals: 'Goals',
-      advice: 'Advice',
+      advice: 'Insights',
       converter: 'Currency Converter',
       investments: 'Investments',
       support: 'Help & Support',
