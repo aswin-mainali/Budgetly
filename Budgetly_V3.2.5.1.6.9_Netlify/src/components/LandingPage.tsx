@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   LogIn,
   UserPlus,
@@ -131,6 +131,51 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
     return () => window.clearInterval(timer)
   }, [])
 
+  // --- Interactive 3D feature showcase --------------------------------------
+  const [showcaseIndex, setShowcaseIndex] = useState(0)
+  const [showcasePaused, setShowcasePaused] = useState(false)
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  const total = FEATURES.length
+  const prevIndex = (showcaseIndex - 1 + total) % total
+  const nextIndex = (showcaseIndex + 1) % total
+
+  const selectShowcase = useCallback((index: number) => {
+    setShowcaseIndex(((index % total) + total) % total)
+  }, [total])
+
+  // Auto-advance the showcase, pausing while the visitor is interacting with it.
+  useEffect(() => {
+    if (showcasePaused) return
+    const timer = window.setInterval(() => {
+      setShowcaseIndex((current) => (current + 1) % total)
+    }, 3800)
+    return () => window.clearInterval(timer)
+  }, [showcasePaused, total])
+
+  // Tilt the whole 3D stage toward the pointer for a parallax, hands-on feel.
+  const handleStagePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const stage = stageRef.current
+    if (!stage) return
+    const rect = stage.getBoundingClientRect()
+    const px = (event.clientX - rect.left) / rect.width - 0.5
+    const py = (event.clientY - rect.top) / rect.height - 0.5
+    stage.style.setProperty('--rx', `${(-py * 10).toFixed(2)}deg`)
+    stage.style.setProperty('--ry', `${(px * 14).toFixed(2)}deg`)
+    stage.style.setProperty('--px', `${(px * 26).toFixed(1)}px`)
+    stage.style.setProperty('--py', `${(py * 20).toFixed(1)}px`)
+  }, [])
+
+  const resetStageTilt = useCallback(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    stage.style.setProperty('--rx', '0deg')
+    stage.style.setProperty('--ry', '0deg')
+    stage.style.setProperty('--px', '0px')
+    stage.style.setProperty('--py', '0px')
+  }, [])
+
+  const active = FEATURES[showcaseIndex]
+
   return (
     <div className="landingWrap">
       <div className="landingBackdrop" aria-hidden="true">
@@ -235,26 +280,102 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
           ))}
         </div>
 
-        <section className="landingFeatures" id="features">
+        <section className="landingShowcase" id="features">
           <div className="landingSectionHead">
             <span className="landingSectionEyebrow">Everything you need</span>
             <h2>One app for your whole financial life</h2>
-            <p>From day-to-day spending to long-term goals and investments, Budgetly brings it all together.</p>
+            <p>From day-to-day spending to long-term goals and investments, Budgetly brings it all together — explore it live below.</p>
           </div>
 
-          <div className="landingFeatureGrid">
-            {FEATURES.map((feature) => (
-              <article key={feature.title} className="landingFeatureCard">
-                <div className="landingFeatureShot">
-                  <img src={feature.image} alt={feature.title} loading="lazy" />
+          <div
+            className="landingShowcaseInner"
+            onMouseEnter={() => setShowcasePaused(true)}
+            onMouseLeave={() => setShowcasePaused(false)}
+          >
+            <div className="landingShowcaseRail" role="tablist" aria-label="Budgetly features">
+              {FEATURES.map((feature, index) => {
+                const isActive = index === showcaseIndex
+                return (
+                  <button
+                    key={feature.title}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={isActive ? 'landingRailItem active' : 'landingRailItem'}
+                    onClick={() => selectShowcase(index)}
+                    onFocus={() => selectShowcase(index)}
+                  >
+                    <span className={`landingFeatureIcon ${feature.accent}`}>{feature.icon}</span>
+                    <span className="landingRailText">
+                      <strong>{feature.title}</strong>
+                      <small>{feature.description}</small>
+                    </span>
+                    <span className="landingRailProgress" aria-hidden="true">
+                      <span
+                        className="landingRailProgressBar"
+                        style={{ animationPlayState: isActive && !showcasePaused ? 'running' : 'paused' }}
+                      />
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div
+              className="landingStage"
+              ref={stageRef}
+              onPointerMove={handleStagePointerMove}
+              onPointerLeave={resetStageTilt}
+            >
+              <span className={`landingStageGlow ${active.accent}`} aria-hidden="true" />
+
+              <div className="landingStageScene">
+                <div className={`landingStageCard peek prev ${FEATURES[prevIndex].accent}`} aria-hidden="true">
+                  <img src={FEATURES[prevIndex].image} alt="" loading="lazy" />
                 </div>
-                <div className="landingFeatureBody">
-                  <span className={`landingFeatureIcon ${feature.accent}`}>{feature.icon}</span>
-                  <h3>{feature.title}</h3>
-                  <p>{feature.description}</p>
+                <div className={`landingStageCard peek next ${FEATURES[nextIndex].accent}`} aria-hidden="true">
+                  <img src={FEATURES[nextIndex].image} alt="" loading="lazy" />
                 </div>
-              </article>
-            ))}
+
+                <div className="landingStageCard main">
+                  <div className="landingStageChrome" aria-hidden="true">
+                    <span /><span /><span />
+                  </div>
+                  <div className="landingStageShots">
+                    {FEATURES.map((feature, index) => (
+                      <img
+                        key={feature.title}
+                        src={feature.image}
+                        alt={feature.title}
+                        className={index === showcaseIndex ? 'landingStageShot active' : 'landingStageShot'}
+                        loading={index < 2 ? 'eager' : 'lazy'}
+                      />
+                    ))}
+                  </div>
+                  <div className="landingStageCaption">
+                    <span className={`landingFeatureIcon ${active.accent}`}>{active.icon}</span>
+                    <div>
+                      <strong>{active.title}</strong>
+                      <p>{active.description}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="landingStageDots" role="tablist" aria-label="Choose a feature">
+                {FEATURES.map((feature, index) => (
+                  <button
+                    key={feature.title}
+                    type="button"
+                    role="tab"
+                    aria-selected={index === showcaseIndex}
+                    aria-label={feature.title}
+                    className={index === showcaseIndex ? 'active' : ''}
+                    onClick={() => selectShowcase(index)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
