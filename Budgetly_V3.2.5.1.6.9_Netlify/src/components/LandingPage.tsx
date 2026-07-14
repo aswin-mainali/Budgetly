@@ -159,10 +159,10 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
     const rect = stage.getBoundingClientRect()
     const px = (event.clientX - rect.left) / rect.width - 0.5
     const py = (event.clientY - rect.top) / rect.height - 0.5
-    stage.style.setProperty('--rx', `${(-py * 10).toFixed(2)}deg`)
-    stage.style.setProperty('--ry', `${(px * 14).toFixed(2)}deg`)
-    stage.style.setProperty('--px', `${(px * 26).toFixed(1)}px`)
-    stage.style.setProperty('--py', `${(py * 20).toFixed(1)}px`)
+    stage.style.setProperty('--rx', `${(-py * 6).toFixed(2)}deg`)
+    stage.style.setProperty('--ry', `${(px * 9).toFixed(2)}deg`)
+    stage.style.setProperty('--px', `${(px * 16).toFixed(1)}px`)
+    stage.style.setProperty('--py', `${(py * 12).toFixed(1)}px`)
   }, [])
 
   const resetStageTilt = useCallback(() => {
@@ -337,7 +337,7 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
                   <img src={FEATURES[nextIndex].image} alt="" loading="lazy" />
                 </div>
 
-                <div className="landingStageCard main">
+                <div className="landingStageCard landingStageMain">
                   <div className="landingStageChrome" aria-hidden="true">
                     <span /><span /><span />
                   </div>

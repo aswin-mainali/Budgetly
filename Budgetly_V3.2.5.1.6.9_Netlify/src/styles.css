@@ -10207,20 +10207,20 @@ body.light .landingWrap{
 .landingStage{
   --rx: 0deg; --ry: 0deg; --px: 0px; --py: 0px;
   position: relative;
-  perspective: 1600px;
-  perspective-origin: 50% 40%;
-  min-height: 440px;
+  perspective: 1500px;
+  perspective-origin: 50% 42%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 26px 8px 0;
 }
 .landingStageGlow{
   position: absolute;
-  inset: 8% 6% 14%;
+  inset: 12% 12% 22%;
   border-radius: 40px;
-  filter: blur(70px);
-  opacity: .5;
+  filter: blur(64px);
+  opacity: .45;
   z-index: 0;
   transition: background .5s ease;
   background: radial-gradient(circle at 50% 45%, rgba(52,227,154,.5), transparent 65%);
@@ -10234,62 +10234,67 @@ body.light .landingWrap{
 
 .landingStageScene{
   position: relative;
-  width: min(560px, 100%);
-  aspect-ratio: 16 / 11;
+  width: min(520px, 100%);
   transform-style: preserve-3d;
-  transform: rotateX(calc(6deg + var(--rx))) rotateY(var(--ry));
-  transition: transform .18s ease-out;
+  transform: rotateX(calc(5deg + var(--rx))) rotateY(var(--ry));
+  transition: transform .2s ease-out;
   z-index: 1;
 }
 .landingStageCard{
-  position: absolute;
   border-radius: 16px;
   overflow: hidden;
   background: var(--panel-strong, #0a1b33);
   border: 1px solid var(--border);
   will-change: transform;
 }
-.landingStageCard.main{
-  inset: 0;
+/* The main card is the in-flow sizer: its aspect-ratio defines the scene
+   height, so the layout can never collapse or overflow unexpectedly. */
+.landingStageCard.landingStageMain{
+  position: relative;
   z-index: 3;
-  box-shadow: 0 40px 80px rgba(4,10,22,.55);
-  transform: translateZ(60px) translate(var(--px), var(--py));
-  transition: transform .18s ease-out;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 34px 70px rgba(4,10,22,.5);
+  transform: translateZ(36px) translate(var(--px), var(--py));
+  transition: transform .2s ease-out;
 }
 .landingStageCard.peek{
-  width: 62%;
-  aspect-ratio: 16 / 11;
-  top: 12%;
-  opacity: .55;
-  filter: saturate(.9);
-  box-shadow: 0 30px 60px rgba(4,10,22,.4);
+  position: absolute;
+  top: 10%;
+  width: 56%;
+  aspect-ratio: 16 / 10;
+  z-index: 1;
+  opacity: .5;
+  filter: saturate(.9) brightness(.98);
+  box-shadow: 0 26px 52px rgba(4,10,22,.38);
 }
 .landingStageCard.peek img{ width: 100%; height: 100%; object-fit: cover; object-position: top center; }
 .landingStageCard.peek.prev{
-  left: -20%;
-  transform: translateZ(-90px) rotateY(20deg) translateX(calc(var(--px) * .4));
+  left: -11%;
+  transform: translateZ(-70px) rotateY(17deg) translateX(calc(var(--px) * .35));
 }
 .landingStageCard.peek.next{
-  right: -20%;
-  transform: translateZ(-140px) rotateY(-22deg) translateX(calc(var(--px) * .4));
+  right: -11%;
+  transform: translateZ(-70px) rotateY(-17deg) translateX(calc(var(--px) * .35));
 }
 
 .landingStageChrome{
   display: flex;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 9px 12px;
   background: rgba(4,10,22,.55);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
 }
-.landingStageChrome span{ width: 10px; height: 10px; border-radius: 50%; background: rgba(148,163,184,.5); }
+.landingStageChrome span{ width: 9px; height: 9px; border-radius: 50%; background: rgba(148,163,184,.5); }
 .landingStageChrome span:nth-child(1){ background: #ff6058; }
 .landingStageChrome span:nth-child(2){ background: #ffbd2e; }
 .landingStageChrome span:nth-child(3){ background: #29c940; }
 
-.landingStageShots{ position: relative; flex: 1 1 auto; overflow: hidden; background: rgba(4,10,22,.4); }
+/* Aspect-ratio lives on this simple block (not the flex card) so the card
+   height is always definite — flex containers can ignore aspect-ratio. */
+.landingStageShots{ position: relative; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; background: rgba(4,10,22,.4); }
 .landingStageShot{
   position: absolute;
   inset: 0;
@@ -10298,37 +10303,46 @@ body.light .landingWrap{
   object-fit: cover;
   object-position: top center;
   opacity: 0;
-  transform: scale(1.04);
-  transition: opacity .55s ease, transform .55s ease;
+  transform: scale(1.03);
+  transition: opacity .5s ease, transform .5s ease;
 }
 .landingStageShot.active{ opacity: 1; transform: scale(1); }
 
 .landingStageCaption{
   position: absolute;
-  left: 14px;
-  bottom: 14px;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
   display: flex;
   align-items: center;
   gap: 11px;
-  max-width: calc(100% - 28px);
-  padding: 11px 15px 11px 11px;
-  border-radius: 14px;
-  background: rgba(6,14,28,.82);
+  padding: 10px 14px 10px 10px;
+  border-radius: 13px;
+  background: rgba(6,14,28,.8);
   border: 1px solid rgba(255,255,255,.08);
   backdrop-filter: blur(10px);
-  box-shadow: 0 12px 30px rgba(0,0,0,.4);
-  transform: translateZ(40px);
+  box-shadow: 0 12px 26px rgba(0,0,0,.38);
+  transform: translateZ(30px);
 }
-.landingStageCaption .landingFeatureIcon{ width: 34px; height: 34px; flex: 0 0 auto; }
-.landingStageCaption strong{ display: block; font-size: 14px; color: #fff; }
-.landingStageCaption p{ margin: 2px 0 0; font-size: 12px; color: rgba(226,232,240,.8); line-height: 1.35; }
+.landingStageCaption .landingFeatureIcon{ width: 32px; height: 32px; flex: 0 0 auto; }
+.landingStageCaption strong{ display: block; font-size: 13.5px; color: #fff; line-height: 1.2; }
+.landingStageCaption p{
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(226,232,240,.82);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 .landingStageDots{
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 7px;
-  margin-top: 26px;
+  margin-top: 28px;
   position: relative;
   z-index: 2;
 }
@@ -10427,20 +10441,25 @@ body.light .landingCtaInner{ box-shadow: 0 20px 44px rgba(15,23,42,.12); }
 
 /* Responsive */
 @media (max-width: 960px){
-  .landingShowcaseInner{ grid-template-columns: 1fr; gap: 26px; }
+  .landingShowcaseInner{ grid-template-columns: 1fr; gap: 22px; }
+  /* Rail becomes a horizontal chip selector above the preview. */
   .landingShowcaseRail{
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    gap: 10px;
-    padding-bottom: 6px;
+    gap: 8px;
+    padding: 2px 2px 8px;
     scrollbar-width: none;
-    order: 2;
+    order: 1;
+    scroll-snap-type: x proximity;
   }
   .landingShowcaseRail::-webkit-scrollbar{ display: none; }
-  .landingRailItem{ flex: 0 0 auto; width: auto; padding: 10px 14px; }
+  .landingRailItem{ flex: 0 0 auto; width: auto; padding: 9px 14px; scroll-snap-align: center; gap: 10px; }
+  .landingRailItem .landingFeatureIcon{ width: 32px; height: 32px; }
   .landingRailText small{ display: none; }
-  .landingStage{ order: 1; min-height: 0; }
+  .landingRailProgress{ display: none; }
+  .landingStage{ order: 2; padding: 8px 0 0; }
+  .landingStageScene{ width: min(500px, 100%); }
 }
 @media (max-width: 900px){
   .landingHero{ grid-template-columns: 1fr; gap: 34px; padding: 34px 0 24px; }
@@ -10453,8 +10472,18 @@ body.light .landingCtaInner{ box-shadow: 0 20px 44px rgba(15,23,42,.12); }
   .landingPrimaryBtn, .landingSecondaryBtn{ justify-content: center; }
   .landingHero{ padding-top: 20px; }
   .authNameRow{ grid-template-columns: 1fr; }
-  /* Flatten the 3D peek cards on small screens to keep the main shot readable. */
-  .landingStageScene{ transform: rotateX(4deg); aspect-ratio: 16 / 12; }
+  /* Flatten the 3D scene on phones: drop the peek cards and reduce the tilt so
+     the single app window stays crisp and fully on-screen. */
+  .landingShowcase{ padding: 48px 0 32px; }
+  .landingStageScene{ width: 100%; transform: rotateX(3deg); }
   .landingStageCard.peek{ display: none; }
-  .landingStageCard.main{ transform: translateZ(0) translate(var(--px), var(--py)); }
+  .landingStageShots{ aspect-ratio: 16 / 11; }
+  .landingStageCard.landingStageMain{ transform: translateZ(0) translate(var(--px), var(--py)); box-shadow: 0 22px 44px rgba(4,10,22,.4); }
+  .landingStageGlow{ inset: 8% 6% 18%; }
+  .landingStageCaption{ left: 10px; right: 10px; bottom: 10px; padding: 9px 12px 9px 9px; }
+  .landingStageCaption p{ -webkit-line-clamp: 1; }
+  .landingStageDots{ margin-top: 20px; }
+}
+@media (max-width: 380px){
+  .landingStageCaption p{ display: none; }
 }
