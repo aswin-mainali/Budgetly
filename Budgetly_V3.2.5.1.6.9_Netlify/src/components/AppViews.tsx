@@ -1089,7 +1089,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -6567,50 +6567,160 @@ function ProfileImageCropEditor({
   )
 }
 
+// ===== Shared bug-report taxonomy (used by the report form and the status tracker) =====
+type BugCategoryKey = 'sync' | 'performance' | 'crash' | 'other'
+type BugSeverityKey = 'low' | 'medium' | 'high'
+
+const BUG_CATEGORIES: { key: BugCategoryKey; label: string; emoji: string; hint: string }[] = [
+  { key: 'sync', label: 'Sync / saving', emoji: '🔄', hint: 'Changes not saving or syncing' },
+  { key: 'performance', label: 'Slow / laggy', emoji: '🐌', hint: 'Performance or freezing' },
+  { key: 'crash', label: 'Crash / error', emoji: '💥', hint: 'The app crashed or errored out' },
+  { key: 'other', label: 'Something else', emoji: '🐞', hint: 'Anything not listed' },
+]
+
+const BUG_SEVERITIES: { key: BugSeverityKey; label: string; desc: string; color: string }[] = [
+  { key: 'low', label: 'Low', desc: 'Minor annoyance', color: '#22c55e' },
+  { key: 'medium', label: 'Medium', desc: 'Gets in the way', color: '#f59e0b' },
+  { key: 'high', label: 'High', desc: 'Hard to use', color: '#f97316' },
+]
+
+const APP_VERSION = 'Budgetly V3.2.5.1.6.9'
+
+function collectDiagnostics() {
+  if (typeof window === 'undefined') return {}
+  const nav = window.navigator
+  return {
+    app_version: APP_VERSION,
+    page: window.location?.pathname + window.location?.hash || '/',
+    user_agent: nav?.userAgent,
+    platform: (nav as any)?.userAgentData?.platform || nav?.platform,
+    language: nav?.language,
+    screen: typeof screen !== 'undefined' ? `${screen.width}×${screen.height}` : undefined,
+    viewport: `${window.innerWidth}×${window.innerHeight}`,
+    timezone: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return undefined } })(),
+    online: nav?.onLine,
+    captured_at: new Date().toISOString(),
+  }
+}
+
+const MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024
+
+type BugReportPayload = {
+  category: BugCategoryKey
+  severity: BugSeverityKey
+  steps: string
+  file: File | null
+  contact: boolean
+  diagnostics: Record<string, unknown>
+}
+
 function BugReportModal({
   open,
   email,
   onClose,
   onSubmit,
-  busy,
 }: {
   open: boolean
   email: string
   onClose: () => void
-  onSubmit: (payload: { steps: string; file: File | null; contact: boolean }) => void
-  busy: boolean
+  onSubmit: (payload: BugReportPayload) => Promise<{ reference_code?: string | null } | null>
 }) {
+  const [category, setCategory] = useState<BugCategoryKey>('other')
+  const [severity, setSeverity] = useState<BugSeverityKey>('medium')
   const [steps, setSteps] = useState('')
   const [contact, setContact] = useState(true)
   const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const [showDiagnostics, setShowDiagnostics] = useState(false)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [submittedRef, setSubmittedRef] = useState<string | null>(null)
+
+  const diagnostics = useMemo(() => (open ? collectDiagnostics() : {}), [open])
+
+  const resetAll = () => {
+    setCategory('other'); setSeverity('medium'); setSteps('')
+    setContact(true); setFile(null); setPreview(null); setDragging(false)
+    setShowDiagnostics(false); setError(''); setSubmitting(false); setSubmittedRef(null)
+  }
+
+  useEffect(() => { if (!open) resetAll() }, [open])
 
   useEffect(() => {
-    if (!open) {
-      setSteps('')
-      setContact(true)
-      setFile(null)
-      setError('')
-    }
-  }, [open])
+    if (!file) { setPreview(null); return }
+    const url = URL.createObjectURL(file)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
 
   if (!open) return null
 
-  const submit = () => {
-    if (!steps.trim()) {
-      setError('Please describe the issue and steps to reproduce it.')
-      return
-    }
+  const acceptFile = (candidate: File | null | undefined) => {
+    if (!candidate) return
+    if (!candidate.type.startsWith('image/')) { setError('Please attach an image file (PNG, JPG, or WEBP).'); return }
+    if (candidate.size > MAX_SCREENSHOT_BYTES) { setError('That image is over 5 MB — please attach a smaller screenshot.'); return }
     setError('')
-    onSubmit({ steps: steps.trim(), file, contact })
+    setFile(candidate)
   }
 
+  const stepsCount = steps.trim().length
+  const stepsValid = stepsCount >= 15
+  const canSubmit = stepsValid && !submitting
+
+  const submit = async () => {
+    if (!stepsValid) { setError('Please describe the steps in a bit more detail (at least 15 characters).'); return }
+    setError('')
+    setSubmitting(true)
+    try {
+      const result = await onSubmit({
+        category, severity, steps: steps.trim(), file, contact,
+        diagnostics: { ...diagnostics, category, user_severity: severity },
+      })
+      if (result) {
+        setSubmittedRef(result.reference_code ?? 'submitted')
+      } else {
+        setError('Something went wrong submitting your report. Please try again.')
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to submit bug report.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  // ---- Success state -------------------------------------------------------
+  if (submittedRef) {
+    return (
+      <div className="deleteConfirmBackdrop" role="presentation">
+        <div className="card bugReportModal bugReportSuccess" role="dialog" aria-modal="true">
+          <div className="bugSuccessIcon"><CheckCircle2 size={40} /></div>
+          <h3>Thanks — we're on it!</h3>
+          <p className="muted bugReportSubtitle">Your report has been logged and our team has been notified.</p>
+          {submittedRef !== 'submitted' ? (
+            <div className="bugSuccessRef">
+              <span>Your reference</span>
+              <strong>{submittedRef}</strong>
+            </div>
+          ) : null}
+          <p className="muted" style={{ textAlign: 'center', margin: '4px 0 0' }}>
+            {contact ? <>We’ll email <strong>{email}</strong> as soon as it’s resolved.</> : 'Our team will look into it shortly.'}
+          </p>
+          <div className="bugReportActions" style={{ justifyContent: 'center' }}>
+            <button className="btn primary" onClick={onClose}>Done</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ---- Form ----------------------------------------------------------------
   return (
     <div className="deleteConfirmBackdrop" role="presentation">
       <div className="card bugReportModal" role="dialog" aria-modal="true" aria-labelledby="bug-report-title">
-        <div className="bugReportBrand">🐞 Budgetly</div>
-        <h3 id="bug-report-title">Bug report form</h3>
-        <p className="muted bugReportSubtitle">Use this form to report any bugs or issues you encounter.</p>
+        <div className="bugReportBrand"><Bug size={15} /> Budgetly</div>
+        <h3 id="bug-report-title">Report a bug</h3>
+        <p className="muted bugReportSubtitle">Tell us what went wrong — the more detail, the faster we can fix it.</p>
 
         <div className="bugReportField">
           <label>Your email <span>*</span></label>
@@ -6618,35 +6728,105 @@ function BugReportModal({
         </div>
 
         <div className="bugReportField">
-          <label>Steps to reproduce the issue <span>*</span></label>
-          <small>Please be as detailed as possible.</small>
+          <label>Which area?</label>
+          <div className="bugChipGrid">
+            {BUG_CATEGORIES.map((c) => (
+              <button
+                type="button"
+                key={c.key}
+                className={`bugChip ${category === c.key ? 'active' : ''}`}
+                onClick={() => setCategory(c.key)}
+                title={c.hint}
+              >
+                <span aria-hidden>{c.emoji}</span> {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bugReportField">
+          <label>How badly does it affect you?</label>
+          <div className="bugSeverityRow">
+            {BUG_SEVERITIES.map((s) => (
+              <button
+                type="button"
+                key={s.key}
+                className={`bugSeverityChip ${severity === s.key ? 'active' : ''}`}
+                onClick={() => setSeverity(s.key)}
+                style={severity === s.key ? { borderColor: s.color, color: s.color, boxShadow: `inset 0 0 0 1px ${s.color}` } : undefined}
+              >
+                <span className="bugSeverityDot" style={{ background: s.color }} />
+                <span><strong>{s.label}</strong><small>{s.desc}</small></span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="bugReportField">
+          <label>Steps to reproduce <span>*</span></label>
+          <small>What you did, what you expected, and what actually happened.</small>
           <textarea
             className="textarea bugReportTextarea"
             value={steps}
             onChange={(event) => setSteps(event.target.value)}
-            placeholder="What happened, what you clicked, what you expected, and what actually happened..."
+            placeholder={"1. Went to…\n2. Clicked…\n3. Expected… but instead…"}
           />
+          <div className={`bugCharCount ${stepsValid ? 'ok' : ''}`}>{stepsCount} characters{stepsValid ? ' ✓' : ' · aim for a clear description'}</div>
         </div>
 
         <div className="bugReportField">
           <label>Screenshot of the issue</label>
-          <label className="bugUploadBox">
-            <input type="file" accept="image/*" onChange={(event) => setFile(event.target.files?.[0] ?? null)} hidden />
-            <div>📁 Drag & drop a file or <u>browse</u></div>
-            <small>{file ? file.name : 'PNG, JPG, or WEBP'}</small>
+          <label
+            className={`bugUploadBox ${dragging ? 'dragging' : ''} ${preview ? 'hasFile' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => { e.preventDefault(); setDragging(false); acceptFile(e.dataTransfer.files?.[0]) }}
+          >
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/*" onChange={(event) => acceptFile(event.target.files?.[0])} hidden />
+            {preview ? (
+              <div className="bugUploadPreview">
+                <img src={preview} alt="Screenshot preview" />
+                <div className="bugUploadMeta">
+                  <strong>{file?.name}</strong>
+                  <small>{file ? `${(file.size / 1024).toFixed(0)} KB` : ''}</small>
+                </div>
+                <button type="button" className="bugUploadRemove" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFile(null) }} aria-label="Remove screenshot"><Trash size={15} /></button>
+              </div>
+            ) : (
+              <div className="bugUploadEmpty">
+                <ImageIcon size={20} />
+                <div>Drag &amp; drop a screenshot or <u>browse</u></div>
+                <small>PNG, JPG, or WEBP · up to 5 MB</small>
+              </div>
+            )}
           </label>
         </div>
 
+        <button type="button" className="bugDiagnosticsToggle" onClick={() => setShowDiagnostics((v) => !v)}>
+          <Info size={14} /> System details attached automatically
+          {showDiagnostics ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        {showDiagnostics ? (
+          <div className="bugDiagnostics">
+            {Object.entries(diagnostics).map(([k, v]) => (
+              <div key={k} className="bugDiagnosticsRow"><span>{k.replace(/_/g, ' ')}</span><code>{String(v)}</code></div>
+            ))}
+            <small className="muted">This helps us reproduce the issue. No financial data is included.</small>
+          </div>
+        ) : null}
+
         <label className="bugContactRow">
           <input type="checkbox" checked={contact} onChange={(event) => setContact(event.target.checked)} />
-          <span>Can we contact you when the issue is resolved?</span>
+          <span>Email me at <strong>{email}</strong> when this is resolved</span>
         </label>
 
         {error ? <div className="passwordFeedback error">{error}</div> : null}
 
         <div className="bugReportActions">
-          <button className="btn" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="btn primary" onClick={submit} disabled={busy}>{busy ? 'Reporting...' : 'Report bug'}</button>
+          <button className="btn" onClick={onClose} disabled={submitting}>Cancel</button>
+          <button className="btn primary" onClick={submit} disabled={!canSubmit}>
+            {submitting ? <><Loader2 size={15} className="bugSpin" /> Submitting…</> : <><Send size={15} /> Submit report</>}
+          </button>
         </div>
       </div>
     </div>
@@ -6665,10 +6845,13 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
   const [currentPage, setCurrentPage] = useState(1)
   const [imageModalSrc, setImageModalSrc] = useState<string | null>(null)
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({})
+  const [messageDraft, setMessageDraft] = useState<Record<string, string>>({})
   const [statusDraft, setStatusDraft] = useState<Record<string, WorkflowStatus>>({})
   const [priorityDraft, setPriorityDraft] = useState<Record<string, BugPriority>>({})
 
-  const parseWorkflow = (item: { status: string; admin_notes?: string | null }): WorkflowStatus => {
+  const parseWorkflow = (item: { status: string; workflow_status?: string | null; admin_notes?: string | null }): WorkflowStatus => {
+    const fromColumn = item.workflow_status?.toLowerCase()
+    if (fromColumn === 'pending' || fromColumn === 'in_progress' || fromColumn === 'in_review' || fromColumn === 'resolved') return fromColumn
     const fromNotes = item.admin_notes?.match(/\[workflow:(pending|in_progress|in_review|resolved)\]/i)?.[1]?.toLowerCase()
     if (fromNotes === 'pending' || fromNotes === 'in_progress' || fromNotes === 'in_review' || fromNotes === 'resolved') return fromNotes
     return item.status === 'completed' ? 'resolved' : 'pending'
@@ -6859,6 +7042,11 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
           <div className="auditDetailHeading">Internal Notes</div>
           <textarea className="textarea bugsNotesArea" placeholder="Add internal notes or updates..." value={notesDraft[selectedReport.id] || ''} onChange={(event) => setNotesDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
         </div>
+
+        <div>
+          <div className="auditDetailHeading">Message to reporter <span className="muted" style={{ fontWeight: 400 }}>(optional · shown on their timeline{selectedReport.contact_when_resolved ? ' & emailed' : ''})</span></div>
+          <textarea className="textarea bugsNotesArea" placeholder="Add a friendly update the reporter will see, e.g. 'Fixed in the latest release — thanks for flagging!'" value={messageDraft[selectedReport.id] || ''} onChange={(event) => setMessageDraft((prev) => ({ ...prev, [selectedReport.id]: event.target.value }))} />
+        </div>
       </div>
 
       <div className="bugsDetailFooter">
@@ -6885,15 +7073,22 @@ function BugsFixesPanel({ admin, embedded = false }: { admin: ReturnType<typeof 
           const severity = priority
           admin.updateBugReport(selectedReport.id, {
             status: workflow === 'resolved' ? 'completed' : 'pending',
+            workflow_status: workflow,
             admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', workflow, priority, severity),
-          })
+          }, { publicNote: messageDraft[selectedReport.id], notifyByEmail: true })
+          setMessageDraft((prev) => ({ ...prev, [selectedReport.id]: '' }))
         }}>
           {admin.busyAction === `bug:${selectedReport.id}` ? 'Saving...' : 'Save Update'}
         </button>
         <button className="btn primary bugsResolveBtn" disabled={admin.busyAction === `bug:${selectedReport.id}`} onClick={() => {
           const priority = priorityDraft[selectedReport.id] || parsePriority(selectedReport)
           const severity = priority
-          admin.updateBugReport(selectedReport.id, { status: 'completed', admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity) })
+          admin.updateBugReport(selectedReport.id, {
+            status: 'completed',
+            workflow_status: 'resolved',
+            admin_notes: withMetaNotes(notesDraft[selectedReport.id] || '', 'resolved', priority, severity),
+          }, { publicNote: messageDraft[selectedReport.id], notifyByEmail: true })
+          setMessageDraft((prev) => ({ ...prev, [selectedReport.id]: '' }))
         }}>
           <Check size={15} /> Mark Resolved
         </button>
@@ -7053,7 +7248,6 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
   const useCompactDashboard = !isPhone && isCompactLaptop
   const [chatReady, setChatReady] = useState(false)
   const [bugModalOpen, setBugModalOpen] = useState(false)
-  const [bugBusy, setBugBusy] = useState(false)
 
   const openChat = () => {
     if (!TAWK_ENABLED) return
@@ -7086,28 +7280,29 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
   }
 
 
-  const submitBugReport = async ({ steps, file, contact }: { steps: string; file: File | null; contact: boolean }) => {
-    if (!userId || !email) return
-    setBugBusy(true)
+  const submitBugReport = async (payload: BugReportPayload): Promise<{ reference_code?: string | null } | null> => {
+    if (!userId || !email) return null
     try {
-      const screenshotDataUrl = file ? await readFileAsDataUrl(file) : null
-      const { error } = await supabase.from('bug_reports').insert({
+      const screenshotDataUrl = payload.file ? await readFileAsDataUrl(payload.file) : null
+      const { data, error } = await supabase.from('bug_reports').insert({
         user_id: userId,
         user_email: email,
-        steps_to_reproduce: steps,
-        contact_when_resolved: contact,
-        screenshot_name: file?.name ?? null,
+        category: payload.category,
+        user_severity: payload.severity,
+        steps_to_reproduce: payload.steps,
+        contact_when_resolved: payload.contact,
+        screenshot_name: payload.file?.name ?? null,
         screenshot_data_url: screenshotDataUrl,
+        diagnostics: payload.diagnostics,
         status: 'pending',
-      })
+      }).select('reference_code').single()
       if (error) throw error
-      setBugModalOpen(false)
       if (admin?.refresh) await admin.refresh()
       window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: 'Bug report submitted' } }))
+      return data ?? {}
     } catch (error: any) {
       window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message: error?.message || 'Failed to submit bug report' } }))
-    } finally {
-      setBugBusy(false)
+      return null
     }
   }
 
@@ -7262,7 +7457,7 @@ export function HelpSupportView({ email, userId, admin }: Pick<SharedProps, 'ema
         </div>
       </div>
 
-      <BugReportModal open={bugModalOpen} email={email || ''} onClose={() => setBugModalOpen(false)} onSubmit={submitBugReport} busy={bugBusy} />
+      <BugReportModal open={bugModalOpen} email={email || ''} onClose={() => setBugModalOpen(false)} onSubmit={submitBugReport} />
     </div>
   )
 }
