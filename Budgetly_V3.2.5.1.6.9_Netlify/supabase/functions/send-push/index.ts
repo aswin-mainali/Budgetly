@@ -7,8 +7,9 @@
 //          (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY injected automatically)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
+import { guardServiceRequest } from '../_shared/auth.ts'
 
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' }
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type, x-cron-secret' }
 const PRIORITY_RANK: Record<string, number> = { low: 0, normal: 1, high: 2, critical: 3 }
 
 const hourInZone = (tz: string, at = new Date()) => {
@@ -24,6 +25,8 @@ const inQuietHours = (prefs: any) => {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  const denied = guardServiceRequest(req, cors)
+  if (denied) return denied
   const url = Deno.env.get('SUPABASE_URL')!
   const db = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 

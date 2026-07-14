@@ -36,6 +36,21 @@ supabase secrets set \
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically.
 
+### Optional: lock down the functions with a shared secret
+
+These functions are deployed `--no-verify-jwt`, so by default anyone who knows the
+URL can invoke them. Set a `CRON_SECRET` to require proof on every call:
+
+```bash
+supabase secrets set CRON_SECRET=$(openssl rand -hex 32)
+```
+
+- **Not set** → functions stay open (unchanged behavior).
+- **Set** → callers must present it via the `x-cron-secret` header or
+  `Authorization: Bearer <CRON_SECRET>`. Callers already sending the service
+  role key as a bearer (pg_cron below, and the internal generate → send-push
+  fan-out) keep working with no change.
+
 ## 4. Deploy
 
 ```bash

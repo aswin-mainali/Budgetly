@@ -5,8 +5,9 @@
 // Deploy:  supabase functions deploy email-digest --no-verify-jwt
 // Secrets: RESEND_API_KEY, DIGEST_FROM (e.g. "Budgetly <alerts@yourdomain.com>")
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { guardServiceRequest } from '../_shared/auth.ts'
 
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' }
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type, x-cron-secret' }
 const APP_URL = 'https://budgetly.netlify.app'
 
 const dueForDigest = (prefs: any, now: Date) => {
@@ -37,6 +38,8 @@ const buildHtml = (name: string, groups: Record<string, any[]>) => {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  const denied = guardServiceRequest(req, cors)
+  if (denied) return denied
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
   const resendKey = Deno.env.get('RESEND_API_KEY')
   const from = Deno.env.get('DIGEST_FROM') || 'Budgetly <onboarding@resend.dev>'
