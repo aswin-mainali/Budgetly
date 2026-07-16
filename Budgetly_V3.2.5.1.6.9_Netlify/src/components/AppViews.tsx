@@ -4452,10 +4452,9 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             <div className="reportsHeadlineIcon"><FileText size={22} /></div>
             <div>
               <h2>Financial Reports</h2>
-              <div className="muted">Polished monthly &amp; yearly summaries — preview live, then export a designed PDF.</div>
+              <div className="muted">See how your money's doing each month and across the year, then download a report whenever you need one.</div>
             </div>
           </div>
-          <span className="reportsHeroBadge"><Sparkles size={14} /> Auto-generated insights</span>
         </div>
 
         <div className="reportsHeroStats">
