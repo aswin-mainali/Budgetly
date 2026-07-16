@@ -7666,9 +7666,13 @@ body.light .txPageCard .dataStickyTable thead th,
   max-width:640px;
   max-height:calc(100dvh - 36px);
   overflow-y:auto;
+  /* keep scroll behaviour but hide the scrollbar */
+  scrollbar-width:none;
+  -ms-overflow-style:none;
   padding:28px 28px 22px;
   border-radius:22px;
 }
+.bugReportModal::-webkit-scrollbar{width:0;height:0;display:none}
 .bugReportBrand{
   text-align:center;
   font-weight:800;
@@ -7704,11 +7708,11 @@ body.light .txPageCard .dataStickyTable thead th,
 
 /* ---- Report-a-bug form controls ---- */
 .bugChipGrid{
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
 }
 .bugChip{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:11px 14px;border-radius:12px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px 12px;border-radius:12px;cursor:pointer;
   border:1px solid var(--border);background:rgba(255,255,255,.03);
   color:var(--text);font-size:14px;font-weight:600;text-align:left;
   transition:border-color .15s, background .15s, box-shadow .15s;
@@ -8075,6 +8079,7 @@ body.light .bugUploadBox{background:#f8fbff}
 @media (max-width: 720px){
   .bugReportModal{padding:22px 16px 16px}
   .bugReportModal h3{font-size:28px}
+  .bugChipGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .bugFixRow{grid-template-columns:1fr}
   .bugReportActions{flex-direction:column-reverse}
   .bugReportActions .btn{width:100%}
