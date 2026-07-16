@@ -196,9 +196,6 @@ export default function LandingPage({ onSignIn, onSignUp, theme, onToggleTheme }
       <main className="lpMain" id="top">
         {/* HERO ---------------------------------------------------------- */}
         <section className="lpHero">
-          <span className="lpBadge">
-            <Sparkles size={14} /> Smart money, simplified
-          </span>
           <h1 className="lpHeroTitle">
             Take control of your money,<br />
             <span>all in one place.</span>
