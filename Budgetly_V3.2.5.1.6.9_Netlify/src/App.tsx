@@ -73,6 +73,19 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme)
   }, [theme])
 
+  // Fade out the instant boot splash (declared in index.html) once the session
+  // check is done and the app is about to paint real content.
+  useEffect(() => {
+    if (!sessionChecked) return
+    const splash = document.getElementById('boot-splash')
+    if (!splash) return
+    const fadeId = window.setTimeout(() => {
+      splash.classList.add('boot-splash--hide')
+      window.setTimeout(() => splash.remove(), 450)
+    }, 60)
+    return () => window.clearTimeout(fadeId)
+  }, [sessionChecked])
+
   useEffect(() => {
     document.body.classList.toggle('mobile-app', isMobile)
     return () => document.body.classList.remove('mobile-app')
