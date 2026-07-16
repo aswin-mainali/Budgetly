@@ -10118,12 +10118,14 @@ body.light .assistantExample { background: rgba(255,255,255,.6); }
    list is capped so a long chat scrolls internally instead of growing the page. */
 @media (max-width: 900px) {
   .insightsTopRow { grid-template-columns: 1fr; }
-  /* Cards are stacked now, so the health card no longer needs to match the
-     assistant's height — let it size to its content instead of leaving a gap. */
+  /* Cards are stacked now, so neither card needs a forced height. The health
+     card sizes to its content, and the assistant flows naturally: its full
+     greeting and conversation are visible and the page scrolls, rather than the
+     chat being squeezed into a short internal-scroll panel. */
   .insightsTopRow > .healthCard { min-height: 0; }
   .heroHealthComponents { margin-top: 4px; }
-  .insightsTopRow > .assistantCard { min-height: 460px; }
-  .insightsTopRow > .assistantCard .assistantMessages { max-height: 60vh; }
+  .insightsTopRow > .assistantCard { min-height: 0; overflow: visible; }
+  .insightsTopRow > .assistantCard .assistantMessages { flex: 0 1 auto; min-height: 0; max-height: none; overflow: visible; }
   .kpiStrip { grid-template-columns: 1fr 1fr; }
   .heroHealthComponents { grid-template-columns: 1fr 1fr; }
 }
