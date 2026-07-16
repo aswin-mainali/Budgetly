@@ -3994,6 +3994,8 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   const fallbackMonth = typeof activeMonth === 'string' && activeMonth.length === 7 ? activeMonth : (availableMonths[0] ?? currentMonth)
   const [selectedMonth, setSelectedMonth] = useState(fallbackMonth)
   const [selectedYear, setSelectedYear] = useState(() => (fallbackMonth || currentMonth).slice(0, 4))
+  const [busyReport, setBusyReport] = useState<null | 'monthly' | 'yearly'>(null)
+  const [doneReport, setDoneReport] = useState<null | 'monthly' | 'yearly'>(null)
 
   useEffect(() => {
     if (!selectedMonth || !availableMonths.includes(selectedMonth)) {
@@ -4304,7 +4306,62 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     exportCanvasPdf(`Budgetly-Yearly-Report-${selectedYear}.pdf`, canvas)
   }
 
+  const runReport = async (kind: 'monthly' | 'yearly', fn: () => Promise<void>) => {
+    if (busyReport) return
+    setBusyReport(kind)
+    setDoneReport(null)
+    try {
+      await fn()
+      setDoneReport(kind)
+      window.setTimeout(() => setDoneReport((current) => (current === kind ? null : current)), 2600)
+    } catch (error) {
+      console.error('Failed to generate report', error)
+    } finally {
+      setBusyReport((current) => (current === kind ? null : current))
+    }
+  }
+
+  const REPORT_CATEGORY_COLORS = ['#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#ef4444', '#14b8a6']
+
+  const savingsRate = monthlyIncome > 0 ? (monthlyNet / monthlyIncome) * 100 : 0
+  const savingsRateClamped = Math.max(0, Math.min(100, savingsRate))
+
+  const pctDelta = (current: number, previous: number | null | undefined) => {
+    if (previous == null || !Number.isFinite(previous) || previous <= 0) return null
+    return ((current - previous) / previous) * 100
+  }
+  const incomeDelta = pctDelta(monthlyIncome, previousMonthTotals?.income)
+  const expenseDelta = pctDelta(monthlyExpenses, previousMonthTotals?.expenses)
+
+  const renderDelta = (delta: number | null, goodWhenUp: boolean) => {
+    if (delta == null || !Number.isFinite(delta)) {
+      return <span className="reportsDelta reportsDeltaFlat"><Minus size={12} /> —</span>
+    }
+    const up = delta > 0.05
+    const down = delta < -0.05
+    const tone = !up && !down ? 'flat' : (up === goodWhenUp ? 'good' : 'bad')
+    const Icon = up ? ArrowUpRight : down ? ArrowDownRight : Minus
+    return (
+      <span className={`reportsDelta reportsDelta${tone === 'good' ? 'Good' : tone === 'bad' ? 'Bad' : 'Flat'}`}>
+        <Icon size={12} /> {Math.abs(delta).toFixed(1)}%
+      </span>
+    )
+  }
+
+  const bestMonth = useMemo(() => {
+    const active = monthSeriesForYear.filter((row) => row.income > 0 || row.expenses > 0)
+    if (!active.length) return null
+    return active.reduce((best, row) => (row.net > best.net ? row : best), active[0])
+  }, [monthSeriesForYear])
+
+  const yearTotals = useMemo(() => {
+    const income = yearTransactions.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    const expenses = yearTransactions.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    return { income, expenses, net: income - expenses }
+  }, [yearTransactions])
+
   const topCategoryRows = monthlyByCategory.slice(0, 3)
+  const topCategoryTotal = topCategoryRows.reduce((sum, row) => sum + row.total, 0)
   const monthListRows = yearSummary.slice(-4).reverse()
   const yearlyTrendData = monthSeriesForYear.map((row) => ({
     ...row,
@@ -4312,19 +4369,42 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   }))
 
   return (
-    <div className="card reportsPage">
-      <div className="row between reportsHeader">
-        <div className="reportsHeadline">
-          <div className="reportsHeadlineIcon"><FileText size={22} /></div>
-          <div>
-            <h2>Reports</h2>
-            <div className="muted">Generate and download monthly and yearly financial summaries.</div>
+    <div className="card reportsPage reportsPageV2">
+      <div className="reportsHero">
+        <div className="reportsHeroGlow" aria-hidden="true" />
+        <div className="reportsHeroTop">
+          <div className="reportsHeadline">
+            <div className="reportsHeadlineIcon"><FileText size={22} /></div>
+            <div>
+              <h2>Financial Reports</h2>
+              <div className="muted">Polished monthly &amp; yearly summaries — preview live, then export a designed PDF.</div>
+            </div>
+          </div>
+          <span className="reportsHeroBadge"><Sparkles size={14} /> Auto-generated insights</span>
+        </div>
+
+        <div className="reportsHeroStats">
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><Activity size={13} /> Net · {helpers.monthLabel(selectedMonth)}</span>
+            <strong className={monthlyNet >= 0 ? 'reportsGood' : 'reportsBad'}>{helpers.fmtMoney(monthlyNet, data.currency)}</strong>
+          </div>
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><PiggyBank size={13} /> Savings rate</span>
+            <strong>{savingsRate.toFixed(0)}%</strong>
+          </div>
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><ReceiptText size={13} /> Transactions · {selectedYear}</span>
+            <strong>{yearTransactions.length}</strong>
+          </div>
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><TrendingUp size={13} /> Best month · {selectedYear}</span>
+            <strong>{bestMonth ? `${bestMonth.label} · ${helpers.fmtMoney(bestMonth.net, data.currency)}` : '—'}</strong>
           </div>
         </div>
       </div>
 
-      <div className={`grid ${isPhone ? '' : 'cols2'} reportsGrid`} style={{ marginTop: 14 }}>
-        <div className="card reportsPanel">
+      <div className={`grid ${isPhone ? '' : 'cols2'} reportsGrid`} style={{ marginTop: 16 }}>
+        <div className="card reportsPanel reportsPanelMonth">
           <div className="row between reportsPanelHeader">
             <div className="reportsPanelTitleWrap">
               <div className="reportsPanelIcon reportsPanelIconMonth"><Calendar size={18} /></div>
@@ -4347,17 +4427,60 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             <div className="kpi income reportsKpi">
               <span>Income</span>
               <strong>{helpers.fmtMoney(monthlyIncome, data.currency)}</strong>
-              <CircleArrowUp size={16} />
+              {renderDelta(incomeDelta, true)}
             </div>
             <div className="kpi expenses reportsKpi">
               <span>Expenses</span>
               <strong>{helpers.fmtMoney(monthlyExpenses, data.currency)}</strong>
-              <CircleArrowDown size={16} />
+              {renderDelta(expenseDelta, false)}
             </div>
             <div className="kpi net reportsKpi">
               <span>Net</span>
               <strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong>
-              <CircleArrowUp size={16} />
+              <span className="reportsDelta reportsDeltaFlat"><PiggyBank size={12} /> {savingsRate.toFixed(0)}% saved</span>
+            </div>
+          </div>
+
+          <div className="reportsSnapshot">
+            <div className="reportsGauge">
+              <ResponsiveContainer width="100%" height={128}>
+                <RadialBarChart
+                  innerRadius="72%"
+                  outerRadius="100%"
+                  data={[{ name: 'savings', value: savingsRateClamped }]}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+                  <RadialBar
+                    background={{ fill: 'rgba(148,163,184,.18)' }}
+                    dataKey="value"
+                    cornerRadius={12}
+                    fill={monthlyNet >= 0 ? '#22c55e' : '#ef4444'}
+                    angleAxisId={0}
+                  />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="reportsGaugeCenter">
+                <strong>{savingsRate.toFixed(0)}%</strong>
+                <small>saved</small>
+              </div>
+            </div>
+            <div className="reportsSnapshotStats">
+              <div className="reportsSnapshotRow">
+                <span>Top category</span>
+                <strong>{topCategoryRows[0]?.name ?? '—'}</strong>
+              </div>
+              <div className="reportsSnapshotRow">
+                <span>Transactions</span>
+                <strong>{monthlyTransactions.length}</strong>
+              </div>
+              <div className="reportsSnapshotRow">
+                <span>vs {helpers.monthLabel(previousMonth)}</span>
+                <strong className={previousMonthTotals ? (monthlyNet - previousMonthTotals.balance >= 0 ? 'reportsGood' : 'reportsBad') : ''}>
+                  {previousMonthTotals ? `${monthlyNet - previousMonthTotals.balance >= 0 ? '+' : ''}${helpers.fmtMoney(monthlyNet - previousMonthTotals.balance, data.currency)}` : '—'}
+                </strong>
+              </div>
             </div>
           </div>
 
@@ -4365,14 +4488,15 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             <div className="reportsPreviewTitle">Top category spend</div>
             {topCategoryRows.map((row, idx) => {
               const pct = monthlyExpenses > 0 ? (row.total / monthlyExpenses) * 100 : 0
+              const color = REPORT_CATEGORY_COLORS[idx % REPORT_CATEGORY_COLORS.length]
               return (
               <div key={row.name} className="reportsPreviewRow reportsCategoryRow">
                 <div className="reportsCategoryMain">
-                  <span className="reportsCategoryIndex">{idx + 1}</span>
+                  <span className="reportsCategoryIndex" style={{ background: `${color}22`, color, borderColor: `${color}55` }}>{idx + 1}</span>
                   <div>
                     <span>{row.name}</span>
                     <div className="reportsCategoryBar">
-                      <i style={{ width: `${Math.max(10, Math.min(100, pct))}%` }} />
+                      <i style={{ width: `${Math.max(6, Math.min(100, pct))}%`, background: color }} />
                     </div>
                   </div>
                 </div>
@@ -4382,15 +4506,28 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
                 </div>
               </div>
               )})}
-            {!monthlyByCategory.length ? <small>No expense categories in this month.</small> : null}
+            {topCategoryRows.length ? (
+              <div className="reportsPreviewFoot">
+                <span>Top {topCategoryRows.length} of {monthlyByCategory.length}</span>
+                <strong>{helpers.fmtMoney(topCategoryTotal, data.currency)}</strong>
+              </div>
+            ) : <small>No expense categories in this month.</small>}
           </div>
 
-          <button className="btn reportsDownloadBtn reportsDownloadBtnGreen" onClick={makeMonthlyReport}>
-            <DownloadIcon size={16} /> Download monthly report
+          <button
+            className="btn reportsDownloadBtn reportsDownloadBtnGreen"
+            onClick={() => runReport('monthly', makeMonthlyReport)}
+            disabled={busyReport === 'monthly'}
+          >
+            {busyReport === 'monthly'
+              ? <><Loader2 size={16} className="reportsSpin" /> Generating PDF…</>
+              : doneReport === 'monthly'
+                ? <><CheckCircle2 size={16} /> Downloaded</>
+                : <><DownloadIcon size={16} /> Download monthly report</>}
           </button>
         </div>
 
-        <div className="card reportsPanel">
+        <div className="card reportsPanel reportsPanelYear">
           <div className="row between reportsPanelHeader">
             <div className="reportsPanelTitleWrap">
               <div className="reportsPanelIcon reportsPanelIconYear"><BarChart3 size={18} /></div>
@@ -4409,50 +4546,88 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             </select>
           </div>
 
+          <div className="reportsStats reportsStatsYear">
+            <div className="kpi income reportsKpi">
+              <span>Income</span>
+              <strong>{helpers.fmtMoney(yearTotals.income, data.currency)}</strong>
+            </div>
+            <div className="kpi expenses reportsKpi">
+              <span>Expenses</span>
+              <strong>{helpers.fmtMoney(yearTotals.expenses, data.currency)}</strong>
+            </div>
+            <div className="kpi net reportsKpi">
+              <span>Net</span>
+              <strong>{helpers.fmtMoney(yearTotals.net, data.currency)}</strong>
+            </div>
+          </div>
+
           <div className="reportsYearGrid">
             <div className="reportsStatChip"><ReceiptText size={14} /> Transactions: {yearTransactions.length}</div>
             <div className="reportsStatChip"><Repeat2 size={14} /> Recurring items: {recurringCount}</div>
           </div>
 
           <div className="reportsTrendBox">
-            <div className="reportsPreviewTitle">Yearly net trend</div>
+            <div className="row between" style={{ alignItems: 'center' }}>
+              <div className="reportsPreviewTitle">Yearly net trend</div>
+              <span className="reportsTrendLegend"><i /> Net savings</span>
+            </div>
             <div className="reportsTrendChart">
-              <ResponsiveContainer width="100%" height={140}>
-                <LineChart data={yearlyTrendData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={150}>
+                <AreaChart data={yearlyTrendData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="reportsNetFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.32} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid vertical={false} stroke="rgba(148,163,184,.24)" />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} interval={0} />
                   <YAxis hide domain={['dataMin - 500', 'dataMax + 500']} />
                   <Tooltip
                     formatter={(value) => value == null ? 'No activity' : helpers.fmtMoney(Number(value), data.currency)}
                     labelFormatter={(label) => `${label} ${selectedYear}`}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="trendNet"
                     connectNulls={false}
                     stroke="#3b82f6"
                     strokeWidth={3}
+                    fill="url(#reportsNetFill)"
                     dot={{ r: 3, fill: '#94a3b8', strokeWidth: 0 }}
                     activeDot={{ r: 5, fill: '#3b82f6' }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           <div className="reportsPreviewList">
             <div className="reportsPreviewTitle">Month-by-month net</div>
-            {monthListRows.map((row) => (
-              <div key={row.month} className="reportsPreviewRow">
+            {monthListRows.map((row) => {
+              const magnitude = Math.min(100, Math.abs(row.net) / Math.max(1, Math.abs(bestMonth?.net || row.net || 1)) * 100)
+              return (
+              <div key={row.month} className="reportsPreviewRow reportsMonthRow">
                 <span>{helpers.monthLabel(row.month)}</span>
+                <div className="reportsMonthMeter">
+                  <i className={row.net >= 0 ? 'pos' : 'neg'} style={{ width: `${Math.max(8, magnitude)}%` }} />
+                </div>
                 <strong className={row.net >= 0 ? 'reportsGood' : 'reportsBad'}>{helpers.fmtMoney(row.net, data.currency)}</strong>
               </div>
-            ))}
+            )})}
             {!yearSummary.length ? <small>No transactions in this year.</small> : null}
           </div>
 
-          <button className="btn reportsDownloadBtn reportsDownloadBtnGreen" onClick={makeYearlyReport}>
-            <DownloadIcon size={16} /> Download yearly report
+          <button
+            className="btn reportsDownloadBtn reportsDownloadBtnGreen"
+            onClick={() => runReport('yearly', makeYearlyReport)}
+            disabled={busyReport === 'yearly'}
+          >
+            {busyReport === 'yearly'
+              ? <><Loader2 size={16} className="reportsSpin" /> Generating PDF…</>
+              : doneReport === 'yearly'
+                ? <><CheckCircle2 size={16} /> Downloaded</>
+                : <><DownloadIcon size={16} /> Download yearly report</>}
           </button>
         </div>
       </div>
