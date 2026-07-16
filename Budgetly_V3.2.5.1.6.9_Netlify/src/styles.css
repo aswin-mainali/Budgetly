@@ -7369,6 +7369,28 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
   .toolsPageBody > .reportsPage .reportsPanel{overflow:visible;}
 }
 
+/* Reports page (V2) flows as one block and scrolls as a single unit inside the
+   fixed tools shell. The older rules above assumed the legacy flex layout with a
+   pinned .reportsHeader and internally-scrolling panels; in V2 that compressed the
+   hero (clipping its stat values) and let the download button escape its panel. */
+.toolsPageBody > .reportsPage.reportsPageV2{
+  display:block;
+  height:100%;
+  max-height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.toolsPageBody > .reportsPage.reportsPageV2 .reportsGrid{
+  overflow:visible;
+  min-height:0;
+}
+.toolsPageBody > .reportsPage.reportsPageV2 .reportsPanel{
+  overflow:visible;
+}
+@media (max-width: 960px){
+  .toolsPageBody > .reportsPage.reportsPageV2{height:auto;max-height:none;overflow:visible;}
+}
+
 /* v3.2 light-mode cleanup for auth + settings pages */
 body.light .authCardModern{
   background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,255,.94));
