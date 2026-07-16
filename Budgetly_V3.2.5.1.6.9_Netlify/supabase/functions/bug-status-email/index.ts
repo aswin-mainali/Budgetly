@@ -91,8 +91,19 @@ Deno.serve(async (req) => {
   const email = report.user_email
   if (!email) return json({ error: 'No email on report' }, 400)
 
-  const { data: authUser } = await db.auth.admin.getUserById(report.user_id)
-  const name = (authUser?.user?.user_metadata?.first_name as string) || email.split('@')[0]
+  // Greet with the name from the app's profile settings; the auth signup metadata
+  // can be stale (users can rename themselves in Settings, which only updates
+  // user_account_profiles), so it is only a fallback.
+  const { data: accountProfile } = await db
+    .from('user_account_profiles')
+    .select('first_name')
+    .eq('user_id', report.user_id)
+    .maybeSingle()
+  let name = (accountProfile?.first_name || '').trim()
+  if (!name) {
+    const { data: authUser } = await db.auth.admin.getUserById(report.user_id)
+    name = ((authUser?.user?.user_metadata?.first_name as string) || '').trim() || email.split('@')[0]
+  }
   const title = report.title || String(report.steps_to_reproduce || 'your report').slice(0, 60)
 
   const res = await fetch('https://api.resend.com/emails', {
