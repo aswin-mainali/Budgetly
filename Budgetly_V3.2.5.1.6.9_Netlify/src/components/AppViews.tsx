@@ -726,31 +726,33 @@ const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
 
 
 const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { previousMonthLabel?: string; previousTotals?: { income: number; expenses: number; balance: number } | null }) => {
-  const LOGICAL_WIDTH = 1240
-  const LOGICAL_HEIGHT = 1754
+  const PW = 1240
+  const PH = 1754
   const canvas = document.createElement('canvas')
-  canvas.width = LOGICAL_WIDTH * 2
-  canvas.height = LOGICAL_HEIGHT * 2
+  canvas.width = PW * 2
+  canvas.height = PH * 2
   const ctx = canvas.getContext('2d')
   if (!ctx) return canvas
   ctx.scale(2, 2)
 
-  const colors = {
-    page: '#ffffff',
-    navy: '#0f2245',
-    text: '#16284a',
-    muted: '#6b7a95',
-    border: '#d8e1ef',
-    cardBg: '#fbfdff',
-    green: '#1b9b63',
-    greenSoft: '#eaf8f0',
-    red: '#ef4f44',
-    redSoft: '#fff2f1',
-    blue: '#3267e3',
-    blueSoft: '#eef3ff',
-    orange: '#f8a736',
-    pie: ['#ff6b4a', '#f7aa38', '#42b35d', '#7b63c7', '#4292e8', '#9aa5bb'],
-    grid: '#e8eef7',
+  // Multi-colour semantic palette on a single light surface (no dark bands).
+  const c = {
+    bg: '#f4f6fb',
+    card: '#ffffff',
+    headerBg: '#eef2fb',
+    ink: '#0f2245',
+    text: '#1c2c47',
+    sub: '#5a6b86',
+    muted: '#93a1b8',
+    line: '#e5ebf3',
+    soft: '#f5f8fc',
+    white: '#ffffff',
+    green: '#0fae6f', greenSoft: '#e7f8f0',
+    red: '#f0524b', redSoft: '#fdeceb',
+    blue: '#3b73f0', blueSoft: '#eaf1ff',
+    violet: '#7c5cf0', violetSoft: '#efeaff',
+    amber: '#f6a723', amberSoft: '#fdf0d6',
+    pie: ['#3b73f0', '#0fae6f', '#f6a723', '#7c5cf0', '#f0524b', '#14b8c4'],
   } as const
 
   const {
@@ -770,313 +772,386 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   const safeExpenses = Math.max(0, Number(totals.expenses || 0))
   const safeNet = Number(totals.balance || 0)
   const savingsRate = safeIncome > 0 ? (safeNet / safeIncome) * 100 : 0
-  const statusText = safeNet >= 0 ? 'Good Savings Month' : 'Watch Spending Closely'
+  const statusText = safeNet >= 0 ? 'Healthy Cash Flow' : 'Watch Spending'
 
-  const M = 36
-  const G = 18
-  const pageW = LOGICAL_WIDTH - M * 2
-
-  const text = (value: string, x: number, y: number, opts?: { size?: number; weight?: string; color?: string; align?: CanvasTextAlign }) => {
-    const fontSize = Math.max(13, (opts?.size ?? 16) + 1)
-    ctx.fillStyle = opts?.color ?? colors.text
-    ctx.font = `${opts?.weight ?? '600'} ${fontSize}px Inter, Arial, sans-serif`
-    ctx.textAlign = opts?.align ?? 'left'
+  // ---- primitive helpers -------------------------------------------------
+  const text = (value: string, x: number, y: number, o?: { size?: number; weight?: string; color?: string; align?: CanvasTextAlign }) => {
+    ctx.fillStyle = o?.color ?? c.text
+    ctx.font = `${o?.weight ?? '600'} ${o?.size ?? 16}px Inter, "Helvetica Neue", Arial, sans-serif`
+    ctx.textAlign = o?.align ?? 'left'
     ctx.fillText(value, x, y)
     ctx.textAlign = 'left'
   }
-  const line = (x1: number, y1: number, x2: number, y2: number, color = colors.border) => {
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke()
+  const measure = (value: string, size: number, weight = '600') => {
+    ctx.font = `${weight} ${size}px Inter, "Helvetica Neue", Arial, sans-serif`
+    return ctx.measureText(value).width
   }
-  const card = (x: number, y: number, w: number, h: number, r = 16, fill = colors.cardBg, stroke = colors.border) => {
-    fillRoundedRect(ctx, x, y, w, h, r, fill)
-    strokeRoundedRect(ctx, x, y, w, h, r, stroke, 1)
+  const line = (x1: number, y1: number, x2: number, y2: number, color = c.line, w = 1) => {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke()
+  }
+  const card = (x: number, y: number, w: number, h: number, o?: { r?: number; fill?: string; stroke?: string; shadow?: boolean }) => {
+    const r = o?.r ?? 18
+    if (o?.shadow !== false) {
+      ctx.save()
+      ctx.shadowColor = 'rgba(15,34,69,0.10)'
+      ctx.shadowBlur = 22
+      ctx.shadowOffsetY = 8
+      fillRoundedRect(ctx, x, y, w, h, r, o?.fill ?? c.card)
+      ctx.restore()
+    } else {
+      fillRoundedRect(ctx, x, y, w, h, r, o?.fill ?? c.card)
+    }
+    strokeRoundedRect(ctx, x, y, w, h, r, o?.stroke ?? c.line, 1)
+  }
+  const sectionTitle = (x: number, y: number, label: string, accent: string, sub?: string) => {
+    fillRoundedRect(ctx, x, y - 12, 4, 16, 2, accent)
+    text(label, x + 14, y + 2, { size: 15.5, weight: '800', color: c.ink })
+    if (sub) text(sub, x + 14, y + 21, { size: 11.5, weight: '600', color: c.muted })
+  }
+  const arrow = (cx: number, cy: number, up: boolean, color: string, s = 5) => {
+    ctx.beginPath()
+    if (up) { ctx.moveTo(cx, cy - s); ctx.lineTo(cx + s, cy + s); ctx.lineTo(cx - s, cy + s) }
+    else { ctx.moveTo(cx, cy + s); ctx.lineTo(cx + s, cy - s); ctx.lineTo(cx - s, cy - s) }
+    ctx.closePath(); ctx.fillStyle = color; ctx.fill()
+  }
+  const checkMark = (cx: number, cy: number, color: string) => {
+    ctx.beginPath(); ctx.moveTo(cx - 4, cy); ctx.lineTo(cx - 1, cy + 3.5); ctx.lineTo(cx + 5, cy - 3.5)
+    ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); ctx.lineCap = 'butt'
   }
 
-  const comparisonText = (current: number, prev?: number | null) => {
-    if (typeof prev !== 'number' || !Number.isFinite(prev) || prev <= 0 || !previousMonthLabel) return null
-    const delta = ((current - prev) / prev) * 100
-    const sign = delta > 0 ? '+' : ''
-    return `vs ${previousMonthLabel} ${sign}${delta.toFixed(1)}%`
-  }
-
+  // ---- data prep ---------------------------------------------------------
   const categoryRows = (() => {
-    const source = (donutRows?.length ? donutRows : [{ label: 'Other', value: safeExpenses || 1 }]).slice(0, 6)
+    const source = (donutRows?.length ? donutRows : [{ label: 'Uncategorized', value: safeExpenses || 1 }]).slice(0, 6)
     const normalized = source.map((row) => ({ ...row, value: Math.max(0, Number(row.value || 0)) }))
     const total = normalized.reduce((s, r) => s + r.value, 0) || 1
-    return normalized.map((row, index) => ({
-      ...row,
-      color: colors.pie[index % colors.pie.length],
-      pct: (row.value / total) * 100,
-    }))
+    return normalized.map((row, index) => ({ ...row, color: c.pie[index % c.pie.length], pct: (row.value / total) * 100 }))
   })()
-
   const weekRows = (comboRows?.length ? comboRows : [{ label: 'Week 1', income: safeIncome, expenses: safeExpenses, line: Math.max(safeNet, 0) }]).slice(0, 4)
-  const monthRange = periodLabel || ''
 
-  const ReportStatusBadge = (x: number, y: number, label: string) => {
-    card(x, y, 236, 42, 11, '#e8f7ef', '#a8dcc1')
-    fillRoundedRect(ctx, x + 16, y + 12, 18, 18, 9, colors.green)
-    text('✓', x + 25, y + 25, { size: 12, weight: '700', color: '#ffffff', align: 'center' })
-    text(label, x + 46, y + 27, { size: 31/2, weight: '700', color: '#1a8257' })
-  }
+  // ---- layout grid -------------------------------------------------------
+  const PAD = 40
+  const CW = PW - PAD * 2
+  const HB = 216
+  const FB = 72
+  const GAP = 20
+  const contentTop = HB + 26
+  const colGap = 20
+  const colW = (CW - colGap) / 2
+  const colL = PAD
+  const colR = PAD + colW + colGap
 
-  let y = M
+  const kpiH = 150
+  const chartsH = 470
+  const suppH = 366
+  const bottomH = 368
+  const yKpi = contentTop
+  const yCharts = yKpi + kpiH + GAP
+  const ySupp = yCharts + chartsH + GAP
+  const yBottom = ySupp + suppH + GAP
+
   const iconImage = await loadCanvasImage(REPORT_FAVICON_SRC)
-  ctx.fillStyle = colors.page
-  ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT)
 
-  const ReportHeader = () => {
-    const h = 196
-    const x = M + 18
-    const w = pageW - 36
+  // single page tone everywhere
+  ctx.fillStyle = c.bg
+  ctx.fillRect(0, 0, PW, PH)
+
+  // ---- header (same light tone, colourful accent rule) -------------------
+  const Header = () => {
+    ctx.fillStyle = c.headerBg
+    ctx.fillRect(0, 0, PW, HB)
+    const g1 = ctx.createRadialGradient(PW - 160, -20, 20, PW - 160, -20, 420)
+    g1.addColorStop(0, 'rgba(255,255,255,0.6)')
+    g1.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = g1; ctx.fillRect(0, 0, PW, HB)
+
     const iconSize = 44
-    if (iconImage) ctx.drawImage(iconImage, x, y + 18, iconSize, iconSize)
-    else fillRoundedRect(ctx, x, y + 18, iconSize, iconSize, 10, '#0ebc6f')
-    text(appName, x + 58, y + 47, { size: 46/2, weight: '700', color: colors.navy })
-    text(userEmail || '', x + w - 2, y + 46, { size: 14, weight: '600', color: colors.text, align: 'right' })
-    text(reportTitle, x, y + 115, { size: 78/2, weight: '700', color: colors.navy })
-    text(`📅  ${monthRange}`, x, y + 156, { size: 48/2, weight: '700', color: colors.green })
-    text(`Generated on ${generatedAt}`, x, y + 188, { size: 13, weight: '600', color: colors.muted })
-    ReportStatusBadge(x + w - 248, y + 78, statusText)
-    y += h + G
+    fillRoundedRect(ctx, PAD, 30, iconSize, iconSize, 12, c.white)
+    strokeRoundedRect(ctx, PAD, 30, iconSize, iconSize, 12, c.line, 1)
+    if (iconImage) ctx.drawImage(iconImage, PAD + 5, 35, iconSize - 10, iconSize - 10)
+    text(appName, PAD + iconSize + 16, 52, { size: 25, weight: '800', color: c.ink })
+    text('Personal finance report', PAD + iconSize + 16, 71, { size: 11.5, weight: '600', color: c.sub })
+
+    text(reportTitle, PAD, 138, { size: 40, weight: '800', color: c.ink })
+    const pLabel = periodLabel || ''
+    const pW = 30 + measure(pLabel, 14, '800') + 16
+    fillRoundedRect(ctx, PAD, 156, pW, 34, 17, c.greenSoft)
+    ctx.beginPath(); ctx.arc(PAD + 17, 156 + 17, 3.6, 0, Math.PI * 2); ctx.fillStyle = c.green; ctx.fill()
+    text(pLabel, PAD + 30, 156 + 22, { size: 14, weight: '800', color: '#0b7a4e' })
+    text(`Generated ${generatedAt}`, PAD, 206, { size: 12, weight: '600', color: c.muted })
+
+    if (userEmail) text(userEmail, PW - PAD, 50, { size: 13.5, weight: '600', color: c.sub, align: 'right' })
+    const good = safeNet >= 0
+    const stTone = good ? c.green : c.red
+    const stSoft = good ? c.greenSoft : c.redSoft
+    const stW = measure(statusText, 13.5, '800') + 54
+    const stX = PW - PAD - stW
+    const stY = 70
+    fillRoundedRect(ctx, stX, stY, stW, 40, 20, stSoft)
+    strokeRoundedRect(ctx, stX, stY, stW, 40, 20, good ? '#c7e8d7' : '#f6cfcb', 1)
+    ctx.beginPath(); ctx.arc(stX + 26, stY + 20, 11, 0, Math.PI * 2); ctx.fillStyle = c.white; ctx.fill()
+    if (good) checkMark(stX + 26, stY + 20, stTone)
+    else text('!', stX + 26, stY + 25, { size: 15, weight: '800', color: stTone, align: 'center' })
+    text(statusText, stX + 44, stY + 25, { size: 13.5, weight: '800', color: good ? '#0b7a4e' : '#c0362f' })
   }
 
-  const KpiCard = (x: number, yTop: number, w: number, title: string, value: string, tone: 'green' | 'red' | 'blue', cmp?: string | null) => {
-    const bg = tone === 'green' ? '#f5fcf8' : tone === 'red' ? '#fff7f6' : '#f5f8ff'
-    const br = tone === 'green' ? '#cbe9d9' : tone === 'red' ? '#ffd7d2' : '#cddcff'
-    const accent = tone === 'green' ? colors.green : tone === 'red' ? colors.red : colors.blue
-    card(x, yTop, w, 134, 14, bg, br)
-    fillRoundedRect(ctx, x + 14, yTop + 20, 44, 44, 22, accent)
-    text('•', x + 36, yTop + 47, { size: 40/2, weight: '700', color: '#ffffff', align: 'center' })
-    if (title === 'Net Savings / Ending Balance') {
-      text('Net Savings /', x + 72, yTop + 35, { size: 14, color: '#33476b' })
-      text('Ending Balance', x + 72, yTop + 52, { size: 14, color: '#33476b' })
+  // ---- KPI strip ---------------------------------------------------------
+  const KpiCard = (x: number, title: string, value: string, tone: string, toneSoft: string, glyph: 'up' | 'down' | 'dollar' | 'pct', cur: number, prev: number | null | undefined, higherIsGood: boolean) => {
+    const w = (CW - GAP * 3) / 4
+    card(x, yKpi, w, kpiH, { r: 18 })
+    fillRoundedRect(ctx, x, yKpi + 16, 4, kpiH - 32, 2, tone)
+    fillRoundedRect(ctx, x + 20, yKpi + 22, 40, 40, 12, toneSoft)
+    const gx = x + 40, gy = yKpi + 42
+    if (glyph === 'up') arrow(gx, gy - 1, true, tone, 6)
+    else if (glyph === 'down') arrow(gx, gy + 1, false, tone, 6)
+    else text(glyph === 'dollar' ? '$' : '%', gx, gy + 6, { size: 19, weight: '800', color: tone, align: 'center' })
+    text(title, x + 72, yKpi + 40, { size: 13, weight: '700', color: c.sub })
+    text(value, x + 22, yKpi + 96, { size: 27, weight: '800', color: c.ink })
+    const dy = yKpi + 120
+    if (prev != null && Number.isFinite(prev) && prev > 0) {
+      const d = ((cur - prev) / prev) * 100
+      const up = d >= 0
+      const isGood = up === higherIsGood
+      const col = isGood ? c.green : c.red
+      const bg = isGood ? c.greenSoft : c.redSoft
+      const label = `${up ? '+' : ''}${d.toFixed(1)}%`
+      fillRoundedRect(ctx, x + 22, dy, measure(label, 12, '800') + 26, 22, 11, bg)
+      arrow(x + 22 + 12, dy + 11, up, col, 4)
+      text(label, x + 22 + 22, dy + 15, { size: 12, weight: '800', color: col })
+      if (previousMonthLabel) text(`vs ${previousMonthLabel}`, x + 22 + measure(label, 12, '800') + 34, dy + 15, { size: 11, weight: '600', color: c.muted })
     } else {
-      text(title, x + 72, yTop + 42, { size: 17, color: '#33476b' })
+      text('Current period', x + 22, dy + 15, { size: 11.5, weight: '600', color: c.muted })
     }
-    text(value, x + 72, yTop + 82, { size: 44/2, weight: '700', color: accent })
-    if (cmp) text(`↗ ${cmp}`, x + 72, yTop + 112, { size: 13, weight: '700', color: accent })
   }
-
-  const KpiSummaryRow = () => {
-    const cardW = (pageW - 36 - (G * 3)) / 4
-    const startX = M + 18
-    const prevIncome = previousTotals?.income ?? null
-    const prevExpenses = previousTotals?.expenses ?? null
-    const prevNet = previousTotals?.balance ?? null
+  const KpiRow = () => {
+    const w = (CW - GAP * 3) / 4
+    KpiCard(PAD, 'Total Income', fmtMoney(safeIncome), c.green, c.greenSoft, 'up', safeIncome, previousTotals?.income, true)
+    KpiCard(PAD + (w + GAP), 'Total Expenses', fmtMoney(safeExpenses), c.red, c.redSoft, 'down', safeExpenses, previousTotals?.expenses, false)
+    KpiCard(PAD + (w + GAP) * 2, 'Net Savings', fmtMoney(safeNet), safeNet >= 0 ? c.blue : c.red, safeNet >= 0 ? c.blueSoft : c.redSoft, 'dollar', safeNet, previousTotals?.balance, true)
     const prevRate = previousTotals && previousTotals.income > 0 ? (previousTotals.balance / previousTotals.income) * 100 : null
-    KpiCard(startX, y, cardW, 'Total Income', fmtMoney(safeIncome), 'green', comparisonText(safeIncome, prevIncome))
-    KpiCard(startX + (cardW + G), y, cardW, 'Total Expenses', fmtMoney(safeExpenses), 'red', comparisonText(safeExpenses, prevExpenses))
-    KpiCard(startX + (cardW + G) * 2, y, cardW, 'Net Savings / Ending Balance', fmtMoney(safeNet), 'green', comparisonText(safeNet, prevNet))
-    KpiCard(startX + (cardW + G) * 3, y, cardW, 'Savings Rate', fmtPct(savingsRate), 'blue', comparisonText(savingsRate, prevRate))
-    y += 134 + G
+    KpiCard(PAD + (w + GAP) * 3, 'Savings Rate', fmtPct(savingsRate), c.violet, c.violetSoft, 'pct', savingsRate, prevRate, true)
   }
 
-  const ExpenseBreakdownCard = (x: number, yTop: number, w: number, h: number) => {
-    card(x, yTop, w, h)
-    text('Expense Breakdown', x + 16, yTop + 34, { size: 22/2, weight: '700', color: colors.navy })
-    const cx = x + 130
-    const cy = yTop + 170
-    const outer = 94
-    const inner = 52
+  // ---- Expense breakdown (donut) -----------------------------------------
+  const ExpenseCard = () => {
+    const x = colL, y = yCharts, w = colW, h = chartsH
+    card(x, y, w, h)
+    sectionTitle(x + 22, y + 34, 'Expense Breakdown', c.blue, 'Where your money went this period')
+    const cx = x + 158, cy = y + 258
+    const outer = 116, inner = 74
     const total = categoryRows.reduce((s, r) => s + r.value, 0) || 1
-    let angle = -Math.PI / 2
+    let ang = -Math.PI / 2
     categoryRows.forEach((row) => {
       const slice = (row.value / total) * Math.PI * 2
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, outer, angle, angle + slice); ctx.closePath(); ctx.fillStyle = row.color; ctx.fill();
-      angle += slice
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, outer, ang, ang + slice); ctx.closePath(); ctx.fillStyle = row.color; ctx.fill()
+      ctx.save(); ctx.strokeStyle = c.white; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(ang) * outer, cy + Math.sin(ang) * outer); ctx.stroke(); ctx.restore()
+      ang += slice
     })
-    ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill()
-    text('Total Expenses', cx, cy - 10, { size: 12, color: colors.muted, align: 'center' })
-    text(fmtMoney(safeExpenses), cx, cy + 20, { size: 36/2, weight: '700', color: colors.navy, align: 'center' })
-    categoryRows.forEach((row, index) => {
-      const yy = yTop + 72 + index * 42
-      fillRoundedRect(ctx, x + 248, yy - 10, 10, 10, 5, row.color)
-      text(row.label, x + 268, yy, { size: 12, weight: '700', color: '#26395f' })
-      text(`${Math.round(row.pct)}%`, x + w - 18, yy, { size: 12, weight: '700', color: '#516180', align: 'right' })
-      text(fmtMoney(row.value, true), x + 268, yy + 18, { size: 11, color: '#5f6e88' })
+    ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2); ctx.fillStyle = c.white; ctx.fill()
+    text('TOTAL SPENT', cx, cy - 12, { size: 10.5, weight: '700', color: c.muted, align: 'center' })
+    text(fmtMoney(safeExpenses), cx, cy + 16, { size: 24, weight: '800', color: c.ink, align: 'center' })
+    text(`${categoryRows.length} categories`, cx, cy + 38, { size: 11, weight: '600', color: c.sub, align: 'center' })
+    const lx = x + 300
+    categoryRows.forEach((row, i) => {
+      const yy = y + 96 + i * 44
+      fillRoundedRect(ctx, lx, yy - 10, 12, 12, 4, row.color)
+      text(row.label.length > 16 ? `${row.label.slice(0, 15)}…` : row.label, lx + 22, yy, { size: 13, weight: '700', color: c.text })
+      text(fmtMoney(row.value, true), lx + 22, yy + 18, { size: 11.5, weight: '600', color: c.sub })
+      text(`${Math.round(row.pct)}%`, x + w - 22, yy, { size: 13, weight: '800', color: row.color, align: 'right' })
     })
-    card(x + 16, yTop + h - 56, w - 32, 40, 10, '#f7faff', '#d6e0f0')
-    text('Total Expenses', x + 30, yTop + h - 31, { size: 14, weight: '700', color: '#33476b' })
-    text(fmtMoney(safeExpenses, true), x + w - 28, yTop + h - 31, { size: 15, weight: '700', color: colors.navy, align: 'right' })
+    fillRoundedRect(ctx, x + 20, y + h - 58, w - 40, 40, 12, c.soft)
+    text('Total Expenses', x + 36, y + h - 33, { size: 13, weight: '700', color: c.sub })
+    text(fmtMoney(safeExpenses, true), x + w - 36, y + h - 33, { size: 15, weight: '800', color: c.ink, align: 'right' })
   }
 
-  const IncomeVsExpensesWeeklyCard = (x: number, yTop: number, w: number, h: number) => {
-    card(x, yTop, w, h)
-    text(comboTitle || 'Income vs Expenses (by Week)', x + 16, yTop + 34, { size: 22/2, weight: '700', color: colors.navy })
-    const legendY = yTop + 56
-    fillRoundedRect(ctx, x + 16, legendY, 20, 8, 3, colors.green); text('Income', x + 44, legendY + 8, { size: 12, color: '#43577a' })
-    fillRoundedRect(ctx, x + 126, legendY, 20, 8, 3, '#f47257'); text('Expenses', x + 154, legendY + 8, { size: 12, color: '#43577a' })
-    line(x + 256, legendY + 4, x + 280, legendY + 4, colors.blue); text('Net Savings', x + 290, legendY + 8, { size: 12, color: '#43577a' })
+  // ---- Spending vs income (combo) ----------------------------------------
+  const ComboCard = () => {
+    const x = colR, y = yCharts, w = colW, h = chartsH
+    card(x, y, w, h)
+    sectionTitle(x + 22, y + 34, comboTitle || 'Spending vs Income', c.green, 'Cash flow across the period')
+    const ly = y + 62
+    fillRoundedRect(ctx, x + 22, ly, 20, 9, 4, c.green); text('Income', x + 48, ly + 8, { size: 11.5, weight: '600', color: c.sub })
+    fillRoundedRect(ctx, x + 130, ly, 20, 9, 4, c.red); text('Expenses', x + 156, ly + 8, { size: 11.5, weight: '600', color: c.sub })
+    line(x + 250, ly + 4, x + 276, ly + 4, c.blue, 2.4); ctx.beginPath(); ctx.arc(x + 263, ly + 4, 3, 0, Math.PI * 2); ctx.fillStyle = c.blue; ctx.fill()
+    text('Net savings', x + 284, ly + 8, { size: 11.5, weight: '600', color: c.sub })
 
-    const monthShort = monthRange.split(' ')[0] || 'Apr'
-    const plotX = x + 64
-    const plotY = yTop + 92
-    const plotW = w - 94
-    const plotH = 190
-    const rawMaxValue = Math.max(1, ...weekRows.map((r) => Math.max(Number(r.income || 0), Number(r.expenses || 0), Number(r.line || 0))))
-    const maxValue = Math.max(2000, Math.ceil(rawMaxValue / 2000) * 2000)
-    const yTicks = Array.from({ length: Math.floor(maxValue / 2000) + 1 }, (_, i) => i * 2000)
-    yTicks.forEach((tick) => {
-      const yy = plotY + plotH - ((tick / maxValue) * plotH)
-      line(plotX, yy, plotX + plotW, yy, colors.grid)
-      text(fmtMoney(tick).replace('.00', ''), plotX - 10, yy + 4, { size: 11, color: '#7384a1', align: 'right' })
-    })
-    line(plotX, plotY, plotX, plotY + plotH, '#c9d6ea')
-    line(plotX, plotY + plotH, plotX + plotW, plotY + plotH, '#c9d6ea')
-    const step = plotW / Math.max(1, weekRows.length)
-    const linePoints: Array<{ x: number; y: number; value: number }> = []
-    weekRows.forEach((row, idx) => {
-      const bx = plotX + idx * step + 16
-      const bw = 20
-      const ih = (Math.max(0, row.income) / maxValue) * (plotH - 2)
-      const eh = (Math.max(0, row.expenses) / maxValue) * (plotH - 2)
-      const incomeTop = plotY + plotH - ih
-      const expenseTop = plotY + plotH - eh
-      fillRoundedRect(ctx, bx, incomeTop, bw, ih, 4, colors.green)
-      fillRoundedRect(ctx, bx + bw + 7, expenseTop, bw, eh, 4, '#f47257')
-      text(row.label, bx + 18, plotY + plotH + 18, { size: 13, weight: '700', color: '#43577a', align: 'center' })
-      const start = idx * 7 + 1
-      const end = Math.min((idx + 1) * 7, 30)
-      text(row.subLabel || `(${monthShort} ${start} - ${monthShort} ${end})`, bx + 18, plotY + plotH + 34, { size: 11, color: '#7b8ba6', align: 'center' })
-      const lx = bx + bw + 3
-      const netValue = Number.isFinite(row.line) ? Math.max(0, Number(row.line)) : Math.max(0, Number(row.income || 0) - Number(row.expenses || 0))
-      const ly = plotY + plotH - (netValue / maxValue) * (plotH - 2)
-      if (Number.isFinite(ly)) linePoints.push({ x: lx, y: ly, value: netValue })
-    })
-    if (linePoints.length) {
-      ctx.beginPath()
-      linePoints.forEach((point, index) => {
-        if (index === 0) ctx.moveTo(point.x, point.y)
-        else ctx.lineTo(point.x, point.y)
-      })
-      ctx.strokeStyle = colors.blue
-      ctx.lineWidth = 2.2
-      ctx.stroke()
-      linePoints.forEach((point) => {
-        ctx.beginPath()
-        ctx.arc(point.x, point.y, 3.3, 0, Math.PI * 2)
-        ctx.fillStyle = colors.blue
-        ctx.fill()
-      })
+    const plotX = x + 66, plotY = y + 100, plotW = w - 100, plotH = 232
+    const rawMax = Math.max(1, ...weekRows.map((r) => Math.max(Number(r.income || 0), Number(r.expenses || 0), Number(r.line || 0))))
+    const maxValue = Math.max(2000, Math.ceil(rawMax / 2000) * 2000)
+    const ticks = Math.min(5, Math.floor(maxValue / 2000)) || 1
+    for (let i = 0; i <= ticks; i++) {
+      const tv = (maxValue / ticks) * i
+      const yy = plotY + plotH - (tv / maxValue) * plotH
+      line(plotX, yy, plotX + plotW, yy, c.line)
+      text(fmtMoney(tv).replace('.00', ''), plotX - 12, yy + 4, { size: 10.5, weight: '600', color: c.muted, align: 'right' })
     }
+    const step = plotW / Math.max(1, weekRows.length)
+    const pts: Array<{ x: number; y: number }> = []
+    weekRows.forEach((row, i) => {
+      const bx = plotX + i * step + step / 2
+      const bw = 22
+      const ih = (Math.max(0, Number(row.income || 0)) / maxValue) * plotH
+      const eh = (Math.max(0, Number(row.expenses || 0)) / maxValue) * plotH
+      fillRoundedRect(ctx, bx - bw - 3, plotY + plotH - ih, bw, ih, 5, c.green)
+      fillRoundedRect(ctx, bx + 3, plotY + plotH - eh, bw, eh, 5, c.red)
+      text(row.label, bx, plotY + plotH + 20, { size: 12, weight: '700', color: c.sub, align: 'center' })
+      if (row.subLabel) text(row.subLabel, bx, plotY + plotH + 36, { size: 9.5, weight: '600', color: c.muted, align: 'center' })
+      const nv = Number.isFinite(row.line) ? Math.max(0, Number(row.line)) : Math.max(0, Number(row.income || 0) - Number(row.expenses || 0))
+      pts.push({ x: bx, y: plotY + plotH - (nv / maxValue) * plotH })
+    })
+    if (pts.length > 1) {
+      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)))
+      ctx.strokeStyle = c.blue; ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.stroke()
+    }
+    pts.forEach((p) => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fillStyle = c.white; ctx.fill(); ctx.strokeStyle = c.blue; ctx.lineWidth = 2.2; ctx.stroke() })
 
-    card(x + 16, yTop + h - 64, w - 32, 48, 10, '#f8fbff', '#d6e0f0')
-    const colW = (w - 56) / 3
-    text('Total Income', x + 28, yTop + h - 42, { size: 12, color: '#5b6c88' }); text(fmtMoney(safeIncome), x + 28, yTop + h - 23, { size: 15, weight: '700', color: colors.green })
-    text('Total Expenses', x + 28 + colW, yTop + h - 42, { size: 12, color: '#5b6c88' }); text(fmtMoney(safeExpenses), x + 28 + colW, yTop + h - 23, { size: 15, weight: '700', color: colors.red })
-    text('Net Savings', x + 28 + (colW * 2), yTop + h - 42, { size: 12, color: '#5b6c88' }); text(fmtMoney(safeNet), x + 28 + (colW * 2), yTop + h - 23, { size: 15, weight: '700', color: colors.blue })
+    const sy = y + h - 62
+    fillRoundedRect(ctx, x + 20, sy, w - 40, 46, 12, c.soft)
+    const cw = (w - 40) / 3
+    text('INCOME', x + 36, sy + 17, { size: 10, weight: '700', color: c.muted }); text(fmtMoney(safeIncome), x + 36, sy + 37, { size: 15, weight: '800', color: c.green })
+    text('EXPENSES', x + 36 + cw, sy + 17, { size: 10, weight: '700', color: c.muted }); text(fmtMoney(safeExpenses), x + 36 + cw, sy + 37, { size: 15, weight: '800', color: c.red })
+    text('NET SAVINGS', x + 36 + cw * 2, sy + 17, { size: 10, weight: '700', color: c.muted }); text(fmtMoney(safeNet), x + 36 + cw * 2, sy + 37, { size: 15, weight: '800', color: safeNet >= 0 ? c.blue : c.red })
   }
 
-  const MainChartsRow = () => {
-    const w = (pageW - 54) / 2
-    const h = 470
-    ExpenseBreakdownCard(M + 18, y, w, h)
-    IncomeVsExpensesWeeklyCard(M + 36 + w, y, w, h)
-    y += h + G
-  }
-
-  const GoalsProgressCard = (x: number, yTop: number, w: number, h: number) => {
-    card(x, yTop, w, h, 14, '#f8fdfb', '#d4eadf')
-    text('◉  Goals Progress', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
-    const rows = (goalRows.length ? goalRows : [{ label: 'No goal yet', target: 1, current: 0 }]).slice(0, 2)
-    rows.forEach((goal, idx) => {
-      const gy = yTop + 62 + idx * 92
-      const ratio = goal.target > 0 ? Math.min(1, Math.max(0, goal.current / goal.target)) : 0
-      card(x + 14, gy - 8, w - 28, 82, 10, '#ffffff', '#dce7f4')
-      text(goal.label, x + 24, gy + 14, { size: 12, weight: '700', color: '#24385d' })
-      text(`Save ${fmtMoney(goal.target)}`, x + w - 24, gy + 14, { size: 12, weight: '700', color: idx === 0 ? colors.green : colors.blue, align: 'right' })
-      text(`${fmtMoney(goal.current, true)} of ${fmtMoney(goal.target, true)}`, x + 24, gy + 34, { size: 12, color: '#677893' })
-      fillRoundedRect(ctx, x + 24, gy + 44, w - 96, 10, 5, '#dfe7f5')
-      fillRoundedRect(ctx, x + 24, gy + 44, (w - 96) * ratio, 10, 5, idx === 0 ? colors.green : colors.blue)
-      text(fmtPct(ratio * 100), x + w - 24, gy + 54, { size: 14, weight: '700', color: '#23406b', align: 'right' })
+  // ---- Goals progress (shows up to 3, closest to completion) -------------
+  const GoalsCard = () => {
+    const x = colL, y = ySupp, w = colW, h = suppH
+    card(x, y, w, h)
+    sectionTitle(x + 22, y + 34, 'Goals Progress', c.green, 'Closest to completion')
+    const rows = (goalRows.length ? goalRows : [{ label: 'No goals yet', target: 1, current: 0, emoji: null }]).slice(0, 3)
+    const tones = [c.green, c.blue, c.violet]
+    const softs = [c.greenSoft, c.blueSoft, c.violetSoft]
+    const rowH = 90
+    const usable = h - 66 - 20
+    const startY = y + 66 + Math.max(0, (usable - rows.length * rowH) / 2)
+    rows.forEach((g, i) => {
+      const gy = startY + i * rowH
+      const tone = tones[i % 3], soft = softs[i % 3]
+      const ratio = g.target > 0 ? Math.min(1, Math.max(0, g.current / g.target)) : 0
+      card(x + 18, gy, w - 36, rowH - 14, { r: 14, fill: c.soft, stroke: c.line, shadow: false })
+      fillRoundedRect(ctx, x + 34, gy + 17, 40, 40, 12, soft)
+      text(g.emoji || '◎', x + 54, gy + 43, { size: 19, weight: '700', color: tone, align: 'center' })
+      text(g.label.length > 22 ? `${g.label.slice(0, 21)}…` : g.label, x + 86, gy + 29, { size: 14, weight: '800', color: c.ink })
+      text(`${fmtMoney(g.current)} of ${fmtMoney(g.target)}`, x + 86, gy + 49, { size: 11.5, weight: '600', color: c.sub })
+      text(fmtPct(ratio * 100), x + w - 34, gy + 31, { size: 15, weight: '800', color: tone, align: 'right' })
+      const barX = x + 86, barW = w - 130
+      fillRoundedRect(ctx, barX, gy + 59, barW, 8, 4, '#dfe6f0')
+      fillRoundedRect(ctx, barX, gy + 59, Math.max(8, barW * ratio), 8, 4, tone)
     })
   }
 
-  const TopCategoriesCard = (x: number, yTop: number, w: number, h: number) => {
-    card(x, yTop, w, h)
-    text('★  Top Categories', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
-    text('Amount', x + w - 86, yTop + 30, { size: 12, color: '#7384a1' })
+  // ---- Top categories ----------------------------------------------------
+  const TopCatCard = () => {
+    const x = colR, y = ySupp, w = colW, h = suppH
+    card(x, y, w, h)
+    sectionTitle(x + 22, y + 34, 'Top Categories', c.amber, 'Ranked by total spend')
+    text('AMOUNT', x + w - 22, y + 34, { size: 10.5, weight: '700', color: c.muted, align: 'right' })
     const rows = categoryRows.slice(0, 6)
-    rows.forEach((row, idx) => {
-      const ry = yTop + 56 + idx * 34
-      line(x + 1, ry + 16, x + w - 1, ry + 16, '#edf1f8')
-      fillRoundedRect(ctx, x + 16, ry - 9, 24, 24, 12, idx < 3 ? '#f9a825' : '#8f9bb3')
-      text(String(idx + 1), x + 28, ry + 8, { size: 12, weight: '700', color: '#ffffff', align: 'center' })
-      text(row.label, x + 54, ry + 8, { size: 12, color: '#24385d' })
-      text(fmtMoney(row.value, true), x + w - 98, ry + 8, { size: 12, weight: '700', color: '#24385d', align: 'right' })
-      text(`${Math.round(row.pct)}%`, x + w - 20, ry + 8, { size: 12, weight: '700', color: row.color, align: 'right' })
+    const startY = y + 74
+    const rowH = (h - 74 - 52) / Math.max(rows.length, 1)
+    rows.forEach((row, i) => {
+      const ry = startY + i * rowH + rowH / 2
+      if (i > 0) line(x + 22, startY + i * rowH, x + w - 22, startY + i * rowH, c.line)
+      fillRoundedRect(ctx, x + 22, ry - 13, 26, 26, 8, row.color)
+      text(String(i + 1), x + 35, ry + 5, { size: 13, weight: '800', color: c.white, align: 'center' })
+      text(row.label.length > 20 ? `${row.label.slice(0, 19)}…` : row.label, x + 60, ry + 5, { size: 13.5, weight: '700', color: c.text })
+      text(fmtMoney(row.value, true), x + w - 78, ry + 5, { size: 13, weight: '800', color: c.ink, align: 'right' })
+      text(`${Math.round(row.pct)}%`, x + w - 22, ry + 5, { size: 12.5, weight: '800', color: row.color, align: 'right' })
     })
-    text('Total', x + w / 2 - 10, yTop + h - 14, { size: 16, weight: '700', color: '#24385d', align: 'right' })
-    text(fmtMoney(safeExpenses, true), x + w - 16, yTop + h - 14, { size: 16, weight: '700', color: colors.navy, align: 'right' })
+    fillRoundedRect(ctx, x + 20, y + h - 54, w - 40, 38, 12, c.soft)
+    text('Total', x + 36, y + h - 30, { size: 13, weight: '700', color: c.sub })
+    text(fmtMoney(safeExpenses, true), x + w - 36, y + h - 30, { size: 15, weight: '800', color: c.ink, align: 'right' })
   }
 
-  const SupportingInsightsRow = () => {
-    const w = (pageW - 54) / 2
-    const h = 286
-    GoalsProgressCard(M + 18, y, w, h)
-    TopCategoriesCard(M + 36 + w, y, w, h)
-    y += h + G
-  }
-
-  const RecurringPaymentsCard = (x: number, yTop: number, w: number, h: number) => {
-    card(x, yTop, w, h, 14, '#f7faff', '#d2def2')
-    text('◫  Recurring Payments', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
-    text('Item', x + 18, yTop + 56, { size: 12, color: '#7384a1' })
-    text('Frequency', x + w - 188, yTop + 56, { size: 12, color: '#7384a1' })
-    text('Amount', x + w - 26, yTop + 56, { size: 12, color: '#7384a1', align: 'right' })
-    const rows = recurringRows.slice(0, 3)
-    rows.forEach((row, idx) => {
-      const ry = yTop + 84 + idx * 36
-      line(x + 14, ry + 14, x + w - 14, ry + 14, '#e8eef7')
-      text(row.label.replace(/^[^\w]+\s*/, ''), x + 18, ry + 8, { size: 12, color: '#253a60' })
-      text(row.cadence === 'Bi-weekly' ? 'Every 2 weeks' : row.cadence === 'Monthly' ? 'Every month' : 'Every week', x + w - 156, ry + 8, { size: 12, color: '#4f6284' })
-      text(fmtMoney(row.amount), x + w - 26, ry + 8, { size: 12, weight: '700', color: '#253a60', align: 'right' })
+  // ---- Recurring payments ------------------------------------------------
+  const RecurringCard = () => {
+    const x = colL, y = yBottom, w = colW, h = bottomH
+    card(x, y, w, h)
+    sectionTitle(x + 22, y + 34, 'Recurring Payments', c.violet, 'Subscriptions & scheduled items')
+    text('ITEM', x + 22, y + 66, { size: 10.5, weight: '700', color: c.muted })
+    text('FREQUENCY', x + w - 190, y + 66, { size: 10.5, weight: '700', color: c.muted })
+    text('AMOUNT', x + w - 22, y + 66, { size: 10.5, weight: '700', color: c.muted, align: 'right' })
+    const rows = recurringRows.slice(0, 4)
+    if (!rows.length) text('No recurring payments tracked.', x + 22, y + 112, { size: 13, weight: '600', color: c.muted })
+    const startY = y + 86
+    const rowH = 50
+    rows.forEach((row, i) => {
+      const ry = startY + i * rowH + rowH / 2
+      line(x + 22, startY + i * rowH, x + w - 22, startY + i * rowH, c.line)
+      fillRoundedRect(ctx, x + 22, ry - 13, 26, 26, 8, c.violetSoft)
+      text('↻', x + 35, ry + 6, { size: 15, weight: '700', color: c.violet, align: 'center' })
+      const name = row.label.replace(/^[^\w]+\s*/, '')
+      text(name.length > 22 ? `${name.slice(0, 21)}…` : name, x + 58, ry + 5, { size: 13.5, weight: '700', color: c.text })
+      const cad = row.cadence === 'Bi-weekly' ? 'Every 2 weeks' : row.cadence === 'Monthly' ? 'Every month' : 'Every week'
+      text(cad, x + w - 190, ry + 5, { size: 12, weight: '600', color: c.sub })
+      text(fmtMoney(row.amount), x + w - 22, ry + 5, { size: 13.5, weight: '800', color: c.ink, align: 'right' })
     })
-    text('View all recurring payments  →', x + 18, yTop + h - 18, { size: 12, weight: '700', color: colors.blue })
   }
 
-  const KeyInsightsCard = (x: number, yTop: number, w: number, h: number) => {
-    card(x, yTop, w, h, 14, '#f8fdf9', '#d3e8da')
-    text('◔  Key Insights', x + 16, yTop + 30, { size: 22/2, weight: '700', color: colors.navy })
-    const defaultInsights = [
-      `Great job! You saved ${fmtMoney(safeNet)} this month, which is ${fmtPct(savingsRate)} of your income.`,
-      `${categoryRows[0]?.label || 'Top category'} is your top expense at ${Math.round(categoryRows[0]?.pct || 0)}% of total spending.`,
-      `You're on track to achieve your goals. Keep it up!`,
+  // ---- Key insights ------------------------------------------------------
+  const InsightsCard = () => {
+    const x = colR, y = yBottom, w = colW, h = bottomH
+    card(x, y, w, h)
+    sectionTitle(x + 22, y + 34, 'Key Insights', c.blue, 'Automated highlights from your data')
+    const defaults = [
+      `You saved ${fmtMoney(safeNet)} this period — a ${fmtPct(savingsRate)} savings rate.`,
+      `${categoryRows[0]?.label || 'Top category'} led spending at ${Math.round(categoryRows[0]?.pct || 0)}% of expenses.`,
+      'Keep tracking to unlock deeper trends and forecasts.',
     ]
-    ;(insights.length ? insights : defaultInsights).slice(0, 3).forEach((item, idx) => {
-      const iy = yTop + 64 + idx * 44
-      fillRoundedRect(ctx, x + 16, iy - 14, 26, 26, 13, idx === 1 ? '#e9efff' : '#e7f7ee')
-      text(idx === 1 ? '↗' : '✓', x + 29, iy + 4, { size: 13, weight: '700', color: idx === 1 ? colors.blue : colors.green, align: 'center' })
-      const short = item.length > 80 ? `${item.slice(0, 78)}...` : item
-      text(short, x + 52, iy + 5, { size: 12, color: '#273b60' })
+    const items = (insights.length ? insights : defaults).slice(0, 3)
+    const tones = [c.green, c.blue, c.violet]
+    const softs = [c.greenSoft, c.blueSoft, c.violetSoft]
+    const startY = y + 62
+    const slot = (h - 62 - 24) / Math.max(items.length, 1)
+    items.forEach((item, i) => {
+      const iy = startY + i * slot + 6
+      const tone = tones[i % 3], soft = softs[i % 3]
+      fillRoundedRect(ctx, x + 22, iy, w - 44, slot - 14, 12, soft)
+      const midY = iy + (slot - 14) / 2
+      ctx.beginPath(); ctx.arc(x + 46, midY, 13, 0, Math.PI * 2); ctx.fillStyle = c.white; ctx.fill()
+      if (i === 1) arrow(x + 46, midY - 1, true, tone, 5)
+      else checkMark(x + 46, midY, tone)
+      const maxW = w - 100
+      const words = item.split(' ')
+      let l1 = '', l2 = ''
+      for (const word of words) {
+        const t = l1 ? `${l1} ${word}` : word
+        if (measure(t, 12.5, '600') <= maxW || !l1) l1 = t
+        else { l2 = l2 ? `${l2} ${word}` : word }
+      }
+      if (l2 && measure(l2, 12.5, '600') > maxW) l2 = `${l2.slice(0, 46)}…`
+      if (l2) {
+        text(l1, x + 72, midY - 3, { size: 12.5, weight: '600', color: c.text })
+        text(l2, x + 72, midY + 15, { size: 12.5, weight: '600', color: c.text })
+      } else {
+        text(l1, x + 72, midY + 5, { size: 12.5, weight: '600', color: c.text })
+      }
     })
   }
 
-  const BottomInfoRow = () => {
-    const w = (pageW - 54) / 2
-    const h = 218
-    RecurringPaymentsCard(M + 18, y, w, h)
-    KeyInsightsCard(M + 36 + w, y, w, h)
-    y += h + G
+  // ---- Footer (same tone, colourful accent rule) -------------------------
+  const Footer = () => {
+    const fy = PH - FB
+    ctx.fillStyle = c.headerBg
+    ctx.fillRect(0, fy, PW, FB)
+    const lx = PAD, mid = fy + FB / 2 + 2
+    strokeRoundedRect(ctx, lx, mid - 6, 14, 12, 3, c.sub, 1.6)
+    ctx.beginPath(); ctx.arc(lx + 7, mid - 6, 5, Math.PI, 0); ctx.strokeStyle = c.sub; ctx.lineWidth = 1.6; ctx.stroke()
+    text('End-to-end private • Your data never leaves your account', lx + 26, mid + 2, { size: 12, weight: '600', color: c.sub })
+    text(`${appName} — Finances at your fingertips`, PW / 2, mid + 2, { size: 12.5, weight: '700', color: c.ink, align: 'center' })
+    text('Page 1 of 1', PW - PAD, mid + 2, { size: 12, weight: '600', color: c.sub, align: 'right' })
   }
 
-  const ReportFooter = () => {
-    line(M + 18, y + 4, M + pageW - 18, y + 4, '#cfd8e6')
-    text('🔒', M + pageW / 2, y + 28, { size: 14, align: 'center', color: '#7485a2' })
-    text('Budgetly – Finances at your fingertips', M + pageW / 2, y + 52, { size: 14, color: '#7a8ba8', align: 'center' })
-  }
+  Header()
+  KpiRow()
+  ExpenseCard()
+  ComboCard()
+  GoalsCard()
+  TopCatCard()
+  RecurringCard()
+  InsightsCard()
+  Footer()
 
-  const ReportPage = () => {
-    ReportHeader()
-    KpiSummaryRow()
-    MainChartsRow()
-    SupportingInsightsRow()
-    BottomInfoRow()
-    ReportFooter()
-  }
-
-  ReportPage()
   return canvas
 }
 
@@ -3995,6 +4070,8 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   const fallbackMonth = typeof activeMonth === 'string' && activeMonth.length === 7 ? activeMonth : (availableMonths[0] ?? currentMonth)
   const [selectedMonth, setSelectedMonth] = useState(fallbackMonth)
   const [selectedYear, setSelectedYear] = useState(() => (fallbackMonth || currentMonth).slice(0, 4))
+  const [busyReport, setBusyReport] = useState<null | 'monthly' | 'yearly'>(null)
+  const [doneReport, setDoneReport] = useState<null | 'monthly' | 'yearly'>(null)
 
   useEffect(() => {
     if (!selectedMonth || !availableMonths.includes(selectedMonth)) {
@@ -4061,7 +4138,7 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
         emoji: goal.emoji || null,
       }))
       .sort((a, b) => (b.current / Math.max(b.target, 1)) - (a.current / Math.max(a.target, 1)))
-      .slice(0, 2)
+      .slice(0, 3)
   }, [data?.goals])
 
   const yearTransactions = useMemo(
@@ -4305,7 +4382,62 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
     exportCanvasPdf(`Budgetly-Yearly-Report-${selectedYear}.pdf`, canvas)
   }
 
+  const runReport = async (kind: 'monthly' | 'yearly', fn: () => Promise<void>) => {
+    if (busyReport) return
+    setBusyReport(kind)
+    setDoneReport(null)
+    try {
+      await fn()
+      setDoneReport(kind)
+      window.setTimeout(() => setDoneReport((current) => (current === kind ? null : current)), 2600)
+    } catch (error) {
+      console.error('Failed to generate report', error)
+    } finally {
+      setBusyReport((current) => (current === kind ? null : current))
+    }
+  }
+
+  const REPORT_CATEGORY_COLORS = ['#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#ef4444', '#14b8a6']
+
+  const savingsRate = monthlyIncome > 0 ? (monthlyNet / monthlyIncome) * 100 : 0
+  const savingsRateClamped = Math.max(0, Math.min(100, savingsRate))
+
+  const pctDelta = (current: number, previous: number | null | undefined) => {
+    if (previous == null || !Number.isFinite(previous) || previous <= 0) return null
+    return ((current - previous) / previous) * 100
+  }
+  const incomeDelta = pctDelta(monthlyIncome, previousMonthTotals?.income)
+  const expenseDelta = pctDelta(monthlyExpenses, previousMonthTotals?.expenses)
+
+  const renderDelta = (delta: number | null, goodWhenUp: boolean) => {
+    if (delta == null || !Number.isFinite(delta)) {
+      return <span className="reportsDelta reportsDeltaFlat"><Minus size={12} /> —</span>
+    }
+    const up = delta > 0.05
+    const down = delta < -0.05
+    const tone = !up && !down ? 'flat' : (up === goodWhenUp ? 'good' : 'bad')
+    const Icon = up ? ArrowUpRight : down ? ArrowDownRight : Minus
+    return (
+      <span className={`reportsDelta reportsDelta${tone === 'good' ? 'Good' : tone === 'bad' ? 'Bad' : 'Flat'}`}>
+        <Icon size={12} /> {Math.abs(delta).toFixed(1)}%
+      </span>
+    )
+  }
+
+  const bestMonth = useMemo(() => {
+    const active = monthSeriesForYear.filter((row) => row.income > 0 || row.expenses > 0)
+    if (!active.length) return null
+    return active.reduce((best, row) => (row.net > best.net ? row : best), active[0])
+  }, [monthSeriesForYear])
+
+  const yearTotals = useMemo(() => {
+    const income = yearTransactions.filter((tx) => tx.type === 'income').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    const expenses = yearTransactions.filter((tx) => tx.type === 'expense').reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+    return { income, expenses, net: income - expenses }
+  }, [yearTransactions])
+
   const topCategoryRows = monthlyByCategory.slice(0, 3)
+  const topCategoryTotal = topCategoryRows.reduce((sum, row) => sum + row.total, 0)
   const monthListRows = yearSummary.slice(-4).reverse()
   const yearlyTrendData = monthSeriesForYear.map((row) => ({
     ...row,
@@ -4313,19 +4445,41 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
   }))
 
   return (
-    <div className="card reportsPage">
-      <div className="row between reportsHeader">
-        <div className="reportsHeadline">
-          <div className="reportsHeadlineIcon"><FileText size={22} /></div>
-          <div>
-            <h2>Reports</h2>
-            <div className="muted">Generate and download monthly and yearly financial summaries.</div>
+    <div className="card reportsPage reportsPageV2">
+      <div className="reportsHero">
+        <div className="reportsHeroGlow" aria-hidden="true" />
+        <div className="reportsHeroTop">
+          <div className="reportsHeadline">
+            <div className="reportsHeadlineIcon"><FileText size={22} /></div>
+            <div>
+              <h2>Financial Reports</h2>
+              <div className="muted">See how your money's doing each month and across the year, then download a report whenever you need one.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="reportsHeroStats">
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><Activity size={13} /> Net · {helpers.monthLabel(selectedMonth)}</span>
+            <strong className={monthlyNet >= 0 ? 'reportsGood' : 'reportsBad'}>{helpers.fmtMoney(monthlyNet, data.currency)}</strong>
+          </div>
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><PiggyBank size={13} /> Savings rate</span>
+            <strong>{savingsRate.toFixed(0)}%</strong>
+          </div>
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><ReceiptText size={13} /> Transactions · {selectedYear}</span>
+            <strong>{yearTransactions.length}</strong>
+          </div>
+          <div className="reportsHeroStat">
+            <span className="reportsHeroStatLabel"><TrendingUp size={13} /> Best month · {selectedYear}</span>
+            <strong>{bestMonth ? `${bestMonth.label} · ${helpers.fmtMoney(bestMonth.net, data.currency)}` : '—'}</strong>
           </div>
         </div>
       </div>
 
-      <div className={`grid ${isPhone ? '' : 'cols2'} reportsGrid`} style={{ marginTop: 14 }}>
-        <div className="card reportsPanel">
+      <div className={`grid ${isPhone ? '' : 'cols2'} reportsGrid`} style={{ marginTop: 16 }}>
+        <div className="card reportsPanel reportsPanelMonth">
           <div className="row between reportsPanelHeader">
             <div className="reportsPanelTitleWrap">
               <div className="reportsPanelIcon reportsPanelIconMonth"><Calendar size={18} /></div>
@@ -4348,17 +4502,60 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             <div className="kpi income reportsKpi">
               <span>Income</span>
               <strong>{helpers.fmtMoney(monthlyIncome, data.currency)}</strong>
-              <CircleArrowUp size={16} />
+              {renderDelta(incomeDelta, true)}
             </div>
             <div className="kpi expenses reportsKpi">
               <span>Expenses</span>
               <strong>{helpers.fmtMoney(monthlyExpenses, data.currency)}</strong>
-              <CircleArrowDown size={16} />
+              {renderDelta(expenseDelta, false)}
             </div>
             <div className="kpi net reportsKpi">
               <span>Net</span>
               <strong>{helpers.fmtMoney(monthlyNet, data.currency)}</strong>
-              <CircleArrowUp size={16} />
+              <span className="reportsDelta reportsDeltaFlat"><PiggyBank size={12} /> {savingsRate.toFixed(0)}% saved</span>
+            </div>
+          </div>
+
+          <div className="reportsSnapshot">
+            <div className="reportsGauge">
+              <ResponsiveContainer width="100%" height={128}>
+                <RadialBarChart
+                  innerRadius="72%"
+                  outerRadius="100%"
+                  data={[{ name: 'savings', value: savingsRateClamped }]}
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+                  <RadialBar
+                    background={{ fill: 'rgba(148,163,184,.18)' }}
+                    dataKey="value"
+                    cornerRadius={12}
+                    fill={monthlyNet >= 0 ? '#22c55e' : '#ef4444'}
+                    angleAxisId={0}
+                  />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="reportsGaugeCenter">
+                <strong>{savingsRate.toFixed(0)}%</strong>
+                <small>saved</small>
+              </div>
+            </div>
+            <div className="reportsSnapshotStats">
+              <div className="reportsSnapshotRow">
+                <span>Top category</span>
+                <strong>{topCategoryRows[0]?.name ?? '—'}</strong>
+              </div>
+              <div className="reportsSnapshotRow">
+                <span>Transactions</span>
+                <strong>{monthlyTransactions.length}</strong>
+              </div>
+              <div className="reportsSnapshotRow">
+                <span>vs {helpers.monthLabel(previousMonth)}</span>
+                <strong className={previousMonthTotals ? (monthlyNet - previousMonthTotals.balance >= 0 ? 'reportsGood' : 'reportsBad') : ''}>
+                  {previousMonthTotals ? `${monthlyNet - previousMonthTotals.balance >= 0 ? '+' : ''}${helpers.fmtMoney(monthlyNet - previousMonthTotals.balance, data.currency)}` : '—'}
+                </strong>
+              </div>
             </div>
           </div>
 
@@ -4366,14 +4563,15 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             <div className="reportsPreviewTitle">Top category spend</div>
             {topCategoryRows.map((row, idx) => {
               const pct = monthlyExpenses > 0 ? (row.total / monthlyExpenses) * 100 : 0
+              const color = REPORT_CATEGORY_COLORS[idx % REPORT_CATEGORY_COLORS.length]
               return (
               <div key={row.name} className="reportsPreviewRow reportsCategoryRow">
                 <div className="reportsCategoryMain">
-                  <span className="reportsCategoryIndex">{idx + 1}</span>
+                  <span className="reportsCategoryIndex" style={{ background: `${color}22`, color, borderColor: `${color}55` }}>{idx + 1}</span>
                   <div>
                     <span>{row.name}</span>
                     <div className="reportsCategoryBar">
-                      <i style={{ width: `${Math.max(10, Math.min(100, pct))}%` }} />
+                      <i style={{ width: `${Math.max(6, Math.min(100, pct))}%`, background: color }} />
                     </div>
                   </div>
                 </div>
@@ -4383,15 +4581,28 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
                 </div>
               </div>
               )})}
-            {!monthlyByCategory.length ? <small>No expense categories in this month.</small> : null}
+            {topCategoryRows.length ? (
+              <div className="reportsPreviewFoot">
+                <span>Top {topCategoryRows.length} of {monthlyByCategory.length}</span>
+                <strong>{helpers.fmtMoney(topCategoryTotal, data.currency)}</strong>
+              </div>
+            ) : <small>No expense categories in this month.</small>}
           </div>
 
-          <button className="btn reportsDownloadBtn reportsDownloadBtnGreen" onClick={makeMonthlyReport}>
-            <DownloadIcon size={16} /> Download monthly report
+          <button
+            className="btn reportsDownloadBtn reportsDownloadBtnGreen"
+            onClick={() => runReport('monthly', makeMonthlyReport)}
+            disabled={busyReport === 'monthly'}
+          >
+            {busyReport === 'monthly'
+              ? <><Loader2 size={16} className="reportsSpin" /> Generating PDF…</>
+              : doneReport === 'monthly'
+                ? <><CheckCircle2 size={16} /> Downloaded</>
+                : <><DownloadIcon size={16} /> Download monthly report</>}
           </button>
         </div>
 
-        <div className="card reportsPanel">
+        <div className="card reportsPanel reportsPanelYear">
           <div className="row between reportsPanelHeader">
             <div className="reportsPanelTitleWrap">
               <div className="reportsPanelIcon reportsPanelIconYear"><BarChart3 size={18} /></div>
@@ -4410,50 +4621,88 @@ export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'ema
             </select>
           </div>
 
+          <div className="reportsStats reportsStatsYear">
+            <div className="kpi income reportsKpi">
+              <span>Income</span>
+              <strong>{helpers.fmtMoney(yearTotals.income, data.currency)}</strong>
+            </div>
+            <div className="kpi expenses reportsKpi">
+              <span>Expenses</span>
+              <strong>{helpers.fmtMoney(yearTotals.expenses, data.currency)}</strong>
+            </div>
+            <div className="kpi net reportsKpi">
+              <span>Net</span>
+              <strong>{helpers.fmtMoney(yearTotals.net, data.currency)}</strong>
+            </div>
+          </div>
+
           <div className="reportsYearGrid">
             <div className="reportsStatChip"><ReceiptText size={14} /> Transactions: {yearTransactions.length}</div>
             <div className="reportsStatChip"><Repeat2 size={14} /> Recurring items: {recurringCount}</div>
           </div>
 
           <div className="reportsTrendBox">
-            <div className="reportsPreviewTitle">Yearly net trend</div>
+            <div className="row between" style={{ alignItems: 'center' }}>
+              <div className="reportsPreviewTitle">Yearly net trend</div>
+              <span className="reportsTrendLegend"><i /> Net savings</span>
+            </div>
             <div className="reportsTrendChart">
-              <ResponsiveContainer width="100%" height={140}>
-                <LineChart data={yearlyTrendData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={150}>
+                <AreaChart data={yearlyTrendData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="reportsNetFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.32} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid vertical={false} stroke="rgba(148,163,184,.24)" />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--muted)' }} interval={0} />
                   <YAxis hide domain={['dataMin - 500', 'dataMax + 500']} />
                   <Tooltip
                     formatter={(value) => value == null ? 'No activity' : helpers.fmtMoney(Number(value), data.currency)}
                     labelFormatter={(label) => `${label} ${selectedYear}`}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="trendNet"
                     connectNulls={false}
                     stroke="#3b82f6"
                     strokeWidth={3}
+                    fill="url(#reportsNetFill)"
                     dot={{ r: 3, fill: '#94a3b8', strokeWidth: 0 }}
                     activeDot={{ r: 5, fill: '#3b82f6' }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           <div className="reportsPreviewList">
             <div className="reportsPreviewTitle">Month-by-month net</div>
-            {monthListRows.map((row) => (
-              <div key={row.month} className="reportsPreviewRow">
+            {monthListRows.map((row) => {
+              const magnitude = Math.min(100, Math.abs(row.net) / Math.max(1, Math.abs(bestMonth?.net || row.net || 1)) * 100)
+              return (
+              <div key={row.month} className="reportsPreviewRow reportsMonthRow">
                 <span>{helpers.monthLabel(row.month)}</span>
+                <div className="reportsMonthMeter">
+                  <i className={row.net >= 0 ? 'pos' : 'neg'} style={{ width: `${Math.max(8, magnitude)}%` }} />
+                </div>
                 <strong className={row.net >= 0 ? 'reportsGood' : 'reportsBad'}>{helpers.fmtMoney(row.net, data.currency)}</strong>
               </div>
-            ))}
+            )})}
             {!yearSummary.length ? <small>No transactions in this year.</small> : null}
           </div>
 
-          <button className="btn reportsDownloadBtn reportsDownloadBtnGreen" onClick={makeYearlyReport}>
-            <DownloadIcon size={16} /> Download yearly report
+          <button
+            className="btn reportsDownloadBtn reportsDownloadBtnGreen"
+            onClick={() => runReport('yearly', makeYearlyReport)}
+            disabled={busyReport === 'yearly'}
+          >
+            {busyReport === 'yearly'
+              ? <><Loader2 size={16} className="reportsSpin" /> Generating PDF…</>
+              : doneReport === 'yearly'
+                ? <><CheckCircle2 size={16} /> Downloaded</>
+                : <><DownloadIcon size={16} /> Download yearly report</>}
           </button>
         </div>
       </div>
@@ -7991,3 +8240,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     </div>
   )
 }
+
+
+
+

@@ -1460,8 +1460,7 @@ body.light .converterRecentBox {
 .reportsPanelIconYear{background:rgba(59,130,246,.12);color:#2563eb;border-color:rgba(59,130,246,.25)}
 .reportsPdfTag{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border-radius:9px;border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--muted)}
 .reportsStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.reportsKpi{position:relative;padding-right:34px}
-.reportsKpi svg{position:absolute;right:12px;bottom:12px;opacity:.85}
+.reportsKpi{position:relative}
 .reportsPreviewList{display:grid;gap:8px;padding:12px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02);min-height:180px;align-content:start}
 .reportsPreviewTitle{font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .reportsPreviewRow{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.02)}
@@ -1500,6 +1499,121 @@ body.light .reportsStatChip,
 body.light .reportsPdfTag{
   background:#fff;
   border-color:rgba(148,163,184,.22);
+}
+
+/* ---------- Reports page polish (V2) ---------- */
+.reportsPageV2{padding:0;overflow:hidden;border-radius:24px}
+.reportsHero{
+  position:relative;
+  overflow:hidden;
+  padding:22px 24px;
+  border-bottom:1px solid var(--border);
+  background:
+    radial-gradient(1200px 220px at 8% -40%, rgba(59,130,246,.22), transparent 60%),
+    radial-gradient(900px 200px at 92% -30%, rgba(34,197,94,.16), transparent 60%),
+    linear-gradient(180deg, rgba(59,130,246,.06), rgba(15,23,42,0));
+}
+.reportsHeroGlow{
+  position:absolute;inset:auto -80px -140px auto;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle, rgba(59,130,246,.16), transparent 65%);
+  pointer-events:none;filter:blur(6px);
+}
+.reportsHeroTop{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:relative;z-index:1}
+.reportsHeroBadge{
+  display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;
+  font-size:12.5px;font-weight:700;white-space:nowrap;
+  color:#3b82f6;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.28);
+}
+.reportsHeroBadge svg{color:#3b82f6}
+.reportsHeroStats{
+  position:relative;z-index:1;margin-top:18px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;
+}
+.reportsHeroStat{
+  display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:15px;
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+  backdrop-filter:blur(6px);
+}
+.reportsHeroStatLabel{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.reportsHeroStat strong{font-size:18px;letter-spacing:-.01em}
+
+.reportsPageV2 .reportsGrid{padding:0 20px 20px}
+.reportsPanel{border-radius:20px;transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease}
+.reportsPanel:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(2,8,23,.22)}
+.reportsPanelMonth:hover{border-color:rgba(34,197,94,.4)}
+.reportsPanelYear:hover{border-color:rgba(59,130,246,.4)}
+
+.reportsKpi{overflow:hidden}
+.reportsKpi .reportsDelta{
+  display:inline-flex;align-items:center;gap:4px;width:fit-content;margin-top:2px;
+  font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1.4;
+}
+.reportsKpi .reportsDeltaGood{color:#15803d;background:rgba(34,197,94,.14)}
+.reportsKpi .reportsDeltaBad{color:#b91c1c;background:rgba(239,68,68,.12)}
+.reportsKpi .reportsDeltaFlat{color:var(--muted);background:rgba(148,163,184,.14)}
+
+.reportsSnapshot{
+  display:grid;grid-template-columns:128px 1fr;gap:14px;align-items:center;
+  padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02);
+}
+.reportsGauge{position:relative;width:128px;height:128px}
+.reportsGaugeCenter{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;pointer-events:none;
+}
+.reportsGaugeCenter strong{font-size:24px;line-height:1;letter-spacing:-.02em}
+.reportsGaugeCenter small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.reportsSnapshotStats{display:grid;gap:8px}
+.reportsSnapshotRow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.reportsSnapshotRow span{color:var(--muted)}
+.reportsSnapshotRow strong{font-weight:700;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.reportsPreviewFoot{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px;
+  padding:9px 12px;border-radius:12px;border:1px dashed var(--border);
+  font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.015);
+}
+.reportsPreviewFoot strong{color:var(--text);font-weight:700}
+
+.reportsStatsYear{margin-bottom:2px}
+.reportsTrendLegend{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.reportsTrendLegend i{width:16px;height:4px;border-radius:999px;background:#3b82f6;display:inline-block}
+
+.reportsMonthRow{align-items:center;gap:12px}
+.reportsMonthRow > span{flex:0 0 auto;min-width:66px;font-size:13px}
+.reportsMonthRow > strong{flex:0 0 auto;min-width:80px;text-align:right}
+.reportsMonthMeter{flex:1;height:8px;border-radius:999px;background:rgba(148,163,184,.16);overflow:hidden}
+.reportsMonthMeter i{display:block;height:100%;border-radius:999px;transition:width .3s ease}
+.reportsMonthMeter i.pos{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.reportsMonthMeter i.neg{background:linear-gradient(90deg,#f87171,#ef4444)}
+
+.reportsDownloadBtn:disabled{opacity:.72;cursor:progress}
+.reportsSpin{animation:reportsSpin .9s linear infinite}
+@keyframes reportsSpin{to{transform:rotate(360deg)}}
+
+body.light .reportsHeroStat,
+body.light .reportsSnapshot,
+body.light .reportsPreviewFoot,
+body.light .reportsMonthMeter{
+  background:#fff;border-color:rgba(148,163,184,.22);
+}
+body.light .reportsMonthMeter{background:rgba(148,163,184,.16)}
+body.light .reportsHero{border-bottom-color:rgba(148,163,184,.2)}
+
+@media (max-width: 1100px){
+  .reportsHeroStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width: 760px){
+  .reportsHero{padding:18px 16px}
+  .reportsHeroTop{flex-direction:column;gap:10px}
+  .reportsPageV2 .reportsGrid{padding:0 14px 16px}
+  .reportsSnapshot{grid-template-columns:112px 1fr;gap:12px}
+  .reportsGauge{width:112px;height:112px}
+}
+@media (max-width: 480px){
+  .reportsHeroStats{grid-template-columns:1fr}
+  .reportsSnapshot{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .reportsSnapshotStats{width:100%}
 }
 
 
@@ -7253,6 +7367,28 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
   .toolsPageBody > .reportsPage{height:auto;overflow:visible;}
   .toolsPageBody > .reportsPage .reportsGrid{overflow:visible;}
   .toolsPageBody > .reportsPage .reportsPanel{overflow:visible;}
+}
+
+/* Reports page (V2) flows as one block and scrolls as a single unit inside the
+   fixed tools shell. The older rules above assumed the legacy flex layout with a
+   pinned .reportsHeader and internally-scrolling panels; in V2 that compressed the
+   hero (clipping its stat values) and let the download button escape its panel. */
+.toolsPageBody > .reportsPage.reportsPageV2{
+  display:block;
+  height:100%;
+  max-height:100%;
+  overflow-y:auto;
+  overflow-x:hidden;
+}
+.toolsPageBody > .reportsPage.reportsPageV2 .reportsGrid{
+  overflow:visible;
+  min-height:0;
+}
+.toolsPageBody > .reportsPage.reportsPageV2 .reportsPanel{
+  overflow:visible;
+}
+@media (max-width: 960px){
+  .toolsPageBody > .reportsPage.reportsPageV2{height:auto;max-height:none;overflow:visible;}
 }
 
 /* v3.2 light-mode cleanup for auth + settings pages */
