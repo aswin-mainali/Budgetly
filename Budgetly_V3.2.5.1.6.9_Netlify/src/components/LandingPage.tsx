@@ -22,12 +22,12 @@ import {
   Moon,
 } from 'lucide-react'
 
-import dashboardImg from '../assets/landing/dashboard.png'
-import transactionImg from '../assets/landing/transaction.png'
-import goalsImg from '../assets/landing/goals.png'
-import reportsImg from '../assets/landing/reports.png'
-import investmentImg from '../assets/landing/investment.png'
-import categoryImg from '../assets/landing/category.png'
+import dashboardImg from '../assets/landing/dashboard.webp'
+import transactionImg from '../assets/landing/transaction.webp'
+import goalsImg from '../assets/landing/goals.webp'
+import reportsImg from '../assets/landing/reports.webp'
+import investmentImg from '../assets/landing/investment.webp'
+import categoryImg from '../assets/landing/category.webp'
 
 type LandingPageProps = {
   onSignIn: () => void

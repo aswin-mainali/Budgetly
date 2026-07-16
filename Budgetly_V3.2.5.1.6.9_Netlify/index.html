@@ -10,9 +10,49 @@
     <link rel="apple-touch-icon" href="/pwa-192.png" />
     <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32">
+    <style>
+      /* Instant boot splash: shown before the JS bundle parses so visitors see
+         branded content immediately instead of a blank screen. Removed by the
+         app once it is ready to render. */
+      #boot-splash{
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background: linear-gradient(180deg, #060f1e 0%, #081527 100%);
+        transition: opacity .4s ease;
+      }
+      #boot-splash.boot-splash--light{ background: linear-gradient(180deg, #f3f8fd 0%, #eef4fb 100%); }
+      #boot-splash.boot-splash--hide{ opacity: 0; pointer-events: none; }
+      #boot-splash .boot-mark{
+        font: 800 30px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        letter-spacing: -.02em;
+        background: linear-gradient(92deg, #34e39a, #5aa9ff);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      #boot-splash .boot-spin{
+        width: 26px; height: 26px; border-radius: 50%;
+        border: 3px solid rgba(148,163,184,.28); border-top-color: #34e39a;
+        animation: boot-rot .8s linear infinite;
+      }
+      @keyframes boot-rot{ to{ transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce){ #boot-splash .boot-spin{ animation: none; } }
+    </style>
 </head>
   <body>
     <div id="root"></div>
+    <div id="boot-splash">
+      <div class="boot-mark">Budgetly</div>
+      <div class="boot-spin"></div>
+    </div>
+    <script>
+      /* Match the splash to the saved theme so there is no light/dark flash. */
+      (function () {
+        try {
+          if (localStorage.getItem('raswibudgeting:theme') !== 'dark') {
+            document.getElementById('boot-splash').classList.add('boot-splash--light');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
