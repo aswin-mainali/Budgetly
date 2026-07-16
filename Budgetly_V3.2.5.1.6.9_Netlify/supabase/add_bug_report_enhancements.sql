@@ -74,6 +74,13 @@ on public.bug_report_events for insert
 with check (public.is_super_admin());
 
 -- 3) Trigger: log status changes + notify the reporter -------------------------
+-- The trigger's notification insert dedupes via this partial unique index; it
+-- already exists on the live project but is declared here so the migration is
+-- self-contained (the on conflict clause below requires it).
+create unique index if not exists notifications_user_dedupe_key_idx
+  on public.notifications (user_id, ((metadata ->> 'dedupe_key')))
+  where (metadata ? 'dedupe_key');
+
 create or replace function public.handle_bug_report_change()
 returns trigger
 language plpgsql
@@ -120,7 +127,12 @@ begin
         'workflow_status', new.workflow_status,
         'dedupe_key', 'bug:' || new.id || ':' || new.workflow_status
       )
-    );
+    )
+    -- Re-entering a status the report has held before (e.g. resolving it a second
+    -- time) would violate notifications_user_dedupe_key_idx and roll back the whole
+    -- update; skip the duplicate notification instead.
+    on conflict (user_id, ((metadata ->> 'dedupe_key'))) where (metadata ? 'dedupe_key')
+    do nothing;
   end if;
 
   return new;
