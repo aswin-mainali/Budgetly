@@ -9863,3 +9863,286 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 @media (max-width: 720px){
   .bugSeverityRow{grid-template-columns:repeat(2,1fr)}
 }
+
+
+/* =====================================================================
+   Advice page v3.3 — financial health score, prioritized insight cards,
+   and the action-capable assistant. Uses shared design tokens.
+   ===================================================================== */
+
+.advicePagePro2 { display: grid; gap: 16px; }
+.advicePagePro2 .adviceHeader h2 { margin: 0 0 6px; }
+
+/* Hero row: financial health score card + assistant card, side by side and the
+   same height. Below it a full-width KPI strip and a full-width insights feed. */
+.insightsTopRow { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, 1fr); gap: 16px; align-items: stretch; }
+.insightsTopRow > .healthCard, .insightsTopRow > .assistantCard { margin: 0; }
+/* The health card sets the shared hero height; the assistant matches it and its
+   message list scrolls internally, so a long chat never stretches the row. */
+.insightsTopRow > .healthCard { min-height: 500px; }
+.insightsTopRow > .assistantCard { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow: hidden; }
+/* flex-basis 0 keeps the message list from inflating the card, so a growing
+   chat scrolls inside the panel instead of stretching the hero row taller. */
+.insightsTopRow > .assistantCard .assistantMessages { flex: 1 1 0; min-height: 0; max-height: none; overflow-y: auto; }
+
+/* Vertical health-score hero: eyebrow + band + delta up top, donut in the
+   middle, trend note, and the four component sub-scores pinned to the bottom. */
+.heroHealth { display: flex; flex-direction: column; gap: 14px; }
+.heroHealthHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.heroHealthBody { margin: auto 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.heroHealthDonut { display: flex; justify-content: center; padding: 2px 0; }
+.heroHealth .healthTrendNote { text-align: center; margin: 0 auto; max-width: 420px; }
+.heroHealthComponents { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; margin-top: auto; padding-top: 6px; }
+.heroComp { display: flex; flex-direction: column; gap: 6px; }
+.heroCompTop { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.heroCompLabel { font-size: 11px; font-weight: 600; color: var(--muted); }
+.heroCompValue { font-size: 16px; font-weight: 800; letter-spacing: -.01em; color: var(--text); }
+.heroCompBar { height: 5px; border-radius: 999px; background: rgba(148,163,184,.16); overflow: hidden; }
+.heroCompBar > div { height: 100%; border-radius: 999px; transition: width .4s ease; }
+body.light .heroCompBar { background: rgba(76,101,145,.16); }
+
+/* KPI strip — four key money numbers across the full width. */
+.kpiStrip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kpiTile {
+  border: 1px solid var(--border); border-radius: 16px; padding: 14px 15px; background: rgba(255,255,255,.03);
+  display: flex; flex-direction: column; gap: 3px; min-height: 116px;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.kpiTile:hover { transform: translateY(-2px); border-color: rgba(33,201,122,.4); box-shadow: 0 14px 30px rgba(2,8,23,.2); }
+.kpiTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kpiLabel { font-size: 12px; font-weight: 600; color: var(--muted); }
+.kpiDelta { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.kpiDelta.up { color: #21c97a; background: rgba(33,201,122,.12); }
+.kpiDelta.down { color: #ef4444; background: rgba(239,68,68,.10); }
+.kpiDelta.flat { color: var(--muted); background: rgba(148,163,184,.12); }
+.kpiValue { font-size: 1.5rem; font-weight: 800; letter-spacing: -.02em; color: var(--text); line-height: 1.1; }
+.kpiSub { font-size: 11px; color: var(--muted); }
+.kpiSpark { margin-top: auto; }
+body.light .kpiTile { background: rgba(255,255,255,.62); }
+
+/* Full-width insights feed below the hero row. */
+.insightsFull { display: flex; flex-direction: column; gap: 14px; }
+.insightsFull .insightGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* ---- Financial health score ---- */
+.healthCard { background: linear-gradient(135deg, rgba(33,201,122,.10), rgba(37,99,235,.08)); }
+.healthCardInner { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; }
+.healthDonut { position: relative; flex-shrink: 0; }
+.healthDonutCenter {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.healthDonutCenter strong { font-size: 2.6rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+.healthDonutCenter span { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+
+.healthMeta { display: grid; gap: 12px; min-width: 0; }
+.healthTopRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.healthLabel { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.healthBand { font-size: 1.35rem; font-weight: 700; margin-top: 2px; }
+.healthBand.good { color: #21c97a; }
+.healthBand.caution { color: #f59e0b; }
+.healthBand.warn { color: #ef4444; }
+.healthDelta {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; border: 1px solid var(--border); white-space: nowrap;
+}
+.healthDelta.up { color: #21c97a; border-color: rgba(33,201,122,.4); background: rgba(33,201,122,.12); }
+.healthDelta.down { color: #ef4444; border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.10); }
+.healthDelta.flat { color: var(--muted); }
+.healthTrendNote { margin: 0; color: var(--text); line-height: 1.55; font-size: .96rem; }
+
+.healthComponents { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 20px; margin-top: 2px; }
+.healthComponent { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.healthComponentLabel { font-size: 12px; color: var(--muted); }
+.healthComponentValue { font-size: 13px; font-weight: 700; text-align: right; }
+.healthComponentBar { grid-column: 1 / -1; height: 6px; border-radius: 999px; background: rgba(148,163,184,.16); overflow: hidden; }
+.healthComponentBar > div { height: 100%; border-radius: 999px; background: var(--accent); transition: width .4s ease; }
+
+/* ---- Insight tabs + cards ---- */
+.insightsCard { display: grid; gap: 14px; }
+.insightTabs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex: 0 0 auto; }
+.insightTab {
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: rgba(255,255,255,.02); color: var(--muted);
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+  flex: 0 0 auto; height: 36px;
+}
+.insightTab:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.insightTab.active { color: var(--text); border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+.insightTabCount {
+  font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center; background: rgba(148,163,184,.18); color: var(--muted);
+}
+.insightTab.active .insightTabCount { background: rgba(33,201,122,.22); color: #21c97a; }
+
+.insightGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.insightCard {
+  position: relative; padding: 16px 18px; border-radius: 18px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.03); display: flex; flex-direction: column; gap: 8px;
+  border-left-width: 3px; min-height: 210px;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.insightCard:hover { transform: translateY(-2px); box-shadow: 0 16px 34px rgba(2,8,23,.24); }
+/* Push the sparkline+action (or a lone action, or the tip dots) to a shared baseline. */
+.insightCard > .insightSpark { margin-top: auto; }
+.insightCard:not(:has(.insightSpark)) > .insightAction { margin-top: auto; }
+.insightCard.tipCard > .adviceDots { margin-top: auto; }
+.insightCard.tier-worth { border-left-color: #f59e0b; }
+.insightCard.tier-doing { border-left-color: #21c97a; }
+.insightCard.tier-upcoming { border-left-color: #6ea0e0; }
+.insightCard.tipCard { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(37,99,235,.12)); border-left-color: #6ea0e0; }
+
+.insightDismiss {
+  position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent;
+  background: transparent; color: var(--muted); cursor: pointer; transition: all .15s ease;
+}
+.insightDismiss:hover { background: rgba(148,163,184,.14); color: var(--text); }
+
+.insightTier {
+  align-self: flex-start; font-size: 11px; font-weight: 700; letter-spacing: .02em; padding: 3px 9px;
+  border-radius: 999px; border: 1px solid var(--border); text-transform: none;
+}
+.insightTier.worth { color: #f59e0b; border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.12); }
+.insightTier.doing { color: #21c97a; border-color: rgba(33,201,122,.4); background: rgba(33,201,122,.12); }
+.insightTier.upcoming { color: #93a7c6; border-color: var(--border); background: rgba(148,163,184,.12); }
+
+.insightTitle { margin: 2px 0 0; font-size: .95rem; font-weight: 700; color: var(--text); }
+.insightValue { font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.insightBody { margin: 0; color: var(--muted); line-height: 1.55; font-size: .9rem; }
+.insightSpark { margin: 4px 0 2px; }
+.insightAction {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;
+  padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.02);
+  color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.insightAction:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+.insightEmpty {
+  grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  padding: 34px 22px; border: 1px dashed var(--border); border-radius: 16px; background: rgba(148,163,184,.04); color: var(--muted);
+}
+.insightEmpty svg { color: var(--accent); opacity: .85; margin-bottom: 2px; }
+.insightEmptyTitle { font-weight: 700; color: var(--text); font-size: .96rem; }
+.insightEmpty p { margin: 0; font-size: .87rem; max-width: 360px; line-height: 1.55; }
+.tipCard .tipIcon { font-size: 30px; line-height: 1; }
+.tipCard .adviceDots { margin-top: 6px; }
+
+/* ---- Assistant ---- */
+.assistantCard { display: grid; gap: 14px; }
+.assistantHeader { display: flex; align-items: center; gap: 14px; }
+.assistantAvatar { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 8px 16px rgba(0,0,0,.22)); }
+.assistantHeader h3 { margin: 0 0 2px; font-size: 1.1rem; color: var(--text); }
+
+.assistantMessages {
+  display: flex; flex-direction: column; gap: 12px; max-height: 460px; overflow-y: auto; padding-right: 4px;
+  min-height: 160px;
+}
+/* On a fresh conversation, float the greeting + example prompts in the middle. */
+.assistantMessages:has(.assistantEmpty) { justify-content: center; }
+.assistantBubbleWrap { display: grid; gap: 8px; }
+.assistantBubbleWrap.user { justify-items: end; }
+.assistantBubble {
+  max-width: 86%; padding: 12px 14px; border-radius: 16px; line-height: 1.5; font-size: .94rem;
+  border: 1px solid var(--border); color: var(--text);
+}
+.assistantBubble.bot { background: var(--panel-soft); border-bottom-left-radius: 6px; }
+.assistantBubble.user { background: var(--accent-soft); border-color: rgba(33,201,122,.28); border-bottom-right-radius: 6px; }
+
+/* Fresh-conversation empty state — greets and offers example prompts so the
+   assistant panel reads as a full, intentional surface rather than a blank box. */
+.assistantEmpty { display: grid; gap: 8px; }
+.assistantEmptyTitle { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.assistantExample {
+  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%;
+  padding: 11px 13px; border-radius: 12px; border: 1px solid var(--border);
+  background: rgba(255,255,255,.02); color: var(--text); font-size: 13.5px; font-weight: 500;
+  cursor: pointer; transition: transform .15s ease, border-color .15s ease, background .15s ease;
+}
+.assistantExample:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); transform: translateX(2px); }
+.assistantExampleIcon { font-size: 16px; line-height: 1; }
+body.light .assistantExample { background: rgba(255,255,255,.6); }
+
+.assistantChips { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistantChip {
+  padding: 7px 12px; border-radius: 999px; border: 1px solid var(--border); background: rgba(255,255,255,.02);
+  color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.assistantChip:hover { border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+
+.chatChart {
+  margin-top: 10px; padding: 8px 6px 4px; border-radius: 12px;
+  border: 1px solid var(--border); background: rgba(148,163,184,.06);
+}
+
+/* Proposal / clarifying card */
+.chatProposal {
+  border: 1px solid rgba(33,201,122,.4); border-radius: 16px; padding: 16px; display: grid; gap: 10px;
+  background: linear-gradient(180deg, rgba(33,201,122,.10), rgba(37,99,235,.06));
+  box-shadow: 0 12px 30px rgba(2,8,23,.22);
+}
+.chatProposalTitle { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.chatProposalTitle.warn { color: #f59e0b; }
+.chatProposalNote { margin: 0; line-height: 1.55; color: var(--text); }
+.chatProposalNote strong { color: #ef4444; }
+.chatProposalRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.chatProposalRow:last-of-type { border-bottom: none; }
+.chatProposalRow span { color: var(--muted); font-size: 13px; }
+.chatProposalRow strong { font-size: 1rem; color: var(--text); }
+.chatProposalActions { display: flex; gap: 10px; margin-top: 4px; }
+.chatProposalActions .btn { flex: 1; justify-content: center; }
+
+.assistantStarters { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistantStarter {
+  padding: 8px 13px; border-radius: 999px; border: 1px dashed var(--border); background: transparent;
+  color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.assistantStarter:hover { color: var(--text); border-style: solid; border-color: rgba(33,201,122,.5); background: var(--accent-soft); }
+
+.assistantInputRow { display: grid; grid-template-columns: 1fr 52px; gap: 0; align-items: stretch; }
+.assistantInputRow .input {
+  min-height: 46px; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; padding-inline: 16px;
+}
+.assistantSend {
+  min-height: 46px; border-radius: 0 14px 14px 0; padding-inline: 0; justify-content: center; font-size: 1.15rem;
+}
+
+.assistantDisclaimers { display: grid; gap: 4px; }
+.assistantGuardline { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--accent); }
+.assistantFinePrint { font-size: 11.5px; color: var(--muted); }
+
+/* Responsive */
+@media (max-width: 1180px) {
+  .insightsFull .insightGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Below this width the assistant drops under the health card and the message
+   list is capped so a long chat scrolls internally instead of growing the page. */
+@media (max-width: 900px) {
+  .insightsTopRow { grid-template-columns: 1fr; }
+  /* Cards are stacked now, so neither card needs a forced height. The health
+     card sizes to its content, and the assistant flows naturally: its full
+     greeting and conversation are visible and the page scrolls, rather than the
+     chat being squeezed into a short internal-scroll panel. */
+  .insightsTopRow > .healthCard { min-height: 0; }
+  .heroHealthComponents { margin-top: 4px; }
+  .insightsTopRow > .assistantCard { min-height: 0; overflow: visible; }
+  .insightsTopRow > .assistantCard .assistantMessages { flex: 0 1 auto; min-height: 0; max-height: none; overflow: visible; }
+  .kpiStrip { grid-template-columns: 1fr 1fr; }
+  .heroHealthComponents { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 720px) {
+  .insightsFull .insightGrid { grid-template-columns: 1fr; }
+  .assistantBubble { max-width: 94%; }
+}
+
+@media (max-width: 560px) {
+  .kpiStrip { grid-template-columns: 1fr; }
+}
+
+/* Light theme adjustments */
+body.light .insightCard { background: rgba(255,255,255,.7); }
+body.light .insightCard.tipCard { background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(37,99,235,.10)); }
+body.light .assistantBubble.bot { background: rgba(255,255,255,.82); }
+body.light .insightTier.upcoming { color: #52627f; }
+body.light .healthComponentBar,
+body.light .healthComponentBar { background: rgba(76,101,145,.16); }
