@@ -854,12 +854,6 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
   ctx.fillStyle = c.bg
   ctx.fillRect(0, 0, PW, PH)
 
-  const accentRule = (yPos: number) => {
-    const bar = ctx.createLinearGradient(0, 0, PW, 0)
-    bar.addColorStop(0, c.green); bar.addColorStop(0.5, '#14b8c4'); bar.addColorStop(1, c.blue)
-    ctx.fillStyle = bar; ctx.fillRect(0, yPos, PW, 3)
-  }
-
   // ---- header (same light tone, colourful accent rule) -------------------
   const Header = () => {
     ctx.fillStyle = c.headerBg
@@ -868,8 +862,6 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     g1.addColorStop(0, 'rgba(255,255,255,0.6)')
     g1.addColorStop(1, 'rgba(255,255,255,0)')
     ctx.fillStyle = g1; ctx.fillRect(0, 0, PW, HB)
-    line(0, HB - 3, PW, HB - 3, c.line, 1)
-    accentRule(HB - 3)
 
     const iconSize = 44
     fillRoundedRect(ctx, PAD, 30, iconSize, iconSize, 12, c.white)
@@ -1141,7 +1133,6 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     const fy = PH - FB
     ctx.fillStyle = c.headerBg
     ctx.fillRect(0, fy, PW, FB)
-    accentRule(fy)
     const lx = PAD, mid = fy + FB / 2 + 2
     strokeRoundedRect(ctx, lx, mid - 6, 14, 12, 3, c.sub, 1.6)
     ctx.beginPath(); ctx.arc(lx + 7, mid - 6, 5, Math.PI, 0); ctx.strokeStyle = c.sub; ctx.lineWidth = 1.6; ctx.stroke()
@@ -8249,6 +8240,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
     </div>
   )
 }
+
 
 
 
