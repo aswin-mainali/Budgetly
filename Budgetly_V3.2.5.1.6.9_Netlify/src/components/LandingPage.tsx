@@ -18,6 +18,8 @@ import {
   Zap,
   RefreshCw,
   Wallet,
+  Sun,
+  Moon,
 } from 'lucide-react'
 
 import dashboardImg from '../assets/landing/dashboard.png'
@@ -30,6 +32,8 @@ import categoryImg from '../assets/landing/category.png'
 type LandingPageProps = {
   onSignIn: () => void
   onSignUp: () => void
+  theme: 'dark' | 'light'
+  onToggleTheme: () => void
 }
 
 // The single animated preview cycles through a curated set of real screenshots.
@@ -138,7 +142,8 @@ const STEPS = [
 
 const HERO_POINTS = ['Free to start', 'No credit card', 'Works on every device']
 
-export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
+export default function LandingPage({ onSignIn, onSignUp, theme, onToggleTheme }: LandingPageProps) {
+  const isDark = theme === 'dark'
   const [shot, setShot] = useState(0)
   const [paused, setPaused] = useState(false)
 
@@ -170,6 +175,15 @@ export default function LandingPage({ onSignIn, onSignUp }: LandingPageProps) {
           <a href="#how">How it works</a>
         </nav>
         <div className="lpNavCtas">
+          <button
+            type="button"
+            className="lpThemeToggle"
+            onClick={onToggleTheme}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
           <button type="button" className="lpBtnGhost" onClick={onSignIn}>
             <LogIn size={16} /> Sign in
           </button>

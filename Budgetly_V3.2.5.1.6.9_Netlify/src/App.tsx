@@ -567,6 +567,8 @@ export default function App() {
     if (authEntry === 'landing') {
       return (
         <LandingPage
+          theme={theme}
+          onToggleTheme={() => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))}
           onSignIn={() => setAuthEntry('signin')}
           onSignUp={() => setAuthEntry('signup')}
         />
