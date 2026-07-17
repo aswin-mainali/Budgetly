@@ -8,8 +8,18 @@
 //          (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY injected automatically)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' }
-const json = (body: unknown, status = 200) =>
+// Reflect whatever headers the browser asks for in the preflight. The Supabase JS
+// client sends a moving set of headers (authorization, apikey, x-client-info,
+// x-supabase-api-version, …) and a fixed allow-list silently breaks the POST after a
+// client upgrade — the preflight passes but the browser blocks the real request.
+const corsHeaders = (req: Request): Record<string, string> => ({
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers':
+    req.headers.get('Access-Control-Request-Headers') ?? 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400',
+})
+const jsonWith = (cors: Record<string, string>) => (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
 
 const APP_URL = 'https://budgetly.netlify.app'
@@ -54,6 +64,8 @@ const buildHtml = (name: string, ref: string, title: string, status: string, not
 }
 
 Deno.serve(async (req) => {
+  const cors = corsHeaders(req)
+  const json = jsonWith(cors)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
