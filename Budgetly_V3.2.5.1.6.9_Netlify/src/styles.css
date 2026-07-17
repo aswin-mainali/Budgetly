@@ -9383,10 +9383,9 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   @media (max-width: 420px){
     body.mobile-app .mobileDashTitleRow{gap:8px;align-items:center}
     body.mobile-app .mobileDashTitle{font-size:clamp(21px,7vw,38px);line-height:1;flex:1 1 auto;min-width:0}
-    body.mobile-app .mobileDashMonth{flex:0 0 clamp(108px,31vw,132px);max-width:clamp(108px,31vw,132px)}
   }
   body.mobile-app .mobileDashSubtitle{color:var(--muted);margin-top:4px}
-  body.mobile-app .mobileDashMonth{flex:0 0 146px;max-width:146px;border-radius:16px;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);padding:10px 12px}
+  body.mobile-app .mobileDashMonth{flex:0 0 auto;width:clamp(108px,30vw,128px);max-width:clamp(108px,30vw,128px);min-width:0;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:16px;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);padding:10px 30px 10px 12px}
   body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
   body.mobile-app .mobileRefKpi{border:1px solid var(--border);background:var(--panel-elevated);border-radius:20px;padding:12px;display:grid;gap:6px;text-align:left;color:var(--text);min-width:0;overflow:hidden}
   body.mobile-app .mobileRefKpi strong{font-size:20px}
