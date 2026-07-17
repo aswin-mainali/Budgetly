@@ -3152,6 +3152,7 @@ body.light .cropEditorModal h3{color:#1f2937}
 .notifNewBadge{padding:7px 14px;border-radius:999px;background:#e6f0ff;color:#2563eb;font-weight:700}
 .notifMarkRead{border:0;background:transparent;color:#2563eb;font-weight:700}
 .notifMarkRead:disabled{opacity:.45}
+.notifCloseBtn{display:none}
 .notifList{max-height:560px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
 .notifList::-webkit-scrollbar{display:none}
 .notifRow{width:100%;border:0;background:transparent;display:flex;gap:18px;align-items:center;padding:22px 20px;border-bottom:1px solid rgba(148,163,184,.2);text-align:left}
@@ -3209,11 +3210,14 @@ body:not(.light) .settingsNotifSelect{background:#0f172a;color:#e2e8f0;border-co
      handle and mobile-scaled rows instead of a shrunken desktop popover. */
   .notification-popover{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;max-height:82vh;border:0;border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;z-index:1300;padding-top:16px;box-shadow:0 -20px 55px rgba(2,6,23,.32)}
   .notification-popover::before{display:block;content:"";position:absolute;top:8px;left:50%;right:auto;width:38px;height:5px;margin-left:-19px;border:0;border-radius:999px;background:rgba(148,163,184,.55);transform:none}
-  .notifHeader{flex-shrink:0;padding:6px 18px 12px;border-bottom-color:rgba(148,163,184,.16)}
-  .notifHeaderLeft{gap:8px}
-  .notifHeaderLeft strong{font-size:19px}
-  .notifNewBadge{padding:3px 9px;font-size:12px}
-  .notifMarkRead{font-size:13px}
+  .notifHeader{flex-shrink:0;gap:8px;padding:6px 14px 12px;border-bottom-color:rgba(148,163,184,.16)}
+  .notifHeaderLeft{gap:7px;margin-right:auto;min-width:0}
+  .notifHeaderLeft strong{font-size:17px}
+  .notifNewBadge{padding:2px 8px;font-size:11px;white-space:nowrap}
+  .notifMarkRead{font-size:12.5px;white-space:nowrap}
+  .notifCloseBtn{display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border-radius:10px;border:0;background:rgba(148,163,184,.18);color:#475569}
+  .notifCloseBtn:hover{background:rgba(148,163,184,.3)}
+  body:not(.light) .notifCloseBtn{background:rgba(148,163,184,.16);color:#cbd5e1}
   .notifList{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}
   .notification-mobile-list{overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
   .notification-mobile-list::-webkit-scrollbar{display:none}

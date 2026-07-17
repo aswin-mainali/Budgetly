@@ -1915,6 +1915,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
         <div className="notifHeader">
           <div className="notifHeaderLeft"><strong>Notifications</strong>{unreadCount > 0 ? <span className="notifNewBadge">{unreadCount} new</span> : null}</div>
           <button className="notifMarkRead" disabled={!unreadCount} onClick={async () => { if (!userId) return; await markAllNotificationsAsRead(userId); await refreshNotifications() }}>Mark all as read</button>
+          <button type="button" className="notifCloseBtn" aria-label="Close notifications" onClick={() => setNotifOpen(false)}><X size={18} /></button>
         </div>
         <div className="notifList notification-mobile-list">
           {groups.map((group, index) => {
