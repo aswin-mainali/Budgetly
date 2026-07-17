@@ -3169,6 +3169,29 @@ const inferGoalEmojiFromName = (name: string) => {
 }
 
 
+const CONVERTER_SAVED_PAIRS_KEY = 'budgetly_converter_saved_pairs'
+const DEFAULT_SAVED_PAIRS: Array<{ from: string; to: string }> = [
+  { from: 'USD', to: 'CAD' },
+  { from: 'CAD', to: 'USD' },
+  { from: 'EUR', to: 'USD' },
+  { from: 'USD', to: 'NPR' },
+]
+
+function loadSavedPairs(): Array<{ from: string; to: string }> {
+  try {
+    const raw = window.localStorage.getItem(CONVERTER_SAVED_PAIRS_KEY)
+    if (!raw) return DEFAULT_SAVED_PAIRS
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return DEFAULT_SAVED_PAIRS
+    const clean = parsed
+      .filter((item) => item && typeof item.from === 'string' && typeof item.to === 'string')
+      .map((item) => ({ from: String(item.from).toUpperCase(), to: String(item.to).toUpperCase() }))
+    return clean
+  } catch {
+    return DEFAULT_SAVED_PAIRS
+  }
+}
+
 // Derive a country flag emoji from an ISO 4217 currency code. The first two
 // letters of nearly every currency code match the ISO 3166 country code, which
 // maps cleanly onto the Unicode regional-indicator flag range.
@@ -3204,12 +3227,7 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
   const [chartError, setChartError] = useState('')
   const [latestProvider, setLatestProvider] = useState('ExchangeRate-API')
   const [chartProvider, setChartProvider] = useState('Frankfurter')
-  const [savedPairs, setSavedPairs] = useState<Array<{ from: string; to: string }>>([
-    { from: 'USD', to: 'CAD' },
-    { from: 'CAD', to: 'USD' },
-    { from: 'EUR', to: 'USD' },
-    { from: 'USD', to: 'NPR' },
-  ])
+  const [savedPairs, setSavedPairs] = useState<Array<{ from: string; to: string }>>(loadSavedPairs)
 
   useEffect(() => {
     if (toCurrency === fromCurrency) {
@@ -3217,6 +3235,15 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
       setToCurrency(fallback)
     }
   }, [fromCurrency, toCurrency, currencyMap])
+
+  // Persist favourite / most-used pairs so they survive reloads.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CONVERTER_SAVED_PAIRS_KEY, JSON.stringify(savedPairs))
+    } catch {
+      /* storage unavailable — favourites stay in-session only */
+    }
+  }, [savedPairs])
 
   useEffect(() => {
     let cancelled = false
@@ -3360,12 +3387,19 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
     setAmount(trimField(nextSend || 0))
   }
 
+  const pairIsSaved = (from: string, to: string) => savedPairs.some((pair) => pair.from === from && pair.to === to)
+
+  const addPair = (from: string, to: string) => {
+    setSavedPairs((current) => (current.some((pair) => pair.from === from && pair.to === to) ? current : [{ from, to }, ...current]))
+  }
+
+  const removePair = (from: string, to: string) => {
+    setSavedPairs((current) => current.filter((pair) => !(pair.from === from && pair.to === to)))
+  }
+
   const toggleFavorite = () => {
-    setSavedPairs((current) => {
-      const exists = current.some((pair) => pair.from === fromCurrency && pair.to === toCurrency)
-      if (exists) return current.filter((pair) => !(pair.from === fromCurrency && pair.to === toCurrency))
-      return [{ from: fromCurrency, to: toCurrency }, ...current]
-    })
+    if (isFavorite) removePair(fromCurrency, toCurrency)
+    else addPair(fromCurrency, toCurrency)
   }
 
   const renderCurrencySelect = (side: 'from' | 'to') => {
@@ -3560,26 +3594,53 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
 
       <div className="cvFavCard">
         <div className="cvFavHead">
-          <span className="cvFavLabel"><Star size={15} /> Saved pairs</span>
+          <span className="cvFavLabel"><Star size={15} className={isFavorite ? 'cvStarActive' : ''} /> Saved pairs</span>
           <button type="button" className={`cvFavToggle ${isFavorite ? 'active' : ''}`} onClick={toggleFavorite}>
-            {isFavorite ? <><Check size={14} /> Saved</> : <><PlusIcon size={14} /> Save {fromCurrency} → {toCurrency}</>}
+            {isFavorite
+              ? <><Check size={14} /> Saved · {fromCurrency} → {toCurrency}</>
+              : <><PlusIcon size={14} /> Add {fromCurrency} → {toCurrency}</>}
           </button>
         </div>
         <div className="cvFavPairs">
           {recentPairs.map((pair) => {
             const isActive = pair.from === fromCurrency && pair.to === toCurrency
+            const saved = pairIsSaved(pair.from, pair.to)
             return (
-              <button
-                key={`${pair.from}-${pair.to}`}
-                className={`cvPairChip ${isActive ? 'active' : ''}`}
-                onClick={() => { setLastEdited('from'); setFromCurrency(pair.from); setToCurrency(pair.to) }}
-              >
-                <span className="cvPairFlags">
-                  <span className="cvFlag" aria-hidden="true">{currencyFlag(pair.from)}</span>
-                  <span className="cvFlag cvFlagOverlap" aria-hidden="true">{currencyFlag(pair.to)}</span>
-                </span>
-                {pair.from} <ArrowUpRight size={13} className="cvPairArrow" /> {pair.to}
-              </button>
+              <div key={`${pair.from}-${pair.to}`} className={`cvPairChip ${isActive ? 'active' : ''} ${saved ? 'saved' : 'unsaved'}`}>
+                <button
+                  type="button"
+                  className="cvPairChipMain"
+                  onClick={() => { setLastEdited('from'); setFromCurrency(pair.from); setToCurrency(pair.to) }}
+                  aria-label={`Convert ${pair.from} to ${pair.to}`}
+                >
+                  <span className="cvPairFlags">
+                    <span className="cvFlag" aria-hidden="true">{currencyFlag(pair.from)}</span>
+                    <span className="cvFlag cvFlagOverlap" aria-hidden="true">{currencyFlag(pair.to)}</span>
+                  </span>
+                  {pair.from} <ArrowUpRight size={13} className="cvPairArrow" /> {pair.to}
+                </button>
+                {saved ? (
+                  <button
+                    type="button"
+                    className="cvPairAction cvPairRemove"
+                    onClick={() => removePair(pair.from, pair.to)}
+                    aria-label={`Remove saved pair ${pair.from} to ${pair.to}`}
+                    title="Remove from saved"
+                  >
+                    <CloseIcon size={13} />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="cvPairAction cvPairAdd"
+                    onClick={() => addPair(pair.from, pair.to)}
+                    aria-label={`Save pair ${pair.from} to ${pair.to}`}
+                    title="Save this pair"
+                  >
+                    <PlusIcon size={13} />
+                  </button>
+                )}
+              </div>
             )
           })}
         </div>
