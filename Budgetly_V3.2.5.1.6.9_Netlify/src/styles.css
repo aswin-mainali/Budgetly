@@ -1280,126 +1280,250 @@ body.light .categoryDropdownOption.selected{background:#e9f2ff}
 }
 
 
-.converterPage { display: grid; gap: 12px; margin-top: -4px; }
-.converterHeader h2 { margin-bottom: 2px; font-size: 36px; }
-.converterSubhead { color: var(--muted); display: flex; align-items: center; gap: 8px; }
-.converterLiveDot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block; }
-.converterGrid { align-items: stretch; }
-.converterGrid.grid.cols2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.converterCard { min-height: 100%; }
-.converterLeftCard { display: grid; gap: 10px; }
-.converterSendRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.converterMainAmount { font-size: clamp(30px, 4vw, 46px); font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
-.converterReceiveAmount { color: #16a34a; }
-.converterCurrencySelect { min-width: 220px; }
-.converterQuickButtons { display: flex; gap: 8px; flex-wrap: wrap; }
-.converterQuickButton {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 12px;
-  background: rgba(255,255,255,.04);
+/* ============================================================
+   Currency Converter — fintech redesign
+   ============================================================ */
+.cvPage { display: grid; gap: 16px; margin-top: -4px; padding-bottom: 8px; }
+
+/* --- Top bar --- */
+.cvTopbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cvEyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent);
+  padding: 5px 10px; border-radius: 999px;
+  background: var(--accent-soft); border: 1px solid rgba(33,201,122,.28);
+}
+.cvTitle { margin: 10px 0 4px; font-size: clamp(24px, 3.4vw, 34px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+.cvSubtitle { margin: 0; color: var(--muted); font-size: 14px; max-width: 46ch; }
+.cvLiveBadge {
+  display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto;
+  padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
   color: var(--text);
-}
-.converterSwapRow { display: flex; justify-content: center; margin: 2px 0; }
-.converterSwapButton {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
   border: 1px solid var(--border);
-  background: rgba(22,163,74,.1);
-  color: #16a34a;
-  display: grid;
-  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
-.converterRateBox { border-radius: 14px; border: 1px solid rgba(22,163,74,.25); background: rgba(22,163,74,.12); padding: 12px 14px; margin-top: 4px; }
-.converterRateHeadline { color: #16a34a; font-weight: 800; font-size: 22px; }
-.converterRateSub { color: var(--muted); margin-top: 4px; }
-.converterInfoGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.converterInfoCard { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: rgba(255,255,255,.03); }
-.converterInfoCard small { display: block; color: var(--muted); margin-bottom: 4px; }
-.converterInfoCard strong { font-size: 16px; }
-.converterChartCard { overflow: hidden; }
-.converterChartWrap { height: 320px; }
-.converterRangeButtons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-.rangeChip {
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.04);
-  color: inherit;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.rangeChip.active {
-  border-color: rgba(96,165,250,.55);
-  background: rgba(96,165,250,.16);
-}
-.converterError {
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(248,113,113,.35);
-  background: rgba(127,29,29,.18);
-  color: #fecaca;
+.cvLiveDot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 rgba(33,201,122,.55); animation: cvPulse 2s infinite; }
+.cvLiveDot.loading { background: var(--warn); box-shadow: 0 0 0 0 rgba(245,158,11,.55); }
+@keyframes cvPulse {
+  0% { box-shadow: 0 0 0 0 rgba(33,201,122,.5); }
+  70% { box-shadow: 0 0 0 7px rgba(33,201,122,0); }
+  100% { box-shadow: 0 0 0 0 rgba(33,201,122,0); }
 }
 
-.converterChartNote {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
+/* --- Layout --- */
+.cvLayout { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 16px; align-items: stretch; }
+.cvConvertCard, .cvChartCard {
+  display: flex; flex-direction: column; gap: 14px; padding: 20px;
+  border-radius: 22px; min-height: 100%;
+}
+
+/* --- Convert card fields --- */
+.cvFieldGroup { position: relative; display: grid; gap: 10px; }
+.cvField {
+  border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012));
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.cvField:focus-within { border-color: rgba(33,201,122,.55); box-shadow: 0 0 0 3px rgba(33,201,122,.14); }
+.cvFieldReceive { background: linear-gradient(180deg, rgba(33,201,122,.10), rgba(33,201,122,.03)); border-color: rgba(33,201,122,.28); }
+.cvFieldTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.cvFieldLabel { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.cvAmountRow { display: flex; align-items: baseline; gap: 8px; }
+.cvSymbol { font-size: 22px; font-weight: 700; color: var(--muted); flex: 0 0 auto; }
+.cvAmountInput {
+  flex: 1 1 auto; min-width: 0; width: 100%;
+  font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1;
+  color: var(--text); background: transparent; border: 0; outline: none; padding: 0;
+}
+.cvAmountReceive { color: var(--accent); }
+.cvAmountInput::placeholder { color: var(--muted); opacity: .5; }
+
+/* Currency pill w/ native select overlay */
+.cvCurrencyPill {
+  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,.04);
-  color: var(--muted);
-  font-size: 13px;
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  transition: border-color .18s ease, background .18s ease;
 }
-.converterAttribution {
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--muted);
+.cvCurrencyPill:hover { border-color: rgba(33,201,122,.5); }
+.cvFlag { font-size: 18px; line-height: 1; }
+.cvCode { font-weight: 800; font-size: 14px; letter-spacing: .02em; }
+.cvPillChevron { color: var(--muted); flex: 0 0 auto; }
+.cvPillSelect { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; }
+
+/* Swap button straddling the two fields */
+.cvSwapBtn {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 46px; height: 46px; border-radius: 50%; z-index: 2; cursor: pointer;
+  display: grid; place-items: center;
+  color: #fff;
+  background: linear-gradient(180deg, #24d989, var(--accent));
+  border: 3px solid var(--panel-strong);
+  box-shadow: 0 8px 20px rgba(33,201,122,.4);
+  transition: transform .2s ease, box-shadow .2s ease;
 }
-.converterAttribution a {
-  color: inherit;
-  text-decoration: underline;
+.cvSwapBtn:hover { transform: translate(-50%, -50%) rotate(180deg); box-shadow: 0 10px 26px rgba(33,201,122,.55); }
+.cvSwapBtn:active { transform: translate(-50%, -50%) scale(.92); }
+
+/* Quick chips */
+.cvQuickRow { display: flex; gap: 8px; flex-wrap: wrap; }
+.cvQuickChip {
+  border: 1px solid var(--border); border-radius: 999px; padding: 7px 15px;
+  font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+  background: rgba(255,255,255,.04); transition: all .16s ease;
 }
-.converterChartFooter { display: flex; align-items: center; margin-top: 10px; }
-.converterRecentBox {
+.cvQuickChip:hover { border-color: rgba(33,201,122,.45); color: var(--accent); }
+.cvQuickChip.active { border-color: rgba(33,201,122,.55); background: var(--accent-soft); color: var(--accent); }
+
+/* Rate strip */
+.cvRateStrip {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px; border-radius: 16px; margin-top: 2px;
+  border: 1px solid rgba(33,201,122,.24);
+  background: linear-gradient(180deg, rgba(33,201,122,.12), rgba(33,201,122,.04));
+}
+.cvRateMain { display: flex; flex-direction: column; gap: 3px; }
+.cvRateLabel { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cvRateValue { font-size: 18px; font-weight: 800; color: var(--accent); }
+.cvChangePill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 700;
+}
+.cvChangePill.up { color: #10b981; background: rgba(16,185,129,.14); border: 1px solid rgba(16,185,129,.3); }
+.cvChangePill.down { color: #f87171; background: rgba(248,113,113,.14); border: 1px solid rgba(248,113,113,.3); }
+.cvInverse { font-size: 13px; color: var(--muted); margin-top: -4px; }
+
+/* Stat row */
+.cvStatRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cvStat {
+  display: flex; flex-direction: column; gap: 5px;
+  border: 1px solid var(--border); border-radius: 14px; padding: 11px 13px;
+  background: rgba(255,255,255,.028);
+}
+.cvStatLabel { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.cvStat strong { font-size: 15px; font-weight: 700; }
+.cvStat strong.pos { color: #10b981; }
+.cvStat strong.neg { color: #f87171; }
+.cvStatSource { font-size: 13px !important; }
+
+.cvError {
+  margin-top: 2px; padding: 12px 14px; border-radius: 14px;
+  border: 1px solid rgba(248,113,113,.35); background: rgba(127,29,29,.18); color: #fecaca; font-size: 13px;
+}
+.cvAttribution { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 2px; font-size: 12px; color: var(--muted); }
+.cvAttribution a { color: var(--accent); text-decoration: none; }
+.cvAttribution a:hover { text-decoration: underline; }
+
+/* --- Chart card --- */
+.cvChartCard { overflow: hidden; }
+.cvChartHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.cvChartTitleWrap { display: flex; flex-direction: column; gap: 8px; }
+.cvChartPair { display: inline-flex; align-items: center; gap: 6px; }
+.cvFlagOverlap { margin-left: -10px; }
+.cvChartPairText { margin-left: 6px; font-weight: 700; font-size: 14px; color: var(--muted); letter-spacing: .02em; }
+.cvChartHeadline { display: inline-flex; align-items: center; gap: 10px; }
+.cvChartHeadline strong { font-size: clamp(24px, 3vw, 30px); font-weight: 800; letter-spacing: -0.02em; }
+
+.cvRangeControl {
+  display: inline-flex; gap: 2px; padding: 4px; border-radius: 12px; flex-wrap: wrap;
+  border: 1px solid var(--border); background: rgba(0,0,0,.16);
+}
+.cvRangeChip {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  border-radius: 9px; padding: 6px 12px; font-size: 12px; font-weight: 700; transition: all .16s ease;
+}
+.cvRangeChip:hover { color: var(--text); }
+.cvRangeChip.active { background: var(--accent); color: #06231a; box-shadow: 0 4px 12px rgba(33,201,122,.3); }
+
+.cvChartNote {
+  padding: 10px 12px; border-radius: 12px; font-size: 13px;
+  border: 1px solid rgba(245,158,11,.28); background: rgba(245,158,11,.08); color: var(--warn);
+}
+
+.cvChartWrap { position: relative; flex: 1 1 auto; min-height: 260px; height: 320px; }
+.cvChartLoader {
+  position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; gap: 8px;
+  color: var(--muted); font-size: 13px; font-weight: 600; backdrop-filter: blur(1px);
+}
+.cvSpin { animation: cvSpin 1s linear infinite; }
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+
+.cvChartStats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cvChartStat {
+  display: flex; flex-direction: column; gap: 5px;
+  border: 1px solid var(--border); border-radius: 14px; padding: 11px 13px; background: rgba(255,255,255,.028);
+}
+.cvChartStat span { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.cvChartStat strong { font-size: 15px; font-weight: 700; }
+
+/* --- Saved pairs --- */
+.cvFavCard {
+  display: grid; gap: 14px; padding: 18px 20px; border-radius: 20px;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  background: rgba(255,255,255,.04);
-  display: grid;
-  gap: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
 }
-.converterRecentPairs { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-.converterRecentLabel { font-weight: 700; color: var(--muted); }
-.converterPairChip { border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--text); border-radius: 10px; padding: 9px 14px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
-.converterPairChip.active {
-  border-color: rgba(22,163,74,.45);
-  background: rgba(22,163,74,.15);
+.cvFavHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cvFavLabel { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+.cvFavLabel svg { color: var(--accent); }
+.cvFavToggle {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 999px; padding: 7px 14px;
+  font-size: 13px; font-weight: 600; color: var(--text); background: rgba(255,255,255,.04); transition: all .16s ease;
 }
-body.light .converterRecentBox {
-  background: #ffffff;
-  border-color: rgba(148,163,184,.32);
+.cvFavToggle:hover { border-color: rgba(33,201,122,.5); color: var(--accent); }
+.cvFavToggle.active { border-color: rgba(33,201,122,.55); background: var(--accent-soft); color: var(--accent); }
+.cvFavPairs { display: flex; flex-wrap: wrap; gap: 10px; }
+.cvPairChip {
+  display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 14px; padding: 9px 14px;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.015));
+  transition: all .16s ease;
 }
-@media (max-width: 900px) {
-  .converterRangeButtons { justify-content: flex-start; }
-  .converterSendRow { flex-direction: column; align-items: flex-start; }
-  .converterCurrencySelect { width: 100%; min-width: 0; }
-  .converterInfoGrid { grid-template-columns: 1fr; }
-  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
-  .converterChartWrap { height: 260px; }
+.cvPairChip:hover { border-color: rgba(33,201,122,.45); transform: translateY(-1px); }
+.cvPairChip.active { border-color: rgba(33,201,122,.55); background: var(--accent-soft); }
+.cvPairFlags { display: inline-flex; align-items: center; }
+.cvPairArrow { color: var(--muted); }
+
+/* --- Light theme --- */
+body.light .cvField { background: linear-gradient(180deg, rgba(15,23,42,.03), rgba(15,23,42,.008)); border-color: rgba(148,163,184,.32); }
+body.light .cvFieldReceive { background: linear-gradient(180deg, rgba(33,201,122,.1), rgba(33,201,122,.03)); border-color: rgba(22,163,74,.3); }
+body.light .cvCurrencyPill { background: #fff; border-color: rgba(148,163,184,.35); }
+body.light .cvSwapBtn { border-color: #fff; }
+body.light .cvQuickChip,
+body.light .cvFavToggle,
+body.light .cvStat,
+body.light .cvChartStat { background: rgba(15,23,42,.03); }
+body.light .cvPairChip { background: #fff; border-color: rgba(148,163,184,.32); }
+body.light .cvFavCard { background: #fff; border-color: rgba(148,163,184,.28); }
+body.light .cvRangeControl { background: rgba(15,23,42,.05); }
+body.light .cvRangeChip.active { color: #06231a; }
+body.light .cvLiveBadge { background: #fff; }
+
+/* --- Responsive --- */
+@media (max-width: 1080px) {
+  .cvLayout { grid-template-columns: 1fr; }
+  .cvChartWrap { height: 300px; }
 }
-@media (max-width: 1200px) {
-  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
-  .converterSendRow { flex-direction: column; align-items: flex-start; }
-  .converterCurrencySelect { width: 100%; min-width: 0; }
-  .converterChartWrap { height: 270px; }
+@media (max-width: 640px) {
+  .cvConvertCard, .cvChartCard { padding: 16px; border-radius: 18px; }
+  .cvFavCard { padding: 16px; }
+  .cvStatRow, .cvChartStats { grid-template-columns: 1fr 1fr; }
+  .cvStatSource, .cvStat:last-child { grid-column: span 2; }
+  .cvChartWrap { height: 260px; min-height: 220px; }
+  .cvChartHead { gap: 10px; }
+  .cvRangeControl { width: 100%; justify-content: space-between; }
+  .cvRangeChip { flex: 1 1 auto; text-align: center; padding: 7px 8px; }
+  .cvTitle { font-size: 24px; }
+  .cvAmountInput { font-size: 28px; }
+}
+@media (max-width: 380px) {
+  .cvStatRow, .cvChartStats { grid-template-columns: 1fr; }
+  .cvStatSource, .cvStat:last-child { grid-column: auto; }
 }
 @media (max-height: 900px) {
   .toolsPageShellFixed.toolsShellConverter{
@@ -1411,8 +1535,6 @@ body.light .converterRecentBox {
   .toolsPageBody.toolsPageBodyConverter{
     overflow: visible;
   }
-  .converterGrid.grid.cols2 { grid-template-columns: 1fr; }
-  .converterChartWrap { height: 220px; }
 }
 
 
@@ -7271,8 +7393,9 @@ body.light .toolsTopTabs{background:linear-gradient(135deg,rgba(239,246,255,.96)
 }
 
 .toolsPageBody.toolsPageBodyConverter{
-  overflow: hidden;
-  padding-right: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
 }
 
 
