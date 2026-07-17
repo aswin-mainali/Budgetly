@@ -9372,35 +9372,44 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileTopBar{display:flex;align-items:center;gap:12px;padding:4px 6px 14px}
   body.mobile-app .mobileWordmark{display:flex;flex-direction:column;font-family:inherit;font-size:17px;line-height:1.2}
   body.mobile-app .mobileWordmark small{font-size:12px;color:var(--muted)}
-  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px}
-  body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
-  body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px}
+  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px;min-width:0}
+  body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px;min-width:0}
+  body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+  body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   body.mobile-app .mobileNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
   body.mobile-app .mobileTopNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
-  body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:var(--text);max-width:100%;word-break:normal;white-space:nowrap}
+  body.mobile-app .mobileDashTitle{font-size:clamp(27px,8vw,40px);font-weight:800;line-height:1.05;color:var(--text);flex:1 1 auto;min-width:0;word-break:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   @media (max-width: 420px){
     body.mobile-app .mobileDashTitleRow{gap:8px;align-items:center}
-    body.mobile-app .mobileDashTitle{font-size:clamp(34px,10.5vw,42px);line-height:1;flex:1 1 auto;min-width:0}
-    body.mobile-app .mobileDashMonth{flex:0 0 clamp(128px,38vw,146px);max-width:clamp(128px,38vw,146px)}
+    body.mobile-app .mobileDashTitle{font-size:clamp(21px,7vw,38px);line-height:1;flex:1 1 auto;min-width:0}
+    body.mobile-app .mobileDashMonth{flex:0 0 clamp(108px,31vw,132px);max-width:clamp(108px,31vw,132px)}
   }
   body.mobile-app .mobileDashSubtitle{color:var(--muted);margin-top:4px}
   body.mobile-app .mobileDashMonth{flex:0 0 146px;max-width:146px;border-radius:16px;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);padding:10px 12px}
-  body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-  body.mobile-app .mobileRefKpi{border:1px solid var(--border);background:var(--panel-elevated);border-radius:20px;padding:12px;display:grid;gap:6px;text-align:left;color:var(--text)}
+  body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
+  body.mobile-app .mobileRefKpi{border:1px solid var(--border);background:var(--panel-elevated);border-radius:20px;padding:12px;display:grid;gap:6px;text-align:left;color:var(--text);min-width:0;overflow:hidden}
   body.mobile-app .mobileRefKpi strong{font-size:20px}
   body.mobile-app .mobileRefKpi.income strong{color:#0c9f53}
   body.mobile-app .mobileRefKpi.expenses strong{color:#ef4444}
   body.mobile-app .mobileRefKpi.net strong{color:#2d6ce8}
   body.mobile-app .mobileRefKpi small{color:var(--muted)}
-  body.mobile-app .mobileRefCard{border-radius:22px;background:var(--panel-elevated);border:1px solid var(--border);box-shadow:0 10px 24px rgba(2,6,23,.25)}
-  body.mobile-app .mobileRefTwoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  body.mobile-app .mobileRefCard{border-radius:22px;background:var(--panel-elevated);border:1px solid var(--border);box-shadow:0 10px 24px rgba(2,6,23,.25);min-width:0}
+  body.mobile-app .mobileRefTwoCol{display:grid;grid-template-columns:1fr;gap:12px;min-width:0}
   body.mobile-app .mobileShareWrap{display:grid;grid-template-columns:1fr;gap:6px}
-  body.mobile-app .mobileShareLegend{display:grid;gap:4px}
-  body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted)}
-  body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
-  body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
+  body.mobile-app .mobileShareBody{display:flex;align-items:center;gap:16px;margin-top:8px;min-width:0}
+  body.mobile-app .mobileShareDonut{position:relative;flex:0 0 168px;height:184px}
+  body.mobile-app .mobileShareLegend{display:grid;gap:9px;flex:1 1 auto;min-width:0}
+  body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);min-width:0}
+  body.mobile-app .mobileShareLegendRow > span{display:flex;align-items:center;gap:8px;min-width:0;color:var(--text);font-weight:600}
+  body.mobile-app .mobileShareLegendRow .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  body.mobile-app .mobileShareLegendRow strong{flex:0 0 auto;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+  body.mobile-app .mobileShareLegendRow i{width:9px;height:9px;border-radius:999px;display:inline-block;flex:0 0 auto}
+  @media (max-width:359px){
+    body.mobile-app .mobileShareBody{flex-direction:column;gap:10px}
+    body.mobile-app .mobileShareDonut{flex-basis:auto;width:100%}
+    body.mobile-app .mobileShareLegend{width:100%}
+  }
   body.mobile-app .mobileBudgetScroll{height:auto;min-height:0;overflow:visible;padding-right:4px}
   body.mobile-app .mobileRefCard .mobileBudgetScroll + .paginationFooter{margin-top:12px;padding-bottom:4px}
   body.mobile-app .mobileRecurringRef{max-height:none;overflow:visible}
@@ -9978,11 +9987,11 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .kpiDelta.neutral{ color:var(--muted); }
 
 /* Budget progress: colored track + status fill + remaining label */
-.budgetItemCard .budgetTopRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
-.budgetCatLabel{ display:inline-flex; align-items:center; gap:8px; min-width:0; font-size:13px; font-weight:600; color:var(--text); }
+.budgetTopRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.budgetCatLabel{ display:inline-flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; font-size:13px; font-weight:600; color:var(--text); }
 .budgetCatLabel .budgetCatIcon{ display:grid; place-items:center; width:26px; height:26px; border-radius:8px; flex:0 0 auto; }
 .budgetCatLabel .budgetCatName{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.budgetRemaining{ font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
+.budgetRemaining{ flex:0 0 auto; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
 .budgetRemaining.over{ color:#d03b3b; }
 .progress > div.budgetFill{ border-radius:999px; transition:width .3s ease; }
 
@@ -10024,6 +10033,21 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
   .mobileDashKpis .mobileRefKpi > span{ font-size:10px; letter-spacing:.05em; }
   .mobileDashKpis .kpiDelta{ font-size:10px; gap:2px; }
 }
+
+/* The trend chip is a direct child span of the KPI, so the uppercase label
+   styling above bleeds onto it. Keep it a compact, colored chip and drop the
+   verbose "vs last month" suffix on phones so it never overflows the card. */
+.mobileDashKpis .mobileRefKpi > .kpiDelta{ text-transform:none; letter-spacing:normal; font-weight:600; }
+.mobileDashKpis .mobileRefKpi > .kpiDelta.up{ color:#0a8a0a; }
+.mobileDashKpis .mobileRefKpi > .kpiDelta.down{ color:#d03b3b; }
+.mobileDashKpis .mobileRefKpi > .kpiDelta.neutral{ color:var(--muted); }
+.mobileDashKpis .kpiDeltaSuffix{ display:none; }
+
+/* Three KPI cards share the row on phones, so the currency value must scale to
+   fit the narrow card at every width instead of being clipped by the card edge. */
+body.mobile-app .mobileDashKpis .mobileRefKpi{ padding:11px 9px; }
+body.mobile-app .mobileDashKpis .mobileRefKpi > strong{ font-size:clamp(12px,4vw,17px); white-space:nowrap; letter-spacing:-.03em; }
+body.mobile-app .mobileDashKpis .mobileRefKpi > span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ============================================================
    Landing / marketing page — production-grade (logged-out entry)
