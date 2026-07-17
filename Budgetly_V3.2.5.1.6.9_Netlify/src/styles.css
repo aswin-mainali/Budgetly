@@ -3152,6 +3152,7 @@ body.light .cropEditorModal h3{color:#1f2937}
 .notifNewBadge{padding:7px 14px;border-radius:999px;background:#e6f0ff;color:#2563eb;font-weight:700}
 .notifMarkRead{border:0;background:transparent;color:#2563eb;font-weight:700}
 .notifMarkRead:disabled{opacity:.45}
+.notifCloseBtn{display:none}
 .notifList{max-height:560px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none}
 .notifList::-webkit-scrollbar{display:none}
 .notifRow{width:100%;border:0;background:transparent;display:flex;gap:18px;align-items:center;padding:22px 20px;border-bottom:1px solid rgba(148,163,184,.2);text-align:left}
@@ -3205,16 +3206,36 @@ body:not(.light) .notifActionBtn:hover{background:rgba(148,163,184,.28);color:#f
 body:not(.light) .settingsNotifSelect{background:#0f172a;color:#e2e8f0;border-color:rgba(148,163,184,.3)}
 .settingsSwitch:disabled{opacity:.5;cursor:not-allowed}
 @media (max-width: 768px){
-  .notification-popover{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 80px);top:auto;width:auto;max-height:75vh;border-radius:24px 24px 20px 20px;display:flex;flex-direction:column;overflow:hidden;z-index:1300}
-  .notification-popover::before{display:none}
-  .notifHeader{flex-shrink:0}
-  .notifList{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 12px)}
+  /* Native-style notification sheet: docks to the bottom edge with a grab
+     handle and mobile-scaled rows instead of a shrunken desktop popover. */
+  .notification-popover{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;max-height:82vh;border:0;border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;z-index:1300;padding-top:16px;box-shadow:0 -20px 55px rgba(2,6,23,.32)}
+  .notification-popover::before{display:block;content:"";position:absolute;top:8px;left:50%;right:auto;width:38px;height:5px;margin-left:-19px;border:0;border-radius:999px;background:rgba(148,163,184,.55);transform:none}
+  .notifHeader{flex-shrink:0;gap:8px;padding:6px 14px 12px;border-bottom-color:rgba(148,163,184,.16)}
+  .notifHeaderLeft{gap:7px;margin-right:auto;min-width:0}
+  .notifHeaderLeft strong{font-size:17px}
+  .notifNewBadge{padding:2px 8px;font-size:11px;white-space:nowrap}
+  .notifMarkRead{font-size:12.5px;white-space:nowrap}
+  .notifCloseBtn{display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border-radius:10px;border:0;background:rgba(148,163,184,.18);color:#475569}
+  .notifCloseBtn:hover{background:rgba(148,163,184,.3)}
+  body:not(.light) .notifCloseBtn{background:rgba(148,163,184,.16);color:#cbd5e1}
+  .notifList{flex:1;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom) + 8px)}
   .notification-mobile-list{overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
   .notification-mobile-list::-webkit-scrollbar{display:none}
-  .notifFooter{flex-shrink:0}
-  .notifIcon{width:46px;height:46px}
-  .notifTitle,.notifSubtitle{white-space:normal}
-  .notifRow{min-height:74px}
+  .notifFooter{flex-shrink:0;padding:14px;padding-bottom:calc(14px + env(safe-area-inset-bottom));font-size:15px}
+  .notifRow{min-height:0}
+  .notifRowMain{gap:12px;padding:13px 16px 12px;align-items:flex-start}
+  .notifIcon{width:40px;height:40px;border-radius:12px}
+  .notifIcon svg{width:20px;height:20px}
+  .notifContent{gap:3px;min-width:0}
+  .notifTitle{font-size:15px;line-height:1.3;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .notifSubtitle{font-size:13px;line-height:1.35;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .notifRight{min-width:auto;gap:6px;justify-items:end;flex:0 0 auto}
+  .notifTime{font-size:12px;white-space:nowrap}
+  .notifDot{width:9px;height:9px}
+  .notifShowMore{font-size:13px;margin-top:5px}
+  /* Tidy compact action row, indented to line up under the message text. */
+  .notifRowActions{opacity:1;position:static;margin:0 16px 12px 68px;gap:8px;justify-content:flex-start}
+  .notifActionBtn{width:33px;height:33px;border-radius:10px}
 }
 .settingsTopNavBtn {
   min-width: max-content;
@@ -9372,35 +9393,43 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileTopBar{display:flex;align-items:center;gap:12px;padding:4px 6px 14px}
   body.mobile-app .mobileWordmark{display:flex;flex-direction:column;font-family:inherit;font-size:17px;line-height:1.2}
   body.mobile-app .mobileWordmark small{font-size:12px;color:var(--muted)}
-  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px}
-  body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px}
-  body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px}
+  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px;min-width:0}
+  body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px;min-width:0}
+  body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+  body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px;flex:0 0 auto}
   body.mobile-app .mobileNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
   body.mobile-app .mobileTopNotifBell{width:44px;height:44px;border-radius:14px;flex:0 0 auto}
-  body.mobile-app .mobileDashTitle{font-size:44px;font-weight:800;line-height:1.05;color:var(--text);max-width:100%;word-break:normal;white-space:nowrap}
+  body.mobile-app .mobileDashTitle{font-size:clamp(27px,8vw,40px);font-weight:800;line-height:1.05;color:var(--text);flex:1 1 auto;min-width:0;word-break:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   @media (max-width: 420px){
     body.mobile-app .mobileDashTitleRow{gap:8px;align-items:center}
-    body.mobile-app .mobileDashTitle{font-size:clamp(34px,10.5vw,42px);line-height:1;flex:1 1 auto;min-width:0}
-    body.mobile-app .mobileDashMonth{flex:0 0 clamp(128px,38vw,146px);max-width:clamp(128px,38vw,146px)}
+    body.mobile-app .mobileDashTitle{font-size:clamp(21px,7vw,38px);line-height:1;flex:1 1 auto;min-width:0}
   }
   body.mobile-app .mobileDashSubtitle{color:var(--muted);margin-top:4px}
-  body.mobile-app .mobileDashMonth{flex:0 0 146px;max-width:146px;border-radius:16px;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);padding:10px 12px}
-  body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-  body.mobile-app .mobileRefKpi{border:1px solid var(--border);background:var(--panel-elevated);border-radius:20px;padding:12px;display:grid;gap:6px;text-align:left;color:var(--text)}
+  body.mobile-app .mobileDashMonth{flex:0 0 auto;width:clamp(108px,30vw,128px);max-width:clamp(108px,30vw,128px);min-width:0;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:16px;background:var(--panel-elevated);border:1px solid var(--border);color:var(--text);padding:10px 30px 10px 12px}
+  body.mobile-app .mobileDashKpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
+  body.mobile-app .mobileRefKpi{border:1px solid var(--border);background:var(--panel-elevated);border-radius:20px;padding:12px;display:grid;gap:6px;text-align:left;color:var(--text);min-width:0;overflow:hidden}
   body.mobile-app .mobileRefKpi strong{font-size:20px}
   body.mobile-app .mobileRefKpi.income strong{color:#0c9f53}
   body.mobile-app .mobileRefKpi.expenses strong{color:#ef4444}
   body.mobile-app .mobileRefKpi.net strong{color:#2d6ce8}
   body.mobile-app .mobileRefKpi small{color:var(--muted)}
-  body.mobile-app .mobileRefCard{border-radius:22px;background:var(--panel-elevated);border:1px solid var(--border);box-shadow:0 10px 24px rgba(2,6,23,.25)}
-  body.mobile-app .mobileRefTwoCol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  body.mobile-app .mobileRefCard{border-radius:22px;background:var(--panel-elevated);border:1px solid var(--border);box-shadow:0 10px 24px rgba(2,6,23,.25);min-width:0}
+  body.mobile-app .mobileRefTwoCol{display:grid;grid-template-columns:1fr;gap:12px;min-width:0}
   body.mobile-app .mobileShareWrap{display:grid;grid-template-columns:1fr;gap:6px}
-  body.mobile-app .mobileShareLegend{display:grid;gap:4px}
-  body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted)}
-  body.mobile-app .mobileShareLegendRow span{display:flex;align-items:center;gap:6px;min-width:0}
-  body.mobile-app .mobileShareLegendRow i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
+  body.mobile-app .mobileShareBody{display:flex;align-items:center;gap:16px;margin-top:8px;min-width:0}
+  body.mobile-app .mobileShareDonut{position:relative;flex:0 0 168px;height:184px}
+  body.mobile-app .mobileShareLegend{display:grid;gap:9px;flex:1 1 auto;min-width:0}
+  body.mobile-app .mobileShareLegendRow{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);min-width:0}
+  body.mobile-app .mobileShareLegendRow > span{display:flex;align-items:center;gap:8px;min-width:0;color:var(--text);font-weight:600}
+  body.mobile-app .mobileShareLegendRow .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  body.mobile-app .mobileShareLegendRow strong{flex:0 0 auto;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+  body.mobile-app .mobileShareLegendRow i{width:9px;height:9px;border-radius:999px;display:inline-block;flex:0 0 auto}
+  @media (max-width:359px){
+    body.mobile-app .mobileShareBody{flex-direction:column;gap:10px}
+    body.mobile-app .mobileShareDonut{flex-basis:auto;width:100%}
+    body.mobile-app .mobileShareLegend{width:100%}
+  }
   body.mobile-app .mobileBudgetScroll{height:auto;min-height:0;overflow:visible;padding-right:4px}
   body.mobile-app .mobileRefCard .mobileBudgetScroll + .paginationFooter{margin-top:12px;padding-bottom:4px}
   body.mobile-app .mobileRecurringRef{max-height:none;overflow:visible}
@@ -9978,11 +10007,11 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
 .kpiDelta.neutral{ color:var(--muted); }
 
 /* Budget progress: colored track + status fill + remaining label */
-.budgetItemCard .budgetTopRow{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
-.budgetCatLabel{ display:inline-flex; align-items:center; gap:8px; min-width:0; font-size:13px; font-weight:600; color:var(--text); }
+.budgetTopRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.budgetCatLabel{ display:inline-flex; align-items:center; gap:8px; min-width:0; flex:1 1 auto; font-size:13px; font-weight:600; color:var(--text); }
 .budgetCatLabel .budgetCatIcon{ display:grid; place-items:center; width:26px; height:26px; border-radius:8px; flex:0 0 auto; }
 .budgetCatLabel .budgetCatName{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.budgetRemaining{ font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
+.budgetRemaining{ flex:0 0 auto; font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--muted); white-space:nowrap; }
 .budgetRemaining.over{ color:#d03b3b; }
 .progress > div.budgetFill{ border-radius:999px; transition:width .3s ease; }
 
@@ -10024,6 +10053,21 @@ body.light .kpi.kpiPrimary{ border-color: rgba(37,99,235,.42); }
   .mobileDashKpis .mobileRefKpi > span{ font-size:10px; letter-spacing:.05em; }
   .mobileDashKpis .kpiDelta{ font-size:10px; gap:2px; }
 }
+
+/* The trend chip is a direct child span of the KPI, so the uppercase label
+   styling above bleeds onto it. Keep it a compact, colored chip and drop the
+   verbose "vs last month" suffix on phones so it never overflows the card. */
+.mobileDashKpis .mobileRefKpi > .kpiDelta{ text-transform:none; letter-spacing:normal; font-weight:600; }
+.mobileDashKpis .mobileRefKpi > .kpiDelta.up{ color:#0a8a0a; }
+.mobileDashKpis .mobileRefKpi > .kpiDelta.down{ color:#d03b3b; }
+.mobileDashKpis .mobileRefKpi > .kpiDelta.neutral{ color:var(--muted); }
+.mobileDashKpis .kpiDeltaSuffix{ display:none; }
+
+/* Three KPI cards share the row on phones, so the currency value must scale to
+   fit the narrow card at every width instead of being clipped by the card edge. */
+body.mobile-app .mobileDashKpis .mobileRefKpi{ padding:11px 9px; }
+body.mobile-app .mobileDashKpis .mobileRefKpi > strong{ font-size:clamp(12px,4vw,17px); white-space:nowrap; letter-spacing:-.03em; }
+body.mobile-app .mobileDashKpis .mobileRefKpi > span{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
 /* ============================================================
    Landing / marketing page — production-grade (logged-out entry)
