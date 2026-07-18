@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut, Scale } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
@@ -21,8 +21,8 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
-  toolsSection: 'goals' | 'reports' | 'converter' | 'debt' | 'investments'
-  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt' | 'investments') => void
+  toolsSection: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth') => void
   sync: SyncState
   email?: string | null
   features: FeatureAccess
@@ -192,7 +192,7 @@ export default function Sidebar(props: {
         {visibleItems.map((item) => {
           const isActive = item.key === 'tools' ? (view === 'tools' || toolsExpanded) : view === item.key
           if (item.key === 'tools') {
-            const hasAnyTool = features.goals || features.reports || features.converter || features.investments
+            const hasAnyTool = features.goals || features.reports || features.converter || features.investments || features.networth
             return (
               <div key={item.key} className="toolsNavItem">
                 <button
@@ -227,6 +227,9 @@ export default function Sidebar(props: {
                     ) : null}
                   {features.investments ? (
                       <button className={toolsSection === 'investments' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('investments'); setToolsExpanded(false) }}><BarChart3 size={16} /> <span className='navLabel'>Investments</span></button>
+                    ) : null}
+                  {features.networth ? (
+                      <button className={toolsSection === 'networth' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('networth'); setToolsExpanded(false) }}><Scale size={16} /> <span className='navLabel'>Net Worth</span></button>
                     ) : null}
                   </div>,
                   document.body

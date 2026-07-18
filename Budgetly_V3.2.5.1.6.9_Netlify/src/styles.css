@@ -10626,3 +10626,124 @@ body.light .assistantBubble.bot { background: rgba(255,255,255,.82); }
 body.light .insightTier.upcoming { color: #52627f; }
 body.light .healthComponentBar,
 body.light .healthComponentBar { background: rgba(76,101,145,.16); }
+
+/* ===================== Net Worth page ===================== */
+.netWorthPage{display:flex;flex-direction:column;gap:16px;padding:4px 2px 24px;overflow-y:auto;height:100%}
+.netWorthPage .pos{color:var(--accent)}
+.netWorthPage .neg{color:var(--danger)}
+.nwTop{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.nwTop h2{margin:0;font-size:24px}
+.nwTop p{margin:4px 0 0}
+.nwTopActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.nwCurrencyPill{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--muted);border:1px solid var(--border);border-radius:999px;padding:6px 12px}
+.nwBtnPrimary{background:linear-gradient(135deg,var(--accent),#12b981);color:#04140c;border:none;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+.nwBtnPrimary:hover{filter:brightness(1.05)}
+.nwBtnSecondary{display:inline-flex;align-items:center;gap:8px}
+.nwSpin{animation:nwspin 1s linear infinite}
+@keyframes nwspin{to{transform:rotate(360deg)}}
+
+.nwKpis{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:14px}
+.nwKpi{display:flex;flex-direction:column;gap:6px;padding:16px}
+.nwKpiLabel{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);font-weight:600}
+.nwKpiValue{font-size:22px;font-weight:750;letter-spacing:-.01em}
+.nwKpiHero{background:linear-gradient(150deg,rgba(33,201,122,.14),rgba(33,201,122,.02));border-color:rgba(33,201,122,.3)}
+.nwKpiHeroValue{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.nwDelta{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:650;flex-wrap:wrap}
+.nwDelta.pos{color:var(--accent)}
+.nwDelta.neg{color:var(--danger)}
+.nwDelta .muted{font-weight:500}
+
+.nwGridTop{display:grid;grid-template-columns:1.7fr 1fr;gap:14px}
+.nwGridBottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.nwCard{padding:18px;display:flex;flex-direction:column}
+.nwCardHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.nwCardHead h3{margin:0;color:var(--text);font-size:15px;font-weight:700;display:flex;align-items:baseline;gap:10px}
+.nwListTotal{font-size:13px;color:var(--muted);font-weight:600}
+.nwRanges{display:flex;gap:6px}
+.nwRange{padding:4px 10px;border-radius:8px}
+.nwRange.active{background:var(--accent-soft);border-color:rgba(33,201,122,.4);color:var(--accent)}
+.nwAddSmall{display:inline-flex;align-items:center;gap:5px}
+
+.nwTrendLegend{display:flex;gap:18px;margin-top:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.nwTrendLegend span{display:inline-flex;align-items:center;gap:7px}
+.nwTrendLegend i{width:16px;height:0;border-top:3px solid var(--accent);display:inline-block;border-radius:2px}
+.nwTrendLegend i.dash{border-top:2px dashed #f87171}
+.nwTrendLegend i.area{height:10px;border:none;background:linear-gradient(180deg,rgba(33,201,122,.35),rgba(33,201,122,.05));border-radius:3px}
+
+.nwDonutWrap{position:relative;display:flex;justify-content:center}
+.nwDonutCenter{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.nwDonutCenter strong{display:block;font-size:18px;font-weight:750}
+.nwDonutCenter small{color:var(--muted);font-size:11px}
+.nwLegend{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.nwLegendItem{display:flex;align-items:center;gap:8px;font-size:13px}
+.nwLegendName{flex:1;color:var(--text)}
+.nwLegendItem strong{color:var(--muted);font-weight:650}
+.nwDot{width:10px;height:10px;border-radius:50%;flex:none}
+.nwSplitBar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:16px;background:var(--border)}
+.nwSplitAssets{background:var(--accent)}
+.nwSplitLiab{background:var(--danger)}
+.nwSplitLegend{display:flex;justify-content:space-between;font-size:12px;margin-top:7px}
+.nwSplitLegend .pos{color:var(--accent)}
+.nwSplitLegend .neg{color:var(--danger)}
+
+.nwGroups{display:flex;flex-direction:column;gap:16px}
+.nwGroup{display:flex;flex-direction:column}
+.nwGroupHead{display:flex;align-items:center;gap:9px;padding-bottom:8px;margin-bottom:4px;border-bottom:1px solid var(--border)}
+.nwGroupIcon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--accent-soft);color:var(--accent);flex:none}
+.nwGroupName{flex:1;font-weight:650;font-size:14px}
+.nwGroupSub{font-size:13px;color:var(--muted);font-weight:600}
+.nwRow{display:flex;align-items:center;gap:10px;padding:9px 2px}
+.nwRowMain{flex:1;min-width:0}
+.nwRowName{display:flex;align-items:center;gap:8px;font-size:14px}
+.nwLinkedBadge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:2px 7px}
+.nwRowValue{font-weight:650;font-variant-numeric:tabular-nums}
+.nwRowLink{padding:5px}
+.nwRowSpacer{width:28px;flex:none}
+.nwMenuWrap{position:relative}
+.nwMenuDots{padding:4px 9px;font-size:16px;line-height:1}
+.nwMenu{position:absolute;right:0;top:calc(100% + 4px);z-index:20;background:var(--panel-strong);border:1px solid var(--border);border-radius:12px;padding:6px;min-width:140px;box-shadow:0 12px 30px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:2px}
+.nwMenu button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:none;background:none;color:var(--text);border-radius:8px;font-size:13px;text-align:left;cursor:pointer}
+.nwMenu button:hover{background:var(--accent-soft)}
+.nwMenu .dangerText{color:var(--danger)}
+
+.nwEmpty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--muted);padding:40px 16px;flex:1}
+.nwEmpty svg{opacity:.5}
+.nwEmpty.small{padding:22px 12px}
+.nwEmpty p{margin:0;max-width:280px}
+
+.nwFirstRun{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 20px}
+.nwFirstRun svg{color:var(--accent)}
+.nwFirstRun h3{margin:0;font-size:18px}
+.nwFirstRun p{margin:0;max-width:440px}
+.nwFirstRunActions{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+
+.nwModal{max-width:440px;width:calc(100vw - 32px);display:flex;flex-direction:column;gap:6px;padding:22px}
+.nwModal h3{margin:0 0 8px;font-size:18px}
+.nwSegmented{display:flex;background:var(--border);border-radius:12px;padding:4px;margin-bottom:6px}
+.nwSegmented button{flex:1;border:none;background:none;color:var(--muted);padding:9px;border-radius:9px;font-weight:650;font-size:14px;cursor:pointer}
+.nwSegmented button.active{background:var(--accent);color:#04140c}
+.nwModal .fieldLabel{margin-top:10px}
+.nwModalActions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+
+.nwTooltip{background:var(--panel-strong);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 12px 30px rgba(0,0,0,.4);min-width:180px}
+.nwTooltipDate{font-size:12px;color:var(--muted);margin-bottom:6px}
+.nwTooltipRow{display:flex;justify-content:space-between;gap:16px;font-size:13px;padding:2px 0}
+.nwTooltipRow .pos{color:var(--accent)}
+.nwTooltipRow .neg{color:var(--danger)}
+
+@media (max-width:1024px){
+  .nwKpis{grid-template-columns:1fr 1fr}
+  .nwGridTop,.nwGridBottom{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .nwKpis{grid-template-columns:1fr}
+  .nwTop h2{font-size:21px}
+  .nwKpiHeroValue{font-size:28px}
+}
+
+/* Light theme */
+body.light .nwKpiHero{background:linear-gradient(150deg,rgba(16,185,129,.14),rgba(16,185,129,.03));border-color:rgba(16,185,129,.3)}
+body.light .nwSegmented{background:rgba(76,101,145,.14)}
+body.light .nwMenu,body.light .nwTooltip{background:#fff;box-shadow:0 12px 30px rgba(20,40,80,.16)}
+body.light .nwSplitBar{background:rgba(76,101,145,.16)}
+body.light .nwBtnPrimary,body.light .nwSegmented button.active{color:#053d26}

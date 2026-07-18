@@ -7775,8 +7775,8 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
 
   const accessPresets = useMemo(() => ([
     { id: 'full', label: 'Full Access', access: { ...admin.defaultFeatureAccess } as FeatureAccess },
-    { id: 'standard', label: 'Standard', access: { ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false, investments: false } as FeatureAccess },
-    { id: 'readonly', label: 'Read Only', access: { ...admin.defaultFeatureAccess, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false, investments: false } as FeatureAccess },
+    { id: 'standard', label: 'Standard', access: { ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false, investments: false, networth: false } as FeatureAccess },
+    { id: 'readonly', label: 'Read Only', access: { ...admin.defaultFeatureAccess, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false, investments: false, networth: false } as FeatureAccess },
   ]), [admin.defaultFeatureAccess])
 
   const activePresetId = useMemo(
@@ -7893,6 +7893,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
       advice: 'Insights',
       converter: 'Currency Converter',
       investments: 'Investments',
+      networth: 'Net Worth',
       support: 'Help & Support',
       settings: 'Settings',
     }
@@ -8087,7 +8088,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                   <div className="adminFeatureSections">
                     {([
                       { title: 'Core Modules', keys: ['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const },
-                      { title: 'Planning', keys: ['advice', 'converter', 'investments'] as const },
+                      { title: 'Planning', keys: ['advice', 'converter', 'investments', 'networth'] as const },
                       { title: 'Utilities', keys: ['support', 'settings'] as const },
                     ]).map((group) => (
                       <div key={group.title} className="adminFeatureSection">

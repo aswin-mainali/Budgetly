@@ -17,6 +17,7 @@ export const DEFAULT_FEATURE_ACCESS: FeatureAccess = {
   advice: true,
   converter: true,
   investments: true,
+  networth: true,
   support: true,
   settings: true,
 }
