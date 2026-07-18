@@ -10793,3 +10793,181 @@ body.light .assistantBubble.bot { background: rgba(255,255,255,.82); }
 body.light .insightTier.upcoming { color: #52627f; }
 body.light .healthComponentBar,
 body.light .healthComponentBar { background: rgba(76,101,145,.16); }
+
+/* ---------------------------------------------------------------------------
+   Month-end summary (auto popup on the last day of each month)
+--------------------------------------------------------------------------- */
+.monthSummaryBackdrop{
+  position:fixed;
+  inset:0;
+  z-index:1300;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(2,6,23,.62);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  animation:monthSummaryFade .18s ease;
+}
+body.light .monthSummaryBackdrop{ background:rgba(15,23,42,.4); }
+@keyframes monthSummaryFade{from{opacity:0}to{opacity:1}}
+
+.monthSummaryModal{
+  position:relative;
+  width:min(520px, 100%);
+  max-height:92dvh;
+  overflow-y:auto;
+  padding:26px 24px 20px;
+  border-radius:22px;
+  box-shadow:0 30px 90px rgba(0,0,0,.5);
+  animation:monthSummaryRise .24s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes monthSummaryRise{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+
+.monthSummaryClose{
+  position:absolute;
+  top:16px;
+  right:16px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.03);
+  color:var(--muted);
+  cursor:pointer;
+  transition:color .15s ease, background .15s ease;
+}
+.monthSummaryClose:hover{ color:var(--text); background:rgba(255,255,255,.08); }
+
+.monthSummaryHead{ text-align:center; margin-bottom:18px; }
+.monthSummaryEyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:5px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--accent);
+  background:var(--accent-soft);
+  border:1px solid rgba(33,201,122,.28);
+}
+.monthSummaryHead h2{ margin:12px 0 6px; font-size:24px; line-height:1.2; }
+.monthSummaryHead p{ margin:0; color:var(--muted); font-size:14px; }
+
+.monthSummaryStats{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:10px;
+  margin-bottom:20px;
+}
+.monthSummaryStat{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.018));
+}
+.monthSummaryStat span{ font-size:12px; color:var(--muted); }
+.monthSummaryStat strong{ font-size:17px; letter-spacing:-.01em; }
+.monthSummaryStat.income{ border-color:rgba(34,197,94,.4); background:rgba(34,197,94,.10); }
+.monthSummaryStat.income strong{ color:var(--amount-income); }
+.monthSummaryStat.expenses{ border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.10); }
+.monthSummaryStat.expenses strong{ color:var(--amount-overdue); }
+.monthSummaryStat.net{ border-color:rgba(59,130,246,.4); background:rgba(59,130,246,.10); }
+
+.monthSummarySection{ margin-bottom:18px; }
+.monthSummarySection h3{
+  margin:0 0 10px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+.monthSummaryFacts,
+.monthSummaryActivity{
+  list-style:none;
+  margin:0;
+  padding:0;
+  border:1px solid var(--border);
+  border-radius:16px;
+  overflow:hidden;
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+}
+.monthSummaryFacts li,
+.monthSummaryActivity li{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  border-top:1px solid var(--border);
+}
+.monthSummaryFacts li:first-child,
+.monthSummaryActivity li:first-child{ border-top:0; }
+
+.monthSummaryFactIcon,
+.monthSummaryActivityIcon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  flex-shrink:0;
+}
+.monthSummaryFactIcon.rose{ color:#f43f5e; background:rgba(244,63,94,.14); }
+.monthSummaryFactIcon.blue{ color:#3b82f6; background:rgba(59,130,246,.14); }
+.monthSummaryFactIcon.green{ color:#10b981; background:rgba(16,185,129,.14); }
+.monthSummaryFactIcon.violet{ color:#8b5cf6; background:rgba(139,92,246,.14); }
+.monthSummaryFactLabel{ font-size:14px; }
+.monthSummaryFactValue{
+  margin-left:auto;
+  text-align:right;
+  font-size:14px;
+  font-weight:600;
+  color:var(--text);
+}
+
+.monthSummaryActivityIcon.income{ color:var(--amount-income); background:rgba(34,197,94,.14); }
+.monthSummaryActivityIcon.expense{ color:var(--amount-overdue); background:rgba(239,68,68,.14); }
+.monthSummaryActivityDate{ font-size:13px; color:var(--muted); min-width:52px; }
+.monthSummaryActivityType{ font-size:13px; color:var(--muted); }
+.monthSummaryActivityLabel{
+  font-size:14px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.monthSummaryActivityAmount{
+  margin-left:auto;
+  font-size:14px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.monthSummaryActivityAmount.income{ color:var(--amount-income); }
+.monthSummaryActivityAmount.expense{ color:var(--amount-overdue); }
+
+.monthSummaryFooter{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:20px;
+}
+
+@media (max-width: 560px){
+  .monthSummaryModal{ padding:22px 16px 16px; border-radius:18px; }
+  .monthSummaryStats{ grid-template-columns:repeat(2, 1fr); }
+  .monthSummaryHead h2{ font-size:21px; }
+  .monthSummaryActivityType{ display:none; }
+  .monthSummaryFooter{ flex-direction:column-reverse; }
+  .monthSummaryFooter .btn{ width:100%; }
+}

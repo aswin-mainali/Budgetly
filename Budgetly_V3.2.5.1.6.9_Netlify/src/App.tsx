@@ -14,8 +14,11 @@ import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
 import WelcomeWalkthrough, { TourDestination } from './components/WelcomeWalkthrough'
+import MonthEndSummary from './components/MonthEndSummary'
+import { monthSummaryTargetFor } from './lib/monthSummary'
 
 const THEME_KEY = 'raswibudgeting:theme'
+const MONTH_SUMMARY_SEEN_KEY = 'budgetly:month-summary-seen'
 
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000
 const IDLE_WARNING_MS = 60 * 1000
@@ -58,6 +61,7 @@ export default function App() {
   const [universalSearchOpen, setUniversalSearchOpen] = useState(false)
   const [mobileUnreadCount, setMobileUnreadCount] = useState(0)
   const [showWalkthrough, setShowWalkthrough] = useState(false)
+  const [monthSummaryTarget, setMonthSummaryTarget] = useState<string | null>(null)
   // Controls the logged-out experience: the marketing landing page first, then
   // the sign-in / sign-up form once the visitor chooses to continue.
   const [authEntry, setAuthEntry] = useState<'landing' | 'signin' | 'signup'>('landing')
@@ -289,6 +293,40 @@ export default function App() {
     setShowWalkthrough(false)
     if (userId) void markWalkthroughCompleted(userId).catch(() => { /* best-effort persistence */ })
   }
+
+  // Surface the month-end summary once, on the last day of a month (with a short
+  // grace window into the next month). It's remembered per user + month in
+  // localStorage so it never nags after being dismissed. Only shown when the
+  // month actually has recorded activity — an empty recap isn't worth a popup.
+  useEffect(() => {
+    if (!userId || admin.loading) return
+    if (admin.profile && !admin.profile.is_active) return
+    if (showWalkthrough) return
+    const target = monthSummaryTargetFor()
+    if (!target) return
+    const seenKey = `${MONTH_SUMMARY_SEEN_KEY}:${userId}`
+    if (localStorage.getItem(seenKey) === target) return
+    const hasActivity = budget.data.transactions.some((tx) => monthKey(tx.date) === target)
+    if (!hasActivity) return
+    setMonthSummaryTarget(target)
+  }, [userId, admin.loading, admin.profile, showWalkthrough, budget.data.transactions])
+
+  const dismissMonthSummary = () => {
+    if (userId && monthSummaryTarget) {
+      localStorage.setItem(`${MONTH_SUMMARY_SEEN_KEY}:${userId}`, monthSummaryTarget)
+    }
+    setMonthSummaryTarget(null)
+  }
+
+  // Let other surfaces (e.g. a menu action) reopen the latest month's summary on demand.
+  useEffect(() => {
+    const replay = () => {
+      const target = monthSummaryTargetFor() ?? monthKey(new Date().toISOString())
+      setMonthSummaryTarget(target)
+    }
+    window.addEventListener('budgetly:show-month-summary', replay)
+    return () => window.removeEventListener('budgetly:show-month-summary', replay)
+  }, [])
 
   const orderedViews = useMemo<ViewKey[]>(() => ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'settings', 'support'], [])
   const firstAllowedView = useMemo(() => {
@@ -845,6 +883,20 @@ export default function App() {
           onNavigate={handleTourNavigate}
           onClose={dismissWalkthrough}
           onFinish={dismissWalkthrough}
+        />
+      ) : null}
+      {monthSummaryTarget ? (
+        <MonthEndSummary
+          budget={budget}
+          monthKey={monthSummaryTarget}
+          onClose={dismissMonthSummary}
+          onViewReport={() => {
+            dismissMonthSummary()
+            if (admin.visibleFeatures.reports) {
+              setToolsSection('reports')
+              handleViewChange('tools')
+            }
+          }}
         />
       ) : null}
       <UniversalSearch isOpen={universalSearchOpen} onClose={() => setUniversalSearchOpen(false)} commands={commandItems} shortcutLabel={getUniversalSearchShortcut()} quickAdd={parseQuickAdd} />
