@@ -28,6 +28,15 @@ const LAST_TAB_CLOSED_AT_KEY = 'budgetly:last-tab-closed-at'
 
 type ToastItem = { id: number; message: string }
 
+// Storage access can throw (private mode, browser tracking prevention). These
+// helpers keep those failures from bubbling up as uncaught errors.
+const safeStorageGet = (key: string): string | null => {
+  try { return localStorage.getItem(key) } catch { return null }
+}
+const safeStorageSet = (key: string, value: string) => {
+  try { localStorage.setItem(key, value) } catch { /* storage unavailable */ }
+}
+
 const getTimeGreeting = (date = new Date()) => {
   const hour = date.getHours()
   if (hour < 12) return 'Good morning'
@@ -305,7 +314,7 @@ export default function App() {
     const target = monthSummaryTargetFor()
     if (!target) return
     const seenKey = `${MONTH_SUMMARY_SEEN_KEY}:${userId}`
-    if (localStorage.getItem(seenKey) === target) return
+    if (safeStorageGet(seenKey) === target) return
     const hasActivity = budget.data.transactions.some((tx) => monthKey(tx.date) === target)
     if (!hasActivity) return
     setMonthSummaryTarget(target)
@@ -313,7 +322,7 @@ export default function App() {
 
   const dismissMonthSummary = () => {
     if (userId && monthSummaryTarget) {
-      localStorage.setItem(`${MONTH_SUMMARY_SEEN_KEY}:${userId}`, monthSummaryTarget)
+      safeStorageSet(`${MONTH_SUMMARY_SEEN_KEY}:${userId}`, monthSummaryTarget)
     }
     setMonthSummaryTarget(null)
   }

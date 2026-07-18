@@ -10823,7 +10823,11 @@ body.light .monthSummaryBackdrop{ background:rgba(15,23,42,.4); }
   border-color:rgba(148,163,184,.18);
   box-shadow:0 40px 110px rgba(2,6,23,.55);
   animation:monthSummaryRise .24s cubic-bezier(.2,.8,.2,1);
+  /* Keep the modal scrollable but hide the scrollbar chrome for a cleaner look. */
+  scrollbar-width:none;          /* Firefox */
+  -ms-overflow-style:none;       /* legacy Edge/IE */
 }
+.monthSummaryModal::-webkit-scrollbar{ width:0; height:0; display:none; } /* Chrome/Safari */
 body.light .monthSummaryModal{
   background:linear-gradient(180deg, #ffffff, #fbfdff);
   box-shadow:0 40px 110px rgba(15,23,42,.22);
