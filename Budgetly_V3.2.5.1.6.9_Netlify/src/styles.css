@@ -10966,3 +10966,67 @@ body.light .assistantBubble.bot { background: rgba(255,255,255,.82); }
 body.light .insightTier.upcoming { color: #52627f; }
 body.light .healthComponentBar,
 body.light .healthComponentBar { background: rgba(76,101,145,.16); }
+
+
+/* Settings — compact icon + label underline tab bar */
+.settingsTabsRow{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  min-width:0;
+  margin-top:4px;
+  border-bottom:0.5px solid var(--border);
+}
+.settingsTabsRowControl{
+  flex:0 0 auto;
+  align-self:center;
+  margin-bottom:6px;
+  margin-left:auto;
+}
+.settingsUnderlineTabs{
+  display:flex;
+  flex:0 1 auto;
+  min-width:0;
+  flex-wrap:nowrap;
+  align-items:stretch;
+  gap:22px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  -webkit-overflow-scrolling:touch;
+}
+.settingsUnderlineTabs::-webkit-scrollbar{display:none;}
+.settingsUnderlineTab{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:8px 2px;
+  margin-bottom:-0.5px;
+  background:none;
+  border:0;
+  border-bottom:2px solid transparent;
+  color:var(--muted);
+  font-size:13.5px;
+  font-weight:600;
+  line-height:1.2;
+  white-space:nowrap;
+  cursor:pointer;
+  transition:color 180ms ease, border-color 180ms ease;
+}
+.settingsUnderlineTab:hover{color:var(--text);}
+.settingsUnderlineTab.active{
+  color:var(--text);
+  font-weight:700;
+  border-bottom-color:var(--accent);
+}
+.settingsUnderlineTabIcon{flex:0 0 auto;}
+@media (max-width:960px){
+  .settingsUnderlineTabs{gap:18px;}
+}
+@media (max-width:720px){
+  /* Give the tab row full width to scroll on small screens; the
+     "Workspace controls" label is decorative, so drop it here. */
+  .settingsTabsRowControl{display:none;}
+}

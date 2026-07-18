@@ -1165,7 +1165,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Database, User, History } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -6179,20 +6179,22 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
       <div className="settingsContentStack settingsContentStackTopNav">
         <div className="card settingsTopCard settingsTopCardFull">
-          <div className="row between settingsTopHeader" style={{ gap: 12, alignItems: 'flex-start' }}>
+          <div className="settingsTopHeader">
             <div>
               <div className="h1" style={{ marginBottom: 6 }}>Settings</div>
               <div className="muted">Manage workspace preferences, exports, account details, and admin controls in one place.</div>
             </div>
-            <span className="badge">Workspace controls</span>
           </div>
-          <div className="settingsTopTabs" role="tablist" aria-label="Settings sections">
-            <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'general' ? 'active' : ''}`} onClick={() => setSettingsSection('general')}>General</button>
-            <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'data' ? 'active' : ''}`} onClick={() => setSettingsSection('data')}>Data & backup</button>
-            <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'account' ? 'active' : ''}`} onClick={() => setSettingsSection('account')}>Account</button>
-            {isSuperAdmin ? <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'admin' ? 'active' : ''}`} onClick={() => setSettingsSection('admin')}>Super Admin</button> : null}
-            {isSuperAdmin ? <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'audit' ? 'active' : ''}`} onClick={() => setSettingsSection('audit')}>Audit Log</button> : null}
-            {isSuperAdmin ? <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'bugs' ? 'active' : ''}`} onClick={() => setSettingsSection('bugs')}>Bugs & Fixes</button> : null}
+          <div className="settingsTabsRow">
+          <div className="settingsUnderlineTabs" role="tablist" aria-label="Settings sections">
+            <button role="tab" aria-selected={settingsSection === 'general'} className={`settingsUnderlineTab ${settingsSection === 'general' ? 'active' : ''}`} onClick={() => setSettingsSection('general')}><Settings size={15} className="settingsUnderlineTabIcon" /><span>General</span></button>
+            <button role="tab" aria-selected={settingsSection === 'data'} className={`settingsUnderlineTab ${settingsSection === 'data' ? 'active' : ''}`} onClick={() => setSettingsSection('data')}><Database size={15} className="settingsUnderlineTabIcon" /><span>Data & backup</span></button>
+            <button role="tab" aria-selected={settingsSection === 'account'} className={`settingsUnderlineTab ${settingsSection === 'account' ? 'active' : ''}`} onClick={() => setSettingsSection('account')}><User size={15} className="settingsUnderlineTabIcon" /><span>Account</span></button>
+            {isSuperAdmin ? <button role="tab" aria-selected={settingsSection === 'admin'} className={`settingsUnderlineTab ${settingsSection === 'admin' ? 'active' : ''}`} onClick={() => setSettingsSection('admin')}><ShieldCheck size={15} className="settingsUnderlineTabIcon" /><span>Super Admin</span></button> : null}
+            {isSuperAdmin ? <button role="tab" aria-selected={settingsSection === 'audit'} className={`settingsUnderlineTab ${settingsSection === 'audit' ? 'active' : ''}`} onClick={() => setSettingsSection('audit')}><History size={15} className="settingsUnderlineTabIcon" /><span>Audit Log</span></button> : null}
+            {isSuperAdmin ? <button role="tab" aria-selected={settingsSection === 'bugs'} className={`settingsUnderlineTab ${settingsSection === 'bugs' ? 'active' : ''}`} onClick={() => setSettingsSection('bugs')}><Bug size={15} className="settingsUnderlineTabIcon" /><span>Bugs & Fixes</span></button> : null}
+          </div>
+          <span className="badge settingsTabsRowControl">Workspace controls</span>
           </div>
         </div>
         {settingsSection === 'general' ? (
