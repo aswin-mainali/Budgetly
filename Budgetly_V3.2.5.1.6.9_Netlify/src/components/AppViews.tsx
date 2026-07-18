@@ -6806,12 +6806,23 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
 
   return (
     <div className={`card ${embedded ? 'settingsPanelCard' : ''}`}>
-      <div className="row between" style={{ marginBottom: 14, gap: 12, alignItems: 'flex-start' }}>
+      <div className="row between auditHeader" style={{ marginBottom: 14, gap: 12, alignItems: 'flex-start' }}>
         <div>
           <h3 style={{ marginBottom: 4 }}>Audit Log</h3>
           <div className="muted">Complete, tamper-resistant history of Super Admin activity — recorded server-side with exact before &amp; after values.</div>
         </div>
-        <span className="badge">{admin.auditTotal} {admin.auditTotal === 1 ? 'entry' : 'entries'}</span>
+        <div className="auditHeaderActions">
+          <span className="badge">{admin.auditTotal} {admin.auditTotal === 1 ? 'entry' : 'entries'}</span>
+          <button className="btn ghost auditToolbarBtn" onClick={() => void admin.reloadAudit()} disabled={admin.auditLoading} title="Refresh">
+            <RefreshCw size={14} className={admin.auditLoading ? 'spin' : ''} /> Refresh
+          </button>
+          <button className="btn ghost auditToolbarBtn" onClick={() => void admin.exportAuditLogs('csv')} title="Export as CSV">
+            <Download size={14} /> CSV
+          </button>
+          <button className="btn ghost auditToolbarBtn" onClick={() => void admin.exportAuditLogs('json')} title="Export as JSON">
+            <Download size={14} /> JSON
+          </button>
+        </div>
       </div>
 
       <div className="auditToolbar">
@@ -6819,7 +6830,7 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
           <Search size={15} />
           <input
             type="text"
-            placeholder="Search action, admin or affected user…"
+            placeholder="Search action, admin or user…"
             value={searchDraft}
             onChange={(event) => setSearchDraft(event.target.value)}
           />
@@ -6841,20 +6852,10 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
           <input type="date" value={filters.to} min={filters.from || undefined} onChange={(event) => admin.setAuditFilters((prev) => ({ ...prev, to: event.target.value }))} />
         </label>
         {hasActiveFilters ? (
-          <button className="btn ghost auditToolbarBtn" onClick={() => { setSearchDraft(''); admin.setAuditFilters(admin.defaultAuditFilters) }}>
+          <button className="btn ghost auditToolbarBtn auditClearBtn" onClick={() => { setSearchDraft(''); admin.setAuditFilters(admin.defaultAuditFilters) }} title="Clear filters">
             <X size={14} /> Clear
           </button>
         ) : null}
-        <div className="auditToolbarSpacer" />
-        <button className="btn ghost auditToolbarBtn" onClick={() => void admin.reloadAudit()} disabled={admin.auditLoading} title="Refresh">
-          <RefreshCw size={14} className={admin.auditLoading ? 'spin' : ''} /> Refresh
-        </button>
-        <button className="btn ghost auditToolbarBtn" onClick={() => void admin.exportAuditLogs('csv')} title="Export as CSV">
-          <Download size={14} /> CSV
-        </button>
-        <button className="btn ghost auditToolbarBtn" onClick={() => void admin.exportAuditLogs('json')} title="Export as JSON">
-          <Download size={14} /> JSON
-        </button>
       </div>
 
       <div className="auditTableShell">
