@@ -6661,85 +6661,206 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
 }
 
 
+const AUDIT_IGNORED_KEYS = new Set(['id', 'user_id', 'created_at', 'updated_at', 'last_active_at'])
+
+const AUDIT_CATEGORY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'all', label: 'All activity' },
+  { value: 'profile', label: 'Profile' },
+  { value: 'feature', label: 'Feature access' },
+  { value: 'user', label: 'User' },
+  { value: 'bug', label: 'Bug report' },
+  { value: 'security', label: 'Security' },
+]
+
+const AUDIT_TYPE_LABELS: Record<string, string> = {
+  profile: 'Profile',
+  feature: 'Feature Access',
+  user: 'User',
+  bug: 'Bug Report',
+  security: 'Security',
+}
+
 function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typeof useSuperAdmin>; embedded?: boolean }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [searchDraft, setSearchDraft] = useState(admin.auditFilters.search)
+
+  // Push the search box into the shared filter (the hook debounces the reload).
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      admin.setAuditFilters((prev) => (prev.search === searchDraft ? prev : { ...prev, search: searchDraft }))
+    }, 300)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDraft])
+
   const formatAuditAction = (action: string) => action.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+  const formatFieldLabel = (key: string) => {
+    if (key === 'is_active') return 'Account Status'
+    if (key === 'workflow_status') return 'Priority'
+    return key.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+  }
+
+  const featureKeys = useMemo(() => new Set(admin.featureKeys), [admin.featureKeys])
 
   const userLookup = useMemo(() => {
     const map = new Map<string, string>()
-    admin.managedUsers.forEach((user) => {
-      map.set(user.id, user.email)
-    })
+    admin.managedUsers.forEach((user) => map.set(user.id, user.email))
     return map
   }, [admin.managedUsers])
 
-  const featureKeys = new Set(admin.featureKeys)
-
-  const getActorLabel = (targetUserId: string | null) => {
-    if (!targetUserId) return 'System'
-    return userLookup.get(targetUserId) ?? `${targetUserId.slice(0, 8)}...`
+  const actorLabel = (item: AdminAuditLog) => item.actor_email ?? userLookup.get(item.admin_user_id) ?? `${item.admin_user_id.slice(0, 8)}…`
+  const targetLabel = (item: AdminAuditLog) => {
+    if (!item.target_user_id) {
+      const snapshotEmail = (item.before as any)?.email ?? (item.after as any)?.email
+      return typeof snapshotEmail === 'string' ? snapshotEmail : 'System'
+    }
+    const snapshotEmail = (item.before as any)?.email ?? (item.after as any)?.email
+    return item.target_email ?? userLookup.get(item.target_user_id) ?? (typeof snapshotEmail === 'string' ? snapshotEmail : `${item.target_user_id.slice(0, 8)}…`)
   }
 
-  const formatBoolean = (value: unknown) => value === true ? 'Enabled' : value === false ? 'Disabled' : String(value)
-  const formatFieldLabel = (key: string) => key.replaceAll('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())
-
-  const getTypeLabel = (action: string) => {
-    if (action.includes('feature')) return 'Feature Access'
-    if (action.includes('profile')) return 'Profile'
-    return 'Admin Action'
+  const inferCategory = (item: AdminAuditLog) => {
+    if (item.category) return item.category
+    if (item.action.includes('feature')) return 'feature'
+    if (item.action === 'user_removed') return 'user'
+    if (item.action.includes('password') || item.action.includes('reset')) return 'security'
+    if (item.action.includes('bug')) return 'bug'
+    if (item.action.includes('profile')) return 'profile'
+    return 'admin'
   }
 
-  const buildDetails = (item: AdminAuditLog) => {
-    const details = item.details ?? {}
-    const changedFields: Array<{ label: string; value: string }> = []
-    const enabledFeatures: string[] = []
-    const disabledFeatures: string[] = []
+  const formatValue = (key: string, value: unknown): string => {
+    if (value === undefined || value === null || value === '') return '—'
+    if (key === 'is_active' && typeof value === 'boolean') return value ? 'Active' : 'Inactive'
+    if (typeof value === 'boolean') return value ? 'Enabled' : 'Disabled'
+    if (typeof value === 'object') return JSON.stringify(value)
+    if (key === 'role' || key === 'status' || key === 'workflow_status') return formatFieldLabel(String(value))
+    return String(value)
+  }
 
-    Object.entries(details).forEach(([key, value]) => {
-      if (featureKeys.has(key as any) && typeof value === 'boolean') {
-        ;(value ? enabledFeatures : disabledFeatures).push(formatFieldLabel(key))
+  const describe = (item: AdminAuditLog) => {
+    const category = inferCategory(item)
+    const before = (item.before ?? null) as Record<string, unknown> | null
+    // Fall back to `details` for legacy rows written before before/after existed.
+    const after = (item.after ?? item.details ?? null) as Record<string, unknown> | null
+
+    const enabled: string[] = []
+    const disabled: string[] = []
+    const diffs: Array<{ label: string; from: string; to: string; changed: boolean }> = []
+
+    const keys = new Set<string>()
+    ;[before, after].forEach((obj) => obj && Object.keys(obj).forEach((key) => { if (!AUDIT_IGNORED_KEYS.has(key)) keys.add(key) }))
+
+    keys.forEach((key) => {
+      const fromVal = before ? before[key] : undefined
+      const toVal = after ? after[key] : undefined
+      if (category === 'feature' && featureKeys.has(key as any)) {
+        const on = toVal === true || (toVal === undefined && fromVal === true)
+        ;(on ? enabled : disabled).push(formatFieldLabel(key))
         return
       }
-      if (key === 'is_active' && typeof value === 'boolean') {
-        changedFields.push({ label: 'Account Status', value: value ? 'Active' : 'Inactive' })
-        return
-      }
-      if (key === 'role') {
-        changedFields.push({ label: 'Role', value: formatFieldLabel(String(value)) })
-        return
-      }
-      changedFields.push({ label: formatFieldLabel(key), value: typeof value === 'object' ? JSON.stringify(value) : String(value) })
+      // A true before/after diff needs both sides; a snapshot (delete) or a
+      // one-sided event (password reset) just shows the value that exists.
+      const changed = before != null && after != null
+      const single = after != null ? toVal : fromVal
+      diffs.push({
+        label: formatFieldLabel(key),
+        from: formatValue(key, fromVal),
+        to: changed ? formatValue(key, toVal) : formatValue(key, single),
+        changed,
+      })
     })
 
-    let summary = 'No extra details recorded.'
-    if (item.action.includes('feature')) {
+    let summary: string
+    if (item.action === 'user_removed') {
+      summary = `Removed ${targetLabel(item)}`
+    } else if (item.action === 'password_reset_sent') {
+      summary = `Password reset email sent to ${targetLabel(item)}`
+    } else if (category === 'feature') {
       const parts: string[] = []
-      if (enabledFeatures.length) parts.push(`${enabledFeatures.length} enabled`)
-      if (disabledFeatures.length) parts.push(`${disabledFeatures.length} disabled`)
+      if (enabled.length) parts.push(`${enabled.length} enabled`)
+      if (disabled.length) parts.push(`${disabled.length} disabled`)
       summary = parts.length ? parts.join(' • ') : 'Feature access updated'
-    } else if (item.action.includes('profile')) {
-      summary = changedFields.length ? changedFields.map((field) => `${field.label}: ${field.value}`).join(' • ') : 'Profile updated'
-    } else if (changedFields.length) {
-      summary = changedFields.map((field) => `${field.label}: ${field.value}`).join(' • ')
+    } else if (diffs.length) {
+      summary = diffs.map((diff) => diff.changed ? `${diff.label}: ${diff.from} → ${diff.to}` : `${diff.label}: ${diff.to}`).join(' • ')
+    } else {
+      summary = 'No further detail recorded.'
     }
 
-    return { summary, changedFields, enabledFeatures, disabledFeatures }
+    return { category, typeLabel: AUDIT_TYPE_LABELS[category] ?? 'Admin Action', summary, diffs, enabled, disabled }
   }
+
+  const formatTimeAgo = (date: Date) => {
+    const diff = Date.now() - date.getTime()
+    const mins = Math.round(diff / 60000)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.round(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    const days = Math.round(hrs / 24)
+    if (days < 30) return `${days}d ago`
+    return date.toLocaleDateString()
+  }
+
+  const filters = admin.auditFilters
+  const hasActiveFilters = filters.search !== '' || filters.category !== 'all' || filters.from !== '' || filters.to !== ''
 
   return (
     <div className={`card ${embedded ? 'settingsPanelCard' : ''}`}>
       <div className="row between" style={{ marginBottom: 14, gap: 12, alignItems: 'flex-start' }}>
         <div>
           <h3 style={{ marginBottom: 4 }}>Audit Log</h3>
-          <div className="muted">Clear, time-stamped history of changes made from Super Admin mode.</div>
+          <div className="muted">Complete, tamper-resistant history of Super Admin activity — recorded server-side with exact before &amp; after values.</div>
         </div>
-        <span className="badge">Last 15 actions</span>
+        <span className="badge">{admin.auditTotal} {admin.auditTotal === 1 ? 'entry' : 'entries'}</span>
+      </div>
+
+      <div className="auditToolbar">
+        <div className="auditSearchField">
+          <Search size={15} />
+          <input
+            type="text"
+            placeholder="Search action, admin or affected user…"
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+          />
+          {searchDraft ? <button className="auditSearchClear" onClick={() => setSearchDraft('')} aria-label="Clear search"><X size={14} /></button> : null}
+        </div>
+        <select
+          className="auditFilterSelect"
+          value={filters.category}
+          onChange={(event) => admin.setAuditFilters((prev) => ({ ...prev, category: event.target.value }))}
+        >
+          {AUDIT_CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+        </select>
+        <label className="auditDateField">
+          <span>From</span>
+          <input type="date" value={filters.from} max={filters.to || undefined} onChange={(event) => admin.setAuditFilters((prev) => ({ ...prev, from: event.target.value }))} />
+        </label>
+        <label className="auditDateField">
+          <span>To</span>
+          <input type="date" value={filters.to} min={filters.from || undefined} onChange={(event) => admin.setAuditFilters((prev) => ({ ...prev, to: event.target.value }))} />
+        </label>
+        {hasActiveFilters ? (
+          <button className="btn ghost auditToolbarBtn" onClick={() => { setSearchDraft(''); admin.setAuditFilters(admin.defaultAuditFilters) }}>
+            <X size={14} /> Clear
+          </button>
+        ) : null}
+        <div className="auditToolbarSpacer" />
+        <button className="btn ghost auditToolbarBtn" onClick={() => void admin.reloadAudit()} disabled={admin.auditLoading} title="Refresh">
+          <RefreshCw size={14} className={admin.auditLoading ? 'spin' : ''} /> Refresh
+        </button>
+        <button className="btn ghost auditToolbarBtn" onClick={() => void admin.exportAuditLogs('csv')} title="Export as CSV">
+          <Download size={14} /> CSV
+        </button>
+        <button className="btn ghost auditToolbarBtn" onClick={() => void admin.exportAuditLogs('json')} title="Export as JSON">
+          <Download size={14} /> JSON
+        </button>
       </div>
 
       <div className="auditTableShell">
         <div className="auditTableHeader">
           <div>Time</div>
-          <div>User</div>
+          <div>Admin</div>
           <div>Action</div>
           <div>Type</div>
           <div>Affected</div>
@@ -6747,20 +6868,22 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
         </div>
 
         <div className="auditTableBody adminAuditScrollable">
-          {admin.auditLogs.length === 0 ? <div className="muted">No admin actions recorded yet.</div> : admin.auditLogs.map((item) => {
+          {admin.auditLogs.length === 0 ? (
+            <div className="muted">{admin.auditLoading ? 'Loading…' : hasActiveFilters ? 'No entries match these filters.' : 'No admin actions recorded yet.'}</div>
+          ) : admin.auditLogs.map((item) => {
             const timestamp = item.created_at ? new Date(item.created_at) : null
-            const details = buildDetails(item)
+            const info = describe(item)
             const isExpanded = expandedId === item.id
             return (
               <div key={item.id} className={`auditEntry ${isExpanded ? 'open' : ''}`}>
                 <div className="auditRowGrid">
                   <div className="auditCell auditCellTime">
                     <strong>{timestamp ? timestamp.toLocaleDateString() : 'Today'}</strong>
-                    <span>{timestamp ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}</span>
+                    <span title={timestamp ? timestamp.toISOString() : undefined}>{timestamp ? formatTimeAgo(timestamp) : 'Just now'}</span>
                   </div>
                   <div className="auditCell">
-                    <span className="auditMobileLabel">User</span>
-                    <span>{getActorLabel(item.admin_user_id)}</span>
+                    <span className="auditMobileLabel">Admin</span>
+                    <span>{actorLabel(item)}</span>
                   </div>
                   <div className="auditCell auditCellAction">
                     <span className="auditMobileLabel">Action</span>
@@ -6768,11 +6891,11 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
                   </div>
                   <div className="auditCell">
                     <span className="auditMobileLabel">Type</span>
-                    <span className="auditTypePill">{getTypeLabel(item.action)}</span>
+                    <span className={`auditTypePill audit-${info.category}`}>{info.typeLabel}</span>
                   </div>
                   <div className="auditCell">
                     <span className="auditMobileLabel">Affected</span>
-                    <span className="auditAffected">{getActorLabel(item.target_user_id)}</span>
+                    <span className="auditAffected">{targetLabel(item)}</span>
                   </div>
                   <div className="auditCell auditCellDetailToggle">
                     <button className="auditDetailBtn" onClick={() => setExpandedId(isExpanded ? null : item.id)}>
@@ -6781,41 +6904,59 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
                   </div>
                 </div>
 
-                <div className="auditSummaryLine">{details.summary}</div>
+                <div className="auditSummaryLine">{info.summary}</div>
 
                 {isExpanded ? (
                   <div className="auditExpandedPanel">
-                    {details.changedFields.length ? (
+                    {info.diffs.length ? (
                       <div className="auditDetailSection">
-                        <div className="auditDetailHeading">Changed fields</div>
-                        <div className="auditKeyValueGrid">
-                          {details.changedFields.map((field) => (
-                            <div key={`${item.id}-${field.label}`} className="auditKeyValueRow">
-                              <span>{field.label}</span>
-                              <strong>{field.value}</strong>
+                        <div className="auditDetailHeading">{info.diffs.some((diff) => diff.changed) ? 'Changes' : 'Details'}</div>
+                        <div className="auditDiffList">
+                          {info.diffs.map((diff) => (
+                            <div key={`${item.id}-${diff.label}`} className="auditDiffRow">
+                              <span className="auditDiffLabel">{diff.label}</span>
+                              {diff.changed ? (
+                                <span className="auditDiffValues">
+                                  <span className="auditDiffFrom">{diff.from}</span>
+                                  <span className="auditDiffArrow">→</span>
+                                  <span className="auditDiffTo">{diff.to}</span>
+                                </span>
+                              ) : (
+                                <strong className="auditDiffTo">{diff.to}</strong>
+                              )}
                             </div>
                           ))}
                         </div>
                       </div>
                     ) : null}
 
-                    {details.enabledFeatures.length ? (
+                    {info.enabled.length ? (
                       <div className="auditDetailSection">
                         <div className="auditDetailHeading">Enabled</div>
                         <div className="auditChipRow">
-                          {details.enabledFeatures.map((label) => <span key={`${item.id}-on-${label}`} className="auditChip success">{label}</span>)}
+                          {info.enabled.map((label) => <span key={`${item.id}-on-${label}`} className="auditChip success">{label}</span>)}
                         </div>
                       </div>
                     ) : null}
 
-                    {details.disabledFeatures.length ? (
+                    {info.disabled.length ? (
                       <div className="auditDetailSection">
                         <div className="auditDetailHeading">Disabled</div>
                         <div className="auditChipRow">
-                          {details.disabledFeatures.map((label) => <span key={`${item.id}-off-${label}`} className="auditChip danger">{label}</span>)}
+                          {info.disabled.map((label) => <span key={`${item.id}-off-${label}`} className="auditChip danger">{label}</span>)}
                         </div>
                       </div>
                     ) : null}
+
+                    <div className="auditDetailSection">
+                      <div className="auditDetailHeading">Context</div>
+                      <div className="auditMetaGrid">
+                        <div className="auditMetaItem"><span>Performed by</span><strong>{actorLabel(item)}</strong></div>
+                        <div className="auditMetaItem"><span>Timestamp</span><strong>{timestamp ? timestamp.toLocaleString() : '—'}</strong></div>
+                        {item.ip_address ? <div className="auditMetaItem"><span>IP address</span><strong>{item.ip_address}</strong></div> : null}
+                        {item.user_agent ? <div className="auditMetaItem auditMetaWide"><span>Device</span><strong>{item.user_agent}</strong></div> : null}
+                      </div>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -6823,6 +6964,14 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
           })}
         </div>
       </div>
+
+      {admin.auditHasMore ? (
+        <div className="auditLoadMore">
+          <button className="btn ghost" onClick={() => void admin.loadMoreAudit()} disabled={admin.auditLoading}>
+            {admin.auditLoading ? 'Loading…' : `Load more (${admin.auditLogs.length} of ${admin.auditTotal})`}
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }

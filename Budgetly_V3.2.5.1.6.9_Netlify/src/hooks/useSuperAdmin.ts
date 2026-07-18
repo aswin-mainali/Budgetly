@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { FeatureAccess, FeatureKey, Profile, UserFeatureAccess, AdminAuditLog, BugReport, BugReportStatus, BugWorkflowStatus } from '../types'
+import { FeatureAccess, FeatureKey, Profile, UserFeatureAccess, AdminAuditLog, AuditFilters, BugReport, BugReportStatus, BugWorkflowStatus } from '../types'
+
+const AUDIT_PAGE_SIZE = 25
+const AUDIT_EXPORT_CAP = 2000
+const RICH_AUDIT_COLUMNS = 'id,admin_user_id,target_user_id,action,category,details,before,after,actor_email,target_email,ip_address,user_agent,created_at'
+const LEGACY_AUDIT_COLUMNS = 'id,admin_user_id,target_user_id,action,details,created_at'
+
+export const DEFAULT_AUDIT_FILTERS: AuditFilters = { search: '', category: 'all', from: '', to: '' }
 
 const notify = (message: string) => {
   if (typeof window === 'undefined') return
@@ -47,6 +54,11 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
   const [loading, setLoading] = useState(true)
   const [managedUsers, setManagedUsers] = useState<AdminManagedUser[]>([])
   const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([])
+  const [auditFilters, setAuditFilters] = useState<AuditFilters>(DEFAULT_AUDIT_FILTERS)
+  const [auditTotal, setAuditTotal] = useState(0)
+  const [auditHasMore, setAuditHasMore] = useState(false)
+  const [auditLoading, setAuditLoading] = useState(false)
+  const auditPageRef = useRef(0)
   const [bugReports, setBugReports] = useState<BugReport[]>([])
   const [overview, setOverview] = useState({ users: 0, activeUsers: 0, transactions: 0, categories: 0, recurring: 0, goals: 0 })
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -103,11 +115,10 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
 
     setError(null)
-    const [profilesResult, accessResult, accountProfilesResult, auditResult, bugResult, activityResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
+    const [profilesResult, accessResult, accountProfilesResult, bugResult, activityResult, txCount, catCount, recurringCount, goalCount] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('user_feature_access').select('*'),
       supabase.from('user_account_profiles').select('user_id,first_name,last_name,image_url'),
-      supabase.from('admin_audit_logs').select('id,admin_user_id,target_user_id,action,details,created_at').order('created_at', { ascending: false }).limit(15),
       supabase.from('bug_reports').select('id,user_id,user_email,title,category,user_severity,steps_to_reproduce,contact_when_resolved,screenshot_name,screenshot_data_url,status,workflow_status,reference_code,diagnostics,admin_notes,created_at,updated_at').order('created_at', { ascending: false }),
       // Real per-user "last active" = auth.users.last_sign_in_at, exposed to super
       // admins via a SECURITY DEFINER function. Best-effort: ignored if the
@@ -122,7 +133,6 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     if (profilesResult.error) throw new Error(profilesResult.error.message)
     if (accessResult.error) throw new Error(accessResult.error.message)
     if (accountProfilesResult.error) throw new Error(accountProfilesResult.error.message)
-    if (auditResult.error) throw new Error(auditResult.error.message)
     if (bugResult.error) throw new Error(bugResult.error.message)
 
     const accessMap = new Map((accessResult.data ?? []).map((row) => [row.user_id, row]))
@@ -146,7 +156,6 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }) as AdminManagedUser[]
 
     setManagedUsers(nextManagedUsers)
-    setAuditLogs((auditResult.data ?? []) as AdminAuditLog[])
     setBugReports((bugResult.data ?? []) as BugReport[])
     setOverview({
       users: nextManagedUsers.length,
@@ -206,20 +215,141 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     }
   }, [loadAdminData])
 
-  const writeAudit = useCallback(async (action: string, targetUserId: string, details: Record<string, unknown>) => {
-    if (!userId || !isSuperAdmin) return
-    await supabase.from('admin_audit_logs').insert({
-      admin_user_id: userId,
-      target_user_id: targetUserId,
-      action,
-      details,
-    })
-  }, [userId, isSuperAdmin])
+  // Audit rows are written server-side by database triggers (profiles /
+  // user_feature_access / bug_reports) so every super-admin change is captured
+  // with an exact before -> after diff and cannot be forged or forgotten by the
+  // client. This RPC covers events that aren't a table change (e.g. a password
+  // reset email). Best-effort: ignored if the migration has not been applied.
+  const logAdminAction = useCallback(async (action: string, category: string, targetUserId: string | null, details: Record<string, unknown>) => {
+    if (!isSuperAdmin) return
+    try {
+      await supabase.rpc('log_admin_action', {
+        p_action: action,
+        p_category: category,
+        p_target_user_id: targetUserId,
+        p_details: details,
+      })
+    } catch {
+      // Non-fatal: the primary action already succeeded.
+    }
+  }, [isSuperAdmin])
+
+  // Runs one audit query for a page range, applying the active filters. Falls
+  // back to the legacy column set if the advanced-audit migration is not applied.
+  const runAuditQuery = useCallback(async (from: number, to: number) => {
+    const term = auditFilters.search.trim().replace(/[,()]/g, ' ').trim()
+    const decorate = (builder: any, rich: boolean) => {
+      let q = builder
+      if (rich && auditFilters.category !== 'all') q = q.eq('category', auditFilters.category)
+      if (auditFilters.from) q = q.gte('created_at', new Date(`${auditFilters.from}T00:00:00`).toISOString())
+      if (auditFilters.to) q = q.lte('created_at', new Date(`${auditFilters.to}T23:59:59.999`).toISOString())
+      if (term) {
+        q = rich
+          ? q.or(`action.ilike.%${term}%,actor_email.ilike.%${term}%,target_email.ilike.%${term}%`)
+          : q.ilike('action', `%${term}%`)
+      }
+      return q.order('created_at', { ascending: false }).range(from, to)
+    }
+
+    let res = await decorate(supabase.from('admin_audit_logs').select(RICH_AUDIT_COLUMNS, { count: 'exact' }), true)
+    if (res.error) {
+      // Advanced columns not present yet — retry against the legacy schema.
+      res = await decorate(supabase.from('admin_audit_logs').select(LEGACY_AUDIT_COLUMNS, { count: 'exact' }), false)
+    }
+    return res
+  }, [auditFilters])
+
+  const reloadAudit = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setAuditLogs([])
+      setAuditTotal(0)
+      setAuditHasMore(false)
+      auditPageRef.current = 0
+      return
+    }
+    setAuditLoading(true)
+    try {
+      const res = await runAuditQuery(0, AUDIT_PAGE_SIZE - 1)
+      if (res.error) throw new Error(res.error.message)
+      const rows = (res.data ?? []) as AdminAuditLog[]
+      setAuditLogs(rows)
+      auditPageRef.current = 0
+      const total = res.count ?? rows.length
+      setAuditTotal(total)
+      setAuditHasMore(rows.length < total)
+    } catch {
+      // Best-effort: keep whatever is already on screen.
+    } finally {
+      setAuditLoading(false)
+    }
+  }, [isSuperAdmin, runAuditQuery])
+
+  const loadMoreAudit = useCallback(async () => {
+    if (!isSuperAdmin || auditLoading) return
+    setAuditLoading(true)
+    try {
+      const nextPage = auditPageRef.current + 1
+      const from = nextPage * AUDIT_PAGE_SIZE
+      const to = from + AUDIT_PAGE_SIZE - 1
+      const res = await runAuditQuery(from, to)
+      if (res.error) throw new Error(res.error.message)
+      const rows = (res.data ?? []) as AdminAuditLog[]
+      setAuditLogs((prev) => [...prev, ...rows])
+      auditPageRef.current = nextPage
+      const total = res.count ?? auditTotal
+      setAuditTotal(total)
+      setAuditHasMore(from + rows.length < total)
+    } catch {
+      // Best-effort.
+    } finally {
+      setAuditLoading(false)
+    }
+  }, [isSuperAdmin, auditLoading, runAuditQuery, auditTotal])
+
+  const exportAuditLogs = useCallback(async (format: 'csv' | 'json') => {
+    if (!isSuperAdmin || typeof window === 'undefined') return
+    try {
+      const res = await runAuditQuery(0, AUDIT_EXPORT_CAP - 1)
+      if (res.error) throw new Error(res.error.message)
+      const rows = (res.data ?? []) as AdminAuditLog[]
+      const stamp = new Date().toISOString().slice(0, 10)
+      let blob: Blob
+      if (format === 'json') {
+        blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' })
+      } else {
+        const columns = ['created_at', 'action', 'category', 'actor_email', 'target_email', 'before', 'after', 'ip_address', 'user_agent'] as const
+        const escape = (value: unknown) => {
+          const text = value == null ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value)
+          return `"${text.replace(/"/g, '""')}"`
+        }
+        const lines = [columns.join(',')]
+        rows.forEach((row) => lines.push(columns.map((col) => escape((row as any)[col])).join(',')))
+        blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+      }
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `budgetly-audit-log-${stamp}.${format}`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      notify(`Exported ${rows.length} audit ${rows.length === 1 ? 'entry' : 'entries'}`)
+    } catch {
+      notify('Could not export audit log')
+    }
+  }, [isSuperAdmin, runAuditQuery])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void reloadAudit() }, 250)
+    return () => window.clearTimeout(timer)
+  }, [reloadAudit])
 
   const refresh = useCallback(async () => {
     await ensureSelfRecords()
     await loadAdminData()
-  }, [ensureSelfRecords, loadAdminData])
+    await reloadAudit()
+  }, [ensureSelfRecords, loadAdminData, reloadAudit])
 
   const updateManagedUser = useCallback(async (targetUserId: string, updates: Partial<Profile>) => {
     if (!isSuperAdmin) return
@@ -228,7 +358,8 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     try {
       const { error: updateError } = await supabase.from('profiles').update(updates).eq('id', targetUserId)
       if (updateError) throw new Error(updateError.message)
-      await writeAudit('profile_update', targetUserId, updates)
+      // The audit entry (with an exact before -> after diff) is written by the
+      // profiles trigger; no client-side log needed.
       await refresh()
       notify('User updated')
     } catch (err: any) {
@@ -236,7 +367,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     } finally {
       setBusyAction(null)
     }
-  }, [isSuperAdmin, refresh, writeAudit])
+  }, [isSuperAdmin, refresh])
 
   const updateManagedFeatures = useCallback(async (targetUserId: string, nextAccess: Partial<FeatureAccess>) => {
     if (!isSuperAdmin) return
@@ -246,7 +377,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
       const payload = { user_id: targetUserId, ...nextAccess }
       const { error: upsertError } = await supabase.from('user_feature_access').upsert(payload, { onConflict: 'user_id' })
       if (upsertError) throw new Error(upsertError.message)
-      await writeAudit('feature_access_update', targetUserId, nextAccess)
+      // Audited by the user_feature_access trigger (records which toggles flipped).
       await refresh()
       notify('Access updated')
     } catch (err: any) {
@@ -254,7 +385,7 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     } finally {
       setBusyAction(null)
     }
-  }, [isSuperAdmin, refresh, writeAudit])
+  }, [isSuperAdmin, refresh])
 
   const resetManagedUserPassword = useCallback(async (targetUserId: string, targetEmail: string) => {
     if (!isSuperAdmin) return
@@ -264,15 +395,17 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
       const redirectTo = new URL('/reset-password', window.location.origin).toString()
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, { redirectTo })
       if (resetError) throw new Error(resetError.message)
-      await writeAudit('password_reset_sent', targetUserId, { email: targetEmail })
+      // No table change to trigger on, so record this one explicitly.
+      await logAdminAction('password_reset_sent', 'security', targetUserId, { email: targetEmail })
       await loadAdminData()
+      await reloadAudit()
       notify('Password reset email sent')
     } catch (err: any) {
       setError(err?.message ?? 'Failed to send password reset email.')
     } finally {
       setBusyAction(null)
     }
-  }, [isSuperAdmin, writeAudit, loadAdminData])
+  }, [isSuperAdmin, logAdminAction, loadAdminData, reloadAudit])
 
   const removeManagedUser = useCallback(async (targetUserId: string) => {
     if (!isSuperAdmin) return
@@ -290,16 +423,18 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
       if (!removedProfiles || removedProfiles.length === 0) {
         throw new Error('User was not removed. This requires the Super Admin delete policy — apply the add_user_delete_and_last_active.sql migration.')
       }
-      await writeAudit('user_removed', targetUserId, {})
+      // The profiles delete trigger records 'user_removed' with a snapshot of the
+      // removed account (email / role / status) so the entry stays readable.
       if (selectedUserId === targetUserId) setSelectedUserId(null)
       await loadAdminData()
+      await reloadAudit()
       notify('User removed')
     } catch (err: any) {
       setError(err?.message ?? 'Failed to remove user.')
     } finally {
       setBusyAction(null)
     }
-  }, [isSuperAdmin, writeAudit, loadAdminData, selectedUserId])
+  }, [isSuperAdmin, loadAdminData, reloadAudit, selectedUserId])
 
   const updateBugReport = useCallback(async (
     reportId: string,
@@ -360,6 +495,15 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
     setSelectedUserId,
     overview,
     auditLogs,
+    auditFilters,
+    setAuditFilters,
+    auditTotal,
+    auditHasMore,
+    auditLoading,
+    loadMoreAudit,
+    reloadAudit,
+    exportAuditLogs,
+    defaultAuditFilters: DEFAULT_AUDIT_FILTERS,
     bugReports,
     busyAction,
     refresh,

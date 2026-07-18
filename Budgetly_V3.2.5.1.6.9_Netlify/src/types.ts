@@ -162,6 +162,20 @@ export type AdminAuditLog = {
   admin_user_id: string
   target_user_id: string | null
   action: string
+  category?: string | null
   details?: Record<string, unknown> | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
+  actor_email?: string | null
+  target_email?: string | null
+  ip_address?: string | null
+  user_agent?: string | null
   created_at?: string
+}
+
+export type AuditFilters = {
+  search: string
+  category: string
+  from: string
+  to: string
 }
