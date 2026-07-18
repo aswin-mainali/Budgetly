@@ -1340,19 +1340,51 @@ body.light .categoryDropdownOption.selected{background:#e9f2ff}
 .cvAmountReceive { color: var(--accent); }
 .cvAmountInput::placeholder { color: var(--muted); opacity: .5; }
 
-/* Currency pill w/ native select overlay */
+/* Searchable currency picker */
+.cvCurrencyPick { position: relative; }
 .cvCurrencyPill {
-  position: relative; display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
   padding: 7px 12px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border); color: var(--text);
   background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
-  transition: border-color .18s ease, background .18s ease;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
 }
 .cvCurrencyPill:hover { border-color: rgba(33,201,122,.5); }
-.cvFlag { font-size: 18px; line-height: 1; }
+.cvCurrencyPill.open { border-color: rgba(33,201,122,.6); box-shadow: 0 0 0 3px rgba(33,201,122,.14); }
 .cvCode { font-weight: 800; font-size: 14px; letter-spacing: .02em; }
-.cvPillChevron { color: var(--muted); flex: 0 0 auto; }
-.cvPillSelect { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; }
+.cvPillChevron { color: var(--muted); flex: 0 0 auto; transition: transform .18s ease; }
+.cvCurrencyPill.open .cvPillChevron { transform: rotate(180deg); }
+
+.cvDropdown {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40;
+  width: min(320px, 78vw); overflow: hidden;
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--panel-elevated);
+  box-shadow: 0 20px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
+  animation: cvDropIn .14s ease;
+}
+@keyframes cvDropIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.cvDropdownSearch {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  border-bottom: 1px solid var(--border); color: var(--muted);
+}
+.cvDropdownInput {
+  flex: 1 1 auto; min-width: 0; border: 0; background: transparent; outline: none;
+  color: var(--text); font-size: 14px; padding: 0;
+}
+.cvDropdownInput::placeholder { color: var(--muted); opacity: .7; }
+.cvDropdownList { max-height: 264px; overflow-y: auto; padding: 6px; display: grid; gap: 2px; }
+.cvDropdownItem {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+  border: 0; border-radius: 10px; padding: 9px 10px; color: var(--text); background: transparent;
+  transition: background .12s ease;
+}
+.cvDropdownItem:hover { background: rgba(255,255,255,.06); }
+.cvDropdownItem.active { background: var(--accent-soft); }
+.cvDropdownCode { font-weight: 800; font-size: 13px; flex: 0 0 46px; letter-spacing: .02em; }
+.cvDropdownLabel { flex: 1 1 auto; min-width: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cvDropdownCheck { color: var(--accent); flex: 0 0 auto; }
+.cvDropdownEmpty { padding: 18px 12px; text-align: center; font-size: 13px; color: var(--muted); }
 
 /* Swap button straddling the two fields */
 .cvSwapBtn {
@@ -1422,8 +1454,7 @@ body.light .categoryDropdownOption.selected{background:#e9f2ff}
 .cvChartHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .cvChartTitleWrap { display: flex; flex-direction: column; gap: 8px; }
 .cvChartPair { display: inline-flex; align-items: center; gap: 6px; }
-.cvFlagOverlap { margin-left: -10px; }
-.cvChartPairText { margin-left: 6px; font-weight: 700; font-size: 14px; color: var(--muted); letter-spacing: .02em; }
+.cvChartPairText { font-weight: 700; font-size: 14px; color: var(--muted); letter-spacing: .02em; }
 .cvChartHeadline { display: inline-flex; align-items: center; gap: 10px; }
 .cvChartHeadline strong { font-size: clamp(24px, 3vw, 30px); font-weight: 800; letter-spacing: -0.02em; }
 
@@ -1497,7 +1528,6 @@ body.light .categoryDropdownOption.selected{background:#e9f2ff}
 }
 .cvPairRemove:hover { color: #f87171; background: rgba(248,113,113,.12); }
 .cvPairAdd:hover { color: var(--accent); background: var(--accent-soft); }
-.cvPairFlags { display: inline-flex; align-items: center; }
 .cvPairArrow { color: var(--muted); }
 .cvStarActive { color: var(--accent); fill: var(--accent); }
 
@@ -1515,6 +1545,8 @@ body.light .cvFavCard { background: #fff; border-color: rgba(148,163,184,.28); }
 body.light .cvRangeControl { background: rgba(15,23,42,.05); }
 body.light .cvRangeChip.active { color: #06231a; }
 body.light .cvLiveBadge { background: #fff; }
+body.light .cvDropdown { background: #fff; box-shadow: 0 20px 44px rgba(15,23,42,.16); }
+body.light .cvDropdownItem:hover { background: rgba(15,23,42,.05); }
 
 /* --- Responsive --- */
 @media (max-width: 1080px) {

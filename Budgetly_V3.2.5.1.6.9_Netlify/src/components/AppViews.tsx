@@ -3192,15 +3192,6 @@ function loadSavedPairs(): Array<{ from: string; to: string }> {
   }
 }
 
-// Derive a country flag emoji from an ISO 4217 currency code. The first two
-// letters of nearly every currency code match the ISO 3166 country code, which
-// maps cleanly onto the Unicode regional-indicator flag range.
-function currencyFlag(code: string) {
-  const cc = (code || '').slice(0, 2).toUpperCase()
-  if (!/^[A-Z]{2}$/.test(cc)) return '🏳️'
-  return String.fromCodePoint(...[...cc].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
-}
-
 // Best-effort currency symbol via Intl, falling back to the raw code.
 function currencySymbol(code: string) {
   try {
@@ -3209,6 +3200,96 @@ function currencySymbol(code: string) {
   } catch {
     return code
   }
+}
+
+// Searchable currency picker: shows the selected code, and on open reveals a
+// type-to-filter list matched against both the code and the currency/country name.
+function ConverterCurrencySelect({ value, options, onChange, ariaLabel }: {
+  value: string
+  options: Array<[string, string]>
+  onChange: (code: string) => void
+  ariaLabel: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setQuery('')
+    const id = requestAnimationFrame(() => inputRef.current?.focus())
+    const onDocPointer = (event: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', onDocPointer)
+    return () => {
+      cancelAnimationFrame(id)
+      document.removeEventListener('pointerdown', onDocPointer)
+    }
+  }, [open])
+
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? options.filter(([code, label]) => code.toLowerCase().includes(q) || label.toLowerCase().includes(q))
+    : options
+
+  const choose = (code: string) => {
+    onChange(code)
+    setOpen(false)
+  }
+
+  return (
+    <div className="cvCurrencyPick" ref={wrapRef}>
+      <button
+        type="button"
+        className={`cvCurrencyPill ${open ? 'open' : ''}`}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+      >
+        <span className="cvCode">{value}</span>
+        <ChevronDown size={16} className="cvPillChevron" aria-hidden="true" />
+      </button>
+      {open ? (
+        <div className="cvDropdown" role="dialog" aria-label={ariaLabel}>
+          <div className="cvDropdownSearch">
+            <Search size={15} aria-hidden="true" />
+            <input
+              ref={inputRef}
+              className="unstyled cvDropdownInput"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search currency or country"
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setOpen(false)
+                if (event.key === 'Enter' && filtered[0]) { event.preventDefault(); choose(filtered[0][0]) }
+              }}
+            />
+          </div>
+          <div className="cvDropdownList" role="listbox">
+            {filtered.length === 0 ? (
+              <div className="cvDropdownEmpty">No currencies match “{query}”</div>
+            ) : filtered.map(([code, label]) => (
+              <button
+                key={code}
+                type="button"
+                role="option"
+                aria-selected={code === value}
+                className={`cvDropdownItem ${code === value ? 'active' : ''}`}
+                onClick={() => choose(code)}
+              >
+                <span className="cvDropdownCode">{code}</span>
+                <span className="cvDropdownLabel">{label}</span>
+                {code === value ? <Check size={15} className="cvDropdownCheck" /> : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | 'theme'>) {
@@ -3402,28 +3483,14 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
     else addPair(fromCurrency, toCurrency)
   }
 
-  const renderCurrencySelect = (side: 'from' | 'to') => {
-    const value = side === 'from' ? fromCurrency : toCurrency
-    const setValue = side === 'from' ? setFromCurrency : setToCurrency
-    const options = side === 'from' ? currencyOptions : currencyOptions.filter(([code]) => code !== fromCurrency)
-    return (
-      <div className="cvCurrencyPill">
-        <span className="cvFlag" aria-hidden="true">{currencyFlag(value)}</span>
-        <span className="cvCode">{value}</span>
-        <ChevronDown size={16} className="cvPillChevron" aria-hidden="true" />
-        <select
-          className="unstyled cvPillSelect"
-          value={value}
-          aria-label={side === 'from' ? 'From currency' : 'To currency'}
-          onChange={(event) => setValue(event.target.value)}
-        >
-          {options.map(([code, label]) => (
-            <option key={code} value={code}>{currencyFlag(code)} {code} — {label}</option>
-          ))}
-        </select>
-      </div>
-    )
-  }
+  const renderCurrencySelect = (side: 'from' | 'to') => (
+    <ConverterCurrencySelect
+      value={side === 'from' ? fromCurrency : toCurrency}
+      options={side === 'from' ? currencyOptions : currencyOptions.filter(([code]) => code !== fromCurrency)}
+      onChange={side === 'from' ? setFromCurrency : setToCurrency}
+      ariaLabel={side === 'from' ? 'From currency' : 'To currency'}
+    />
+  )
 
   return (
     <div className="converterPage cvPage">
@@ -3532,8 +3599,6 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
           <div className="cvChartHead">
             <div className="cvChartTitleWrap">
               <div className="cvChartPair">
-                <span className="cvFlag" aria-hidden="true">{currencyFlag(fromCurrency)}</span>
-                <span className="cvFlag cvFlagOverlap" aria-hidden="true">{currencyFlag(toCurrency)}</span>
                 <span className="cvChartPairText">{fromCurrency} / {toCurrency}</span>
               </div>
               <div className="cvChartHeadline">
@@ -3613,10 +3678,6 @@ export function CurrencyConverterView({ budget }: Pick<SharedProps, 'budget' | '
                   onClick={() => { setLastEdited('from'); setFromCurrency(pair.from); setToCurrency(pair.to) }}
                   aria-label={`Convert ${pair.from} to ${pair.to}`}
                 >
-                  <span className="cvPairFlags">
-                    <span className="cvFlag" aria-hidden="true">{currencyFlag(pair.from)}</span>
-                    <span className="cvFlag cvFlagOverlap" aria-hidden="true">{currencyFlag(pair.to)}</span>
-                  </span>
                   {pair.from} <ArrowUpRight size={13} className="cvPairArrow" /> {pair.to}
                 </button>
                 {saved ? (
