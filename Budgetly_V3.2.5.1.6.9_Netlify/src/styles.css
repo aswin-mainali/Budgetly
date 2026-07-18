@@ -11025,8 +11025,60 @@ body.light .healthComponentBar { background: rgba(76,101,145,.16); }
 @media (max-width:960px){
   .settingsUnderlineTabs{gap:18px;}
 }
+
+/* Mobile section dropdown — replaces the tab row on small screens */
+.settingsMobileNav{display:none;position:relative;margin-top:4px;}
+.settingsMobileNavTrigger{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding:11px 14px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  transition:border-color 150ms ease, background 150ms ease;
+}
+body.light .settingsMobileNavTrigger{background:rgba(255,255,255,.72);}
+.settingsMobileNavChevron{margin-left:auto;color:var(--muted);transition:transform 180ms ease;}
+.settingsMobileNavChevron.open{transform:rotate(180deg);}
+.settingsMobileNavMenu{
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(100% + 6px);
+  z-index:40;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--panel-strong);
+  box-shadow:0 16px 34px rgba(0,0,0,.4);
+  overflow:hidden;
+}
+.settingsMobileNavItem{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding:11px 14px;
+  background:none;
+  border:0;
+  border-bottom:1px solid var(--border);
+  color:var(--muted);
+  font-size:14px;
+  font-weight:600;
+  text-align:left;
+  cursor:pointer;
+  transition:color 120ms ease, background 120ms ease;
+}
+.settingsMobileNavItem:last-child{border-bottom:0;}
+.settingsMobileNavItem:hover{color:var(--text);background:rgba(255,255,255,.04);}
+.settingsMobileNavItem.active{color:var(--text);font-weight:700;background:var(--accent-soft);}
+.settingsMobileNavCheck{margin-left:auto;color:var(--accent);}
 @media (max-width:720px){
-  /* Give the tab row full width to scroll on small screens; the
-     "Workspace controls" label is decorative, so drop it here. */
-  .settingsTabsRowControl{display:none;}
+  .settingsTabsRow{display:none;}
+  .settingsMobileNav{display:block;}
 }

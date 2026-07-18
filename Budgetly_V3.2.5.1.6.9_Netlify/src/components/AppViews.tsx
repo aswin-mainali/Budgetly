@@ -5821,6 +5821,8 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const UNIVERSAL_SHORTCUT_DEFAULT = 'Ctrl + Shift + Space'
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
+  const [settingsNavOpen, setSettingsNavOpen] = useState(false)
+  const settingsNavRef = useRef<HTMLDivElement | null>(null)
   const isSuperAdmin = !!admin?.isSuperAdmin
 
   const initialProfile = useMemo(() => ({ firstName: '', lastName: '', image: '' }), [])
@@ -6175,6 +6177,35 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     }
   }, [isSuperAdmin])
 
+  // Close the mobile section dropdown on outside click or Escape.
+  useEffect(() => {
+    if (!settingsNavOpen) return
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (settingsNavRef.current && !settingsNavRef.current.contains(event.target as Node)) setSettingsNavOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setSettingsNavOpen(false) }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('touchstart', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('touchstart', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [settingsNavOpen])
+
+  const settingsTabs = [
+    { key: 'general', label: 'General', Icon: Settings },
+    { key: 'data', label: 'Data & backup', Icon: Database },
+    { key: 'account', label: 'Account', Icon: User },
+    { key: 'admin', label: 'Super Admin', Icon: ShieldCheck, adminOnly: true },
+    { key: 'audit', label: 'Audit Log', Icon: History, adminOnly: true },
+    { key: 'bugs', label: 'Bugs & Fixes', Icon: Bug, adminOnly: true },
+  ] as const
+  const visibleSettingsTabs = settingsTabs.filter((tab) => !('adminOnly' in tab && tab.adminOnly) || isSuperAdmin)
+  const activeSettingsTab = settingsTabs.find((tab) => tab.key === settingsSection) ?? settingsTabs[0]
+  const ActiveSettingsTabIcon = activeSettingsTab.Icon
+
   return (
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
       <div className="settingsContentStack settingsContentStackTopNav">
@@ -6186,15 +6217,32 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
             </div>
           </div>
           <div className="settingsTabsRow">
-          <div className="settingsUnderlineTabs" role="tablist" aria-label="Settings sections">
-            <button role="tab" aria-selected={settingsSection === 'general'} className={`settingsUnderlineTab ${settingsSection === 'general' ? 'active' : ''}`} onClick={() => setSettingsSection('general')}><Settings size={15} className="settingsUnderlineTabIcon" /><span>General</span></button>
-            <button role="tab" aria-selected={settingsSection === 'data'} className={`settingsUnderlineTab ${settingsSection === 'data' ? 'active' : ''}`} onClick={() => setSettingsSection('data')}><Database size={15} className="settingsUnderlineTabIcon" /><span>Data & backup</span></button>
-            <button role="tab" aria-selected={settingsSection === 'account'} className={`settingsUnderlineTab ${settingsSection === 'account' ? 'active' : ''}`} onClick={() => setSettingsSection('account')}><User size={15} className="settingsUnderlineTabIcon" /><span>Account</span></button>
-            {isSuperAdmin ? <button role="tab" aria-selected={settingsSection === 'admin'} className={`settingsUnderlineTab ${settingsSection === 'admin' ? 'active' : ''}`} onClick={() => setSettingsSection('admin')}><ShieldCheck size={15} className="settingsUnderlineTabIcon" /><span>Super Admin</span></button> : null}
-            {isSuperAdmin ? <button role="tab" aria-selected={settingsSection === 'audit'} className={`settingsUnderlineTab ${settingsSection === 'audit' ? 'active' : ''}`} onClick={() => setSettingsSection('audit')}><History size={15} className="settingsUnderlineTabIcon" /><span>Audit Log</span></button> : null}
-            {isSuperAdmin ? <button role="tab" aria-selected={settingsSection === 'bugs'} className={`settingsUnderlineTab ${settingsSection === 'bugs' ? 'active' : ''}`} onClick={() => setSettingsSection('bugs')}><Bug size={15} className="settingsUnderlineTabIcon" /><span>Bugs & Fixes</span></button> : null}
+            <div className="settingsUnderlineTabs" role="tablist" aria-label="Settings sections">
+              {visibleSettingsTabs.map(({ key, label, Icon }) => (
+                <button key={key} role="tab" aria-selected={settingsSection === key} className={`settingsUnderlineTab ${settingsSection === key ? 'active' : ''}`} onClick={() => setSettingsSection(key)}>
+                  <Icon size={15} className="settingsUnderlineTabIcon" /><span>{label}</span>
+                </button>
+              ))}
+            </div>
+            <span className="badge settingsTabsRowControl">Workspace controls</span>
           </div>
-          <span className="badge settingsTabsRowControl">Workspace controls</span>
+          <div className="settingsMobileNav" ref={settingsNavRef}>
+            <button type="button" className="settingsMobileNavTrigger" aria-haspopup="listbox" aria-expanded={settingsNavOpen} onClick={() => setSettingsNavOpen((open) => !open)}>
+              <ActiveSettingsTabIcon size={16} className="settingsUnderlineTabIcon" />
+              <span>{activeSettingsTab.label}</span>
+              <ChevronDown size={16} className={`settingsMobileNavChevron ${settingsNavOpen ? 'open' : ''}`} />
+            </button>
+            {settingsNavOpen ? (
+              <div className="settingsMobileNavMenu" role="listbox" aria-label="Settings sections">
+                {visibleSettingsTabs.map(({ key, label, Icon }) => (
+                  <button key={key} type="button" role="option" aria-selected={settingsSection === key} className={`settingsMobileNavItem ${settingsSection === key ? 'active' : ''}`} onClick={() => { setSettingsSection(key); setSettingsNavOpen(false) }}>
+                    <Icon size={16} className="settingsUnderlineTabIcon" />
+                    <span>{label}</span>
+                    {settingsSection === key ? <Check size={16} className="settingsMobileNavCheck" /> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
         {settingsSection === 'general' ? (
