@@ -6806,13 +6806,12 @@ function AdminAuditLogPanel({ admin, embedded = false }: { admin: ReturnType<typ
 
   return (
     <div className={`card ${embedded ? 'settingsPanelCard' : ''}`}>
-      <div className="row between auditHeader" style={{ marginBottom: 14, gap: 12, alignItems: 'flex-start' }}>
-        <div>
-          <h3 style={{ marginBottom: 4 }}>Audit Log</h3>
+      <div className="auditHeader">
+        <div className="auditHeaderText">
+          <h3>Audit Log <span className="badge auditHeaderBadge">{admin.auditTotal} {admin.auditTotal === 1 ? 'entry' : 'entries'}</span></h3>
           <div className="muted">Complete, tamper-resistant history of Super Admin activity — recorded server-side with exact before &amp; after values.</div>
         </div>
         <div className="auditHeaderActions">
-          <span className="badge">{admin.auditTotal} {admin.auditTotal === 1 ? 'entry' : 'entries'}</span>
           <button className="btn ghost auditToolbarBtn" onClick={() => void admin.reloadAudit()} disabled={admin.auditLoading} title="Refresh">
             <RefreshCw size={14} className={admin.auditLoading ? 'spin' : ''} /> Refresh
           </button>

@@ -3637,12 +3637,30 @@ body:not(.light) .settingsNotifSelect{background:#0f172a;color:#e2e8f0;border-co
 }
 
 /* --- Advanced audit log: toolbar, diffs, meta --------------------------------- */
+.auditHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.auditHeaderText{min-width:0;}
+.auditHeaderText h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:4px;
+}
+.auditHeaderBadge{flex:0 0 auto;}
 .auditHeaderActions{
   display:flex;
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
   justify-content:flex-end;
+  flex:0 0 auto;
 }
 .auditToolbar{
   display:flex;
@@ -3767,12 +3785,20 @@ body.light .auditDateField input{color-scheme:light;}
 body.light .auditDiffFrom{color:#b91c1c;}
 body.light .auditDiffTo{color:#15803d;}
 
+@media (max-width: 900px){
+  /* Below the width where a single row keeps a usable search box, the filters
+     stack cleanly: search on its own row, category full width, then From / To
+     sharing a row. */
+  .auditHeaderActions{width:100%;justify-content:flex-start;flex-wrap:nowrap;}
+  .auditHeaderActions .auditToolbarBtn{flex:1 1 0;min-width:0;justify-content:center;padding:8px 6px;}
+  .auditToolbar{flex-wrap:wrap;gap:8px;}
+  .auditSearchField{flex:1 1 100%;}
+  .auditFilterSelect{flex:1 1 100%;max-width:none;}
+  .auditDateField{flex:1 1 calc(50% - 4px);min-width:0;}
+  .auditDateField input{width:100%;}
+  .auditClearBtn{flex:1 1 100%;justify-content:center;}
+}
 @media (max-width: 640px){
-  /* Keep every filter on one row; let it scroll sideways if it can't shrink further. */
-  .auditToolbar{gap:8px;overflow-x:auto;padding-bottom:2px;}
-  .auditDateField span{display:none;}
-  .auditDateField input{width:104px;}
-  .auditFilterSelect{max-width:132px;}
   .auditMetaGrid{grid-template-columns:1fr;}
   .auditDiffRow{align-items:flex-start;}
 }
