@@ -3636,6 +3636,179 @@ body:not(.light) .settingsNotifSelect{background:#0f172a;color:#e2e8f0;border-co
   padding-right: 6px;
 }
 
+/* --- Advanced audit log: toolbar, diffs, meta --------------------------------- */
+.auditHeader{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.auditHeaderText{min-width:0;}
+.auditHeaderText h3{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:4px;
+}
+.auditHeaderBadge{flex:0 0 auto;}
+.auditHeaderActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  flex:0 0 auto;
+}
+.auditToolbar{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:10px;
+  margin-bottom:14px;
+}
+.auditSearchField{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:1 1 auto;
+  min-width:0;
+  padding:0 12px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+  color:var(--muted);
+}
+.auditSearchField input{
+  flex:1;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:#e8f1ff;
+  font-size:13px;
+  padding:9px 0;
+  outline:none;
+}
+.auditSearchClear{
+  appearance:none;border:0;background:transparent;color:var(--muted);
+  cursor:pointer;display:inline-flex;align-items:center;padding:2px;border-radius:6px;
+}
+.auditSearchClear:hover{color:#e8f1ff;}
+.auditFilterSelect{
+  flex:0 0 auto;
+  width:auto;
+  max-width:170px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+  color:#e8f1ff;
+  font-size:13px;
+  padding:9px 12px;
+  cursor:pointer;
+}
+.auditDateField{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid rgba(148,163,184,.18);
+  border-radius:12px;
+  background:rgba(255,255,255,.03);
+  padding:5px 12px;
+  font-size:12px;
+  color:var(--muted);
+}
+.auditDateField span{text-transform:uppercase;letter-spacing:.03em;font-weight:700;}
+.auditDateField input{
+  border:0;background:transparent;color:#e8f1ff;font-size:13px;outline:none;color-scheme:dark;
+  width:118px;min-width:0;
+}
+.auditToolbarBtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-size:13px;white-space:nowrap;}
+/* Override the global (unscoped) .btn.ghost white-on-transparent rule so these
+   stay legible in both themes. */
+.btn.ghost.auditToolbarBtn{color:var(--text);border:1px solid var(--border);background:rgba(255,255,255,.03);}
+.btn.ghost.auditToolbarBtn:hover{background:rgba(120,150,210,.12);border-color:rgba(96,165,250,.4);}
+body.light .btn.ghost.auditToolbarBtn{color:#0f172a;border-color:rgba(76,101,145,.3);background:rgba(255,255,255,.7);}
+body.light .btn.ghost.auditToolbarBtn:hover{background:#ffffff;border-color:rgba(37,99,235,.4);}
+.auditClearBtn{flex:0 0 auto;}
+.auditToolbarBtn .spin{animation:auditSpin 1s linear infinite;}
+@keyframes auditSpin{to{transform:rotate(360deg);}}
+
+.auditTypePill.audit-feature{border-color:rgba(96,165,250,.28);background:rgba(96,165,250,.10);color:#dbeafe;}
+.auditTypePill.audit-profile{border-color:rgba(168,85,247,.30);background:rgba(168,85,247,.12);color:#f3e8ff;}
+.auditTypePill.audit-user{border-color:rgba(248,113,113,.30);background:rgba(248,113,113,.10);color:#fee2e2;}
+.auditTypePill.audit-bug{border-color:rgba(251,191,36,.30);background:rgba(251,191,36,.12);color:#fef3c7;}
+.auditTypePill.audit-security{border-color:rgba(45,212,191,.30);background:rgba(45,212,191,.12);color:#ccfbf1;}
+
+.auditDiffList{display:grid;gap:8px;}
+.auditDiffRow{
+  border:1px solid rgba(148,163,184,.12);
+  background:rgba(255,255,255,.03);
+  border-radius:12px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.auditDiffLabel{color:var(--muted);font-size:13px;}
+.auditDiffValues{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.auditDiffFrom{
+  color:#fecaca;font-size:13px;text-decoration:line-through;
+  background:rgba(248,113,113,.10);border-radius:8px;padding:2px 8px;
+}
+.auditDiffArrow{color:var(--muted);font-weight:700;}
+.auditDiffTo{
+  color:#bbf7d0;font-size:13px;
+  background:rgba(34,197,94,.12);border-radius:8px;padding:2px 8px;
+}
+.auditMetaGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.auditMetaItem{
+  display:flex;flex-direction:column;gap:2px;
+  border:1px solid rgba(148,163,184,.12);
+  background:rgba(255,255,255,.03);
+  border-radius:12px;padding:8px 12px;min-width:0;
+}
+.auditMetaItem span{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;font-weight:700;}
+.auditMetaItem strong{color:#f8fbff;font-size:13px;word-break:break-word;}
+.auditMetaWide{grid-column:1 / -1;}
+.auditLoadMore{display:flex;justify-content:center;margin-top:14px;}
+
+body.light .auditSearchField,
+body.light .auditFilterSelect,
+body.light .auditDateField,
+body.light .auditDiffRow,
+body.light .auditMetaItem{background:rgba(15,23,42,.03);border-color:rgba(15,23,42,.10);}
+body.light .auditSearchField input,
+body.light .auditFilterSelect,
+body.light .auditDateField input,
+body.light .auditMetaItem strong{color:#0f172a;}
+body.light .auditDateField input{color-scheme:light;}
+body.light .auditDiffFrom{color:#b91c1c;}
+body.light .auditDiffTo{color:#15803d;}
+
+@media (max-width: 900px){
+  /* Below the width where a single row keeps a usable search box, the filters
+     stack cleanly: search on its own row, category full width, then From / To
+     sharing a row. */
+  .auditHeaderActions{width:100%;justify-content:flex-start;flex-wrap:nowrap;}
+  .auditHeaderActions .auditToolbarBtn{flex:1 1 0;min-width:0;justify-content:center;padding:8px 6px;}
+  .auditToolbar{flex-wrap:wrap;gap:8px;}
+  .auditSearchField{flex:1 1 100%;}
+  .auditFilterSelect{flex:1 1 100%;max-width:none;}
+  .auditDateField{flex:1 1 calc(50% - 4px);min-width:0;}
+  .auditDateField input{width:100%;}
+  .auditClearBtn{flex:1 1 100%;justify-content:center;}
+}
+@media (max-width: 640px){
+  .auditMetaGrid{grid-template-columns:1fr;}
+  .auditDiffRow{align-items:flex-start;}
+}
+
 
 
 /* Light mode fixes for sidebar clock and native form controls */
