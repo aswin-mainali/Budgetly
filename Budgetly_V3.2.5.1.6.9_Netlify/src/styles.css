@@ -3727,6 +3727,12 @@ body:not(.light) .settingsNotifSelect{background:#0f172a;color:#e2e8f0;border-co
   width:118px;min-width:0;
 }
 .auditToolbarBtn{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-size:13px;white-space:nowrap;}
+/* Override the global (unscoped) .btn.ghost white-on-transparent rule so these
+   stay legible in both themes. */
+.btn.ghost.auditToolbarBtn{color:var(--text);border:1px solid var(--border);background:rgba(255,255,255,.03);}
+.btn.ghost.auditToolbarBtn:hover{background:rgba(120,150,210,.12);border-color:rgba(96,165,250,.4);}
+body.light .btn.ghost.auditToolbarBtn{color:#0f172a;border-color:rgba(76,101,145,.3);background:rgba(255,255,255,.7);}
+body.light .btn.ghost.auditToolbarBtn:hover{background:#ffffff;border-color:rgba(37,99,235,.4);}
 .auditClearBtn{flex:0 0 auto;}
 .auditToolbarBtn .spin{animation:auditSpin 1s linear infinite;}
 @keyframes auditSpin{to{transform:rotate(360deg);}}
