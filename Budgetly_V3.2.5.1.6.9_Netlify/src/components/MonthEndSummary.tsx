@@ -113,9 +113,13 @@ export default function MonthEndSummary({ budget, monthKey, onClose, onViewRepor
                   <span className={`monthSummaryActivityIcon ${item.type === 'income' ? 'income' : 'expense'}`}>
                     {item.type === 'income' ? <ArrowUp size={15} /> : <ArrowDown size={15} />}
                   </span>
-                  <span className="monthSummaryActivityDate">{formatDay(item.date)}</span>
-                  <span className="monthSummaryActivityType">{item.type === 'income' ? 'Income' : 'Expense'}</span>
-                  <span className="monthSummaryActivityLabel">{item.label}</span>
+                  <span className="monthSummaryActivityMeta">
+                    <span className="monthSummaryActivityDate">{formatDay(item.date)}</span>
+                    <span className="monthSummaryActivityDot" aria-hidden="true">·</span>
+                    <span className="monthSummaryActivityType">{item.type === 'income' ? 'Income' : 'Expense'}</span>
+                    <span className="monthSummaryActivityDot" aria-hidden="true">·</span>
+                    <span className="monthSummaryActivityLabel">{item.label}</span>
+                  </span>
                   <span className={`monthSummaryActivityAmount ${item.type === 'income' ? 'income' : 'expense'}`}>
                     {item.type === 'income' ? '+' : '-'}{money(item.amount)}
                   </span>
@@ -126,8 +130,8 @@ export default function MonthEndSummary({ budget, monthKey, onClose, onViewRepor
         ) : null}
 
         <div className="monthSummaryFooter">
-          <button className="btn ghost" type="button" onClick={onClose}>Close</button>
-          <button className="btn primary" type="button" onClick={onViewReport}>View full report</button>
+          <button className="btn monthSummaryCloseBtn" type="button" onClick={onClose}>Close</button>
+          <button className="btn monthSummaryReportBtn" type="button" onClick={onViewReport}>View full report</button>
         </div>
       </div>
     </div>
