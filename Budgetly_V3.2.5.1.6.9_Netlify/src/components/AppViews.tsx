@@ -6248,6 +6248,24 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
                 </div>
               </div>
 
+              {/* Temporary dev-only control: the month-end summary normally pops up on
+                  the last day of a month; this lets us preview it on any day. */}
+              <div className="settingsFieldCard settingsFieldCardWide">
+                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Month-end summary <span className="badge">Dev</span></div>
+                    <small>Preview the end-of-month recap popup without waiting for the last day of the month.</small>
+                  </div>
+                  <button
+                    className="btn"
+                    onClick={() => window.dispatchEvent(new Event('budgetly:show-month-summary'))}
+                    title="Preview the month-end summary"
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
+
               <div className="settingsFieldCard settingsFieldCardWide">
                 <div>
                   <div className="h1" style={{ fontSize: 16, margin: 0 }}>Universal Search Shortcut</div>
