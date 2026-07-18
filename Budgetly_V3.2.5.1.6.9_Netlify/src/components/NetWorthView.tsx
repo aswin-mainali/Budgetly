@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowUpRight, Banknote, Building2, Car, CreditCard, GraduationCap, Home, Landmark, LineChart as LineChartIcon, Link2, Loader, PiggyBank, Plus, Scale, Shield, TrendingDown, TrendingUp, Wallet, Pencil, Trash2, Layers } from 'lucide-react'
-import { Area, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowUpRight, Banknote, Building2, Car, CreditCard, GraduationCap, Home, Landmark, Layers, Link2, Loader, PiggyBank, Plus, Scale, ShieldCheck, Sparkles, TrendingDown, TrendingUp, Wallet, Pencil, Trash2 } from 'lucide-react'
+import { Area, AreaChart, CartesianGrid, Cell, ComposedChart, Line, Pie, PieChart, PolarAngleAxis, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { supabase } from '../lib/supabase'
 import { fmtMoney } from '../lib/utils'
 
@@ -12,21 +12,44 @@ const ASSET_CATEGORIES = ['Cash', 'Investments', 'Real Estate', 'Vehicles', 'Ret
 const LIABILITY_CATEGORIES = ['Credit Card', 'Loan', 'Mortgage', 'Student Loan', 'Other'] as const
 
 const CATEGORY_ICON: Record<string, React.ReactNode> = {
-  Cash: <Banknote size={16} />, Investments: <TrendingUp size={16} />, 'Real Estate': <Home size={16} />,
-  Vehicles: <Car size={16} />, Retirement: <PiggyBank size={16} />, Other: <Layers size={16} />,
-  'Credit Card': <CreditCard size={16} />, Loan: <Landmark size={16} />, Mortgage: <Building2 size={16} />,
-  'Student Loan': <GraduationCap size={16} />,
+  Cash: <Banknote size={15} />, Investments: <TrendingUp size={15} />, 'Real Estate': <Home size={15} />,
+  Vehicles: <Car size={15} />, Retirement: <PiggyBank size={15} />, Other: <Layers size={15} />,
+  'Credit Card': <CreditCard size={15} />, Loan: <Landmark size={15} />, Mortgage: <Building2 size={15} />,
+  'Student Loan': <GraduationCap size={15} />,
 }
 
-// Distinct palettes so assets read green-ish and liabilities read warm/red-ish.
-const ASSET_COLORS = ['#21c97a', '#2dd4bf', '#38bdf8', '#818cf8', '#a78bfa', '#f472b6']
-const LIABILITY_COLORS = ['#f87171', '#fb923c', '#f59e0b', '#e879f9', '#94a3b8']
+// Fixed-order categorical hues (assigned by identity, never cycled per the dataviz rules).
+const COMPOSITION_COLORS = ['#21c97a', '#38bdf8', '#a78bfa', '#f5b544', '#f472b6', '#5eead4']
 const RANGE_DAYS = { '3M': 92, '6M': 183, '1Y': 366 } as const
 const todayKey = () => new Date().toISOString().slice(0, 10)
 
 const isInvalidRefreshTokenError = (error: unknown) =>
   /invalid refresh token|refresh token not found/i.test(String((error as { message?: string })?.message || error || ''))
 const toast = (message: string) => window.dispatchEvent(new CustomEvent('budgetly:toast', { detail: { message } }))
+
+// Smoothly counts a number up/down when it changes — the fintech "live" feel.
+function AnimatedNumber({ value, format }: { value: number; format: (n: number) => string }) {
+  const [display, setDisplay] = useState(value)
+  const fromRef = useRef(value)
+  useEffect(() => {
+    const from = fromRef.current
+    const to = value
+    if (from === to) return
+    const start = performance.now()
+    const dur = 750
+    let raf = 0
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / dur)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setDisplay(from + (to - from) * eased)
+      if (p < 1) raf = requestAnimationFrame(tick)
+      else fromRef.current = to
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value])
+  return <>{format(display)}</>
+}
 
 export function NetWorthView({ currency, onOpenInvestments }: { currency: string; onOpenInvestments?: () => void }) {
   const [items, setItems] = useState<NWItem[]>([])
@@ -50,6 +73,14 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
   const [draftNotes, setDraftNotes] = useState('')
 
   const money = useCallback((v: number) => fmtMoney(Number.isFinite(v) ? v : 0, currency), [currency])
+  const moneyCompact = useCallback((v: number) => {
+    const n = Number.isFinite(v) ? v : 0
+    const abs = Math.abs(n)
+    if (abs >= 1000) {
+      try { return new Intl.NumberFormat(undefined, { style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1 }).format(n) } catch { /* fall through */ }
+    }
+    return fmtMoney(n, currency)
+  }, [currency])
 
   const loadInvestments = useCallback(async (uid: string) => {
     try {
@@ -96,6 +127,12 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
     void init()
   }, [load])
 
+  useEffect(() => {
+    const close = () => setOpenMenuId(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [])
+
   // Manual assets/liabilities plus the auto-linked investments row.
   const allItems = useMemo<NWItem[]>(() => {
     const linked: NWItem[] = investmentsValue > 0
@@ -109,7 +146,10 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
   const totalAssets = useMemo(() => assets.reduce((s, x) => s + Number(x.value || 0), 0), [assets])
   const totalLiabilities = useMemo(() => liabilities.reduce((s, x) => s + Number(x.value || 0), 0), [liabilities])
   const netWorth = totalAssets - totalLiabilities
-  const coverage = totalLiabilities > 0 ? totalAssets / totalLiabilities : 0
+  const coverage = totalLiabilities > 0 ? totalAssets / totalLiabilities : Infinity
+  const grossTotal = totalAssets + totalLiabilities
+  const assetShare = grossTotal > 0 ? (totalAssets / grossTotal) * 100 : 0
+  const liabilityShare = grossTotal > 0 ? (totalLiabilities / grossTotal) * 100 : 0
 
   const groupByCategory = useCallback((list: NWItem[], order: readonly string[]) => {
     const map = new Map<string, { items: NWItem[]; subtotal: number }>()
@@ -124,10 +164,8 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
 
   const assetGroups = useMemo(() => groupByCategory(assets, ASSET_CATEGORIES), [assets, groupByCategory])
   const liabilityGroups = useMemo(() => groupByCategory(liabilities, LIABILITY_CATEGORIES), [liabilities, groupByCategory])
-
   const donutData = useMemo(() => assetGroups.map(([name, b]) => ({ name, value: b.subtotal })), [assetGroups])
 
-  // Snapshot history + month-over-month delta.
   const history = useMemo(() => snapshots
     .map((s) => ({ date: s.date_key, assets: Number(s.total_assets || 0), liabilities: Number(s.total_liabilities || 0), netWorth: Number(s.net_worth || 0) }))
     .sort((a, b) => a.date.localeCompare(b.date)), [snapshots])
@@ -192,7 +230,6 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
     const nextItems = editing ? items.map((x) => (x.id === editing.id ? saved : x)) : [...items, saved]
     setItems(nextItems)
     closeModal()
-    // Keep today's snapshot in sync with the new totals.
     const a = nextItems.filter((x) => x.kind === 'asset').reduce((s, x) => s + Number(x.value || 0), 0) + investmentsValue
     const l = nextItems.filter((x) => x.kind === 'liability').reduce((s, x) => s + Number(x.value || 0), 0)
     await upsertSnapshot(userId, a, l)
@@ -214,6 +251,11 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
 
   const draftCategories = draftKind === 'asset' ? ASSET_CATEGORIES : LIABILITY_CATEGORIES
   const hasData = allItems.length > 0
+  const netPositive = netWorth >= 0
+
+  const healthLabel = coverage === Infinity ? 'Debt-free' : coverage >= 2 ? 'Strong' : coverage >= 1 ? 'Balanced' : 'Overleveraged'
+  const healthColor = coverage === Infinity || coverage >= 2 ? '#21c97a' : coverage >= 1 ? '#f5b544' : '#f87171'
+  const gaugeValue = coverage === Infinity ? 5 : Math.max(0, Math.min(coverage, 5))
 
   const TrendTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null
@@ -226,196 +268,249 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
     </div>
   }
 
-  return <section className='netWorthPage'>
-    <header className='nwTop'>
-      <div>
-        <h2>Net Worth</h2>
-        <p className='muted'>Everything you own, minus everything you owe.</p>
-      </div>
-      <div className='nwTopActions'>
-        <span className='nwCurrencyPill'>{currency}</span>
-        <button className='btn nwBtnSecondary' onClick={() => void recordSnapshot()} disabled={savingSnapshot || !hasData}>
-          {savingSnapshot ? <Loader size={16} className='nwSpin' /> : <LineChartIcon size={16} />}{savingSnapshot ? 'Saving…' : 'Record snapshot'}
-        </button>
-        <button className='btn nwBtnPrimary' onClick={() => openAdd('asset')}><Plus size={16} />Add entry</button>
-      </div>
-    </header>
-
-    <div className='nwKpis'>
-      <div className='card nwKpi nwKpiHero'>
-        <div className='nwKpiLabel'><Scale size={15} /> Net Worth</div>
-        <div className='nwKpiHeroValue'>{money(netWorth)}</div>
-        {delta ? (
-          <div className={`nwDelta ${delta.diff >= 0 ? 'pos' : 'neg'}`}>
-            {delta.diff >= 0 ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
-            {money(Math.abs(delta.diff))} ({delta.diff >= 0 ? '+' : '−'}{Math.abs(delta.pct).toFixed(1)}%) <span className='muted'>since last snapshot</span>
+  return <section className='netWorthPage nwPro'>
+    {/* ---------- Aurora hero ---------- */}
+    <div className='nwHero'>
+      <div className='nwHeroAurora' aria-hidden='true' />
+      <div className='nwHeroGrid' aria-hidden='true' />
+      <div className='nwHeroInner'>
+        <div className='nwHeroTop'>
+          <div className='nwHeroLead'>
+            <span className='nwEyebrow'><Scale size={14} /> Net Worth</span>
+            <div className={`nwHeroValue ${netPositive ? '' : 'neg'}`}><AnimatedNumber value={netWorth} format={money} /></div>
+            <div className='nwHeroMeta'>
+              {delta ? (
+                <span className={`nwPill ${delta.diff >= 0 ? 'pos' : 'neg'}`}>
+                  {delta.diff >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {money(Math.abs(delta.diff))} · {delta.diff >= 0 ? '+' : '−'}{Math.abs(delta.pct).toFixed(1)}%
+                </span>
+              ) : <span className='nwPill muted'><Sparkles size={13} /> Record snapshots to track change</span>}
+              <span className='nwAsOf'>Updated {new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+            </div>
           </div>
-        ) : <div className='nwDelta muted'>Record snapshots to track your trend</div>}
-      </div>
-      <div className='card nwKpi'>
-        <div className='nwKpiLabel'><Wallet size={15} /> Total Assets</div>
-        <div className='nwKpiValue pos'>{money(totalAssets)}</div>
-        <div className='muted'>{assets.length} {assets.length === 1 ? 'item' : 'items'}</div>
-      </div>
-      <div className='card nwKpi'>
-        <div className='nwKpiLabel'><CreditCard size={15} /> Total Liabilities</div>
-        <div className='nwKpiValue neg'>{money(totalLiabilities)}</div>
-        <div className='muted'>{liabilities.length} {liabilities.length === 1 ? 'item' : 'items'}</div>
-      </div>
-      <div className='card nwKpi'>
-        <div className='nwKpiLabel'><Shield size={15} /> Health</div>
-        <div className='nwKpiValue'>{totalLiabilities > 0 ? `${coverage.toFixed(1)}×` : '∞'}</div>
-        <div className='muted'>{totalLiabilities > 0 ? 'assets cover debts' : 'no liabilities'}</div>
-      </div>
-    </div>
-
-    <div className='nwGridTop'>
-      <div className='card nwCard nwTrendCard'>
-        <div className='nwCardHead'>
-          <h3>Net Worth Over Time</h3>
-          <div className='nwRanges'>
-            {(['3M', '6M', '1Y', 'All'] as const).map((r) => (
-              <button key={r} className={`btn tiny nwRange ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}</button>
-            ))}
+          <div className='nwHeroActions'>
+            <button className='nwGhostBtn' onClick={() => void recordSnapshot()} disabled={savingSnapshot || !hasData}>
+              {savingSnapshot ? <Loader size={16} className='nwSpin' /> : <Sparkles size={16} />}{savingSnapshot ? 'Saving' : 'Snapshot'}
+            </button>
+            <button className='nwPrimaryBtn' onClick={() => openAdd('asset')}><Plus size={16} />Add entry</button>
           </div>
         </div>
-        {chartData.length < 2 ? (
-          <div className='nwEmpty'>
-            <LineChartIcon size={28} />
-            <p>{history.length === 0 ? 'Record your first snapshot to start your net-worth trend.' : 'Not enough history for this range yet. Record snapshots over time to build your trend.'}</p>
-          </div>
-        ) : (
-          <div style={{ height: 320 }}>
+
+        <div className='nwHeroSpark'>
+          {history.length >= 2 ? (
             <ResponsiveContainer width='100%' height='100%'>
-              <ComposedChart data={chartData}>
+              <AreaChart data={history} margin={{ top: 6, right: 0, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id='nwAssetsArea' x1='0' y1='0' x2='0' y2='1'>
-                    <stop offset='5%' stopColor='#21c97a' stopOpacity={0.25} />
-                    <stop offset='95%' stopColor='#21c97a' stopOpacity={0.02} />
+                  <linearGradient id='nwHeroFill' x1='0' y1='0' x2='0' y2='1'>
+                    <stop offset='0%' stopColor='#21c97a' stopOpacity={0.4} />
+                    <stop offset='100%' stopColor='#21c97a' stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray='4 4' stroke='rgba(148,163,184,.25)' />
-                <XAxis dataKey='date' tickFormatter={(v) => new Date(String(v)).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} minTickGap={28} />
-                <YAxis tickFormatter={(v) => money(Number(v))} width={92} />
-                <Tooltip content={<TrendTooltip />} />
-                <Area type='monotone' dataKey='assets' stroke='none' fill='url(#nwAssetsArea)' />
-                <Line type='monotone' dataKey='liabilities' stroke='#f87171' strokeWidth={2} strokeDasharray='6 6' dot={false} />
-                <Line type='monotone' dataKey='netWorth' stroke='#21c97a' strokeWidth={3} dot={false} />
-              </ComposedChart>
+                <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'rgba(255,255,255,.25)' }} />
+                <Area type='monotone' dataKey='netWorth' stroke='#3bffb0' strokeWidth={2.5} fill='url(#nwHeroFill)' />
+              </AreaChart>
             </ResponsiveContainer>
-          </div>
-        )}
-        <div className='nwTrendLegend'>
-          <span><i className='solid' />Net worth</span>
-          <span><i className='area' />Assets</span>
-          <span><i className='dash' />Liabilities</span>
+          ) : <div className='nwHeroSparkBaseline' aria-hidden='true' />}
+        </div>
+
+        <div className='nwHeroStats'>
+          <div className='nwHeroStat'><span>Assets</span><strong className='pos'><AnimatedNumber value={totalAssets} format={moneyCompact} /></strong></div>
+          <span className='nwHeroSep' />
+          <div className='nwHeroStat'><span>Liabilities</span><strong className='neg'><AnimatedNumber value={totalLiabilities} format={moneyCompact} /></strong></div>
+          <span className='nwHeroSep' />
+          <div className='nwHeroStat'><span>Coverage</span><strong>{coverage === Infinity ? '∞' : `${coverage.toFixed(1)}×`}</strong></div>
+          <span className='nwHeroSep' />
+          <div className='nwHeroStat'><span>Health</span><strong style={{ color: healthColor }}>{healthLabel}</strong></div>
         </div>
       </div>
-
-      <div className='card nwCard nwCompositionCard'>
-        <h3>Asset Composition</h3>
-        {donutData.length === 0 ? (
-          <div className='nwEmpty'><Wallet size={28} /><p>Add assets to see how your wealth is allocated.</p></div>
-        ) : (
-          <>
-            <div className='nwDonutWrap'>
-              <ResponsiveContainer width='100%' height={200}>
-                <PieChart>
-                  <Pie data={donutData} dataKey='value' innerRadius={62} outerRadius={90} paddingAngle={2} stroke='none'>
-                    {donutData.map((_, i) => <Cell key={i} fill={ASSET_COLORS[i % ASSET_COLORS.length]} />)}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className='nwDonutCenter'><strong>{money(netWorth)}</strong><small>Net worth</small></div>
-            </div>
-            <div className='nwLegend'>
-              {donutData.map((d, i) => (
-                <div className='nwLegendItem' key={d.name}>
-                  <span className='nwDot' style={{ background: ASSET_COLORS[i % ASSET_COLORS.length] }} />
-                  <span className='nwLegendName'>{d.name}</span>
-                  <strong>{totalAssets > 0 ? ((d.value / totalAssets) * 100).toFixed(0) : 0}%</strong>
-                </div>
-              ))}
-            </div>
-            <div className='nwSplitBar' aria-hidden='true'>
-              <div className='nwSplitAssets' style={{ flex: Math.max(totalAssets, 0.001) }} />
-              <div className='nwSplitLiab' style={{ flex: Math.max(totalLiabilities, 0.001) }} />
-            </div>
-            <div className='nwSplitLegend'><span className='pos'>Assets {money(totalAssets)}</span><span className='neg'>Liabilities {money(totalLiabilities)}</span></div>
-          </>
-        )}
-      </div>
-    </div>
-
-    <div className='nwGridBottom'>
-      {([
-        { title: 'Assets', kind: 'asset' as Kind, groups: assetGroups, colors: ASSET_COLORS },
-        { title: 'Liabilities', kind: 'liability' as Kind, groups: liabilityGroups, colors: LIABILITY_COLORS },
-      ]).map((panel) => (
-        <div className='card nwCard nwListCard' key={panel.title}>
-          <div className='nwCardHead'>
-            <h3>{panel.title} <span className='nwListTotal'>{money(panel.kind === 'asset' ? totalAssets : totalLiabilities)}</span></h3>
-            <button className='btn tiny nwAddSmall' onClick={() => openAdd(panel.kind)}><Plus size={14} />Add</button>
-          </div>
-          {panel.groups.length === 0 ? (
-            <div className='nwEmpty small'><p>No {panel.title.toLowerCase()} yet.</p></div>
-          ) : (
-            <div className='nwGroups'>
-              {panel.groups.map(([category, bucket]) => (
-                <div className='nwGroup' key={category}>
-                  <div className='nwGroupHead'>
-                    <span className='nwGroupIcon'>{CATEGORY_ICON[category] || <Layers size={16} />}</span>
-                    <span className='nwGroupName'>{category}</span>
-                    <span className='nwGroupSub'>{money(bucket.subtotal)}</span>
-                  </div>
-                  {bucket.items.map((it) => (
-                    <div className='nwRow' key={it.id}>
-                      <div className='nwRowMain'>
-                        <span className='nwRowName'>{it.name}{it.linked ? <span className='nwLinkedBadge'><Link2 size={11} />Linked</span> : null}</span>
-                      </div>
-                      <span className={`nwRowValue ${panel.kind === 'asset' ? 'pos' : 'neg'}`}>{money(it.value)}</span>
-                      {it.linked ? (
-                        onOpenInvestments ? <button className='btn tiny nwRowLink' onClick={onOpenInvestments} title='Open Investments'><ArrowUpRight size={14} /></button> : <span className='nwRowSpacer' />
-                      ) : (
-                        <div className='nwMenuWrap'>
-                          <button className='btn tiny nwMenuDots' onClick={() => setOpenMenuId((c) => (c === it.id ? null : it.id))}>⋯</button>
-                          {openMenuId === it.id ? (
-                            <div className='nwMenu'>
-                              <button onClick={() => { setOpenMenuId(null); openEdit(it) }}><Pencil size={14} /> Edit</button>
-                              <button className='dangerText' onClick={() => { setOpenMenuId(null); setItemToDelete(it) }}><Trash2 size={14} /> Delete</button>
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
     </div>
 
     {!hasData && !loading ? (
-      <div className='card nwFirstRun'>
-        <PiggyBank size={30} />
-        <h3>Start tracking your net worth</h3>
-        <p className='muted'>Add what you own (cash, property, vehicles) and what you owe (loans, cards). Your Investments portfolio is pulled in automatically.</p>
+      <div className='nwTile nwFirstRun'>
+        <div className='nwFirstRunIcon'><PiggyBank size={26} /></div>
+        <h3>Build your balance sheet</h3>
+        <p>Add what you own — cash, property, vehicles — and what you owe. Your Investments portfolio is pulled in automatically.</p>
         <div className='nwFirstRunActions'>
-          <button className='btn nwBtnPrimary' onClick={() => openAdd('asset')}><Plus size={16} />Add an asset</button>
-          <button className='btn nwBtnSecondary' onClick={() => openAdd('liability')}><Plus size={16} />Add a liability</button>
+          <button className='nwPrimaryBtn' onClick={() => openAdd('asset')}><Plus size={16} />Add an asset</button>
+          <button className='nwGhostBtn' onClick={() => openAdd('liability')}><Plus size={16} />Add a liability</button>
         </div>
       </div>
-    ) : null}
+    ) : (
+      <>
+        {/* ---------- Radial gauge row ---------- */}
+        <div className='nwGauges'>
+          <div className='nwTile nwGaugeTile'>
+            <div className='nwTileHead'><span className='nwTileLabel'><Wallet size={14} /> Assets</span></div>
+            <div className='nwRadialWrap'>
+              <ResponsiveContainer width='100%' height={150}>
+                <RadialBarChart innerRadius='74%' outerRadius='100%' data={[{ value: Math.max(assetShare, grossTotal > 0 ? 2 : 0) }]} startAngle={90} endAngle={-270}>
+                  <defs><linearGradient id='nwGradAssets' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stopColor='#21c97a' /><stop offset='100%' stopColor='#5eead4' /></linearGradient></defs>
+                  <PolarAngleAxis type='number' domain={[0, 100]} tick={false} />
+                  <RadialBar background={{ fill: 'rgba(148,163,184,.14)' }} dataKey='value' cornerRadius={20} fill='url(#nwGradAssets)' />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className='nwRadialCenter'><strong className='pos'>{moneyCompact(totalAssets)}</strong><small>{assetShare.toFixed(0)}% of total</small></div>
+            </div>
+          </div>
 
+          <div className='nwTile nwGaugeTile'>
+            <div className='nwTileHead'><span className='nwTileLabel'><CreditCard size={14} /> Liabilities</span></div>
+            <div className='nwRadialWrap'>
+              <ResponsiveContainer width='100%' height={150}>
+                <RadialBarChart innerRadius='74%' outerRadius='100%' data={[{ value: Math.max(liabilityShare, grossTotal > 0 && totalLiabilities > 0 ? 2 : 0) }]} startAngle={90} endAngle={-270}>
+                  <defs><linearGradient id='nwGradLiab' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stopColor='#f87171' /><stop offset='100%' stopColor='#fb923c' /></linearGradient></defs>
+                  <PolarAngleAxis type='number' domain={[0, 100]} tick={false} />
+                  <RadialBar background={{ fill: 'rgba(148,163,184,.14)' }} dataKey='value' cornerRadius={20} fill='url(#nwGradLiab)' />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className='nwRadialCenter'><strong className='neg'>{moneyCompact(totalLiabilities)}</strong><small>{liabilityShare.toFixed(0)}% of total</small></div>
+            </div>
+          </div>
+
+          <div className='nwTile nwGaugeTile'>
+            <div className='nwTileHead'><span className='nwTileLabel'><ShieldCheck size={14} /> Financial Health</span></div>
+            <div className='nwRadialWrap'>
+              <ResponsiveContainer width='100%' height={150}>
+                <RadialBarChart innerRadius='74%' outerRadius='100%' data={[{ value: gaugeValue }]} startAngle={220} endAngle={-40}>
+                  <defs><linearGradient id='nwGradHealth' x1='0' y1='0' x2='1' y2='0'><stop offset='0%' stopColor={healthColor} stopOpacity={0.65} /><stop offset='100%' stopColor={healthColor} /></linearGradient></defs>
+                  <PolarAngleAxis type='number' domain={[0, 5]} tick={false} />
+                  <RadialBar background={{ fill: 'rgba(148,163,184,.14)' }} dataKey='value' cornerRadius={20} fill='url(#nwGradHealth)' />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className='nwRadialCenter'><strong style={{ color: healthColor }}>{healthLabel}</strong><small>{coverage === Infinity ? 'No debt' : `${coverage.toFixed(1)}× coverage`}</small></div>
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- Charts bento ---------- */}
+        <div className='nwCharts'>
+          <div className='nwTile nwTrendTile'>
+            <div className='nwTileHead'>
+              <span className='nwTileLabel'><TrendingUp size={14} /> Net Worth Trajectory</span>
+              <div className='nwRanges'>{(['3M', '6M', '1Y', 'All'] as const).map((r) => (
+                <button key={r} className={`nwRange ${range === r ? 'active' : ''}`} onClick={() => setRange(r)}>{r}</button>
+              ))}</div>
+            </div>
+            {chartData.length < 2 ? (
+              <div className='nwEmpty'><TrendingUp size={26} /><p>{history.length === 0 ? 'Record your first snapshot to start tracking your trajectory.' : 'Not enough history for this range yet — record snapshots over time.'}</p></div>
+            ) : (
+              <>
+                <div className='nwTrendChart'>
+                  <ResponsiveContainer width='100%' height='100%'>
+                    <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id='nwTrendFill' x1='0' y1='0' x2='0' y2='1'>
+                          <stop offset='0%' stopColor='#21c97a' stopOpacity={0.22} />
+                          <stop offset='100%' stopColor='#21c97a' stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray='3 6' stroke='rgba(148,163,184,.14)' vertical={false} />
+                      <XAxis dataKey='date' tickFormatter={(v) => new Date(String(v)).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} minTickGap={30} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+                      <YAxis tickFormatter={(v) => moneyCompact(Number(v))} width={64} tick={{ fontSize: 11, fill: 'var(--muted)' }} axisLine={false} tickLine={false} />
+                      <Tooltip content={<TrendTooltip />} cursor={{ stroke: 'rgba(148,163,184,.4)', strokeDasharray: '4 4' }} />
+                      <Area type='monotone' dataKey='netWorth' stroke='none' fill='url(#nwTrendFill)' />
+                      <Line type='monotone' dataKey='liabilities' stroke='#f87171' strokeWidth={1.75} strokeDasharray='5 5' dot={false} />
+                      <Line type='monotone' dataKey='netWorth' stroke='#21c97a' strokeWidth={2.5} dot={false} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className='nwTrendLegend'>
+                  <span><i className='solid' />Net worth</span>
+                  <span><i className='area' />Assets fill</span>
+                  <span><i className='dash' />Liabilities</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className='nwTile nwDonutTile'>
+            <div className='nwTileHead'><span className='nwTileLabel'><Layers size={14} /> Asset Mix</span></div>
+            {donutData.length === 0 ? (
+              <div className='nwEmpty'><Wallet size={26} /><p>Add assets to see your allocation.</p></div>
+            ) : (
+              <>
+                <div className='nwDonutWrap'>
+                  <ResponsiveContainer width='100%' height={176}>
+                    <PieChart>
+                      <Pie data={donutData} dataKey='value' innerRadius={58} outerRadius={84} paddingAngle={3} stroke='none' startAngle={90} endAngle={-270}>
+                        {donutData.map((_, i) => <Cell key={i} fill={COMPOSITION_COLORS[i % COMPOSITION_COLORS.length]} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className='nwDonutCenter'><strong>{moneyCompact(totalAssets)}</strong><small>total assets</small></div>
+                </div>
+                <div className='nwLegend'>
+                  {donutData.map((d, i) => (
+                    <div className='nwLegendRow' key={d.name}>
+                      <span className='nwDot' style={{ background: COMPOSITION_COLORS[i % COMPOSITION_COLORS.length] }} />
+                      <span className='nwLegendName'>{d.name}</span>
+                      <span className='nwLegendPct'>{totalAssets > 0 ? ((d.value / totalAssets) * 100).toFixed(0) : 0}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ---------- Ledger lists ---------- */}
+        <div className='nwLists'>
+          {([
+            { title: 'Assets', kind: 'asset' as Kind, groups: assetGroups, total: totalAssets, accent: 'asset' },
+            { title: 'Liabilities', kind: 'liability' as Kind, groups: liabilityGroups, total: totalLiabilities, accent: 'liab' },
+          ]).map((panel) => (
+            <div className={`nwTile nwLedger nwLedger-${panel.accent}`} key={panel.title}>
+              <div className='nwTileHead'>
+                <span className='nwTileLabel'>{panel.title}<span className='nwLedgerTotal'>{money(panel.total)}</span></span>
+                <button className='nwAddChip' onClick={() => openAdd(panel.kind)}><Plus size={13} />Add</button>
+              </div>
+              {panel.groups.length === 0 ? (
+                <div className='nwEmpty small'><p>No {panel.title.toLowerCase()} yet.</p></div>
+              ) : (
+                <div className='nwGroups'>
+                  {panel.groups.map(([category, bucket]) => (
+                    <div className='nwGroup' key={category}>
+                      <div className='nwGroupHead'>
+                        <span className='nwGroupChip'>{CATEGORY_ICON[category] || <Layers size={15} />}{category}</span>
+                        <span className='nwGroupSub'>{money(bucket.subtotal)}</span>
+                      </div>
+                      {bucket.items.map((it) => (
+                        <div className='nwRow' key={it.id}>
+                          <span className='nwRowName'>{it.name}{it.linked ? <span className='nwLinked'><Link2 size={11} />Linked</span> : null}</span>
+                          <span className={`nwRowValue ${panel.kind === 'asset' ? 'pos' : 'neg'}`}>{money(it.value)}</span>
+                          {it.linked ? (
+                            onOpenInvestments ? <button className='nwRowIcon' onClick={onOpenInvestments} title='Open Investments'><ArrowUpRight size={14} /></button> : <span className='nwRowSpacer' />
+                          ) : (
+                            <div className='nwMenuWrap'>
+                              <button className='nwRowIcon' onClick={(e) => { e.stopPropagation(); setOpenMenuId((c) => (c === it.id ? null : it.id)) }}>⋯</button>
+                              {openMenuId === it.id ? (
+                                <div className='nwMenu' onClick={(e) => e.stopPropagation()}>
+                                  <button onClick={() => { setOpenMenuId(null); openEdit(it) }}><Pencil size={14} /> Edit</button>
+                                  <button className='dangerText' onClick={() => { setOpenMenuId(null); setItemToDelete(it) }}><Trash2 size={14} /> Delete</button>
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </>
+    )}
+
+    {/* ---------- Add / edit modal ---------- */}
     {modalOpen ? (
       <div className='deleteConfirmBackdrop' role='presentation' onClick={closeModal}>
         <div className='card nwModal' role='dialog' aria-modal='true' aria-labelledby='nw-modal-title' onClick={(e) => e.stopPropagation()}>
           <h3 id='nw-modal-title'>{editing ? 'Edit entry' : 'Add entry'}</h3>
           <div className='nwSegmented'>
-            <button className={draftKind === 'asset' ? 'active' : ''} onClick={() => { setDraftKind('asset'); if (!ASSET_CATEGORIES.includes(draftCategory as typeof ASSET_CATEGORIES[number])) setDraftCategory('Cash') }}>Asset</button>
-            <button className={draftKind === 'liability' ? 'active' : ''} onClick={() => { setDraftKind('liability'); if (!LIABILITY_CATEGORIES.includes(draftCategory as typeof LIABILITY_CATEGORIES[number])) setDraftCategory('Credit Card') }}>Liability</button>
+            <button className={draftKind === 'asset' ? 'active asset' : ''} onClick={() => { setDraftKind('asset'); if (!ASSET_CATEGORIES.includes(draftCategory as typeof ASSET_CATEGORIES[number])) setDraftCategory('Cash') }}>Asset</button>
+            <button className={draftKind === 'liability' ? 'active liab' : ''} onClick={() => { setDraftKind('liability'); if (!LIABILITY_CATEGORIES.includes(draftCategory as typeof LIABILITY_CATEGORIES[number])) setDraftCategory('Credit Card') }}>Liability</button>
           </div>
           <label className='fieldLabel'>Category</label>
           <select className='input' value={draftCategory} onChange={(e) => setDraftCategory(e.target.value)}>
@@ -428,8 +523,8 @@ export function NetWorthView({ currency, onOpenInvestments }: { currency: string
           <label className='fieldLabel'>Note (optional)</label>
           <input className='input' placeholder='Add a note' value={draftNotes} onChange={(e) => setDraftNotes(e.target.value)} />
           <div className='nwModalActions'>
-            <button className='btn' onClick={closeModal}>Cancel</button>
-            <button className='btn nwBtnPrimary' onClick={() => void saveItem()}>{editing ? 'Save changes' : 'Add entry'}</button>
+            <button className='nwGhostBtn' onClick={closeModal}>Cancel</button>
+            <button className='nwPrimaryBtn' onClick={() => void saveItem()}>{editing ? 'Save changes' : 'Add entry'}</button>
           </div>
         </div>
       </div>
