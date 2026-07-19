@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, Bell, BellOff, CalendarDays, ChevronDown, ChevronUp, Clock, FileText, LineChart, Settings, Tag, Target, TrendingUp, X } from 'lucide-react'
+import { AlertTriangle, Bell, BellOff, Clock, LineChart as LineChartIcon, Settings, Tag, Target, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction, RecurringItem } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -1866,7 +1866,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
     if (key.includes('subscription')) return { icon: Tag, className: 'notifIcon subscription' }
     if (key.includes('goal')) return { icon: Target, className: 'notifIcon goals' }
     if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('forecast') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
-    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
+    if (key.includes('net_worth')) return { icon: LineChartIcon, className: 'notifIcon networth' }
     if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
     if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
     if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
