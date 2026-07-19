@@ -84,7 +84,7 @@ export type Profile = {
   last_active_at?: string | null
 }
 
-export type FeatureKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'reports' | 'goals' | 'advice' | 'converter' | 'investments' | 'support' | 'settings'
+export type FeatureKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'reports' | 'goals' | 'advice' | 'converter' | 'investments' | 'shared_budgeting' | 'support' | 'settings'
 
 export type FeatureAccess = Record<FeatureKey, boolean>
 
@@ -99,10 +99,81 @@ export type UserFeatureAccess = {
   advice: boolean
   converter: boolean
   investments: boolean
+  shared_budgeting: boolean
   support: boolean
   settings: boolean
   created_at?: string
   updated_at?: string
+}
+
+
+// ---------------------------------------------------------------------------
+// Shared budgeting (couples): a Together space with a split "who owes whom"
+// ledger. Gated behind the shared_budgeting feature flag.
+// ---------------------------------------------------------------------------
+
+export type SharedSpace = {
+  id: string
+  name: string
+  currency: string
+  created_by: string
+  created_at?: string
+  updated_at?: string
+}
+
+export type SharedMemberRole = 'owner' | 'member'
+
+export type SharedSpaceMember = {
+  id: string
+  space_id: string
+  user_id: string
+  role: SharedMemberRole
+  default_split: number
+  joined_at?: string
+  // Hydrated client-side from shared_space_member_emails().
+  email?: string | null
+}
+
+export type SharedInviteStatus = 'pending' | 'accepted' | 'declined'
+
+export type SharedSpaceInvite = {
+  id: string
+  space_id: string
+  invited_by: string
+  invitee_email: string
+  status: SharedInviteStatus
+  created_at?: string
+  responded_at?: string | null
+}
+
+// payer_share is the percentage of the total the payer is responsible for; the
+// remainder is what the other member owes the payer.
+export type SharedSplitType = 'equal' | 'percent' | 'payer_full' | 'other_full'
+
+export type SharedExpense = {
+  id: string
+  space_id: string
+  paid_by: string
+  created_by: string
+  amount: number
+  note: string | null
+  emoji: string | null
+  date: string // YYYY-MM-DD
+  split_type: SharedSplitType
+  payer_share: number
+  created_at?: string
+  updated_at?: string
+}
+
+export type SharedSettlement = {
+  id: string
+  space_id: string
+  from_user: string
+  to_user: string
+  amount: number
+  note: string | null
+  date: string // YYYY-MM-DD
+  created_at?: string
 }
 
 

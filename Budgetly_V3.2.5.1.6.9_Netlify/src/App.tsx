@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Search, Copy, Trash2, Pencil, ShieldCheck, ScrollText, Download, Upload, KeyRound, TrendingUp } from 'lucide-react'
+import { Menu, BarChart3, ListChecks, Tags, Repeat, LifeBuoy, Wrench, Target, Sparkles, ArrowLeftRight, Settings, ChevronRight, CalendarDays, X, CircleHelp, Plus, Bell, Search, Copy, Trash2, Pencil, ShieldCheck, ScrollText, Download, Upload, KeyRound, TrendingUp, Users } from 'lucide-react'
 import Auth from './components/Auth'
 import LandingPage from './components/LandingPage'
 import Sidebar, { ViewKey } from './components/Sidebar'
@@ -10,6 +10,7 @@ import { useBudgetApp } from './hooks/useBudgetApp'
 import { useSuperAdmin } from './hooks/useSuperAdmin'
 import { AdviceView, CategoriesView, CurrencyConverterView, DashboardView, GoalsView, HelpSupportView, RecurringView, ReportsView, SettingsView, TransactionsView, type AdviceNavTarget } from './components/AppViews'
 import { InvestmentsView } from './components/InvestmentsView'
+import { SharedBudgetingView } from './components/SharedBudgetingView'
 import { OfflineStatusBanner } from './components/pwa/OfflineStatusBanner'
 import { PwaUpdateBanner } from './components/pwa/PwaUpdateBanner'
 import UniversalSearch, { CommandItem } from './components/UniversalSearch'
@@ -337,7 +338,7 @@ export default function App() {
     return () => window.removeEventListener('budgetly:show-month-summary', replay)
   }, [])
 
-  const orderedViews = useMemo<ViewKey[]>(() => ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'settings', 'support'], [])
+  const orderedViews = useMemo<ViewKey[]>(() => ['dashboard', 'transactions', 'categories', 'recurring', 'advice', 'tools', 'together', 'settings', 'support'], [])
   const firstAllowedView = useMemo(() => {
     if (admin.isSuperAdmin) return 'dashboard' as ViewKey
     return orderedViews.find((candidate) => {
@@ -347,6 +348,7 @@ export default function App() {
       if (candidate === 'recurring') return admin.visibleFeatures.recurring
       if (candidate === 'advice') return admin.visibleFeatures.advice
       if (candidate === 'tools') return true
+      if (candidate === 'together') return admin.visibleFeatures.shared_budgeting
       if (candidate === 'settings') return admin.visibleFeatures.settings
       if (candidate === 'support') return admin.visibleFeatures.support
       return false
@@ -367,6 +369,7 @@ export default function App() {
       view === 'recurring' ? admin.visibleFeatures.recurring :
       view === 'advice' ? admin.visibleFeatures.advice :
       view === 'tools' ? true :
+      view === 'together' ? admin.visibleFeatures.shared_budgeting :
       view === 'settings' ? admin.visibleFeatures.settings :
       view === 'support' ? admin.visibleFeatures.support :
       true
@@ -721,6 +724,7 @@ export default function App() {
     // Utilities sub-pages
     { id: 'page-converter', type: 'page', label: 'Currency Converter', description: 'Convert currencies with live exchange rates', keywords: ['currency', 'converter', 'convert', 'exchange', 'fx', 'rates', 'utilities'], onSelect: () => goToTools('converter'), iconClassName: 'blue', icon: <ArrowLeftRight size={16} /> },
     { id: 'page-investments', type: 'page', label: 'Investments', description: 'Track manual holdings and portfolio performance', keywords: ['investments', 'portfolio', 'holdings', 'stocks', 'assets', 'net worth', 'utilities'], onSelect: () => goToTools('investments'), iconClassName: 'green', icon: <TrendingUp size={16} /> },
+    { id: 'page-together', type: 'page', label: 'Together', description: 'Shared budgeting and split expenses with your partner', keywords: ['together', 'shared', 'couple', 'split', 'partner', 'owe', 'settle', 'ledger'], onSelect: () => handleViewChange('together'), iconClassName: 'green', icon: <Users size={16} /> },
     // Settings sub-pages
     { id: 'page-settings-general', type: 'page', label: 'Settings: General', description: 'Currency, theme, notifications, and shortcuts', keywords: ['settings', 'general', 'preferences', 'currency', 'theme', 'notifications'], onSelect: () => goToSettingsSection('general'), iconClassName: 'slate', icon: <Settings size={16} /> },
     { id: 'page-settings-data', type: 'page', label: 'Settings: Data & Backup', description: 'Export and import your Budgetly data', keywords: ['settings', 'data', 'backup', 'export', 'import', 'csv', 'json', 'download'], onSelect: () => goToSettingsSection('data'), iconClassName: 'slate', icon: <Download size={16} /> },
@@ -750,6 +754,7 @@ export default function App() {
     'action-export-report': admin.visibleFeatures.reports,
     'page-converter': admin.visibleFeatures.converter,
     'page-investments': admin.visibleFeatures.investments,
+    'page-together': admin.visibleFeatures.shared_budgeting,
     'page-support': admin.visibleFeatures.support,
     'page-settings': admin.visibleFeatures.settings,
     'action-open-settings': admin.visibleFeatures.settings,
@@ -845,6 +850,7 @@ export default function App() {
           </div>
           )
         ) : null}
+        {view === 'together' && admin.visibleFeatures.shared_budgeting ? <SharedBudgetingView userId={userId} email={email} hasFeature={admin.visibleFeatures.shared_budgeting} currency={budget.data.currency} /> : null}
         {view === 'support' && admin.visibleFeatures.support ? <HelpSupportView email={email} userId={userId} admin={admin} /> : null}
         {view === 'settings' && admin.visibleFeatures.settings ? <SettingsView budget={budget} theme={theme} email={email} userId={userId} onThemeToggle={handleThemeToggle} admin={admin} onSignOut={() => void signOut()} /> : null}
 

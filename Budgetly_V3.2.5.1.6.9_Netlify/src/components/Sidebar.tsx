@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut, Users } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
-export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'support' | 'settings' | 'super_admin'
+export type ViewKey = 'dashboard' | 'transactions' | 'categories' | 'recurring' | 'advice' | 'tools' | 'together' | 'support' | 'settings' | 'super_admin'
 
 const NAV_ITEMS: Array<{ key: Exclude<ViewKey, 'super_admin'>; label: string; icon: React.ReactNode; visible: (features: FeatureAccess) => boolean }> = [
   { key: 'dashboard', label: 'Dashboard', icon: <BarChart3 size={18} />, visible: (features) => features.dashboard },
@@ -12,6 +12,7 @@ const NAV_ITEMS: Array<{ key: Exclude<ViewKey, 'super_admin'>; label: string; ic
   { key: 'transactions', label: 'Transactions', icon: <ListChecks size={18} />, visible: (features) => features.transactions },
   { key: 'recurring', label: 'Recurring', icon: <Repeat size={18} />, visible: (features) => features.recurring },
   { key: 'tools', label: 'Utilities', icon: <Wrench size={18} />, visible: () => true },
+  { key: 'together', label: 'Together', icon: <Users size={18} />, visible: (features) => features.shared_budgeting },
   { key: 'advice', label: 'Insights', icon: <Sparkles size={18} />, visible: (features) => features.advice },
   { key: 'settings', label: 'Settings', icon: <Settings size={18} />, visible: (features) => features.settings },
 ]

@@ -8802,7 +8802,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
   )
 
   const accessPresets = useMemo(() => ([
-    { id: 'full', label: 'Full Access', access: { ...admin.defaultFeatureAccess } as FeatureAccess },
+    { id: 'full', label: 'Full Access', access: { ...admin.defaultFeatureAccess, shared_budgeting: true } as FeatureAccess },
     { id: 'standard', label: 'Standard', access: { ...admin.defaultFeatureAccess, reports: false, goals: false, advice: false, converter: false, investments: false } as FeatureAccess },
     { id: 'readonly', label: 'Read Only', access: { ...admin.defaultFeatureAccess, transactions: false, categories: false, recurring: false, reports: false, goals: false, advice: false, converter: false, investments: false } as FeatureAccess },
   ]), [admin.defaultFeatureAccess])
@@ -8921,6 +8921,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
       advice: 'Insights',
       converter: 'Currency Converter',
       investments: 'Investments',
+      shared_budgeting: 'Shared Budgeting',
       support: 'Help & Support',
       settings: 'Settings',
     }
@@ -9116,6 +9117,7 @@ export function SuperAdminView({ admin, embedded = false, hideAudit = false }: {
                     {([
                       { title: 'Core Modules', keys: ['dashboard', 'transactions', 'categories', 'recurring', 'reports', 'goals'] as const },
                       { title: 'Planning', keys: ['advice', 'converter', 'investments'] as const },
+                      { title: 'Sharing (limited)', keys: ['shared_budgeting'] as const },
                       { title: 'Utilities', keys: ['support', 'settings'] as const },
                     ]).map((group) => (
                       <div key={group.title} className="adminFeatureSection">

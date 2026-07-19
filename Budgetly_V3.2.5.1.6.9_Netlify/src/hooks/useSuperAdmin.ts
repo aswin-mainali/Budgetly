@@ -24,6 +24,8 @@ export const DEFAULT_FEATURE_ACCESS: FeatureAccess = {
   advice: true,
   converter: true,
   investments: true,
+  // Opt-in: off by default for everyone until a Super Admin enables it.
+  shared_budgeting: false,
   support: true,
   settings: true,
 }
@@ -67,7 +69,15 @@ export function useSuperAdmin(userId: string | null, email: string | null) {
 
   const isSuperAdmin = profile?.role === 'super_admin'
 
-  const visibleFeatures = useMemo(() => (isSuperAdmin ? DEFAULT_FEATURE_ACCESS : mergeFeatureAccess(featureAccess)), [isSuperAdmin, featureAccess])
+  // Super admins see every standard module, but shared_budgeting is opt-in and
+  // enforced server-side per account — so its nav visibility follows the admin's
+  // own real feature-access row, keeping the UI consistent with the RPC guard.
+  const visibleFeatures = useMemo(
+    () => (isSuperAdmin
+      ? { ...DEFAULT_FEATURE_ACCESS, shared_budgeting: mergeFeatureAccess(featureAccess).shared_budgeting }
+      : mergeFeatureAccess(featureAccess)),
+    [isSuperAdmin, featureAccess],
+  )
 
   const ensureSelfRecords = useCallback(async () => {
     if (!userId) return null
