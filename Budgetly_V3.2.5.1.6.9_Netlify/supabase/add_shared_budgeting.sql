@@ -131,6 +131,7 @@ create or replace function public.current_auth_email()
 returns text
 language sql
 stable
+set search_path = public
 as $$
   select lower(coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'email', ''));
 $$;
@@ -465,6 +466,19 @@ $$;
 
 revoke all on function public.shared_space_member_emails(uuid) from public;
 grant execute on function public.shared_space_member_emails(uuid) to authenticated;
+
+-- Explicitly deny the unauthenticated anon role on every shared-budgeting
+-- function. They are all internally guarded by auth.uid(), but Supabase grants
+-- execute to anon by default via PostgREST, so we remove that surface.
+revoke execute on function public.current_auth_email() from anon;
+revoke execute on function public.is_shared_member(uuid, uuid) from anon;
+revoke execute on function public.has_shared_budgeting(uuid) from anon;
+revoke execute on function public.create_shared_space(text, text, text) from anon;
+revoke execute on function public.invite_to_shared_space(uuid, text) from anon;
+revoke execute on function public.accept_shared_invite(uuid) from anon;
+revoke execute on function public.decline_shared_invite(uuid) from anon;
+revoke execute on function public.leave_shared_space(uuid) from anon;
+revoke execute on function public.shared_space_member_emails(uuid) from anon;
 
 -- ---------------------------------------------------------------------
 -- 6. Indexes
