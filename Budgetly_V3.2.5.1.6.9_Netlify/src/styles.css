@@ -11082,3 +11082,99 @@ body.light .settingsMobileNavTrigger{background:rgba(255,255,255,.72);}
   .settingsTabsRow{display:none;}
   .settingsMobileNav{display:block;}
 }
+
+
+/* ==========================================================================
+   Dashboard customization (slot swapping)
+   ========================================================================== */
+.dashCustomizeBtn{white-space:nowrap}
+.btn.ghost.dashCustomizeBtn{color:var(--text);border:1px solid var(--border);background:var(--panel-elevated);font-weight:600}
+.btn.ghost.dashCustomizeBtn:hover{border-color:rgba(96,165,250,.45);background:rgba(96,165,250,.1)}
+.btn.dashCustomizeDone{border-color:rgba(96,165,250,.5);background:rgba(96,165,250,.16);color:#2f6fd6}
+.mobileDashCustomize{display:grid;place-items:center;width:40px;height:40px;border-radius:14px;border:1px solid var(--border);background:var(--panel-elevated);color:var(--text);cursor:pointer;flex:0 0 auto}
+.mobileDashCustomize.active{background:rgba(96,165,250,.18);border-color:rgba(96,165,250,.5);color:#2f6fd6}
+
+/* Per-card edit frame shown only in customize mode */
+.dashSlotFrame{display:flex;flex-direction:column;min-width:0;gap:8px}
+.dashSlotBar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 6px 5px 12px;border-radius:12px;background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.28)}
+.dashSlotBarTitle{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashSlotChangeBtn{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;font-size:12px;font-weight:700;padding:5px 10px;border-radius:9px;border:1px solid rgba(96,165,250,.4);background:var(--panel-elevated);color:#2f6fd6;cursor:pointer}
+.dashSlotChangeBtn:hover{background:rgba(96,165,250,.14)}
+.dashSlotFrame > .card,.dashSlotFrame > .dashSlotHiddenCard{outline:2px dashed var(--border-strong);outline-offset:3px}
+.dashSlotHiddenCard{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:150px;color:var(--muted);cursor:pointer;font-weight:600;width:100%;border-style:dashed}
+.dashSlotHiddenCard:hover{color:var(--text);border-color:rgba(96,165,250,.5)}
+
+/* Shared bits for alternate widgets */
+.dashWidgetLink{display:inline-flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;padding:0}
+.dashWidgetLink:hover{text-decoration:underline}
+.spin{animation:dashSpin 1s linear infinite}
+@keyframes dashSpin{to{transform:rotate(360deg)}}
+
+/* Recent transactions */
+.dashRecentList{min-width:0}
+.dashRecentRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.dashRecentLeft{display:flex;align-items:center;gap:10px;min-width:0}
+.dashRecentText{display:flex;flex-direction:column;min-width:0}
+.dashRecentTitle{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashRecentSub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashRecentAmount{font-size:14px;font-weight:700;white-space:nowrap;flex:0 0 auto}
+
+/* Goals */
+.dashGoalsSummary{font-size:13px;margin-bottom:8px}
+.dashGoalsList{min-width:0}
+.dashGoalRow{display:flex;align-items:center;gap:12px;min-width:0}
+.dashGoalRing{flex:0 0 auto}
+.dashGoalRing .goalRing{width:52px;height:52px;flex:0 0 52px}
+.dashGoalRing .goalRingLabel{font-size:13px}
+.dashGoalRing .goalRingLabel span{font-size:9px}
+.dashGoalText{display:flex;flex-direction:column;min-width:0;flex:1}
+.dashGoalName{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashGoalSub{font-size:12px;color:var(--muted)}
+
+/* Investments */
+.dashInvestBody{display:flex;flex-direction:column;gap:14px}
+.dashInvestTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dashInvestValue{font-size:26px;font-weight:800;line-height:1.1}
+.dashInvestGain{display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:700;margin-top:4px}
+.dashInvestGain.pos{color:#12a55f}
+.dashInvestGain.neg{color:#ef4444}
+.dashInvestSpark{width:130px;flex:0 0 130px}
+.dashInvestList{min-width:0}
+.dashInvestRow{display:flex;align-items:center;gap:8px;min-width:0}
+.dashInvestSymbol{font-weight:700;font-size:13px;flex:0 0 auto}
+.dashInvestName{flex:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashInvestRowValue{font-size:13px;font-weight:700;flex:0 0 auto}
+
+/* Top categories */
+.dashTopCatList{min-width:0}
+.dashTopCatRow{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dashTopCatHead{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.dashTopCatValue{font-size:13px;font-weight:700;white-space:nowrap;flex:0 0 auto}
+
+/* Financial health */
+.dashHealthBody{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.dashHealthRing{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto}
+.dashHealthRingLabel{font-size:12px;color:var(--muted);font-weight:600}
+.dashHealthTiles{flex:1;min-width:170px}
+.dashHealthTile{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
+.dashHealthTile span{font-size:12px;color:var(--muted)}
+.dashHealthTile strong{font-size:14px;text-align:right}
+body.light .dashHealthTile{background:rgba(15,23,42,.03)}
+
+/* Widget picker modal */
+.dashPickerModal{width:min(520px,100%);text-align:left;max-height:min(82vh,660px);display:flex;flex-direction:column;padding:22px 20px 18px}
+.dashPickerList{display:flex;flex-direction:column;gap:8px;overflow-y:auto;margin:14px 0;padding-right:2px}
+.dashPickerItem{display:flex;align-items:center;gap:12px;text-align:left;padding:12px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.02);cursor:pointer;color:var(--text);transition:border-color .15s,background .15s}
+.dashPickerItem:hover{border-color:rgba(96,165,250,.5);background:rgba(96,165,250,.08)}
+.dashPickerItem.selected{border-color:rgba(96,165,250,.6);background:rgba(96,165,250,.12)}
+.dashPickerIcon{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:rgba(96,165,250,.14);color:#3b82f6;flex:0 0 38px}
+.dashPickerText{display:flex;flex-direction:column;flex:1;min-width:0;gap:2px}
+.dashPickerText strong{font-size:14px;display:flex;align-items:center;gap:8px}
+.dashPickerText small{font-size:12px;color:var(--muted)}
+.dashPickerTag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:999px;background:rgba(129,151,189,.18);color:var(--muted)}
+.dashPickerTag.alt{background:rgba(96,165,250,.16);color:#2f6fd6}
+.dashPickerCheck{color:#2f6fd6;flex:0 0 auto}
+.dashPickerFooter{margin-top:auto;padding-top:4px}
+.dashPickerFooter .btn.ghost{color:var(--text);border:1px solid var(--border);background:var(--panel-elevated)}
+.dashPickerHide{color:var(--danger)}
+body.light .dashPickerItem{background:rgba(15,23,42,.02)}

@@ -1165,7 +1165,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Database, User, History } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Wallet, PieChart as PieChartIcon, RotateCcw } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1738,6 +1738,469 @@ function loadTawkWidget() {
 }
 
 
+// ============================================================================
+// Dashboard customization
+//
+// The dashboard layout stays exactly as it was — greeting, KPI cards and the
+// notification bell are always pinned, and the five content cards keep their
+// original positions and styling. Customization only changes WHICH widget
+// occupies each card position (a "slot"): each card can keep its default
+// widget, be swapped for an alternative widget, or be hidden. The choice is
+// saved per-user in localStorage, so an untouched dashboard renders identically
+// to before.
+// ============================================================================
+
+export type DashboardWidgetId =
+  | 'cashflow'
+  | 'spending-breakdown'
+  | 'monthly-trend'
+  | 'budgets'
+  | 'recurring'
+  | 'recent-transactions'
+  | 'goals'
+  | 'investments'
+  | 'top-categories'
+  | 'financial-health'
+  | 'daily-spending'
+
+type SlotWidget = DashboardWidgetId | 'hidden'
+type SlotId = 'A' | 'B' | 'C' | 'D' | 'E'
+type DashboardSlots = Record<SlotId, SlotWidget>
+
+const SLOT_IDS: SlotId[] = ['A', 'B', 'C', 'D', 'E']
+
+// Default widget per card position — matches the original dashboard exactly.
+const DEFAULT_SLOTS: Record<SlotId, DashboardWidgetId> = {
+  A: 'cashflow',
+  B: 'spending-breakdown',
+  C: 'monthly-trend',
+  D: 'budgets',
+  E: 'recurring',
+}
+
+// Widgets a card can be swapped to (in addition to its own default widget).
+const ALTERNATE_WIDGET_IDS: DashboardWidgetId[] = ['recent-transactions', 'goals', 'investments', 'top-categories', 'financial-health', 'daily-spending']
+
+type DashboardWidgetMeta = { id: DashboardWidgetId; title: string; description: string; icon: LucideIcon }
+
+const DASHBOARD_WIDGET_META: DashboardWidgetMeta[] = [
+  { id: 'cashflow', title: 'Cash flow trend', description: 'Weekly income, expenses and running net.', icon: Activity },
+  { id: 'spending-breakdown', title: 'Share of spending', description: 'Donut breakdown of spending by category.', icon: PieChartIcon },
+  { id: 'monthly-trend', title: 'Monthly spending trends', description: 'This year versus last year, month by month.', icon: BarChart3 },
+  { id: 'budgets', title: 'Budgets', description: 'Category budgets and what is left this month.', icon: Wallet },
+  { id: 'recurring', title: 'Recurring', description: 'Bills and income due in the next 7 days.', icon: Repeat2 },
+  { id: 'recent-transactions', title: 'Recent transactions', description: 'Your latest income and expense activity.', icon: ReceiptText },
+  { id: 'goals', title: 'Savings goals', description: 'Live progress toward each of your goals.', icon: Target },
+  { id: 'investments', title: 'Investments', description: 'Portfolio value and performance at a glance.', icon: TrendingUp },
+  { id: 'top-categories', title: 'Top categories', description: 'The biggest spending categories this month.', icon: TagIcon },
+  { id: 'financial-health', title: 'Financial health', description: 'Savings rate and key money metrics.', icon: HeartPulse },
+  { id: 'daily-spending', title: 'Daily spending', description: 'Cumulative spending across the month.', icon: Activity },
+]
+
+const WIDGET_META_BY_ID = new Map(DASHBOARD_WIDGET_META.map((meta) => [meta.id, meta]))
+
+const DASHBOARD_SLOTS_KEY = 'budgetly:dashboard:slots:v1'
+const dashboardSlotsStorageKey = (userId?: string | null) => `${DASHBOARD_SLOTS_KEY}:${userId ?? 'anon'}`
+
+function normalizeDashboardSlots(raw: unknown): DashboardSlots {
+  const next: DashboardSlots = { ...DEFAULT_SLOTS }
+  if (!raw || typeof raw !== 'object') return next
+  for (const slotId of SLOT_IDS) {
+    const value = (raw as Record<string, unknown>)[slotId]
+    if (value === 'hidden' || (typeof value === 'string' && WIDGET_META_BY_ID.has(value as DashboardWidgetId))) {
+      next[slotId] = value as SlotWidget
+    }
+  }
+  return next
+}
+
+function loadDashboardSlots(userId?: string | null): DashboardSlots {
+  if (typeof window === 'undefined') return { ...DEFAULT_SLOTS }
+  try {
+    const raw = window.localStorage.getItem(dashboardSlotsStorageKey(userId))
+    if (raw == null) return { ...DEFAULT_SLOTS }
+    return normalizeDashboardSlots(JSON.parse(raw))
+  } catch {
+    return { ...DEFAULT_SLOTS }
+  }
+}
+
+function saveDashboardSlots(userId: string | null | undefined, slots: DashboardSlots) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(dashboardSlotsStorageKey(userId), JSON.stringify(slots))
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+// Shared, precomputed data handed to alternate widgets so they stay presentational.
+type DashboardWidgetCtx = {
+  budget: BudgetAppState
+  theme: 'dark' | 'light'
+  isPhone: boolean
+  userId?: string | null
+  onOpenTransactionsByType?: (type: TxType) => void
+  onNavigate?: (target: string) => void
+  colorFor: (id: string | null | undefined) => string
+  cashFlowSeries: Array<{ label: string; income: number; expenses: number; net: number }>
+  cashFlowAxis: { hasData: boolean; domain: [number, number] }
+  renderChartEmpty: (text: string) => React.ReactNode
+  palette: {
+    chartGrid: string
+    chartGridSoft: string
+    chartAxis: string
+    trendThisYear: string
+    trendLastYear: string
+    cashIncome: string
+    cashExpense: string
+    cashNet: string
+    trendTooltipBg: string
+    trendTooltipBorder: string
+    trendTooltipText: string
+    chartBar: string
+  }
+}
+
+// Card shell used by the alternate widgets so they blend into whatever slot
+// they occupy (the slot passes the neighbouring card's className/style).
+function WCard({ shellClassName, shellStyle, title, badge, action, children }: { shellClassName?: string; shellStyle?: React.CSSProperties; title: string; badge?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className={`card ${shellClassName ?? ''}`} style={shellStyle}>
+      <div className="row space" style={{ alignItems: 'center', marginBottom: 10 }}>
+        <h3 style={{ marginBottom: 0 }}>{title}</h3>
+        {action ?? (badge ? <span className="badge">{badge}</span> : null)}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function WLink({ label, onClick }: { label: string; onClick?: () => void }) {
+  if (!onClick) return null
+  return <button type="button" className="dashWidgetLink" onClick={onClick}>{label}<ChevronRight size={14} /></button>
+}
+
+function RecentTransactionsWidget({ ctx, shellClassName, shellStyle }: { ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  const { budget, colorFor, onNavigate, onOpenTransactionsByType } = ctx
+  const { data, helpers, catsById } = budget
+  const recent = useMemo(() => [...data.transactions].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 6), [data.transactions])
+  return (
+    <WCard shellClassName={shellClassName} shellStyle={shellStyle} title="Recent transactions" action={<WLink label="View all" onClick={() => onNavigate?.('transactions')} />}>
+      {recent.length === 0 ? (
+        <div className="chartEmpty" style={{ minHeight: 180 }}>
+          <span className="chartEmptyText">No transactions yet</span>
+          <button type="button" className="chartEmptyCta" onClick={() => onOpenTransactionsByType?.('expense')}><PlusIcon size={15} strokeWidth={2.5} /> Add a transaction</button>
+        </div>
+      ) : (
+        <div className="grid dashRecentList" style={{ gap: 8 }}>
+          {recent.map((tx) => {
+            const category = tx.category_id ? catsById.get(tx.category_id) ?? null : null
+            const catColor = colorFor(tx.category_id)
+            const title = tx.note?.trim() || category?.name || (tx.type === 'income' ? 'Income' : 'Uncategorized')
+            return (
+              <div key={tx.id} className="dashRecentRow">
+                <div className="dashRecentLeft">
+                  <span className="budgetCatIcon" style={{ background: `${catColor}22`, color: catColor }}>{category?.name ? <CategoryIcon name={category.name} size={15} color={catColor} /> : (tx.type === 'income' ? <DollarSign size={15} color={catColor} /> : <ReceiptText size={15} color={catColor} />)}</span>
+                  <div className="dashRecentText">
+                    <span className="dashRecentTitle">{title}</span>
+                    <span className="dashRecentSub">{category?.name ?? (tx.type === 'income' ? 'Income' : 'Uncategorized')} • {new Date(`${tx.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                </div>
+                <strong className="dashRecentAmount" style={{ color: tx.type === 'income' ? 'var(--accent)' : 'var(--danger)' }}>{amountDisplay(Number(tx.amount ?? 0), data.currency, tx.type, helpers.fmtMoney)}</strong>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </WCard>
+  )
+}
+
+function GoalsWidget({ ctx, shellClassName, shellStyle }: { ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  const { budget, onNavigate } = ctx
+  const { data, helpers, sortedGoals } = budget
+  const projections = useMemo(() => {
+    const map = new Map<string, GoalProjection>()
+    for (const goal of sortedGoals) map.set(goal.id, computeGoalProjection(goal, data.goalContributions))
+    return map
+  }, [sortedGoals, data.goalContributions])
+  const insight = useMemo(() => summarizeGoals(sortedGoals, projections, (amount) => helpers.fmtMoney(amount, data.currency)), [sortedGoals, projections, helpers, data.currency])
+  const topGoals = sortedGoals.slice(0, 4)
+  return (
+    <WCard shellClassName={shellClassName} shellStyle={shellStyle} title="Savings goals" action={<WLink label="Manage" onClick={() => onNavigate?.('goals')} />}>
+      {sortedGoals.length === 0 ? (
+        <div className="chartEmpty" style={{ minHeight: 180 }}>
+          <span className="chartEmptyText">No goals yet — set a target to start saving</span>
+          <button type="button" className="chartEmptyCta" onClick={() => onNavigate?.('goals')}><PlusIcon size={15} strokeWidth={2.5} /> Add a goal</button>
+        </div>
+      ) : (
+        <>
+          <div className="dashGoalsSummary muted">{insight.summary}</div>
+          <div className="grid dashGoalsList" style={{ gap: 10 }}>
+            {topGoals.map((goal) => {
+              const projection = projections.get(goal.id)
+              const progress = projection?.progress ?? 0
+              const color = ringColorFor(projection?.status ?? 'no_contributions')
+              const meta = GOAL_STATUS_META[projection?.status ?? 'no_contributions']
+              return (
+                <div key={goal.id} className="dashGoalRow">
+                  <div className="dashGoalRing"><GoalDonut progress={progress} color={color} /></div>
+                  <div className="dashGoalText">
+                    <span className="dashGoalName">{goal.emoji ? `${goal.emoji} ` : ''}{goal.name}</span>
+                    <span className="dashGoalSub">{helpers.fmtMoney(Number(goal.current_amount ?? 0), data.currency)} of {helpers.fmtMoney(Number(goal.target_amount ?? 0), data.currency)}</span>
+                  </div>
+                  <span className={`goalStatusPill ${meta.cls}`}>{meta.label}</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </WCard>
+  )
+}
+
+type InvestmentWidgetHolding = { symbol: string; company_name: string | null; quantity: number; current_price: number; average_cost: number; currency: string | null }
+type InvestmentWidgetSnapshot = { date_key: string; total_value: number }
+
+function InvestmentsWidget({ ctx, shellClassName, shellStyle }: { ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  const { budget, userId, palette, onNavigate } = ctx
+  const { data, helpers } = budget
+  const [state, setState] = useState<{ loading: boolean; error: boolean; holdings: InvestmentWidgetHolding[]; snapshots: InvestmentWidgetSnapshot[] }>({ loading: true, error: false, holdings: [], snapshots: [] })
+  useEffect(() => {
+    if (!userId) { setState({ loading: false, error: false, holdings: [], snapshots: [] }); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const [holdingsRes, snapshotsRes] = await Promise.all([
+          supabase.from('investment_holdings').select('symbol, company_name, quantity, current_price, average_cost, currency').eq('user_id', userId),
+          supabase.from('investment_value_snapshots').select('date_key, total_value').eq('user_id', userId).order('date_key', { ascending: true }),
+        ])
+        if (cancelled) return
+        if (holdingsRes.error) throw holdingsRes.error
+        setState({ loading: false, error: false, holdings: (holdingsRes.data ?? []) as InvestmentWidgetHolding[], snapshots: (snapshotsRes.data ?? []) as InvestmentWidgetSnapshot[] })
+      } catch {
+        if (!cancelled) setState({ loading: false, error: true, holdings: [], snapshots: [] })
+      }
+    })()
+    return () => { cancelled = true }
+  }, [userId])
+
+  const totals = useMemo(() => {
+    let value = 0
+    let cost = 0
+    for (const holding of state.holdings) {
+      value += Number(holding.current_price || 0) * Number(holding.quantity || 0)
+      cost += Number(holding.average_cost || 0) * Number(holding.quantity || 0)
+    }
+    const gain = value - cost
+    return { value, cost, gain, returnPct: cost > 0 ? (gain / cost) * 100 : 0 }
+  }, [state.holdings])
+
+  const topHoldings = useMemo(() => (
+    [...state.holdings]
+      .map((holding) => ({ ...holding, marketValue: Number(holding.current_price || 0) * Number(holding.quantity || 0) }))
+      .sort((a, b) => b.marketValue - a.marketValue)
+      .slice(0, 3)
+  ), [state.holdings])
+
+  const spark = useMemo(() => state.snapshots.map((snapshot, index) => ({ index, value: Number(snapshot.total_value || 0) })), [state.snapshots])
+
+  return (
+    <WCard shellClassName={shellClassName} shellStyle={shellStyle} title="Investments" action={<WLink label="Open" onClick={() => onNavigate?.('utilities/investments')} />}>
+      {state.loading ? (
+        <div className="chartEmpty" style={{ minHeight: 180 }}><Loader2 size={22} className="spin" /><span className="chartEmptyText">Loading portfolio…</span></div>
+      ) : state.holdings.length === 0 ? (
+        <div className="chartEmpty" style={{ minHeight: 180 }}>
+          <span className="chartEmptyText">{state.error ? 'Investments are unavailable right now' : 'No holdings yet — track your portfolio'}</span>
+          <button type="button" className="chartEmptyCta" onClick={() => onNavigate?.('utilities/investments')}><PlusIcon size={15} strokeWidth={2.5} /> Add a holding</button>
+        </div>
+      ) : (
+        <div className="dashInvestBody">
+          <div className="dashInvestTop">
+            <div>
+              <div className="dashInvestValue">{helpers.fmtMoney(totals.value, data.currency)}</div>
+              <div className={`dashInvestGain ${totals.gain >= 0 ? 'pos' : 'neg'}`}>{totals.gain >= 0 ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}{helpers.fmtMoney(Math.abs(totals.gain), data.currency)} ({totals.returnPct >= 0 ? '+' : ''}{totals.returnPct.toFixed(1)}%)</div>
+            </div>
+            {spark.length > 1 ? (
+              <div className="dashInvestSpark">
+                <ResponsiveContainer width="100%" height={48}>
+                  <AreaChart data={spark} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="dashInvestSparkFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={totals.gain >= 0 ? palette.cashNet : palette.cashExpense} stopOpacity={0.32} />
+                        <stop offset="100%" stopColor={totals.gain >= 0 ? palette.cashNet : palette.cashExpense} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="value" stroke={totals.gain >= 0 ? palette.cashNet : palette.cashExpense} strokeWidth={2} fill="url(#dashInvestSparkFill)" dot={false} isAnimationActive={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : null}
+          </div>
+          <div className="grid dashInvestList" style={{ gap: 6 }}>
+            {topHoldings.map((holding) => (
+              <div key={holding.symbol} className="dashInvestRow">
+                <span className="dashInvestSymbol">{holding.symbol}</span>
+                <span className="dashInvestName muted">{holding.company_name ?? ''}</span>
+                <strong className="dashInvestRowValue">{helpers.fmtMoney(holding.marketValue, data.currency)}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </WCard>
+  )
+}
+
+function TopCategoriesWidget({ ctx, shellClassName, shellStyle }: { ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  const { budget, colorFor, onNavigate, onOpenTransactionsByType } = ctx
+  const { data, helpers, byCategory, expenses } = budget
+  const top = byCategory.slice(0, 5)
+  const maxTotal = top.reduce((max, row) => Math.max(max, row.total), 0) || 1
+  return (
+    <WCard shellClassName={shellClassName} shellStyle={shellStyle} title="Top categories" action={<WLink label="Categories" onClick={() => onNavigate?.('categories')} />}>
+      {expenses > 0 && top.length > 0 ? (
+        <div className="grid dashTopCatList" style={{ gap: 12 }}>
+          {top.map((row) => {
+            const color = colorFor(row.id)
+            const share = expenses > 0 ? Math.round((row.total / expenses) * 100) : 0
+            return (
+              <div key={row.id} className="dashTopCatRow">
+                <div className="dashTopCatHead">
+                  <span className="budgetCatLabel"><span className="budgetCatIcon" style={{ background: `${color}22`, color }}>{row.emoji ? <span style={{ fontSize: 14 }}>{row.emoji}</span> : <CategoryIcon name={row.name} size={14} color={color} />}</span><span className="budgetCatName">{row.name}</span></span>
+                  <span className="dashTopCatValue">{helpers.fmtMoney(row.total, data.currency)} <small className="muted">{share}%</small></span>
+                </div>
+                <div className="progress" style={{ background: `${color}1f`, borderColor: `${color}33` }}><div className="budgetFill" style={{ width: `${(row.total / maxTotal) * 100}%`, background: color }} /></div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="chartEmpty" style={{ minHeight: 180 }}>
+          <span className="chartEmptyText">Add expenses to see your top categories</span>
+          <button type="button" className="chartEmptyCta" onClick={() => onOpenTransactionsByType?.('expense')}><PlusIcon size={15} strokeWidth={2.5} /> Add an expense</button>
+        </div>
+      )}
+    </WCard>
+  )
+}
+
+function FinancialHealthWidget({ ctx, shellClassName, shellStyle }: { ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  const { budget } = ctx
+  const { data, helpers, income, expenses, net, byCategory, activeMonth } = budget
+  const savingsRate = income > 0 ? Math.max(-100, Math.min(100, Math.round((net / income) * 100))) : 0
+  const ringColor = savingsRate >= 20 ? '#22c55e' : savingsRate >= 0 ? '#f59e0b' : '#ef4444'
+  const daysElapsed = useMemo(() => {
+    const currentMonth = new Date().toISOString().slice(0, 7)
+    if (activeMonth === currentMonth) return Math.max(1, new Date().getDate())
+    const [y, m] = activeMonth.split('-').map(Number)
+    return (y && m) ? new Date(y, m, 0).getDate() : 30
+  }, [activeMonth])
+  const avgDaily = expenses / daysElapsed
+  const biggest = byCategory[0]
+  return (
+    <WCard shellClassName={shellClassName} shellStyle={shellStyle} title="Financial health">
+      <div className="dashHealthBody">
+        <div className="dashHealthRing">
+          <GoalDonut progress={Math.max(0, savingsRate)} color={ringColor} />
+          <span className="dashHealthRingLabel">Savings rate</span>
+        </div>
+        <div className="grid dashHealthTiles" style={{ gap: 8 }}>
+          <div className="dashHealthTile"><span>Net this month</span><strong style={{ color: net >= 0 ? 'var(--accent)' : 'var(--danger)' }}>{helpers.fmtMoney(net, data.currency)}</strong></div>
+          <div className="dashHealthTile"><span>Avg / day</span><strong>{helpers.fmtMoney(avgDaily, data.currency)}</strong></div>
+          <div className="dashHealthTile"><span>Biggest category</span><strong>{biggest ? `${biggest.emoji ? `${biggest.emoji} ` : ''}${biggest.name}` : '—'}</strong></div>
+        </div>
+      </div>
+    </WCard>
+  )
+}
+
+function DailySpendingWidget({ ctx, shellClassName, shellStyle }: { ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  const { budget, isPhone, palette, renderChartEmpty } = ctx
+  const { data, helpers, daily } = budget
+  const series = useMemo(() => daily.map((row) => ({ label: new Date(`${row.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }), cumulative: row.cumulative, spend: row.spend })), [daily])
+  return (
+    <WCard shellClassName={shellClassName} shellStyle={shellStyle} title="Daily spending" badge="This month">
+      <div style={{ height: isPhone ? 220 : 260 }}>
+        {series.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={series} margin={{ top: 12, right: 14, left: 4, bottom: 4 }}>
+              <defs>
+                <linearGradient id="dashDailyFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={palette.chartBar} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={palette.chartBar} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="4 6" stroke={palette.chartGrid} />
+              <XAxis dataKey="label" tick={{ fill: palette.chartAxis, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={24} />
+              <YAxis tick={{ fill: palette.chartAxis, fontSize: 12 }} axisLine={false} tickLine={false} width={52} tickFormatter={(value: number) => (Math.abs(value) >= 1000 ? `$${(value / 1000).toFixed(1)}K` : `$${Math.round(value)}`)} />
+              <Tooltip
+                contentStyle={{ background: palette.trendTooltipBg, border: `1px solid ${palette.trendTooltipBorder}`, borderRadius: 14, boxShadow: '0 16px 30px rgba(0,0,0,.28)' }}
+                labelStyle={{ color: palette.trendTooltipText, fontWeight: 700, marginBottom: 8 }}
+                formatter={(value: number, name: string) => [helpers.fmtMoney(Number(value), data.currency), name === 'cumulative' ? 'Total spent' : 'That day']}
+              />
+              <Area type="monotone" dataKey="cumulative" stroke={palette.chartBar} strokeWidth={3} fill="url(#dashDailyFill)" dot={false} isAnimationActive={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : renderChartEmpty('No spending recorded this month')}
+      </div>
+    </WCard>
+  )
+}
+
+// Renders an alternate (non-default) widget inside a slot's card shell.
+function NewWidgetCard({ id, ctx, shellClassName, shellStyle }: { id: DashboardWidgetId; ctx: DashboardWidgetCtx; shellClassName?: string; shellStyle?: React.CSSProperties }) {
+  switch (id) {
+    case 'recent-transactions': return <RecentTransactionsWidget ctx={ctx} shellClassName={shellClassName} shellStyle={shellStyle} />
+    case 'goals': return <GoalsWidget ctx={ctx} shellClassName={shellClassName} shellStyle={shellStyle} />
+    case 'investments': return <InvestmentsWidget ctx={ctx} shellClassName={shellClassName} shellStyle={shellStyle} />
+    case 'top-categories': return <TopCategoriesWidget ctx={ctx} shellClassName={shellClassName} shellStyle={shellStyle} />
+    case 'financial-health': return <FinancialHealthWidget ctx={ctx} shellClassName={shellClassName} shellStyle={shellStyle} />
+    case 'daily-spending': return <DailySpendingWidget ctx={ctx} shellClassName={shellClassName} shellStyle={shellStyle} />
+    default: return null
+  }
+}
+
+// Modal to choose which widget a card position should show.
+function SlotPicker({ slotId, slots, onPick, onClose }: { slotId: SlotId; slots: DashboardSlots; onPick: (slotId: SlotId, widgetId: SlotWidget) => void; onClose: () => void }) {
+  const current = slots[slotId]
+  const defaultId = DEFAULT_SLOTS[slotId]
+  const optionIds: DashboardWidgetId[] = [defaultId, ...ALTERNATE_WIDGET_IDS.filter((id) => id !== defaultId)]
+  return createPortal(
+    <div className="deleteConfirmBackdrop" role="presentation" onClick={onClose}>
+      <div className="card dashPickerModal" role="dialog" aria-modal="true" aria-label="Choose a widget for this card" onClick={(event) => event.stopPropagation()}>
+        <div className="row space" style={{ alignItems: 'flex-start', marginBottom: 4 }}>
+          <div><h3 style={{ margin: 0 }}>Choose a widget</h3><p className="muted" style={{ margin: '4px 0 0' }}>Pick what this card shows. Your layout stays the same.</p></div>
+          <button type="button" className="notifCloseBtn" aria-label="Close" onClick={onClose}><X size={18} /></button>
+        </div>
+        <div className="dashPickerList">
+          {optionIds.map((id) => {
+            const meta = WIDGET_META_BY_ID.get(id)
+            if (!meta) return null
+            const Icon = meta.icon
+            const selected = current === id
+            const usedElsewhere = !selected && SLOT_IDS.some((other) => other !== slotId && slots[other] === id)
+            return (
+              <button key={id} type="button" className={`dashPickerItem ${selected ? 'selected' : ''}`} onClick={() => onPick(slotId, id)}>
+                <span className="dashPickerIcon"><Icon size={18} /></span>
+                <span className="dashPickerText"><strong>{meta.title}{id === defaultId ? <span className="dashPickerTag">Default</span> : null}{usedElsewhere ? <span className="dashPickerTag alt">In use</span> : null}</strong><small>{meta.description}</small></span>
+                {selected ? <Check size={17} className="dashPickerCheck" /> : null}
+              </button>
+            )
+          })}
+        </div>
+        <div className="row space dashPickerFooter">
+          <button type="button" className="btn ghost dashPickerHide" onClick={() => onPick(slotId, 'hidden')}><EyeOff size={15} /> Hide this card</button>
+          <button type="button" className="btn" onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavigate, email, userId }: Pick<SharedProps, 'budget' | 'theme' | 'onOpenTransactionsByType' | 'onNavigate' | 'email' | 'userId'>) {
   const { data, months, activeMonth, setActiveMonth, income, expenses, net, prevIncome, prevExpenses, prevNet, categoryColorMap, byCategory, daily, monthlyTrend, sortedCategories, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
@@ -1983,6 +2446,64 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
     </div>
   )
 
+  const [slots, setSlots] = useState<DashboardSlots>(() => loadDashboardSlots(userId))
+  const [dashEditing, setDashEditing] = useState(false)
+  const [pickerSlot, setPickerSlot] = useState<SlotId | null>(null)
+  useEffect(() => { setSlots(loadDashboardSlots(userId)) }, [userId])
+  const persistSlots = (next: DashboardSlots) => { setSlots(next); saveDashboardSlots(userId, next) }
+  const assignSlot = (slotId: SlotId, widgetId: SlotWidget) => {
+    const next: DashboardSlots = { ...slots }
+    // An alternate widget lives in one place at a time: if it is already shown
+    // in another card, that card falls back to its own default widget.
+    if (widgetId !== 'hidden') {
+      for (const other of SLOT_IDS) if (other !== slotId && next[other] === widgetId) next[other] = DEFAULT_SLOTS[other]
+    }
+    next[slotId] = widgetId
+    persistSlots(next)
+    setPickerSlot(null)
+  }
+  const resetSlots = () => { persistSlots({ ...DEFAULT_SLOTS }); setPickerSlot(null) }
+  const toggleDashEditing = () => { setDashEditing((v) => !v); setPickerSlot(null) }
+
+  const widgetCtx: DashboardWidgetCtx = {
+    budget,
+    theme,
+    isPhone,
+    userId,
+    onOpenTransactionsByType,
+    onNavigate,
+    colorFor,
+    cashFlowSeries,
+    cashFlowAxis,
+    renderChartEmpty,
+    palette: { chartGrid, chartGridSoft, chartAxis, trendThisYear, trendLastYear, cashIncome, cashExpense, cashNet, trendTooltipBg, trendTooltipBorder, trendTooltipText, chartBar },
+  }
+
+  // Render one card position. When the slot holds its default widget the
+  // original card is returned verbatim (so an untouched dashboard is identical);
+  // otherwise the chosen alternate widget renders in a matching card shell. In
+  // edit mode every card gains a small "Change" bar and hidden cards show an
+  // "Add a widget" placeholder.
+  const renderSlot = (slotId: SlotId, defaultNode: React.ReactNode, opts?: { shellClassName?: string; shellStyle?: React.CSSProperties }) => {
+    const id = slots[slotId]
+    const hidden = id === 'hidden'
+    const isDefault = id === DEFAULT_SLOTS[slotId]
+    const body = hidden ? null : (isDefault ? defaultNode : <NewWidgetCard id={id as DashboardWidgetId} ctx={widgetCtx} shellClassName={opts?.shellClassName} shellStyle={opts?.shellStyle} />)
+    if (!dashEditing) return body
+    const title = hidden ? 'Hidden card' : (WIDGET_META_BY_ID.get(id as DashboardWidgetId)?.title ?? 'Widget')
+    return (
+      <div className="dashSlotFrame">
+        <div className="dashSlotBar">
+          <span className="dashSlotBarTitle">{title}</span>
+          <button type="button" className="dashSlotChangeBtn" onClick={() => setPickerSlot(slotId)}><SlidersHorizontal size={13} /> Change</button>
+        </div>
+        {hidden
+          ? <button type="button" className={`card dashSlotHiddenCard ${opts?.shellClassName ?? ''}`} style={opts?.shellStyle} onClick={() => setPickerSlot(slotId)}><Plus size={18} /><span>Add a widget</span></button>
+          : body}
+      </div>
+    )
+  }
+
   if (isPhone) {
     return (
       <div className="mobileDashScreen">
@@ -1993,6 +2514,14 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
               <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
                 {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
               </select>
+              {dashEditing ? (
+                <>
+                  <button type="button" className="mobileDashCustomize" onClick={resetSlots} aria-label="Reset dashboard"><RotateCcw size={18} /></button>
+                  <button type="button" className="mobileDashCustomize active" onClick={toggleDashEditing} aria-label="Done customizing"><Check size={18} /></button>
+                </>
+              ) : (
+                <button type="button" className="mobileDashCustomize" onClick={toggleDashEditing} aria-label="Customize dashboard"><SlidersHorizontal size={18} /></button>
+              )}
             </div>
           </div>
           <div className="mobileDashSubtitle">Here’s your financial overview</div>
@@ -2003,18 +2532,27 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
           <button type="button" className="mobileRefKpi expenses" onClick={() => onOpenTransactionsByType?.('expense')}><span>Expenses</span><strong>{helpers.fmtMoney(expenses, data.currency)}</strong><TrendDelta current={expenses} prev={prevExpenses} invert /></button>
           <div className="mobileRefKpi net kpiPrimary"><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><TrendDelta current={net} prev={prevNet} /></div>
         </div>
+        {renderSlot('A', (
         <div className="card mobileRefCard">
           <div className="row space"><h3>Cash flow trend</h3><span className="badge">Weekly</span></div>
           <div style={{ height: 220 }}>{cashFlowAxis.hasData ? (<ResponsiveContainer width="100%" height="100%"><ComposedChart data={cashFlowSeries}><CartesianGrid vertical={false} strokeDasharray="4 6" stroke={chartGrid} /><XAxis dataKey="label" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={44} domain={cashFlowAxis.domain} allowDecimals={false} tickFormatter={(v:number)=>v>=1000?`$${(v/1000).toFixed(1)}K`:`$${Math.round(v)}`} /><Legend /><Bar dataKey="income" fill={cashIncome} barSize={14} radius={[7,7,0,0]} /><Bar dataKey="expenses" fill={cashExpense} barSize={14} radius={[7,7,0,0]} /><Line type="monotone" dataKey="net" stroke={cashNet} strokeWidth={3} dot={{r:4}} /></ComposedChart></ResponsiveContainer>) : renderChartEmpty('No transactions yet this month')}</div>
         </div>
+        ), { shellClassName: 'mobileRefCard' })}
         <div className="mobileRefTwoCol">
+          {renderSlot('B', (
           <div className="card mobileRefCard mobileShareCard"><h3>Share of spending</h3>{expenses > 0 && byCategory.length > 0 ? (<div className="mobileShareBody"><div className="mobileShareDonut"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={byCategory} dataKey="total" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={2} stroke={theme === 'dark' ? '#0b1730' : '#ffffff'} strokeWidth={2} labelLine={false} label={renderPieEmojiLabel} isAnimationActive={false}>{byCategory.map((r)=> <Cell key={r.id} fill={colorFor(r.id)} />)}</Pie><Tooltip formatter={(value: number) => helpers.fmtMoney(Number(value), data.currency)} labelFormatter={(_, payload) => payload?.[0]?.payload ? `${payload[0].payload.emoji ?? '🏷️'} ${payload[0].payload.name}` : ''} /></PieChart></ResponsiveContainer><div className="donutCenter" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',pointerEvents:'none'}}><span style={{fontSize:10,fontWeight:600,textTransform:'uppercase',letterSpacing:'.06em',color:'var(--muted)'}}>Total</span><strong style={{fontSize:15,fontWeight:700}}>{helpers.fmtMoney(expenses, data.currency)}</strong></div></div><div className="mobileShareLegend">{byCategory.slice(0,5).map((r)=> (<div className="mobileShareLegendRow" key={r.id}><span><i style={{background:colorFor(r.id)}} /><span className="nm">{r.emoji ? `${r.emoji} ` : ''}{r.name}</span></span><strong>{expenses>0?Math.round((r.total/expenses)*100):0}%</strong></div>))}</div></div>) : (<div className="chartEmpty" style={{minHeight:180}}><div className="donutGhost"><svg width="112" height="112" viewBox="0 0 132 132" aria-hidden><circle cx="66" cy="66" r="48" fill="none" stroke="var(--border-strong)" strokeWidth="20" strokeDasharray="6 8" strokeLinecap="round" /></svg></div><span className="chartEmptyText">Add expenses to see your breakdown</span></div>)}</div>
+          ), { shellClassName: 'mobileRefCard mobileShareCard' })}
+          {renderSlot('D', (
           <div className="card mobileRefCard"><h3>Budgets (This Month)</h3><div className="grid mobileBudgetScroll" style={{gap:8}}>{pagedBudgets.map((category)=>{const spent=byCategory.find((r)=>r.id===category.id)?.total??0;const b=Number(category.budget_monthly??0);const ratio=b>0?spent/b:0;const pr=b>0?Math.min(1,ratio):0;const over=b>0&&spent>b;const catColor=colorFor(category.id);const fillColor=b>0?budgetStatusColor(ratio):catColor;const remaining=b-spent;const label=spent===0?`${helpers.fmtMoney(0,data.currency)} / ${helpers.fmtMoney(b,data.currency)}`:b<=0?`${helpers.fmtMoney(spent,data.currency)} spent`:over?`${helpers.fmtMoney(Math.abs(remaining),data.currency)} over`:`${helpers.fmtMoney(remaining,data.currency)} left`;return <div key={category.id}><div className="budgetTopRow"><span className="budgetCatLabel"><span className="budgetCatIcon" style={{background:`${catColor}22`,color:catColor}}><CategoryIcon name={category.name} size={14} color={catColor} /></span><span className="budgetCatName">{category.name}</span></span><span className={`budgetRemaining ${over?'over':''}`}>{label}</span></div><div className="progress" style={{background:`${catColor}1f`,borderColor:`${catColor}33`}}><div className="budgetFill" style={{width:`${pr*100}%`, background:fillColor}} /></div></div>})}</div><PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} /></div>
+          ), { shellClassName: 'mobileRefCard' })}
         </div>
+        {renderSlot('C', (
         <div className="card mobileRefCard">
           <div className="row space"><h3>Monthly spending trends</h3><div className="row" style={{gap:10}}><small>This year</small><small>Last year</small></div></div>
           <div style={{height:200}}><ResponsiveContainer width="100%" height="100%"><ComposedChart data={monthlyTrend}><defs><linearGradient id="trendThisYearFillMobile" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={trendThisYear} stopOpacity={0.1} /><stop offset="100%" stopColor={trendThisYear} stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke={chartGridSoft} /><XAxis dataKey="month" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} width={38} tickFormatter={(v:number)=>v>=1000?`$${Math.round(v/1000)}K`:`$${Math.round(v)}`} /><Area type="monotone" dataKey="thisYear" stroke={trendThisYear} strokeWidth={3} fill="url(#trendThisYearFillMobile)" dot={false} /><Line type="monotone" dataKey="lastYear" stroke={trendLastYear} strokeWidth={2} strokeDasharray="5 5" dot={false} /></ComposedChart></ResponsiveContainer></div>
         </div>
+        ), { shellClassName: 'mobileRefCard' })}
+        {renderSlot('E', (
         <div className="card mobileRefCard mobileRecurringRef">
           <div className="row between" style={{ marginBottom: 10 }}>
             <div>
@@ -2043,6 +2581,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
             ))}
           </div><PaginationControls page={recurringPage} totalPages={recurringPages} onPrev={() => setRecurringPage((prev) => Math.max(1, prev - 1))} onNext={() => setRecurringPage((prev) => Math.min(recurringPages, prev + 1))} />
         </div>
+        ), { shellClassName: 'mobileRefCard mobileRecurringRef' })}
+        {pickerSlot ? <SlotPicker slotId={pickerSlot} slots={slots} onPick={assignSlot} onClose={() => setPickerSlot(null)} /> : null}
       </div>
     )
   }
@@ -2059,6 +2599,14 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
             <select className={`select ${isPhone ? 'mobileMonthSelect' : ''}`} style={{ maxWidth: isPhone ? undefined : 220 }} value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
             </select>
+            {dashEditing ? (
+              <>
+                <button type="button" className="btn ghost dashCustomizeBtn" onClick={resetSlots}><RotateCcw size={15} /> Reset</button>
+                <button type="button" className="btn dashCustomizeBtn dashCustomizeDone" onClick={toggleDashEditing}><Check size={15} /> Done</button>
+              </>
+            ) : (
+              <button type="button" className="btn ghost dashCustomizeBtn" onClick={toggleDashEditing}><SlidersHorizontal size={16} /> Customize</button>
+            )}
             <button ref={bellRef} className="notifBellBtn" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
             {notifOpen ? renderNotificationPanel() : null}
           </div>
@@ -2076,7 +2624,14 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
           <div className={`kpi net kpiPrimary ${isPhone ? 'mobileKpiCard mobileKpiNet' : ''}`}><span>Net</span><strong>{helpers.fmtMoney(net, data.currency)}</strong><TrendDelta current={net} prev={prevNet} /></div>
         </div>
 
-        <div className={`grid cols2 dashboardSecondaryGrid ${useCompactDashboard ? 'dashboardSecondaryGridCompact' : ''}`}>
+        {(() => {
+          const aHidden = slots.A === 'hidden'
+          const bHidden = slots.B === 'hidden'
+          if (!dashEditing && aHidden && bHidden) return null
+          const single = !dashEditing && (aHidden !== bHidden)
+          return (
+            <div className={single ? 'grid dashboardSecondaryGrid' : `grid cols2 dashboardSecondaryGrid ${useCompactDashboard ? 'dashboardSecondaryGridCompact' : ''}`}>
+              {renderSlot('A', (
           <div className={`card ${isPhone ? 'mobileDashTrendCard' : ''}`} style={{ background: 'rgba(255,255,255,.02)' }}>
             <div className="row space mobileTrendHeader" style={{ alignItems: 'center', marginBottom: 8 }}>
               <div>
@@ -2133,7 +2688,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
               ) : renderChartEmpty('No transactions yet this month')}
             </div>
           </div>
-
+              ), { shellStyle: { background: 'rgba(255,255,255,.02)' } })}
+              {renderSlot('B', (
           <div className="card" style={{ background: 'rgba(255,255,255,.02)' }}>
             <h3>Share of spending</h3>
             {expenses > 0 && byCategory.length > 0 ? (
@@ -2185,8 +2741,12 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
               </div>
             )}
           </div>
-        </div>
+              ), { shellStyle: { background: 'rgba(255,255,255,.02)' } })}
+            </div>
+          )
+        })()}
 
+        {renderSlot('C', (
         <div className="card" style={{ background: theme === 'dark' ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,0.78)', marginTop: 14 }}>
           <div className="row space" style={{ alignItems: 'center', marginBottom: 8 }}>
             <h3 style={{ marginBottom: 0 }}>Monthly spending trends</h3>
@@ -2254,9 +2814,11 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
             </ResponsiveContainer>
           </div>
         </div>
+        ), { shellStyle: { background: theme === 'dark' ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,0.78)', marginTop: 14 } })}
       </div>
 
       <div className={`grid dashboardRightCol ${useCompactDashboard ? 'dashboardRightColCompact' : ''}`} style={{ gap: 14 }}>
+        {renderSlot('D', (
         <div className="card">
           <div className="row space" style={{ marginBottom: 10 }}>
             <h3 style={{ marginBottom: 0 }}>Budgets (This Month)</h3>
@@ -2299,7 +2861,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
           </div>
           <PaginationControls page={budgetPage} totalPages={budgetPages} onPrev={() => setBudgetPage((prev) => Math.max(1, prev - 1))} onNext={() => setBudgetPage((prev) => Math.min(budgetPages, prev + 1))} />
         </div>
-
+        ), {})}
+        {renderSlot('E', (
         <div className="card">
           <div className="row between" style={{ marginBottom: 10 }}>
             <div>
@@ -2329,6 +2892,8 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
           </div>
           <PaginationControls page={recurringPage} totalPages={recurringPages} onPrev={() => setRecurringPage((prev) => Math.max(1, prev - 1))} onNext={() => setRecurringPage((prev) => Math.min(recurringPages, prev + 1))} />
         </div>
+        ), {})}
+        {pickerSlot ? <SlotPicker slotId={pickerSlot} slots={slots} onPick={assignSlot} onClose={() => setPickerSlot(null)} /> : null}
       </div>
     </div>
   )
