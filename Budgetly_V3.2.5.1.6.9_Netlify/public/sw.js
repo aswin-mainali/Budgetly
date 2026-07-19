@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budgetly-app-shell-v1'
+const CACHE_NAME = 'budgetly-app-shell-v2'
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.ico', '/favicon-32.png', '/pwa-192.png', '/pwa-512.png']
 
 self.addEventListener('install', (event) => {
@@ -13,10 +13,20 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-const isSafeStaticRequest = (request) => {
+// Scripts and styles are served network-first so a fresh deploy's CSS/JS always
+// wins when online (the cache is only an offline fallback). This prevents a stale
+// cached stylesheet/bundle from being pinned across deploys.
+const isFreshFirstAsset = (request) => {
   if (request.method !== 'GET') return false
   const url = new URL(request.url)
-  return url.origin === self.location.origin && ['script', 'style', 'image', 'font'].includes(request.destination)
+  return url.origin === self.location.origin && ['script', 'style'].includes(request.destination)
+}
+
+// Images and fonts are content-stable, so cache-first (with background refresh) is fine.
+const isCacheFirstAsset = (request) => {
+  if (request.method !== 'GET') return false
+  const url = new URL(request.url)
+  return url.origin === self.location.origin && ['image', 'font'].includes(request.destination)
 }
 
 const isSupabaseRequest = (requestUrl) => {
@@ -47,7 +57,22 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  if (isSafeStaticRequest(request)) {
+  if (isFreshFirstAsset(request)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const copy = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
+          }
+          return response
+        })
+        .catch(() => caches.match(request))
+    )
+    return
+  }
+
+  if (isCacheFirstAsset(request)) {
     event.respondWith(
       caches.match(request).then((cached) => {
         const networkFetch = fetch(request)
