@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, Bell, BellOff, CalendarDays, ChevronDown, ChevronUp, Clock, FileText, LineChart, Settings, Tag, Target, TrendingUp, X } from 'lucide-react'
+import { AlertTriangle, Bell, BellOff, Clock, LineChart as LineChartIcon, Settings, Tag, Target, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Category, TxType, RecurrenceType, RecurringKind, FeatureAccess, UserRole, AdminAuditLog, Transaction, RecurringItem } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
@@ -1165,7 +1165,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Database, User, History } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -1866,7 +1866,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
     if (key.includes('subscription')) return { icon: Tag, className: 'notifIcon subscription' }
     if (key.includes('goal')) return { icon: Target, className: 'notifIcon goals' }
     if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('forecast') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
-    if (key.includes('net_worth')) return { icon: LineChart, className: 'notifIcon networth' }
+    if (key.includes('net_worth')) return { icon: LineChartIcon, className: 'notifIcon networth' }
     if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
     if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
     if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
@@ -5821,6 +5821,8 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const UNIVERSAL_SHORTCUT_DEFAULT = 'Ctrl + Shift + Space'
   const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
+  const [settingsNavOpen, setSettingsNavOpen] = useState(false)
+  const settingsNavRef = useRef<HTMLDivElement | null>(null)
   const isSuperAdmin = !!admin?.isSuperAdmin
 
   const initialProfile = useMemo(() => ({ firstName: '', lastName: '', image: '' }), [])
@@ -6175,24 +6177,72 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     }
   }, [isSuperAdmin])
 
+  // Close the mobile section dropdown on outside click or Escape.
+  useEffect(() => {
+    if (!settingsNavOpen) return
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (settingsNavRef.current && !settingsNavRef.current.contains(event.target as Node)) setSettingsNavOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setSettingsNavOpen(false) }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('touchstart', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('touchstart', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [settingsNavOpen])
+
+  const settingsTabs = [
+    { key: 'general', label: 'General', Icon: Settings },
+    { key: 'data', label: 'Data & backup', Icon: Database },
+    { key: 'account', label: 'Account', Icon: User },
+    { key: 'admin', label: 'Super Admin', Icon: ShieldCheck, adminOnly: true },
+    { key: 'audit', label: 'Audit Log', Icon: History, adminOnly: true },
+    { key: 'bugs', label: 'Bugs & Fixes', Icon: Bug, adminOnly: true },
+  ] as const
+  const visibleSettingsTabs = settingsTabs.filter((tab) => !('adminOnly' in tab && tab.adminOnly) || isSuperAdmin)
+  const activeSettingsTab = settingsTabs.find((tab) => tab.key === settingsSection) ?? settingsTabs[0]
+  const ActiveSettingsTabIcon = activeSettingsTab.Icon
+
   return (
     <div className="settingsShell settingsShellTopNav settingsShellSingle">
       <div className="settingsContentStack settingsContentStackTopNav">
         <div className="card settingsTopCard settingsTopCardFull">
-          <div className="row between settingsTopHeader" style={{ gap: 12, alignItems: 'flex-start' }}>
+          <div className="settingsTopHeader">
             <div>
               <div className="h1" style={{ marginBottom: 6 }}>Settings</div>
               <div className="muted">Manage workspace preferences, exports, account details, and admin controls in one place.</div>
             </div>
-            <span className="badge">Workspace controls</span>
           </div>
-          <div className="settingsTopTabs" role="tablist" aria-label="Settings sections">
-            <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'general' ? 'active' : ''}`} onClick={() => setSettingsSection('general')}>General</button>
-            <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'data' ? 'active' : ''}`} onClick={() => setSettingsSection('data')}>Data & backup</button>
-            <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'account' ? 'active' : ''}`} onClick={() => setSettingsSection('account')}>Account</button>
-            {isSuperAdmin ? <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'admin' ? 'active' : ''}`} onClick={() => setSettingsSection('admin')}>Super Admin</button> : null}
-            {isSuperAdmin ? <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'audit' ? 'active' : ''}`} onClick={() => setSettingsSection('audit')}>Audit Log</button> : null}
-            {isSuperAdmin ? <button className={`settingsNavBtn settingsTopNavBtn ${settingsSection === 'bugs' ? 'active' : ''}`} onClick={() => setSettingsSection('bugs')}>Bugs & Fixes</button> : null}
+          <div className="settingsTabsRow">
+            <div className="settingsUnderlineTabs" role="tablist" aria-label="Settings sections">
+              {visibleSettingsTabs.map(({ key, label, Icon }) => (
+                <button key={key} role="tab" aria-selected={settingsSection === key} className={`settingsUnderlineTab ${settingsSection === key ? 'active' : ''}`} onClick={() => setSettingsSection(key)}>
+                  <Icon size={15} className="settingsUnderlineTabIcon" /><span>{label}</span>
+                </button>
+              ))}
+            </div>
+            <span className="badge settingsTabsRowControl">Workspace controls</span>
+          </div>
+          <div className="settingsMobileNav" ref={settingsNavRef}>
+            <button type="button" className="settingsMobileNavTrigger" aria-haspopup="listbox" aria-expanded={settingsNavOpen} onClick={() => setSettingsNavOpen((open) => !open)}>
+              <ActiveSettingsTabIcon size={16} className="settingsUnderlineTabIcon" />
+              <span>{activeSettingsTab.label}</span>
+              <ChevronDown size={16} className={`settingsMobileNavChevron ${settingsNavOpen ? 'open' : ''}`} />
+            </button>
+            {settingsNavOpen ? (
+              <div className="settingsMobileNavMenu" role="listbox" aria-label="Settings sections">
+                {visibleSettingsTabs.map(({ key, label, Icon }) => (
+                  <button key={key} type="button" role="option" aria-selected={settingsSection === key} className={`settingsMobileNavItem ${settingsSection === key ? 'active' : ''}`} onClick={() => { setSettingsSection(key); setSettingsNavOpen(false) }}>
+                    <Icon size={16} className="settingsUnderlineTabIcon" />
+                    <span>{label}</span>
+                    {settingsSection === key ? <Check size={16} className="settingsMobileNavCheck" /> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
         {settingsSection === 'general' ? (
