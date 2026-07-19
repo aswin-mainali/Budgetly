@@ -1051,3 +1051,326 @@ body.txp-drawer-lock .main { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .txp-drawer, .txp-drawer-backdrop, .txp-skel, .txp-spin, .txp-switch-knob, .txp-btn { transition: none; animation: none; }
 }
+
+/* ============================================================
+   AI Receipt Capture — scan button, indicators, drawer preview,
+   camera modal and full-screen viewer.
+   ============================================================ */
+
+/* ---- Header "Scan Receipt" button ---- */
+.txp-btn-scan {
+  position: relative;
+  border: 1px solid transparent;
+  color: #fff;
+  background:
+    linear-gradient(var(--txp-surface), var(--txp-surface)) padding-box,
+    linear-gradient(120deg, #7c3aed, #2563eb 55%, #06b6d4) border-box;
+  background-color: #6d28d9;
+  background-image: linear-gradient(120deg, #7c3aed, #2563eb 60%, #0ea5e9);
+  box-shadow: 0 6px 16px rgba(76, 29, 149, 0.28);
+}
+.txp-btn-scan:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.txp-btn-scan .txp-scan-spark {
+  display: inline-flex;
+  color: #fde68a;
+  margin-left: -2px;
+  animation: txp-spark 2.4s ease-in-out infinite;
+}
+@keyframes txp-spark {
+  0%, 100% { opacity: 0.55; transform: scale(0.9) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.12) rotate(12deg); }
+}
+
+/* ---- Row receipt indicator chip ---- */
+.txp-receipt-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--txp-border);
+  background: var(--txp-primary-soft);
+  color: var(--txp-primary);
+  cursor: pointer;
+  flex: none;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.txp-receipt-chip:hover { transform: translateY(-1px); background: var(--txp-primary); color: #fff; }
+.txp-receipt-chip:focus-visible { outline: none; box-shadow: var(--txp-focus); }
+
+/* ---- Drawer: AI banner ---- */
+.txp-ai-banner {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 12px 13px;
+  border-radius: var(--txp-radius-ctrl);
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  background: linear-gradient(120deg, rgba(124, 58, 237, 0.10), rgba(37, 99, 235, 0.08));
+}
+.txp-ai-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  flex: none;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+}
+.txp-ai-banner-text { display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; }
+.txp-ai-banner-text strong { color: var(--txp-text); font-size: 13px; }
+.txp-ai-banner-text span { color: var(--txp-text-2); }
+
+/* ---- Drawer: receipt preview ---- */
+.txp-receipt-preview {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 11px;
+  border-radius: var(--txp-radius-ctrl);
+  border: 1px solid var(--txp-border);
+  background: var(--txp-surface-2);
+}
+.txp-receipt-thumb {
+  position: relative;
+  width: 56px;
+  height: 72px;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 1px solid var(--txp-border-strong);
+  cursor: pointer;
+  flex: none;
+  padding: 0;
+  background: #0b1220;
+}
+.txp-receipt-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.txp-receipt-thumb-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.35);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.txp-receipt-thumb:hover .txp-receipt-thumb-view,
+.txp-receipt-thumb:focus-visible .txp-receipt-thumb-view { opacity: 1; }
+.txp-receipt-preview-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.txp-receipt-preview-title {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 600; color: var(--txp-text); font-size: 13px;
+}
+.txp-receipt-preview-sub { color: var(--txp-text-2); font-size: 12px; }
+.txp-receipt-remove {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 2px;
+  padding: 3px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--txp-border);
+  background: transparent;
+  color: var(--txp-expense);
+  font-size: 12px;
+  cursor: pointer;
+}
+.txp-receipt-remove:hover { background: var(--txp-expense-soft); }
+
+/* ============================================================
+   Receipt capture modal (.rc-*) — portaled to <body>
+   ============================================================ */
+.rc-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.rc-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 12, 24, 0.66);
+  backdrop-filter: blur(3px);
+  animation: rc-fade 0.18s ease;
+}
+@keyframes rc-fade { from { opacity: 0; } to { opacity: 1; } }
+.rc-panel {
+  position: relative;
+  width: min(460px, 100%);
+  max-height: min(92vh, 780px);
+  display: flex;
+  flex-direction: column;
+  background: var(--txp-surface);
+  border: 1px solid var(--txp-border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--txp-shadow-lg);
+  animation: rc-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes rc-pop { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+.rc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--txp-border);
+}
+.rc-head-title { display: flex; gap: 11px; align-items: center; }
+.rc-head-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px; flex: none; color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+}
+.rc-head-title h2 { font-size: 16px; font-weight: 700; color: var(--txp-text); margin: 0; }
+.rc-head-title p { font-size: 12.5px; color: var(--txp-text-2); margin: 2px 0 0; }
+.rc-close {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 9px; flex: none;
+  border: 1px solid var(--txp-border); background: transparent; color: var(--txp-text-2); cursor: pointer;
+}
+.rc-close:hover { background: var(--txp-surface-2); color: var(--txp-text); }
+
+.rc-stage { padding: 16px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+
+.rc-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  max-height: 52vh;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0b1220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rc-video, .rc-shot { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Framing guide corners over the live camera */
+.rc-guide { position: absolute; inset: 14px; pointer-events: none; }
+.rc-corner { position: absolute; width: 26px; height: 26px; border: 3px solid rgba(255, 255, 255, 0.85); }
+.rc-corner.tl { top: 0; left: 0; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+.rc-corner.tr { top: 0; right: 0; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+.rc-corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+.rc-corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+
+/* Camera controls */
+.rc-controls { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; }
+.rc-controls-spacer { width: 44px; height: 44px; }
+.rc-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 12px;
+  border: 1px solid var(--txp-border); background: var(--txp-surface-2); color: var(--txp-text); cursor: pointer;
+}
+.rc-icon-btn:hover { background: var(--txp-primary-soft); color: var(--txp-primary); }
+.rc-shutter { border: 0; background: transparent; cursor: pointer; padding: 0; }
+.rc-shutter-ring {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 62px; height: 62px; border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  box-shadow: 0 0 0 4px var(--txp-surface), 0 0 0 6px rgba(124, 58, 237, 0.5), 0 8px 20px rgba(37, 99, 235, 0.35);
+  transition: transform 0.12s ease;
+}
+.rc-shutter:hover .rc-shutter-ring { transform: scale(1.05); }
+.rc-shutter:active .rc-shutter-ring { transform: scale(0.94); }
+
+/* Scanning animation over the captured photo */
+.rc-viewport.scanning .rc-shot { filter: saturate(1.05) contrast(1.02); }
+.rc-scanline {
+  position: absolute; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #22d3ee, #a78bfa, transparent);
+  box-shadow: 0 0 16px 4px rgba(34, 211, 238, 0.55);
+  animation: rc-scan 1.7s ease-in-out infinite;
+}
+@keyframes rc-scan {
+  0% { top: 6%; opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { top: 94%; opacity: 0.3; }
+}
+.rc-scan-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 14px; background: linear-gradient(180deg, rgba(11, 18, 32, 0.05), rgba(11, 18, 32, 0.35)); }
+.rc-scan-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72); color: #fff; font-size: 12.5px; font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+.rc-scan-steps { display: flex; justify-content: center; }
+.rc-step { display: inline-flex; align-items: center; gap: 7px; color: var(--txp-text-2); font-size: 13px; }
+.rc-spin { animation: txp-spin 0.9s linear infinite; }
+@keyframes txp-spin { to { transform: rotate(360deg); } }
+
+/* Preview / error action rows */
+.rc-actions { display: flex; gap: 10px; }
+.rc-btn {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  height: 44px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--txp-border);
+}
+.rc-btn-ghost { background: var(--txp-surface-2); color: var(--txp-text); }
+.rc-btn-ghost:hover { background: var(--txp-primary-soft); color: var(--txp-primary); }
+.rc-btn-primary {
+  border-color: transparent; color: #fff;
+  background: linear-gradient(120deg, #7c3aed, #2563eb 65%, #0ea5e9);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+}
+.rc-btn-primary:hover { filter: brightness(1.06); }
+
+/* Camera-unavailable / error fallback */
+.rc-fallback { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 24px 12px; }
+.rc-fallback-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 58px; height: 58px; border-radius: 16px; margin-bottom: 4px;
+  background: var(--txp-primary-soft); color: var(--txp-primary);
+}
+.rc-fallback-icon.warn { background: var(--txp-expense-soft); color: var(--txp-expense); }
+.rc-fallback h3 { font-size: 15px; font-weight: 700; color: var(--txp-text); margin: 0; }
+.rc-fallback p { font-size: 13px; color: var(--txp-text-2); margin: 0 0 6px; max-width: 34ch; }
+.rc-fallback .rc-actions { width: 100%; }
+
+.rc-foot {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 16px; border-top: 1px solid var(--txp-border);
+  color: var(--txp-text-3); font-size: 11.5px;
+}
+
+/* ---- Full-screen receipt viewer ---- */
+.rc-viewer-root {
+  position: fixed; inset: 0; z-index: 1500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(6, 10, 20, 0.9);
+  backdrop-filter: blur(4px);
+  animation: rc-fade 0.18s ease;
+}
+.rc-viewer-img {
+  max-width: 100%; max-height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+  object-fit: contain;
+}
+.rc-viewer-close {
+  position: absolute; top: 16px; right: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(15, 23, 42, 0.6); color: #fff; cursor: pointer;
+}
+.rc-viewer-close:hover { background: rgba(15, 23, 42, 0.85); }
+
+@media (max-width: 480px) {
+  .rc-panel { width: 100%; max-height: 96vh; border-radius: 18px; }
+  .rc-viewport { max-height: 46vh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rc-scanline, .rc-backdrop, .rc-panel, .txp-btn-scan .txp-scan-spark, .rc-spin { animation: none; }
+}

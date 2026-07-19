@@ -699,7 +699,7 @@ export function useBudgetApp(userId: string | null) {
     notify('New transaction added')
   }
 
-  const createTransaction = (values: { date: string; type: TxType; category_id: string | null; amount: number; note: string | null }): string | null => {
+  const createTransaction = (values: { date: string; type: TxType; category_id: string | null; amount: number; note: string | null; receipt_url?: string | null }): string | null => {
     if (!userId) return 'You are signed out.'
     const amount = clampMoney(Number(values.amount))
     if (!Number.isFinite(amount) || amount <= 0) return 'Enter an amount greater than zero.'
@@ -715,6 +715,7 @@ export function useBudgetApp(userId: string | null) {
       category_id: values.category_id || null,
       amount,
       note: values.note?.trim() || null,
+      receipt_url: values.receipt_url || null,
     }
 
     persistLocal((current) => ({
@@ -726,7 +727,7 @@ export function useBudgetApp(userId: string | null) {
     return null
   }
 
-  const updateTransaction = (id: string, patch: Partial<Pick<Transaction, 'date' | 'type' | 'category_id' | 'amount' | 'note'>>): string | null => {
+  const updateTransaction = (id: string, patch: Partial<Pick<Transaction, 'date' | 'type' | 'category_id' | 'amount' | 'note' | 'receipt_url'>>): string | null => {
     if (!userId) return 'You are signed out.'
     if (patch.amount != null) {
       const amount = clampMoney(Number(patch.amount))
@@ -799,6 +800,7 @@ export function useBudgetApp(userId: string | null) {
       category_id: tx.category_id && validCategoryIds.has(tx.category_id) ? tx.category_id : null,
       amount: clampMoney(Number(tx.amount ?? 0)),
       note: tx.note?.trim() || null,
+      receipt_url: tx.receipt_url || null,
     }))
 
     persistLocal((current) => ({ ...current, transactions: sanitizedTransactions }))

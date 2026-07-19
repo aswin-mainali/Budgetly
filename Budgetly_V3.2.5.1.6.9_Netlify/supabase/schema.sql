@@ -22,6 +22,7 @@ create table if not exists public.transactions (
   category_id uuid references public.categories(id) on delete set null,
   amount numeric not null check (amount >= 0),
   note text,
+  receipt_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
