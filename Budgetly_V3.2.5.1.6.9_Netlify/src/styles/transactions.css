@@ -1023,11 +1023,16 @@ body.txp-drawer-lock .main { overflow: hidden; }
   .txp-row-meta { grid-area: meta; flex-direction: row; flex-wrap: wrap; gap: 12px; }
 }
 @media (max-width: 640px) {
-  .txp-header-actions { width: 100%; }
-  .txp-header-actions .txp-btn-primary { flex: 1; }
+  /* Keep all four actions on a single row: Import, Export and Scan Receipt
+     collapse to icon-only squares, while Add Transaction keeps its label and
+     flexes to fill the remaining width. */
+  .txp-header-actions { width: 100%; flex-wrap: nowrap; gap: 8px; }
+  .txp-header-actions .txp-btn-primary { flex: 1 1 0; min-width: 0; overflow: hidden; padding-left: 12px; padding-right: 12px; }
   .txp-btn-ghost .txp-btn-label { display: none; }
-  .txp-btn-ghost { padding: 10px 12px; min-width: 42px; }
-  .txp-header-actions { gap: 8px; }
+  .txp-btn-ghost { flex: 0 0 44px; padding: 10px 0; min-width: 0; justify-content: center; }
+  .txp-btn-scan { flex: 0 0 44px; padding: 10px 0; min-width: 0; justify-content: center; }
+  .txp-btn-scan > span:not(.txp-scan-spark),
+  .txp-btn-scan .txp-scan-spark { display: none; }
   .txp-toolbar-controls { gap: 10px; }
   .txp-search { flex-basis: 100%; }
   .txp-field { flex: 1 1 calc(50% - 5px); }
