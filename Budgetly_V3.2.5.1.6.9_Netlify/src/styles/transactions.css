@@ -1337,12 +1337,6 @@ body.txp-drawer-lock .main { overflow: hidden; }
 .rc-fallback p { font-size: 13px; color: var(--txp-text-2); margin: 0 0 6px; max-width: 34ch; }
 .rc-fallback .rc-actions { width: 100%; }
 
-.rc-foot {
-  display: flex; align-items: center; gap: 7px;
-  padding: 11px 16px; border-top: 1px solid var(--txp-border);
-  color: var(--txp-text-3); font-size: 11.5px;
-}
-
 /* ---- Full-screen receipt viewer ---- */
 .rc-viewer-root {
   position: fixed; inset: 0; z-index: 1500;

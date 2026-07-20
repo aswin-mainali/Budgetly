@@ -288,11 +288,6 @@ export function ReceiptCapture({
             </div>
           ) : null}
         </div>
-
-        <footer className="rc-foot">
-          <Sparkles size={13} aria-hidden="true" />
-          <span>Powered by AI — always double-check the extracted details before saving.</span>
-        </footer>
       </div>
     </div>,
     document.body,
