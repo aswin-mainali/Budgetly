@@ -561,7 +561,9 @@ export default function App() {
   }
 
   const formatShortcutFromEvent = (event: KeyboardEvent) => {
-    const key = event.key
+    // Some synthetic keydown events (browser autofill, password managers, other
+    // extensions) fire with no `key` — guard so `.length` never throws.
+    const key = event.key ?? ''
     const normalizedKey = key.length === 1 ? key.toUpperCase() : key
     const displayKey = normalizedKey === ' ' || normalizedKey === 'Spacebar' || event.code === 'Space' ? 'Space'
       : normalizedKey === '/' || event.code === 'Slash' ? 'Slash'
@@ -580,6 +582,9 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // Ignore synthetic keydowns with no real key (autofill/extensions); they
+      // can't match any shortcut and would crash the key-string comparisons.
+      if (typeof event.key !== 'string') return
       const currentShortcut = getUniversalSearchShortcut()
       const pressedShortcut = formatShortcutFromEvent(event)
       const isOpenSearchShortcut = pressedShortcut === currentShortcut

@@ -6461,7 +6461,9 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   ])
 
   const formatShortcut = (event: KeyboardEvent | React.KeyboardEvent<HTMLInputElement>) => {
-    const key = event.key
+    // `key` can be undefined for synthetic keydowns (autofill/extensions) — guard
+    // so `.length` never throws.
+    const key = event.key ?? ''
     const normalizedKey = key.length === 1 ? key.toUpperCase() : key
     const displayKey = normalizedKey === ' ' || normalizedKey === 'Spacebar' || event.code === 'Space' ? 'Space'
       : normalizedKey === '/' || event.code === 'Slash' ? 'Slash'
