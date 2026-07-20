@@ -4,11 +4,27 @@ import {
   Plus, Search, Download, Upload, X, MoreVertical, Pencil, Copy, Trash2, Repeat,
   RotateCcw, TrendingUp, TrendingDown, Activity, ReceiptText, RefreshCw,
   Inbox, AlertTriangle, CalendarDays, CalendarRange, Tag, ChevronDown, Check as CheckIcon,
+  ScanLine, Sparkles, Eye, Image as ImageIcon,
 } from 'lucide-react'
 import { Transaction, TxType } from '../types'
 import { useBudgetApp } from '../hooks/useBudgetApp'
 import { fmtMoney, monthKey, monthLabel, safeCsv, download } from '../lib/utils'
+import { ReceiptCapture, ReceiptViewer, ReceiptScan } from './ReceiptCapture'
 import '../styles/transactions.css'
+
+/** Prefill payload for the Add drawer. The command palette passes a subset
+ *  (amount/note/type); the receipt scanner passes the full set plus an image. */
+type DrawerPrefill = {
+  amount?: string
+  note?: string
+  type?: TxType
+  merchant?: string
+  category_id?: string
+  date?: string
+  receipt_url?: string
+  fromReceipt?: boolean
+  confidence?: number | null
+}
 
 type Budget = ReturnType<typeof useBudgetApp>
 
@@ -120,7 +136,9 @@ export function TransactionsView({ budget }: { budget: Budget }) {
   const [dateTo, setDateTo] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [prefill, setPrefill] = useState<{ amount?: string; note?: string; type?: TxType } | null>(null)
+  const [prefill, setPrefill] = useState<DrawerPrefill | null>(null)
+  const [captureOpen, setCaptureOpen] = useState(false)
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null)
   const [lastDeleted, setLastDeleted] = useState<Transaction | null>(null)
   const [importing, setImporting] = useState(false)
@@ -293,6 +311,43 @@ export function TransactionsView({ budget }: { budget: Budget }) {
     window.setTimeout(() => addButtonRef.current?.focus(), 0)
   }
 
+  // ---- Receipt capture → prefill the Add drawer ----
+  // The scanner returns a category *name*; resolve it to one of the user's real
+  // category ids (case-insensitive), falling back to leaving it unset.
+  const resolveCategoryId = useCallback((name: string, type: TxType): string | undefined => {
+    const key = name.trim().toLowerCase()
+    if (!key || key === 'uncategorized') return undefined
+    if (type === 'income') {
+      return INCOME_CATEGORY_OPTIONS.find((c) => c.name.toLowerCase() === key)?.id
+    }
+    return categories.find((c) => c.name.trim().toLowerCase() === key)?.id
+  }, [categories])
+
+  const handleReceiptExtracted = (receiptDataUrl: string, scan: ReceiptScan | null) => {
+    setCaptureOpen(false)
+    if (!scan) {
+      // User chose to attach the photo and fill the form in by hand.
+      setPrefill({ receipt_url: receiptDataUrl, fromReceipt: true, confidence: null })
+    } else {
+      const type: TxType = scan.type === 'income' ? 'income' : 'expense'
+      setPrefill({
+        type,
+        amount: scan.amount != null ? String(scan.amount) : undefined,
+        merchant: scan.merchant || undefined,
+        note: scan.note || undefined,
+        date: scan.date || undefined,
+        category_id: resolveCategoryId(scan.category, type),
+        receipt_url: receiptDataUrl,
+        fromReceipt: true,
+        confidence: scan.confidence,
+      })
+    }
+    setEditingId(null)
+    setDrawerOpen(true)
+  }
+
+  const expenseCategoryNames = useMemo(() => categories.map((c) => c.name).filter(Boolean), [categories])
+
   const editingTx = useMemo(
     () => (editingId ? data.transactions.find((tx) => tx.id === editingId) ?? null : null),
     [editingId, data.transactions],
@@ -437,6 +492,15 @@ export function TransactionsView({ budget }: { budget: Budget }) {
           >
             <Download size={16} aria-hidden="true" />
             <span className="txp-btn-label">Export</span>
+          </button>
+          <button
+            type="button"
+            className="txp-btn txp-btn-scan"
+            onClick={() => setCaptureOpen(true)}
+          >
+            <ScanLine size={16} aria-hidden="true" />
+            <span>Scan Receipt</span>
+            <span className="txp-scan-spark" aria-hidden="true"><Sparkles size={11} /></span>
           </button>
           <button
             ref={addButtonRef}
@@ -617,6 +681,7 @@ export function TransactionsView({ budget }: { budget: Budget }) {
                           })
                         }}
                         onDelete={() => setPendingDelete(tx)}
+                        onViewReceipt={tx.receipt_url ? () => setViewingReceipt(tx.receipt_url ?? null) : undefined}
                       />
                     ))}
                   </div>
@@ -648,7 +713,22 @@ export function TransactionsView({ budget }: { budget: Budget }) {
         onCreate={createTransaction}
         onUpdate={updateTransaction}
         onCreateRecurring={addRecurring}
+        onViewReceipt={setViewingReceipt}
       />
+
+      {/* ---------------- Receipt capture (camera + AI scan) ---------------- */}
+      <ReceiptCapture
+        open={captureOpen}
+        currency={currency}
+        categoryNames={expenseCategoryNames}
+        onClose={() => setCaptureOpen(false)}
+        onExtracted={handleReceiptExtracted}
+      />
+
+      {/* ---------------- Receipt viewer ---------------- */}
+      {viewingReceipt ? (
+        <ReceiptViewer src={viewingReceipt} onClose={() => setViewingReceipt(null)} />
+      ) : null}
 
       {/* ---------------- Delete confirm ---------------- */}
       {pendingDelete ? (
@@ -836,7 +916,7 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 }
 
 /* ============================ Transaction Row ============================ */
-function TransactionRow({ tx, currency, categoryName, categoryEmoji, categoryColor, onEdit, onDuplicate, onMakeRecurring, onDelete }: {
+function TransactionRow({ tx, currency, categoryName, categoryEmoji, categoryColor, onEdit, onDuplicate, onMakeRecurring, onDelete, onViewReceipt }: {
   tx: Transaction
   currency: string
   categoryName: string
@@ -846,6 +926,7 @@ function TransactionRow({ tx, currency, categoryName, categoryEmoji, categoryCol
   onDuplicate: () => void
   onMakeRecurring: () => void
   onDelete: () => void
+  onViewReceipt?: () => void
 }) {
   const { merchant, noteText } = splitNote(tx.note)
   const title = merchant || categoryName
@@ -861,6 +942,17 @@ function TransactionRow({ tx, currency, categoryName, categoryEmoji, categoryCol
         <div className="txp-row-titleline">
           <span className="txp-row-title" title={title}>{title}</span>
           <span className={`txp-badge txp-badge-${tx.type}`}>{tx.type === 'income' ? 'Income' : 'Expense'}</span>
+          {onViewReceipt ? (
+            <button
+              type="button"
+              className="txp-receipt-chip"
+              onClick={onViewReceipt}
+              title="View receipt"
+              aria-label="View receipt"
+            >
+              <ImageIcon size={12} aria-hidden="true" />
+            </button>
+          ) : null}
         </div>
         {noteText ? <span className="txp-row-sub" title={noteText}>{noteText}</span> : null}
       </div>
@@ -874,18 +966,19 @@ function TransactionRow({ tx, currency, categoryName, categoryEmoji, categoryCol
 
       <div className="txp-row-right">
         <span className={`txp-row-amount ${tx.type}`}>{amount}</span>
-        <RowActionsMenu onEdit={onEdit} onDuplicate={onDuplicate} onMakeRecurring={onMakeRecurring} onDelete={onDelete} />
+        <RowActionsMenu onEdit={onEdit} onDuplicate={onDuplicate} onMakeRecurring={onMakeRecurring} onDelete={onDelete} onViewReceipt={onViewReceipt} />
       </div>
     </div>
   )
 }
 
 /* ============================ Row Actions Menu ============================ */
-function RowActionsMenu({ onEdit, onDuplicate, onMakeRecurring, onDelete }: {
+function RowActionsMenu({ onEdit, onDuplicate, onMakeRecurring, onDelete, onViewReceipt }: {
   onEdit: () => void
   onDuplicate: () => void
   onMakeRecurring: () => void
   onDelete: () => void
+  onViewReceipt?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const btnRef = useRef<HTMLButtonElement | null>(null)
@@ -950,6 +1043,11 @@ function RowActionsMenu({ onEdit, onDuplicate, onMakeRecurring, onDelete }: {
       </button>
       {open ? createPortal(
         <div className="txp-menu" ref={menuRef} style={style} role="menu">
+          {onViewReceipt ? (
+            <button type="button" role="menuitem" className="txp-menu-item" onClick={() => run(onViewReceipt)}>
+              <Eye size={15} aria-hidden="true" /> View receipt
+            </button>
+          ) : null}
           <button type="button" role="menuitem" className="txp-menu-item" onClick={() => run(onEdit)}>
             <Pencil size={15} aria-hidden="true" /> Edit
           </button>
@@ -1028,14 +1126,15 @@ type DrawerForm = {
   merchant: string
   note: string
   recurring: boolean
+  receipt_url: string
 }
 
 function AddTransactionDrawer({
-  open, editingTx, prefill, categories, currencySymbol: symbol, allowFuture, onClose, onCreate, onUpdate, onCreateRecurring,
+  open, editingTx, prefill, categories, currencySymbol: symbol, allowFuture, onClose, onCreate, onUpdate, onCreateRecurring, onViewReceipt,
 }: {
   open: boolean
   editingTx: Transaction | null
-  prefill: { amount?: string; note?: string; type?: TxType } | null
+  prefill: DrawerPrefill | null
   categories: Budget['categories']
   currencySymbol: string
   allowFuture: boolean
@@ -1043,11 +1142,14 @@ function AddTransactionDrawer({
   onCreate: Budget['createTransaction']
   onUpdate: Budget['updateTransaction']
   onCreateRecurring: Budget['addRecurring']
+  onViewReceipt: (src: string) => void
 }) {
   const isEdit = !!editingTx
   const [form, setForm] = useState<DrawerForm>({
-    type: 'expense', amount: '', category_id: '', date: todayIso(), merchant: '', note: '', recurring: false,
+    type: 'expense', amount: '', category_id: '', date: todayIso(), merchant: '', note: '', recurring: false, receipt_url: '',
   })
+  const [fromReceipt, setFromReceipt] = useState(false)
+  const [confidence, setConfidence] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const panelRef = useRef<HTMLDivElement | null>(null)
@@ -1072,9 +1174,23 @@ function AddTransactionDrawer({
         category_id: editingTx.category_id ?? '',
         date: editingTx.date,
         merchant, note: noteText, recurring: false,
+        receipt_url: editingTx.receipt_url ?? '',
       })
+      setFromReceipt(false)
+      setConfidence(null)
     } else {
-      setForm((prev) => ({ type: prefill?.type ?? 'expense', amount: prefill?.amount ?? '', category_id: '', date: prev.date || todayIso(), merchant: '', note: prefill?.note ?? '', recurring: false }))
+      setForm((prev) => ({
+        type: prefill?.type ?? 'expense',
+        amount: prefill?.amount ?? '',
+        category_id: prefill?.category_id ?? '',
+        date: prefill?.date || prev.date || todayIso(),
+        merchant: prefill?.merchant ?? '',
+        note: prefill?.note ?? '',
+        recurring: false,
+        receipt_url: prefill?.receipt_url ?? '',
+      }))
+      setFromReceipt(!!prefill?.fromReceipt)
+      setConfidence(prefill?.confidence ?? null)
     }
     setError(null)
     window.setTimeout(() => firstFieldRef.current?.focus(), 60)
@@ -1125,10 +1241,11 @@ function AddTransactionDrawer({
   const persist = (): string | null => {
     const amount = Number(form.amount)
     const note = joinNote(form.merchant, form.note) || null
+    const receipt_url = form.receipt_url || null
     if (isEdit && editingTx) {
-      return onUpdate(editingTx.id, { type: form.type, amount, category_id: form.category_id || null, date: form.date, note })
+      return onUpdate(editingTx.id, { type: form.type, amount, category_id: form.category_id || null, date: form.date, note, receipt_url })
     }
-    const err = onCreate({ date: form.date, type: form.type, category_id: form.category_id || null, amount, note })
+    const err = onCreate({ date: form.date, type: form.type, category_id: form.category_id || null, amount, note, receipt_url })
     if (!err && form.recurring) {
       onCreateRecurring({
         name: form.merchant.trim() || (drawerCategories.find((c) => c.id === form.category_id)?.name ?? 'Recurring'),
@@ -1151,7 +1268,9 @@ function AddTransactionDrawer({
     setSaving(false)
     if (err) { setError(err); return }
     if (addAnother && !isEdit) {
-      setForm((p) => ({ ...p, amount: '', merchant: '', note: '', recurring: false }))
+      setForm((p) => ({ ...p, amount: '', merchant: '', note: '', recurring: false, receipt_url: '' }))
+      setFromReceipt(false)
+      setConfidence(null)
       setError(null)
       window.setTimeout(() => firstFieldRef.current?.focus(), 30)
     } else {
@@ -1181,6 +1300,44 @@ function AddTransactionDrawer({
         </header>
 
         <div className="txp-drawer-body">
+          {fromReceipt ? (
+            <div className="txp-ai-banner" role="status">
+              <span className="txp-ai-banner-icon"><Sparkles size={15} aria-hidden="true" /></span>
+              <div className="txp-ai-banner-text">
+                <strong>Auto-filled from your receipt</strong>
+                <span>
+                  Review the details below before saving.
+                  {confidence != null ? ` Confidence: ${Math.round(confidence * 100)}%.` : ''}
+                </span>
+              </div>
+            </div>
+          ) : null}
+
+          {form.receipt_url ? (
+            <div className="txp-receipt-preview">
+              <button
+                type="button"
+                className="txp-receipt-thumb"
+                onClick={() => onViewReceipt(form.receipt_url)}
+                aria-label="View receipt"
+              >
+                <img src={form.receipt_url} alt="Receipt" />
+                <span className="txp-receipt-thumb-view"><Eye size={16} aria-hidden="true" /></span>
+              </button>
+              <div className="txp-receipt-preview-meta">
+                <span className="txp-receipt-preview-title"><ImageIcon size={14} aria-hidden="true" /> Receipt attached</span>
+                <span className="txp-receipt-preview-sub">Saved with this transaction.</span>
+                <button
+                  type="button"
+                  className="txp-receipt-remove"
+                  onClick={() => { setForm((p) => ({ ...p, receipt_url: '' })); setFromReceipt(false); setConfidence(null) }}
+                >
+                  <X size={13} aria-hidden="true" /> Remove
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="txp-typeseg" role="tablist" aria-label="Transaction type">
             <button
               type="button" role="tab" aria-selected={form.type === 'expense'}

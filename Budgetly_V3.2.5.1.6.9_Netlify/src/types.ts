@@ -20,6 +20,8 @@ export type Transaction = {
   category_id: string | null
   amount: number
   note: string | null
+  /** Optional captured receipt image as a compressed JPEG data URL (AI receipt capture). */
+  receipt_url?: string | null
   created_at?: string
   updated_at?: string
 }
