@@ -497,6 +497,8 @@ export function TransactionsView({ budget }: { budget: Budget }) {
             type="button"
             className="txp-btn txp-btn-scan"
             onClick={() => setCaptureOpen(true)}
+            aria-label="Scan Receipt"
+            title="Scan Receipt"
           >
             <ScanLine size={16} aria-hidden="true" />
             <span>Scan Receipt</span>
