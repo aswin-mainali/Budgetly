@@ -186,7 +186,20 @@ export function useBudgetApp(userId: string | null) {
     if (!userId) return
     setData((current) => {
       const next = typeof updater === 'function' ? updater(current) : updater
-      localStorage.setItem(`${LOCAL_KEY}:${userId}`, JSON.stringify(next))
+      // Receipt images are large base64 data URLs. They live in memory (for the
+      // UI) and in Supabase (the source of truth), but must NOT be written into
+      // localStorage — a few would blow the ~5MB quota. Strip them from the
+      // cached copy, and never let a cache-write failure (quota exceeded,
+      // private mode) abort the in-memory state update.
+      try {
+        const forStorage: DataState = {
+          ...next,
+          transactions: next.transactions.map((t) => (t.receipt_url ? { ...t, receipt_url: null } : t)),
+        }
+        localStorage.setItem(`${LOCAL_KEY}:${userId}`, JSON.stringify(forStorage))
+      } catch (err) {
+        console.warn('persistLocal: could not write local cache', err)
+      }
       return next
     })
   }
