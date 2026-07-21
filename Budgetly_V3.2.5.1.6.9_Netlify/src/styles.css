@@ -11677,11 +11677,21 @@ body.light .nwConfirm{box-shadow:0 24px 60px rgba(15,23,42,.18)}
 body.light .nwHero{box-shadow:0 24px 60px rgba(15,23,42,.10)}
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
+/* Touch devices have no hover, so row actions must always be visible. */
+@media (hover:none),(pointer:coarse){
+  .nwLedgerItemActions{opacity:1}
+}
 @media (max-width:960px){
-  .nwPage{padding:2px 2px 20px}
+  .nwPage{padding:2px 2px 24px}
   .nwChartRow,.nwLedgerRow{grid-template-columns:1fr}
   .nwKpis{grid-template-columns:repeat(2,1fr)}
   .nwInsightStrip{grid-template-columns:1fr}
+}
+/* Mobile: the fixed tab bar overlays the scroll area (and iOS Safari drops the
+   scroll container's own bottom padding), so clear it from the page content. */
+@media (max-width:768px){
+  .nwPage{padding-bottom:calc(116px + env(safe-area-inset-bottom))}
+  .nwLedgerItemActions button{width:34px;height:34px}
 }
 @media (max-width:560px){
   .nwHero{padding:22px 18px 20px;border-radius:20px}
@@ -11695,10 +11705,16 @@ body.light .nwHero{box-shadow:0 24px 60px rgba(15,23,42,.10)}
   .nwHeroDelta{font-size:12.5px;padding:5px 10px}
   .nwCardHead{flex-direction:column;gap:10px}
   .nwRangeToggle{align-self:flex-start}
+  .nwCard{padding:16px 15px;border-radius:18px}
+  .nwKpi{padding:14px 15px}
+  .nwLedgerItemNote{display:none}
+  .nwModalBackdrop{padding:12px}
+  .nwModal{padding:20px 18px calc(18px + env(safe-area-inset-bottom))}
 }
 @media (max-width:400px){
   .nwHeroActions{flex-direction:column}
   .nwHeroValue{font-size:26px}
+  .nwEmptyState{padding:40px 18px}
 }
 
 /* ── Net Worth: loading / spinner ─────────────────────────────────────────── */
