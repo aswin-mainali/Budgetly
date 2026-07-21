@@ -11394,3 +11394,283 @@ body.light .monthSummaryActivity{ background:rgba(248,250,253,.7); }
   .monthSummaryFooter{ flex-direction:column-reverse; }
   .monthSummaryFooter .btn{ width:100%; justify-content:center; }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Net Worth Tracker
+   ══════════════════════════════════════════════════════════════════════════ */
+.nwPage{
+  --nw-asset:#22c55e;
+  --nw-liability:#ef4444;
+  --nw-card:var(--panel);
+  --nw-card-border:var(--border);
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  padding:26px 30px 60px;
+  max-width:1280px;
+  margin:0 auto;
+  width:100%;
+  animation:nwFade .4s ease;
+}
+@keyframes nwFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.nwFlash{
+  position:fixed;top:18px;left:50%;transform:translateX(-50%);
+  z-index:4000;background:var(--panel-elevated);color:var(--text);
+  border:1px solid var(--border);border-radius:12px;padding:10px 18px;
+  font-size:13px;font-weight:600;box-shadow:0 16px 40px rgba(2,6,23,.45);
+  animation:nwFlashIn .25s ease;
+}
+@keyframes nwFlashIn{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+
+/* ── Hero ─────────────────────────────────────────────────────────────────── */
+.nwHero{
+  position:relative;overflow:hidden;
+  border-radius:24px;
+  border:1px solid var(--border);
+  padding:28px 30px 24px;
+  background:
+    radial-gradient(120% 140% at 88% -10%, rgba(34,197,94,.16), transparent 55%),
+    radial-gradient(120% 140% at 0% 120%, rgba(59,130,246,.14), transparent 55%),
+    linear-gradient(160deg, var(--panel-elevated), var(--panel-soft));
+  box-shadow:0 24px 60px rgba(2,6,23,.30);
+}
+.nwHeroGlow{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(60% 80% at 50% -20%, rgba(255,255,255,.06), transparent 60%);
+}
+.nwHeroMain{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+.nwEyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);background:var(--accent-soft);
+  padding:5px 11px;border-radius:999px;border:1px solid rgba(33,201,122,.28);
+}
+.nwHeroValueRow{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.nwHeroValue{
+  margin:0;font-size:clamp(34px,5vw,50px);font-weight:800;letter-spacing:-.02em;line-height:1;
+  color:var(--text);font-variant-numeric:tabular-nums;
+}
+.nwHeroValue.neg{color:#f8748c}
+.nwHeroDelta{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px;
+  font-variant-numeric:tabular-nums;
+}
+.nwHeroDelta.pos{color:#0f9d63;background:rgba(34,197,94,.14)}
+.nwHeroDelta.neg{color:#e5484d;background:rgba(239,68,68,.14)}
+body:not(.light) .nwHeroDelta.pos{color:#4ade80}
+.nwHeroSub{margin:12px 0 0;color:var(--muted);font-size:14px;max-width:52ch;line-height:1.5}
+.nwHeroActions{display:flex;gap:10px;flex-wrap:wrap}
+
+.nwHeroBars{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:26px}
+.nwHeroBar{display:flex;flex-direction:column;gap:8px}
+.nwHeroBarTop{display:flex;justify-content:space-between;align-items:center}
+.nwHeroBarTop span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+.nwHeroBarTop strong{font-size:16px;font-variant-numeric:tabular-nums;color:var(--text)}
+.nwHeroBarTrack{height:8px;border-radius:999px;background:rgba(148,163,184,.16);overflow:hidden}
+.nwHeroBarFill{height:100%;border-radius:999px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.nwHeroBarFill.asset{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.nwHeroBarFill.liability{background:linear-gradient(90deg,#dc2626,#ef4444)}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.nwBtn{
+  display:inline-flex;align-items:center;gap:7px;
+  border:1px solid transparent;border-radius:12px;
+  padding:10px 16px;font-size:13.5px;font-weight:700;cursor:pointer;
+  transition:transform .12s ease, box-shadow .2s ease, background .2s ease, opacity .2s ease;
+  color:#fff;
+}
+.nwBtn:hover{transform:translateY(-1px)}
+.nwBtn:active{transform:translateY(0)}
+.nwBtn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.nwBtnAsset{background:linear-gradient(180deg,#22c55e,#16a34a);box-shadow:0 10px 24px rgba(34,197,94,.28)}
+.nwBtnLiability{background:linear-gradient(180deg,#f43f5e,#e11d48);box-shadow:0 10px 24px rgba(244,63,94,.26)}
+.nwBtnDanger{background:linear-gradient(180deg,#ef4444,#dc2626);box-shadow:0 10px 24px rgba(239,68,68,.26)}
+.nwBtnGhost{background:transparent;color:var(--text);border-color:var(--border)}
+.nwBtnGhost:hover{background:rgba(148,163,184,.10)}
+
+/* ── KPI row ──────────────────────────────────────────────────────────────── */
+.nwKpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.nwKpi{
+  display:flex;align-items:center;gap:14px;
+  padding:16px 18px;border-radius:18px;
+  border:1px solid var(--border);background:var(--panel);
+  box-shadow:0 12px 28px rgba(2,6,23,.16);
+}
+.nwKpiIcon{
+  width:42px;height:42px;flex:none;border-radius:12px;
+  display:grid;place-items:center;
+}
+.nwKpiLabel{display:block;font-size:12px;color:var(--muted);font-weight:600}
+.nwKpiValue{display:block;font-size:22px;font-weight:800;margin-top:2px;color:var(--text);font-variant-numeric:tabular-nums;line-height:1.1}
+.nwScoreMax{font-size:13px;color:var(--muted);font-weight:600}
+.nwKpiHint{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* ── Card shell ───────────────────────────────────────────────────────────── */
+.nwCard{
+  border:1px solid var(--border);border-radius:20px;
+  background:var(--panel);padding:20px 22px;
+  box-shadow:0 16px 40px rgba(2,6,23,.18);
+}
+.nwCardHead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}
+.nwCardHead h3{margin:0;font-size:15.5px;font-weight:700;color:var(--text)}
+.nwCardSub{margin:3px 0 0;font-size:12.5px;color:var(--muted)}
+
+.nwRangeToggle{display:inline-flex;gap:4px;padding:4px;border-radius:11px;background:rgba(148,163,184,.12);border:1px solid var(--border)}
+.nwRangeToggle button{
+  border:0;background:transparent;color:var(--muted);
+  font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;cursor:pointer;transition:all .15s ease;
+}
+.nwRangeToggle button.active{background:var(--panel-elevated);color:var(--text);box-shadow:0 2px 8px rgba(2,6,23,.2)}
+
+/* ── Charts ───────────────────────────────────────────────────────────────── */
+.nwChartRow{display:grid;grid-template-columns:1.55fr 1fr;gap:14px}
+.nwChartWrap{width:100%}
+.nwChartEmpty{position:relative;min-height:280px;display:grid;place-items:center;text-align:center;border-radius:14px;overflow:hidden;border:1px dashed var(--border)}
+.nwChartEmpty.small{min-height:180px}
+.nwChartEmpty p{position:relative;color:var(--muted);font-size:13px;line-height:1.6;max-width:34ch;padding:0 16px}
+.nwChartEmptyGrid{
+  position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:100% 40px, 56px 100%;
+  mask-image:linear-gradient(180deg,transparent,rgba(0,0,0,.6),transparent);
+}
+
+/* ── Donut ────────────────────────────────────────────────────────────────── */
+.nwAllocCard{display:flex;flex-direction:column}
+.nwDonutWrap{position:relative;display:grid;place-items:center}
+.nwDonutCenter{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.nwDonutCenter small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.nwDonutCenter strong{display:block;font-size:22px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.nwAllocLegend{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.nwAllocLegendItem{display:flex;align-items:center;gap:9px;font-size:13px}
+.nwAllocName{color:var(--text);flex:1;font-weight:500}
+.nwAllocPct{color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.nwDot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+
+/* ── Ledger columns ───────────────────────────────────────────────────────── */
+.nwLedgerRow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.nwLedgerCard{display:flex;flex-direction:column}
+.nwLedgerHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.nwLedgerTitle{display:flex;align-items:center;gap:9px}
+.nwLedgerTitle h3{margin:0;font-size:15px;font-weight:700;color:var(--text)}
+.nwLedgerDot{width:10px;height:10px;border-radius:50%}
+.nwLedgerCount{font-size:11px;font-weight:700;color:var(--muted);background:rgba(148,163,184,.14);padding:2px 8px;border-radius:999px}
+.nwLedgerTotal{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.nwLedgerList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.nwLedgerItem{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:14px;border:1px solid transparent;transition:background .15s ease,border-color .15s ease}
+.nwLedgerItem:hover{background:rgba(148,163,184,.07);border-color:var(--border)}
+.nwLedgerItem:hover .nwLedgerItemActions{opacity:1}
+.nwLedgerItemIcon{width:38px;height:38px;flex:none;border-radius:11px;display:grid;place-items:center}
+.nwLedgerItemBody{flex:1;min-width:0}
+.nwLedgerItemTop{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.nwLedgerItemName{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nwLedgerItemValue{font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;flex:none}
+.nwLedgerItemMeta{display:flex;align-items:center;gap:6px;margin-top:2px;font-size:11.5px;color:var(--muted)}
+.nwLedgerItemCat{font-weight:600}
+.nwLedgerItemNote{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:16ch}
+.nwLedgerItemShare{margin-left:auto;font-weight:700}
+.nwLedgerItemTrack{height:4px;border-radius:999px;background:rgba(148,163,184,.14);margin-top:7px;overflow:hidden}
+.nwLedgerItemTrack div{height:100%;border-radius:999px;transition:width .5s ease}
+.nwLedgerItemActions{display:flex;gap:4px;opacity:0;transition:opacity .15s ease}
+.nwLedgerItemActions button{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--panel-elevated);color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:all .15s ease}
+.nwLedgerItemActions button:hover{color:var(--text);border-color:var(--accent)}
+.nwLedgerItemActions button.danger:hover{color:#fff;background:#ef4444;border-color:#ef4444}
+.nwLedgerAdd{margin-top:12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border-radius:12px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease}
+.nwLedgerAdd:hover{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
+.nwLedgerAddEmpty{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:96px;border-radius:14px;border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:13.5px;font-weight:600;cursor:pointer;transition:all .15s ease}
+.nwLedgerAddEmpty:hover{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
+
+/* ── Empty state ──────────────────────────────────────────────────────────── */
+.nwEmptyState{
+  text-align:center;padding:52px 30px;border-radius:22px;
+  border:1px solid var(--border);background:var(--panel);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.nwEmptyIllus{width:82px;height:82px;border-radius:22px;display:grid;place-items:center;margin-bottom:8px;color:var(--accent);background:var(--accent-soft);border:1px solid rgba(33,201,122,.24)}
+.nwEmptyState h2{margin:0;font-size:22px;font-weight:800;color:var(--text)}
+.nwEmptyState p{margin:0;max-width:52ch;color:var(--muted);font-size:14px;line-height:1.6}
+.nwEmptyActions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.nwEmptyChips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+.nwSeedChip{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s ease}
+.nwSeedChip:hover{color:var(--text);border-color:var(--accent);background:var(--accent-soft)}
+
+/* ── Insight strip ────────────────────────────────────────────────────────── */
+.nwInsightStrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.nwInsight{display:flex;gap:12px;padding:16px 18px;border-radius:18px;border:1px solid var(--border);background:var(--panel)}
+.nwInsightGlyph{flex:none;color:var(--accent);margin-top:2px}
+.nwInsight strong{display:block;font-size:14px;color:var(--text);margin-bottom:3px}
+.nwInsight p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.55}
+
+/* ── Tooltips ─────────────────────────────────────────────────────────────── */
+.nwTooltip{background:var(--panel-elevated);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 16px 40px rgba(2,6,23,.5);min-width:160px}
+.nwTooltipDate{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.nwTooltipRow{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12.5px;color:var(--muted);padding:2px 0}
+.nwTooltipRow strong{color:var(--text);font-variant-numeric:tabular-nums}
+.nwTt.pos{color:#22c55e}
+.nwTt.neg{color:#ef4444}
+
+/* ── Modals ───────────────────────────────────────────────────────────────── */
+.nwModalBackdrop{position:fixed;inset:0;z-index:3000;background:rgba(4,10,22,.62);backdrop-filter:blur(6px);display:grid;place-items:center;padding:18px;animation:nwFade .2s ease}
+.nwModal{width:100%;max-width:460px;border-radius:22px;border:1px solid var(--border);background:var(--panel-elevated);padding:22px 24px 20px;box-shadow:0 32px 80px rgba(2,6,23,.55);max-height:92vh;overflow:auto;animation:nwModalIn .24s cubic-bezier(.34,1.3,.5,1)}
+@keyframes nwModalIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.nwModalHead{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.nwModalHead h3{margin:6px 0 0;font-size:19px;font-weight:800;color:var(--text)}
+.nwModalTag{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+.nwModalTag.asset{color:#16a34a;background:rgba(34,197,94,.14)}
+.nwModalTag.liability{color:#e11d48;background:rgba(244,63,94,.14)}
+body:not(.light) .nwModalTag.asset{color:#4ade80}
+.nwModalClose{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:all .15s ease}
+.nwModalClose:hover{color:var(--text);background:rgba(148,163,184,.1)}
+.nwField{display:block;margin-bottom:15px}
+.nwField>span{display:block;font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:7px}
+.nwField>span em{color:var(--muted);font-weight:500;font-style:normal}
+.nwInput{width:100%;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:12px;padding:11px 13px;font-size:14px;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+.nwInput:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.nwInputMoney{position:relative;display:flex;align-items:center}
+.nwInputPrefix{position:absolute;left:13px;font-size:14px;font-weight:700;color:var(--muted);pointer-events:none}
+.nwInputMoney .nwInput{padding-left:40px}
+.nwCatGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nwCatChip{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s ease;text-align:left}
+.nwCatChip:hover{color:var(--text);border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.nwCatChip.active{font-weight:700}
+.nwModalFooter{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.nwModalFooter .nwBtn{padding:10px 18px}
+
+/* ── Confirm ──────────────────────────────────────────────────────────────── */
+.nwConfirm{width:100%;max-width:400px;border-radius:20px;border:1px solid var(--border);background:var(--panel-elevated);padding:26px 24px;text-align:center;box-shadow:0 32px 80px rgba(2,6,23,.55);animation:nwModalIn .24s cubic-bezier(.34,1.3,.5,1)}
+.nwConfirmIcon{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;margin:0 auto 14px;color:#ef4444;background:rgba(239,68,68,.14)}
+.nwConfirm h3{margin:0 0 8px;font-size:18px;font-weight:800;color:var(--text)}
+.nwConfirm p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.55}
+.nwConfirmActions{display:flex;justify-content:center;gap:10px;margin-top:20px}
+
+/* ── Light theme touch-ups ────────────────────────────────────────────────── */
+body.light .nwHeroBarTrack,
+body.light .nwLedgerItemTrack,
+body.light .nwRangeToggle{background:rgba(76,101,145,.10)}
+body.light .nwLedgerCount{background:rgba(76,101,145,.10)}
+body.light .nwTooltip,
+body.light .nwModal,
+body.light .nwConfirm{box-shadow:0 24px 60px rgba(15,23,42,.18)}
+body.light .nwHero{box-shadow:0 24px 60px rgba(15,23,42,.10)}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width:960px){
+  .nwPage{padding:20px 18px 80px}
+  .nwChartRow,.nwLedgerRow{grid-template-columns:1fr}
+  .nwKpis{grid-template-columns:repeat(2,1fr)}
+  .nwInsightStrip{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .nwPage{padding:16px 12px 90px}
+  .nwHero{padding:22px 18px 20px;border-radius:20px}
+  .nwHeroMain{flex-direction:column}
+  .nwHeroActions{width:100%}
+  .nwHeroActions .nwBtn{flex:1;justify-content:center}
+  .nwHeroBars{grid-template-columns:1fr;gap:16px}
+  .nwKpis{grid-template-columns:1fr}
+  .nwCatGrid{grid-template-columns:1fr}
+  .nwHeroValue{font-size:34px}
+}
