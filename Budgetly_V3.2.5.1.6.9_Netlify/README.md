@@ -52,7 +52,20 @@ On the Transactions page, **Scan Receipt** opens the camera (or lets you upload 
 Run the SQL files in the `supabase/` folder as needed, starting with:
 - `supabase/schema.sql`
 
-Additional migrations are included for goals, recurring items, category emojis, receipt capture (`add_receipt_capture.sql`), and super admin setup.
+Additional migrations are included for goals, recurring items, category emojis, receipt capture (`add_receipt_capture.sql`), super admin setup, and full data backup & restore (`add_backup_restore.sql`).
+
+## Data backup & restore
+Settings → **Data & backup** provides a complete, restorable backup system (replacing the old CSV/JSON export):
+- **Full backup** — the `data-backup` edge function gathers every user-owned record across all domains, builds one JSON file per domain plus a `manifest.json` (version, timestamp, per-domain counts, SHA-256 checksum) and a `README.txt`, and returns it as a downloadable `.zip`. Optional client-side **AES-256 password protection** (zip.js) encrypts the archive before download. Rate-limited per user.
+- **Automatic backups** — an optional weekly `auto-backup` cron function stores backups in the private `user-backups` storage bucket and keeps the last 8.
+- **Restore** — upload a backup `.zip`; the `data-restore` edge function validates the manifest + checksum + version and referential integrity, shows an add/remove diff, and (after taking a safety snapshot) applies a **Merge** or **Replace** restore transactionally via the `restore_user_backup` RPC.
+
+Deploy the three edge functions and enable the weekly cron as documented in `supabase/add_backup_restore.sql`:
+```bash
+supabase functions deploy data-backup
+supabase functions deploy data-restore
+supabase functions deploy auto-backup --no-verify-jwt
+```
 
 ## Notes
 - `node_modules` and build output are intentionally excluded from the GitHub-ready package.
