@@ -843,8 +843,8 @@ export default function App() {
               {admin.visibleFeatures.investments ? <button className="utilityCard" onClick={() => { setToolsSection('investments'); setView('tools') }}><BarChart3 size={22} /><div><strong>Investments</strong><p>Track manual holdings and portfolio performance.</p></div><ChevronRight size={18} /></button> : null}
             </section>
           ) : (
-          <div className={`toolsPageShell toolsPageShellFixed ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
-            <div className={`toolsPageBody ${toolsSection === 'converter' ? 'toolsPageBodyConverter' : ''}`}>
+          <div className={`toolsPageShell ${toolsSection === 'networth' ? 'toolsShellFlow' : 'toolsPageShellFixed'} ${toolsSection === 'converter' ? 'toolsShellConverter' : ''}`}>
+            <div className={`toolsPageBody ${toolsSection === 'networth' ? 'toolsPageBodyFlow' : ''} ${toolsSection === 'converter' ? 'toolsPageBodyConverter' : ''}`}>
               {toolsSection === 'goals' ? <GoalsView budget={budget} /> : null}
               {toolsSection === 'reports' ? <ReportsView budget={budget} email={email} /> : null}
               {toolsSection === 'converter' ? <CurrencyConverterView budget={budget} theme={theme} /> : null}

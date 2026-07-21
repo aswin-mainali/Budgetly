@@ -11399,6 +11399,26 @@ body.light .monthSummaryActivity{ background:rgba(248,250,253,.7); }
 /* ══════════════════════════════════════════════════════════════════════════
    Net Worth Tracker
    ══════════════════════════════════════════════════════════════════════════ */
+/* The Net Worth page flows with the single main scroll — no nested scroller,
+   so there's never a double scrollbar or clipped header. */
+.toolsShellFlow{
+  height:auto;
+  min-height:0;
+  max-height:none;
+  overflow:visible;
+  display:block;
+  padding:0;
+}
+.toolsShellFlow > .toolsPageBody,
+.toolsPageBody.toolsPageBodyFlow{
+  display:block;
+  flex:none;
+  height:auto;
+  min-height:0;
+  max-height:none;
+  overflow:visible;
+}
+
 .nwPage{
   --nw-asset:#22c55e;
   --nw-liability:#ef4444;
@@ -11407,24 +11427,12 @@ body.light .monthSummaryActivity{ background:rgba(248,250,253,.7); }
   display:flex;
   flex-direction:column;
   gap:18px;
-  padding:8px 4px 40px;
+  padding:6px 4px 32px;
   width:100%;
+  max-width:1240px;
+  margin:0 auto;
   animation:nwFade .4s ease;
 }
-/* Inside the fixed Utilities shell the page owns its own scroll (like Investments). */
-.toolsPageBody > .nwPage,
-.toolsPageBody .nwPage{
-  flex:1 1 auto;
-  height:100%;
-  min-height:0;
-  overflow-y:auto;
-  overflow-x:hidden;
-  padding-right:8px;
-}
-.nwPage > *{ max-width:1240px; width:100%; margin-left:auto; margin-right:auto; }
-.nwPage::-webkit-scrollbar{ width:10px; }
-.nwPage::-webkit-scrollbar-thumb{ background:rgba(148,163,184,.35); border-radius:999px; }
-.nwPage::-webkit-scrollbar-track{ background:transparent; }
 @keyframes nwFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 .nwFlash{
@@ -11670,15 +11678,7 @@ body.light .nwHero{box-shadow:0 24px 60px rgba(15,23,42,.10)}
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width:960px){
-  /* The Utilities shell flows here, so let the page scroll with the main area. */
-  .toolsPageBody > .nwPage,
-  .toolsPageBody .nwPage{
-    height:auto;
-    overflow:visible;
-    padding-right:4px;
-  }
-  .nwPage{padding:6px 4px 24px}
-  .nwPage > *{max-width:100%}
+  .nwPage{padding:2px 2px 20px}
   .nwChartRow,.nwLedgerRow{grid-template-columns:1fr}
   .nwKpis{grid-template-columns:repeat(2,1fr)}
   .nwInsightStrip{grid-template-columns:1fr}
