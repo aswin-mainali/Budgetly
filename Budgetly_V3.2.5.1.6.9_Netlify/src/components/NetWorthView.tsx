@@ -5,9 +5,10 @@ import {
 } from 'recharts'
 import {
   ArrowDownRight, ArrowUpRight, Building2, Car, CreditCard,
-  Gem, GraduationCap, Landmark, Minus, Package, Pencil, PiggyBank, Plus,
+  Gem, GraduationCap, Landmark, Loader2, Package, Pencil, PiggyBank, Plus,
   Scale, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Wallet, X,
 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 /* ────────────────────────────────────────────────────────────────────────────
    Types
@@ -26,86 +27,108 @@ type NWItem = {
 }
 
 type NWSnapshot = {
-  monthKey: string // YYYY-MM
-  date: string // ISO date the snapshot was last written
+  date: string // YYYY-MM-DD (date_key)
   assets: number
   liabilities: number
   netWorth: number
 }
 
-type CategoryMeta = {
-  key: string
-  label: string
-  kind: NWKind
-  color: string
-  icon: React.ComponentType<{ size?: number | string }>
-}
+type IconComp = React.ComponentType<{ size?: number | string }>
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Category catalogue
+   Categories — stored as free-text labels (matching the existing data model).
+   The modal offers curated suggestions; icons and colours are resolved from the
+   category string so any value (typed or legacy) renders consistently.
    ──────────────────────────────────────────────────────────────────────────── */
 
-const CATEGORIES: CategoryMeta[] = [
-  { key: 'cash', label: 'Cash & Bank', kind: 'asset', color: '#22c55e', icon: Wallet },
-  { key: 'investments', label: 'Investments', kind: 'asset', color: '#3b82f6', icon: TrendingUp },
-  { key: 'retirement', label: 'Retirement', kind: 'asset', color: '#8b5cf6', icon: PiggyBank },
-  { key: 'property', label: 'Real Estate', kind: 'asset', color: '#f59e0b', icon: Building2 },
-  { key: 'vehicle', label: 'Vehicles', kind: 'asset', color: '#06b6d4', icon: Car },
-  { key: 'valuables', label: 'Valuables', kind: 'asset', color: '#ec4899', icon: Gem },
-  { key: 'other_asset', label: 'Other Assets', kind: 'asset', color: '#64748b', icon: Package },
-  { key: 'mortgage', label: 'Mortgage', kind: 'liability', color: '#ef4444', icon: Building2 },
-  { key: 'loan', label: 'Loans', kind: 'liability', color: '#f97316', icon: Landmark },
-  { key: 'credit', label: 'Credit Cards', kind: 'liability', color: '#e11d48', icon: CreditCard },
-  { key: 'student', label: 'Student Loans', kind: 'liability', color: '#d946ef', icon: GraduationCap },
-  { key: 'other_liability', label: 'Other Debts', kind: 'liability', color: '#fb7185', icon: Minus },
+const SUGGESTED_CATEGORIES: Record<NWKind, string[]> = {
+  asset: ['Cash & Bank', 'Savings', 'Investments', 'Retirement', 'Real Estate', 'Vehicle', 'Valuables', 'Business', 'Other'],
+  liability: ['Mortgage', 'Auto Loan', 'Student Loan', 'Credit Card', 'Personal Loan', 'Line of Credit', 'Taxes', 'Other'],
+}
+
+const COLOR_PALETTE = [
+  '#22c55e', '#3b82f6', '#8b5cf6', '#f59e0b', '#06b6d4', '#ec4899',
+  '#14b8a6', '#a855f7', '#f97316', '#ef4444', '#e11d48', '#d946ef',
 ]
 
-const LIQUID_CATEGORIES = new Set(['cash', 'investments'])
-const catBy = (key: string) => CATEGORIES.find((c) => c.key === key)
+const ICON_RULES: Array<{ match: RegExp; icon: IconComp }> = [
+  { match: /cash|bank|chequ|check|wallet|emergency/i, icon: Wallet },
+  { match: /saving/i, icon: PiggyBank },
+  { match: /invest|stock|etf|broker|portfolio|crypto|fund|share/i, icon: TrendingUp },
+  { match: /retire|rrsp|401|pension|ira|tfsa/i, icon: PiggyBank },
+  { match: /home|house|proper|real ?estate|condo|land|apartment/i, icon: Building2 },
+  { match: /mortgage/i, icon: Building2 },
+  { match: /car|vehicle|auto|truck|motor|bike/i, icon: Car },
+  { match: /jewel|valuable|gold|art|collect|watch|gem/i, icon: Gem },
+  { match: /student|tuition|educat/i, icon: GraduationCap },
+  { match: /credit|card|visa|master|amex/i, icon: CreditCard },
+  { match: /loan|debt|owe|line ?of ?credit|financ|payable|tax/i, icon: Landmark },
+]
+
+const LIQUID_RE = /cash|bank|chequ|check|saving|invest|money ?market|broker/i
+
+const hashStr = (s: string) => {
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return h
+}
+const colorForCategory = (cat: string) => COLOR_PALETTE[hashStr(cat.trim().toLowerCase()) % COLOR_PALETTE.length]
+const iconForCategory = (cat: string, kind: NWKind): IconComp => {
+  const rule = ICON_RULES.find((r) => r.match.test(cat))
+  return rule ? rule.icon : kind === 'liability' ? Landmark : Package
+}
+const isLiquidCategory = (cat: string) => LIQUID_RE.test(cat)
 
 /* ────────────────────────────────────────────────────────────────────────────
-   Persistence (localStorage, per-user)
+   Supabase persistence (synced per-user, RLS-scoped).
+   Tables: public.net_worth_items, public.net_worth_snapshots
+   (see supabase/add_net_worth_tracker.sql).
    ──────────────────────────────────────────────────────────────────────────── */
 
-const STORE_PREFIX = 'budgetly:networth:v1'
-const storeKey = (userId: string | null | undefined) => `${STORE_PREFIX}:${userId || 'guest'}`
-
-type StoreShape = { items: NWItem[]; snapshots: NWSnapshot[] }
-
-const readStore = (userId: string | null | undefined): StoreShape => {
-  try {
-    const raw = localStorage.getItem(storeKey(userId))
-    if (!raw) return { items: [], snapshots: [] }
-    const parsed = JSON.parse(raw) as Partial<StoreShape>
-    return {
-      items: Array.isArray(parsed.items) ? parsed.items : [],
-      snapshots: Array.isArray(parsed.snapshots) ? parsed.snapshots : [],
-    }
-  } catch {
-    return { items: [], snapshots: [] }
-  }
+type ItemRow = {
+  id: string
+  name: string
+  category: string | null
+  kind: NWKind
+  value: number | string
+  notes: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+type SnapshotRow = {
+  date_key: string
+  total_assets: number | string
+  total_liabilities: number | string
+  net_worth: number | string
 }
 
-const writeStore = (userId: string | null | undefined, store: StoreShape) => {
-  try {
-    localStorage.setItem(storeKey(userId), JSON.stringify(store))
-  } catch (err) {
-    // Non-fatal: local cache write failed (quota / private mode).
-    // eslint-disable-next-line no-console
-    console.warn('NetWorth: could not persist locally', err)
-  }
-}
+const mapItem = (r: ItemRow): NWItem => ({
+  id: r.id,
+  name: r.name,
+  category: (r.category && r.category.trim()) || 'Other',
+  kind: r.kind === 'liability' ? 'liability' : 'asset',
+  value: Number(r.value) || 0,
+  note: r.notes || undefined,
+  updatedAt: r.updated_at || r.created_at || new Date().toISOString(),
+})
+
+const mapSnapshot = (r: SnapshotRow): NWSnapshot => ({
+  date: r.date_key,
+  assets: Number(r.total_assets) || 0,
+  liabilities: Number(r.total_liabilities) || 0,
+  netWorth: Number(r.net_worth) || 0,
+})
+
+const isMissingTableError = (error: unknown) =>
+  /relation .*net_worth|does not exist|schema cache|could not find the table/i.test(
+    String((error as { message?: string })?.message || error || ''),
+  )
 
 /* ────────────────────────────────────────────────────────────────────────────
    Helpers
    ──────────────────────────────────────────────────────────────────────────── */
 
-const uid = () =>
-  (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
-    ? crypto.randomUUID()
-    : `nw_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-
-const monthKeyOf = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+const todayKey = () => new Date().toISOString().slice(0, 10)
 const clampMoney = (n: number) => (Number.isFinite(n) ? Math.round(n * 100) / 100 : 0)
 
 const fmt = (n: number, currency: string) =>
@@ -121,10 +144,16 @@ const fmtCompact = (n: number, currency: string) =>
     Number.isFinite(n) ? n : 0,
   )
 const fmtPct = (n: number) => `${n >= 0 ? '+' : ''}${(Number.isFinite(n) ? n : 0).toFixed(1)}%`
-const monthLabelOf = (mk: string) => {
-  const [y, m] = mk.split('-').map(Number)
-  if (!y || !m) return mk
-  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })
+const dateLabelOf = (dk: string) => {
+  const d = new Date(dk)
+  if (Number.isNaN(d.getTime())) return dk
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+const monthsBetween = (a: string, b: string) => {
+  const da = new Date(a)
+  const db = new Date(b)
+  if (Number.isNaN(da.getTime()) || Number.isNaN(db.getTime())) return 0
+  return (db.getTime() - da.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -149,15 +178,71 @@ export function NetWorthView({
   const [toDelete, setToDelete] = useState<NWItem | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [seedCategory, setSeedCategory] = useState<string | null>(null)
-  const [hydrated, setHydrated] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<null | 'missing-table' | 'load'>(null)
 
-  // ── Load once per user ────────────────────────────────────────────────────
+  const notify = (msg: string) => {
+    setFlash(msg)
+    window.clearTimeout((notify as any)._t)
+    ;(notify as any)._t = window.setTimeout(() => setFlash(null), 2200)
+  }
+
+  // ── Snapshot today's totals for a given item set (upsert by date) ─────────
+  const persistSnapshot = async (uid: string, list: NWItem[]) => {
+    const assets = clampMoney(list.filter((i) => i.kind === 'asset').reduce((s, i) => s + i.value, 0))
+    const liabilities = clampMoney(list.filter((i) => i.kind === 'liability').reduce((s, i) => s + i.value, 0))
+    const netWorth = clampMoney(assets - liabilities)
+    const dk = todayKey()
+    try {
+      const { error: snapErr } = await supabase.from('net_worth_snapshots').upsert(
+        { user_id: uid, date_key: dk, total_assets: assets, total_liabilities: liabilities, net_worth: netWorth, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,date_key' },
+      )
+      if (snapErr) throw snapErr
+    } catch (e) {
+      // Snapshot history is best-effort; the ledger itself is the source of truth.
+      // eslint-disable-next-line no-console
+      console.warn('Net worth snapshot upsert failed', e)
+    }
+    setSnapshots((prev) => {
+      const others = prev.filter((s) => s.date !== dk)
+      return [...others, { date: dk, assets, liabilities, netWorth }].sort((a, b) => a.date.localeCompare(b.date))
+    })
+  }
+
+  // ── Load from Supabase per user ───────────────────────────────────────────
+  const load = async (uid: string) => {
+    setLoading(true)
+    setError(null)
+    const [itemsRes, snapsRes] = await Promise.all([
+      supabase.from('net_worth_items').select('*').eq('user_id', uid).order('value', { ascending: false }),
+      supabase.from('net_worth_snapshots').select('*').eq('user_id', uid).order('date_key', { ascending: true }),
+    ])
+    if (itemsRes.error || snapsRes.error) {
+      const firstError = itemsRes.error || snapsRes.error
+      if (isMissingTableError(firstError)) {
+        setError('missing-table'); setItems([]); setSnapshots([]); setLoading(false); return
+      }
+      // eslint-disable-next-line no-console
+      console.error('Net worth load failed:', firstError)
+      setError('load'); setLoading(false); return
+    }
+    const nextItems = ((itemsRes.data as ItemRow[]) || []).map(mapItem)
+    const nextSnaps = ((snapsRes.data as SnapshotRow[]) || []).map(mapSnapshot)
+    setItems(nextItems)
+    setSnapshots(nextSnaps)
+    setLoading(false)
+    // Backfill today's snapshot so the trend keeps building over time.
+    if (nextItems.length > 0 && !nextSnaps.some((s) => s.date === todayKey())) {
+      void persistSnapshot(uid, nextItems)
+    }
+  }
+
   useEffect(() => {
-    setHydrated(false)
-    const store = readStore(userId)
-    setItems(store.items)
-    setSnapshots(store.snapshots)
-    setHydrated(true)
+    if (!userId) { setItems([]); setSnapshots([]); setLoading(false); return }
+    void load(userId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId])
 
   // ── Derived totals ────────────────────────────────────────────────────────
@@ -166,61 +251,67 @@ export function NetWorthView({
     const liabilities = items.filter((i) => i.kind === 'liability').reduce((s, i) => s + i.value, 0)
     const netWorth = assets - liabilities
     const liquid = items
-      .filter((i) => i.kind === 'asset' && LIQUID_CATEGORIES.has(i.category))
+      .filter((i) => i.kind === 'asset' && isLiquidCategory(i.category))
       .reduce((s, i) => s + i.value, 0)
     const debtRatio = assets > 0 ? (liabilities / assets) * 100 : 0
     return { assets, liabilities, netWorth, liquid, debtRatio }
   }, [items])
 
-  // ── Persist + auto-snapshot current month whenever data changes ───────────
-  useEffect(() => {
-    if (!hydrated) return
-    const mk = monthKeyOf(new Date())
-    const nextSnap: NWSnapshot = {
-      monthKey: mk,
-      date: new Date().toISOString().slice(0, 10),
-      assets: clampMoney(totals.assets),
-      liabilities: clampMoney(totals.liabilities),
-      netWorth: clampMoney(totals.netWorth),
+  // ── Item CRUD (Supabase-backed) ───────────────────────────────────────────
+  const saveItem = async (draft: Omit<NWItem, 'id' | 'updatedAt'> & { id?: string }) => {
+    if (!userId || saving) return
+    setSaving(true)
+    const payload = {
+      user_id: userId,
+      name: draft.name,
+      category: draft.category,
+      kind: draft.kind,
+      value: clampMoney(draft.value),
+      notes: draft.note || null,
+      updated_at: new Date().toISOString(),
     }
-    setSnapshots((prev) => {
-      const hasItems = items.length > 0
-      const others = prev.filter((s) => s.monthKey !== mk)
-      // Only keep a live snapshot for the current month when there is data to record.
-      const next = hasItems ? [...others, nextSnap].sort((a, b) => a.monthKey.localeCompare(b.monthKey)) : others
-      writeStore(userId, { items, snapshots: next })
-      return next
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, hydrated])
-
-  const notify = (msg: string) => {
-    setFlash(msg)
-    window.clearTimeout((notify as any)._t)
-    ;(notify as any)._t = window.setTimeout(() => setFlash(null), 2200)
-  }
-
-  // ── Item CRUD ─────────────────────────────────────────────────────────────
-  const upsertItem = (draft: Omit<NWItem, 'id' | 'updatedAt'> & { id?: string }) => {
-    setItems((prev) => {
-      const now = new Date().toISOString()
+    try {
+      let nextItems: NWItem[]
       if (draft.id) {
-        return prev.map((i) => (i.id === draft.id ? { ...i, ...draft, value: clampMoney(draft.value), updatedAt: now } as NWItem : i))
+        const { data, error: upErr } = await supabase.from('net_worth_items').update(payload).eq('id', draft.id).eq('user_id', userId).select('*').single()
+        if (upErr) throw upErr
+        const updated = mapItem(data as ItemRow)
+        nextItems = items.map((i) => (i.id === draft.id ? updated : i))
+      } else {
+        const { data, error: inErr } = await supabase.from('net_worth_items').insert(payload).select('*').single()
+        if (inErr) throw inErr
+        const created = mapItem(data as ItemRow)
+        nextItems = [created, ...items]
       }
-      const created: NWItem = {
-        id: uid(),
-        name: draft.name,
-        category: draft.category,
-        kind: draft.kind,
-        value: clampMoney(draft.value),
-        note: draft.note,
-        updatedAt: now,
-      }
-      return [created, ...prev]
-    })
+      setItems(nextItems)
+      setModalOpen(false); setEditing(null); setSeedCategory(null)
+      notify(draft.id ? 'Updated' : draft.kind === 'asset' ? 'Asset added' : 'Liability added')
+      await persistSnapshot(userId, nextItems)
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Net worth save failed:', e)
+      notify(isMissingTableError(e) ? 'Net worth tables not set up yet.' : 'Could not save. Please try again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const removeItem = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id))
+  const deleteItem = async (item: NWItem) => {
+    if (!userId) return
+    try {
+      const { error: delErr } = await supabase.from('net_worth_items').delete().eq('id', item.id).eq('user_id', userId)
+      if (delErr) throw delErr
+      const nextItems = items.filter((i) => i.id !== item.id)
+      setItems(nextItems)
+      setToDelete(null)
+      notify('Removed')
+      await persistSnapshot(userId, nextItems)
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('Net worth delete failed:', e)
+      notify('Could not remove. Please try again.')
+    }
+  }
 
   const openAdd = (kind: NWKind) => {
     setEditing(null)
@@ -233,14 +324,15 @@ export function NetWorthView({
     setModalOpen(true)
   }
 
-  // ── Trend series ──────────────────────────────────────────────────────────
+  // ── Trend series (daily snapshots) ────────────────────────────────────────
   const trendData = useMemo(() => {
-    const sorted = [...snapshots].sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-    const sliced =
-      range === 'ALL' ? sorted : sorted.slice(-(range === '6M' ? 6 : 12))
+    const sorted = [...snapshots].sort((a, b) => a.date.localeCompare(b.date))
+    const now = new Date()
+    const cutoff = range === 'ALL' ? null : new Date(now.getTime() - (range === '6M' ? 183 : 366) * 24 * 60 * 60 * 1000)
+    const sliced = cutoff ? sorted.filter((s) => new Date(s.date) >= cutoff) : sorted
     return sliced.map((s) => ({
-      key: s.monthKey,
-      label: monthLabelOf(s.monthKey),
+      key: s.date,
+      label: dateLabelOf(s.date),
       netWorth: s.netWorth,
       assets: s.assets,
       liabilities: s.liabilities,
@@ -256,22 +348,16 @@ export function NetWorthView({
     return { change, pct }
   }, [trendData])
 
-  // ── Category breakdown ────────────────────────────────────────────────────
-  const assetBreakdown = useMemo(() => {
+  // ── Category breakdown (grouped by free-text category) ────────────────────
+  const breakdownFor = (kind: NWKind) => {
     const map = new Map<string, number>()
-    items.filter((i) => i.kind === 'asset').forEach((i) => map.set(i.category, (map.get(i.category) || 0) + i.value))
-    return CATEGORIES.filter((c) => c.kind === 'asset' && (map.get(c.key) || 0) > 0)
-      .map((c) => ({ ...c, value: map.get(c.key) || 0 }))
+    items.filter((i) => i.kind === kind).forEach((i) => map.set(i.category, (map.get(i.category) || 0) + i.value))
+    return Array.from(map.entries())
+      .filter(([, value]) => value > 0)
+      .map(([category, value]) => ({ category, value, color: colorForCategory(category), icon: iconForCategory(category, kind) }))
       .sort((a, b) => b.value - a.value)
-  }, [items])
-
-  const liabilityBreakdown = useMemo(() => {
-    const map = new Map<string, number>()
-    items.filter((i) => i.kind === 'liability').forEach((i) => map.set(i.category, (map.get(i.category) || 0) + i.value))
-    return CATEGORIES.filter((c) => c.kind === 'liability' && (map.get(c.key) || 0) > 0)
-      .map((c) => ({ ...c, value: map.get(c.key) || 0 }))
-      .sort((a, b) => b.value - a.value)
-  }, [items])
+  }
+  const assetBreakdown = useMemo(() => breakdownFor('asset'), [items])
 
   const assetItems = useMemo(() => items.filter((i) => i.kind === 'asset').sort((a, b) => b.value - a.value), [items])
   const liabilityItems = useMemo(() => items.filter((i) => i.kind === 'liability').sort((a, b) => b.value - a.value), [items])
@@ -292,20 +378,22 @@ export function NetWorthView({
     return { score, grade }
   }, [items, totals])
 
-  // ── Projection (12mo, from average monthly change) ────────────────────────
+  // ── Projection (12mo, from monthly pace across snapshot history) ──────────
   const projection = useMemo(() => {
     if (snapshots.length < 2) return null
-    const sorted = [...snapshots].sort((a, b) => a.monthKey.localeCompare(b.monthKey))
-    const deltas: number[] = []
-    for (let i = 1; i < sorted.length; i++) deltas.push(sorted[i].netWorth - sorted[i - 1].netWorth)
-    const avg = deltas.reduce((s, d) => s + d, 0) / deltas.length
-    if (avg <= 0) return { avg, projected: null as number | null }
-    return { avg, projected: totals.netWorth + avg * 12 }
+    const sorted = [...snapshots].sort((a, b) => a.date.localeCompare(b.date))
+    const first = sorted[0]
+    const last = sorted[sorted.length - 1]
+    const months = monthsBetween(first.date, last.date)
+    if (months <= 0) return null
+    const pace = (last.netWorth - first.netWorth) / months
+    if (pace <= 0) return { avg: pace, projected: null as number | null }
+    return { avg: pace, projected: totals.netWorth + pace * 12 }
   }, [snapshots, totals.netWorth])
 
   const donutData = useMemo(() => {
     if (assetBreakdown.length === 0) return []
-    return assetBreakdown.map((c) => ({ name: c.label, value: c.value, color: c.color }))
+    return assetBreakdown.map((c) => ({ name: c.category, value: c.value, color: c.color }))
   }, [assetBreakdown])
 
   const gridStroke = theme === 'light' ? 'rgba(76,101,145,.18)' : 'rgba(148,163,184,.16)'
@@ -313,6 +401,45 @@ export function NetWorthView({
   const nwPositive = totals.netWorth >= 0
 
   const hasData = items.length > 0
+
+  // ── Loading / setup states ────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <section className="nwPage">
+        <div className="nwLoading"><Loader2 size={24} className="nwSpin" /><span>Loading your net worth…</span></div>
+      </section>
+    )
+  }
+
+  if (error === 'missing-table') {
+    return (
+      <section className="nwPage">
+        <div className="nwEmptyState">
+          <div className="nwEmptyIllus" aria-hidden="true"><Scale size={40} /></div>
+          <h2>Finish setting up the Net Worth Tracker</h2>
+          <p>The database tables for this feature haven’t been created yet. Run the migration in <code>supabase/add_net_worth_tracker.sql</code> against your Supabase project, then reload this page.</p>
+          <div className="nwEmptyActions">
+            <button className="nwBtn nwBtnAsset" onClick={() => userId && void load(userId)}>Reload</button>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (error === 'load') {
+    return (
+      <section className="nwPage">
+        <div className="nwEmptyState">
+          <div className="nwEmptyIllus" aria-hidden="true"><Scale size={40} /></div>
+          <h2>Couldn’t load your net worth</h2>
+          <p>Something went wrong reaching the server. Check your connection and try again.</p>
+          <div className="nwEmptyActions">
+            <button className="nwBtn nwBtnAsset" onClick={() => userId && void load(userId)}>Retry</button>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="nwPage">
@@ -389,17 +516,20 @@ export function NetWorthView({
         <div className="nwEmptyState">
           <div className="nwEmptyIllus" aria-hidden="true"><Scale size={40} /></div>
           <h2>Start tracking your net worth</h2>
-          <p>Add everything you own and owe. Budgetly turns it into a live dashboard with trends, allocation, and a financial health score — all stored privately on your device.</p>
+          <p>Add everything you own and owe. Budgetly turns it into a live dashboard with trends, allocation, and a financial health score — synced securely to your account.</p>
           <div className="nwEmptyActions">
             <button className="nwBtn nwBtnAsset" onClick={() => openAdd('asset')}><Plus size={16} /> Add your first asset</button>
             <button className="nwBtn nwBtnGhost" onClick={() => openAdd('liability')}><Plus size={16} /> Add a liability</button>
           </div>
           <div className="nwEmptyChips">
-            {CATEGORIES.filter((c) => c.kind === 'asset').slice(0, 5).map((c) => (
-              <button key={c.key} className="nwSeedChip" onClick={() => { setEditing(null); setModalKind('asset'); setModalOpen(true); setSeedCategory(c.key) }}>
-                <c.icon size={14} /> {c.label}
-              </button>
-            ))}
+            {SUGGESTED_CATEGORIES.asset.slice(0, 5).map((label) => {
+              const Icon = iconForCategory(label, 'asset')
+              return (
+                <button key={label} className="nwSeedChip" onClick={() => { setEditing(null); setModalKind('asset'); setSeedCategory(label); setModalOpen(true) }}>
+                  <Icon size={14} /> {label}
+                </button>
+              )
+            })}
           </div>
         </div>
       ) : (
@@ -466,9 +596,9 @@ export function NetWorthView({
                   </div>
                   <div className="nwAllocLegend">
                     {assetBreakdown.map((c) => (
-                      <div className="nwAllocLegendItem" key={c.key}>
+                      <div className="nwAllocLegendItem" key={c.category}>
                         <span className="nwDot" style={{ background: c.color }} />
-                        <span className="nwAllocName">{c.label}</span>
+                        <span className="nwAllocName">{c.category}</span>
                         <span className="nwAllocPct">{totals.assets > 0 ? ((c.value / totals.assets) * 100).toFixed(0) : 0}%</span>
                       </div>
                     ))}
@@ -552,13 +682,9 @@ export function NetWorthView({
           editing={editing}
           currency={currency}
           seedCategory={seedCategory}
-          onClose={() => { setModalOpen(false); setSeedCategory(null) }}
-          onSave={(draft) => {
-            upsertItem(draft)
-            notify(editing ? 'Updated' : draft.kind === 'asset' ? 'Asset added' : 'Liability added')
-            setModalOpen(false)
-            setSeedCategory(null)
-          }}
+          busy={saving}
+          onClose={() => { if (!saving) { setModalOpen(false); setSeedCategory(null) } }}
+          onSave={(draft) => { void saveItem(draft) }}
         />
       ) : null}
 
@@ -571,7 +697,7 @@ export function NetWorthView({
             <p>This {toDelete.kind} will be removed from your net worth. This can’t be undone.</p>
             <div className="nwConfirmActions">
               <button className="nwBtn nwBtnGhost" onClick={() => setToDelete(null)}>Cancel</button>
-              <button className="nwBtn nwBtnDanger" onClick={() => { removeItem(toDelete.id); notify('Removed'); setToDelete(null) }}>Remove</button>
+              <button className="nwBtn nwBtnDanger" onClick={() => { void deleteItem(toDelete) }}>Remove</button>
             </div>
           </div>
         </div>
@@ -615,23 +741,23 @@ function ItemColumn({
         <>
           <ul className="nwLedgerList">
             {items.map((i) => {
-              const meta = catBy(i.category)
-              const Icon = meta?.icon || Package
+              const color = colorForCategory(i.category)
+              const Icon = iconForCategory(i.category, i.kind)
               const share = total > 0 ? (i.value / total) * 100 : 0
               return (
                 <li key={i.id} className="nwLedgerItem">
-                  <span className="nwLedgerItemIcon" style={{ background: `${meta?.color || '#64748b'}22`, color: meta?.color || '#64748b' }}><Icon size={17} /></span>
+                  <span className="nwLedgerItemIcon" style={{ background: `${color}22`, color }}><Icon size={17} /></span>
                   <div className="nwLedgerItemBody">
                     <div className="nwLedgerItemTop">
                       <strong className="nwLedgerItemName">{i.name}</strong>
                       <span className="nwLedgerItemValue">{fmtExact(i.value, currency)}</span>
                     </div>
                     <div className="nwLedgerItemMeta">
-                      <span className="nwLedgerItemCat">{meta?.label || 'Other'}</span>
+                      <span className="nwLedgerItemCat">{i.category}</span>
                       {i.note ? <span className="nwLedgerItemNote">· {i.note}</span> : null}
                       <span className="nwLedgerItemShare">{share.toFixed(0)}%</span>
                     </div>
-                    <div className="nwLedgerItemTrack"><div style={{ width: `${share}%`, background: meta?.color || accent }} /></div>
+                    <div className="nwLedgerItemTrack"><div style={{ width: `${share}%`, background: color }} /></div>
                   </div>
                   <div className="nwLedgerItemActions">
                     <button aria-label="Edit" onClick={() => onEdit(i)}><Pencil size={14} /></button>
@@ -649,18 +775,19 @@ function ItemColumn({
 }
 
 function ItemModal({
-  kind, editing, currency, seedCategory, onClose, onSave,
+  kind, editing, currency, seedCategory, busy, onClose, onSave,
 }: {
   kind: NWKind
   editing: NWItem | null
   currency: string
   seedCategory: string | null
+  busy?: boolean
   onClose: () => void
   onSave: (draft: Omit<NWItem, 'id' | 'updatedAt'> & { id?: string }) => void
 }) {
-  const options = CATEGORIES.filter((c) => c.kind === kind)
+  const suggestions = SUGGESTED_CATEGORIES[kind]
   const [name, setName] = useState(editing?.name || '')
-  const [category, setCategory] = useState(editing?.category || seedCategory || options[0]?.key || '')
+  const [category, setCategory] = useState(editing?.category || seedCategory || suggestions[0] || 'Other')
   const [value, setValue] = useState(editing ? String(editing.value) : '')
   const [note, setNote] = useState(editing?.note || '')
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -673,11 +800,11 @@ function ItemModal({
   }, [onClose])
 
   const numeric = Number(value)
-  const valid = name.trim().length > 0 && Number.isFinite(numeric) && numeric > 0 && category
+  const valid = name.trim().length > 0 && Number.isFinite(numeric) && numeric > 0 && category.trim().length > 0
 
   const submit = () => {
-    if (!valid) return
-    onSave({ id: editing?.id, name: name.trim(), category, kind, value: numeric, note: note.trim() || undefined })
+    if (!valid || busy) return
+    onSave({ id: editing?.id, name: name.trim(), category: category.trim(), kind, value: numeric, note: note.trim() || undefined })
   }
 
   return (
@@ -698,18 +825,24 @@ function ItemModal({
 
         <div className="nwField">
           <span>Category</span>
-          <div className="nwCatGrid">
-            {options.map((c) => (
-              <button
-                key={c.key}
-                type="button"
-                className={`nwCatChip ${category === c.key ? 'active' : ''}`}
-                style={category === c.key ? { borderColor: c.color, background: `${c.color}18`, color: c.color } : undefined}
-                onClick={() => setCategory(c.key)}
-              >
-                <c.icon size={15} /> {c.label}
-              </button>
-            ))}
+          <input className="nwInput" placeholder="e.g. Savings, Real Estate, Auto Loan…" value={category} onChange={(e) => setCategory(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} />
+          <div className="nwCatChips">
+            {suggestions.map((label) => {
+              const Icon = iconForCategory(label, kind)
+              const active = category.trim().toLowerCase() === label.toLowerCase()
+              const color = colorForCategory(label)
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  className={`nwCatChip ${active ? 'active' : ''}`}
+                  style={active ? { borderColor: color, background: `${color}18`, color } : undefined}
+                  onClick={() => setCategory(label)}
+                >
+                  <Icon size={14} /> {label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -727,9 +860,9 @@ function ItemModal({
         </label>
 
         <div className="nwModalFooter">
-          <button className="nwBtn nwBtnGhost" onClick={onClose}>Cancel</button>
-          <button className={`nwBtn ${kind === 'asset' ? 'nwBtnAsset' : 'nwBtnLiability'}`} disabled={!valid} onClick={submit}>
-            {editing ? 'Save changes' : `Add ${kind === 'asset' ? 'asset' : 'liability'}`}
+          <button className="nwBtn nwBtnGhost" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className={`nwBtn ${kind === 'asset' ? 'nwBtnAsset' : 'nwBtnLiability'}`} disabled={!valid || busy} onClick={submit}>
+            {busy ? <><Loader2 size={15} className="nwSpin" /> Saving…</> : editing ? 'Save changes' : `Add ${kind === 'asset' ? 'asset' : 'liability'}`}
           </button>
         </div>
       </div>
