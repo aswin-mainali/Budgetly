@@ -9733,7 +9733,7 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileTopBar{display:flex;align-items:center;gap:12px;padding:4px 6px 14px}
   body.mobile-app .mobileWordmark{display:flex;flex-direction:column;font-family:inherit;font-size:17px;line-height:1.2}
   body.mobile-app .mobileWordmark small{font-size:12px;color:var(--muted)}
-  body.mobile-app .mobileDashScreen{display:grid;gap:12px;padding-bottom:160px;min-width:0}
+  body.mobile-app .mobileDashScreen{display:grid;gap:12px;min-width:0}
   body.mobile-app .mobileDashHero{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:4px 2px 8px;min-width:0}
   body.mobile-app .mobileDashTitleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
   body.mobile-app .mobileDashControls{display:flex;align-items:center;gap:8px;flex:0 0 auto}
