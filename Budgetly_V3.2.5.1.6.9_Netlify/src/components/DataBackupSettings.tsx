@@ -230,7 +230,7 @@ export function DataBackupSettings({ userId }: Props) {
             <div className="bkIconBadge bkIconAccent"><ShieldCheck size={20} /></div>
             <div>
               <h3 className="bkTitle">Full account backup</h3>
-              <p className="bkSub">A complete, restorable snapshot of every record you own — encrypted zip, one file per data domain.</p>
+              <p className="bkSub">Download all of your data as a zip you can restore later.</p>
             </div>
           </header>
 
@@ -297,7 +297,7 @@ export function DataBackupSettings({ userId }: Props) {
             <div className="bkIconBadge bkIconViolet"><RefreshCw size={18} /></div>
             <div>
               <h3 className="bkTitle">Automatic backups</h3>
-              <p className="bkSub">A hands-off weekly snapshot stored securely in your account. We keep the last 8.</p>
+              <p className="bkSub">Runs weekly and keeps your 8 most recent backups.</p>
             </div>
             <button
               className={`bkSwitch ${settings?.auto_backup_enabled ? 'on' : ''}`}
@@ -358,7 +358,7 @@ export function DataBackupSettings({ userId }: Props) {
             <div className="bkIconBadge bkIconDanger"><AlertTriangle size={20} /></div>
             <div>
               <h3 className="bkTitle">Restore from backup</h3>
-              <p className="bkSub">This can overwrite your live data. We validate the file and show you exactly what changes before anything is touched.</p>
+              <p className="bkSub">Restoring can overwrite your current data. You’ll see what changes before it’s applied.</p>
             </div>
           </header>
 
@@ -501,7 +501,7 @@ export function DataBackupSettings({ userId }: Props) {
 
               {!bundle && !validating && !needsPassword && (
                 <p className="bkFinePrint">
-                  <Info size={13} /> The Restore button stays disabled until a valid, checksum-verified backup is loaded.
+                  <Info size={13} /> Upload a valid backup to enable the Restore button.
                 </p>
               )}
             </>
