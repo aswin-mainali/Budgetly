@@ -6,7 +6,7 @@ import {
 import {
   ArrowDownRight, ArrowUpRight, Building2, Car, CreditCard,
   Gem, GraduationCap, Landmark, Loader2, Package, Pencil, PiggyBank, Plus,
-  Scale, Sparkles, Target, Trash2, TrendingDown, TrendingUp, Wallet, X,
+  Scale, Sparkles, Trash2, TrendingDown, TrendingUp, Wallet, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
@@ -148,12 +148,6 @@ const dateLabelOf = (dk: string) => {
   const d = new Date(dk)
   if (Number.isNaN(d.getTime())) return dk
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-}
-const monthsBetween = (a: string, b: string) => {
-  const da = new Date(a)
-  const db = new Date(b)
-  if (Number.isNaN(da.getTime()) || Number.isNaN(db.getTime())) return 0
-  return (db.getTime() - da.getTime()) / (1000 * 60 * 60 * 24 * 30.44)
 }
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -378,18 +372,15 @@ export function NetWorthView({
     return { score, grade }
   }, [items, totals])
 
-  // ── Projection (12mo, from monthly pace across snapshot history) ──────────
-  const projection = useMemo(() => {
+  // ── Largest asset + all-time movement (real data) ─────────────────────────
+  const topAsset = useMemo(() => assetItems[0] || null, [assetItems])
+  const allTime = useMemo(() => {
     if (snapshots.length < 2) return null
     const sorted = [...snapshots].sort((a, b) => a.date.localeCompare(b.date))
     const first = sorted[0]
     const last = sorted[sorted.length - 1]
-    const months = monthsBetween(first.date, last.date)
-    if (months <= 0) return null
-    const pace = (last.netWorth - first.netWorth) / months
-    if (pace <= 0) return { avg: pace, projected: null as number | null }
-    return { avg: pace, projected: totals.netWorth + pace * 12 }
-  }, [snapshots, totals.netWorth])
+    return { change: last.netWorth - first.netWorth, since: first.date }
+  }, [snapshots])
 
   const donutData = useMemo(() => {
     if (assetBreakdown.length === 0) return []
@@ -503,11 +494,11 @@ export function NetWorthView({
           </div>
         </div>
         <div className="nwKpi">
-          <div className="nwKpiIcon" style={{ background: 'rgba(59,130,246,.14)', color: '#3b82f6' }}><Target size={18} /></div>
+          <div className="nwKpiIcon" style={{ background: 'rgba(59,130,246,.14)', color: '#3b82f6' }}><TrendingUp size={18} /></div>
           <div>
-            <span className="nwKpiLabel">12-mo projection</span>
-            <strong className="nwKpiValue">{projection?.projected != null ? fmtCompact(projection.projected, currency) : '—'}</strong>
-            <small className="nwKpiHint">{projection?.projected != null ? `${fmt(projection.avg, currency)}/mo pace` : 'Needs 2+ months'}</small>
+            <span className="nwKpiLabel">Largest asset</span>
+            <strong className="nwKpiValue">{topAsset ? fmtCompact(topAsset.value, currency) : '—'}</strong>
+            <small className="nwKpiHint">{topAsset ? `${topAsset.name} · ${totals.assets > 0 ? ((topAsset.value / totals.assets) * 100).toFixed(0) : 0}% of assets` : 'No assets yet'}</small>
           </div>
         </div>
       </div>
@@ -540,7 +531,7 @@ export function NetWorthView({
               <div className="nwCardHead">
                 <div>
                   <h3>Net worth over time</h3>
-                  <p className="nwCardSub">Monthly snapshots, recorded automatically as you update.</p>
+                  <p className="nwCardSub">Snapshots recorded automatically as you update your figures.</p>
                 </div>
                 <div className="nwRangeToggle">
                   {(['6M', '1Y', 'ALL'] as const).map((r) => (
@@ -665,10 +656,10 @@ export function NetWorthView({
               </div>
             </div>
             <div className="nwInsight">
-              <Target size={16} className="nwInsightGlyph" />
+              {allTime && allTime.change < 0 ? <TrendingDown size={16} className="nwInsightGlyph" /> : <TrendingUp size={16} className="nwInsightGlyph" />}
               <div>
-                <strong>{projection?.projected != null ? `On track for ${fmtCompact(projection.projected, currency)}` : 'Build your trend'}</strong>
-                <p>{projection?.projected != null ? `At your current pace of ${fmt(projection.avg, currency)}/month, here's where you'll be in a year.` : 'Two or more monthly snapshots unlock a personalised projection.'}</p>
+                <strong>{allTime ? `${allTime.change >= 0 ? 'Up' : 'Down'} ${fmtCompact(Math.abs(allTime.change), currency)} tracked` : 'Your history builds here'}</strong>
+                <p>{allTime ? `Net worth has ${allTime.change >= 0 ? 'grown' : 'fallen'} by ${fmt(Math.abs(allTime.change), currency)} since you started tracking on ${new Date(allTime.since).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.` : 'Update your figures over time and this shows how far your net worth has moved.'}</p>
               </div>
             </div>
           </div>
