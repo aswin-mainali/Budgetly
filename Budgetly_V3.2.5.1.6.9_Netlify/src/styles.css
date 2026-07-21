@@ -809,21 +809,9 @@ body.light .kpi.expenses{ background: rgba(239,68,68,.10); }
 body.light .kpi.net{ background: rgba(59,130,246,.10); }
 
 
-/* Subtle background image on app pages (not just login) */
+/* Subtle ambient glow on app pages (background image removed) */
 .appWrap{
   position: relative;
-}
-.appWrap::before{
-  content:"";
-  position: fixed;
-  inset: 0;
-  background-image: url("./assets/login-bg.jpeg");
-  background-size: cover;
-  background-position: center;
-  opacity: 0.05; /* very subtle so charts stay readable */
-  filter: saturate(1.05) contrast(1.05);
-  z-index: 0;
-  pointer-events: none;
 }
 .appWrap::after{
   content:"";
