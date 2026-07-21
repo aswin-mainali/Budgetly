@@ -1165,7 +1165,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Wallet, PieChart as PieChartIcon, RotateCcw, Database, User, History } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Wallet, PieChart as PieChartIcon, RotateCcw, Database, User, History, Sun, Moon } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -6860,7 +6860,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </label>
 
               <div className="settingsFieldCard">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                <div className="row between settingsToggleRow">
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>AllowTxnInFutureDate</div>
                     <small>Turn on to allow transactions dated after today.</small>
@@ -6879,26 +6879,30 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </div>
 
               <div className="settingsFieldCard">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                <div className="row between settingsToggleRow">
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>Appearance</div>
                     <small>Switch between the current dark mode and light mode.</small>
                   </div>
                   <button
                     type="button"
-                    className={`settingsSwitch ${theme === 'light' ? 'on' : ''}`}
+                    className={`settingsSwitch settingsSwitchTheme ${theme === 'light' ? 'on' : ''}`}
                     role="switch"
                     aria-checked={theme === 'light'}
                     aria-label="Toggle light mode"
                     onClick={onThemeToggle}
                   >
-                    <span className="settingsSwitchKnob" />
+                    <span className="settingsSwitchGhost settingsSwitchGhostMoon"><Moon size={12} /></span>
+                    <span className="settingsSwitchGhost settingsSwitchGhostSun"><Sun size={12} /></span>
+                    <span className="settingsSwitchKnob settingsSwitchKnobIcon">
+                      {theme === 'light' ? <Sun size={13} color="#f59e0b" /> : <Moon size={13} color="#475569" />}
+                    </span>
                   </button>
                 </div>
               </div>
 
               <div className="settingsFieldCard">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                <div className="row between settingsToggleRow">
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>ShowCustomizeInDashboard</div>
                     <small>Show the Customize button on the dashboard so you can rearrange widgets.</small>
@@ -6917,7 +6921,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </div>
 
               <div className="settingsFieldCard">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                <div className="row between settingsToggleRow">
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>System Refresh</div>
                     <small>Clear cached files and hard refresh the app. Useful on mobile and the installed PWA when an update isn't showing.</small>
