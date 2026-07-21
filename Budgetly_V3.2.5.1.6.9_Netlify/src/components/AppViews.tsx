@@ -2905,21 +2905,32 @@ export { TransactionsView } from './TransactionsPage'
 
 
 export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
-  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data, helpers } = budget
+  const { sortedCategories, addCategory, updateCategoryField, deleteCategory, saveCategories, categoryDirty, data, helpers, byCategory, categoryColorMap } = budget
   const [pickerFor, setPickerFor] = React.useState<string | null>(null)
+  const [composerPickerOpen, setComposerPickerOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const [editingCategoryIds, setEditingCategoryIds] = useState<Record<string, boolean>>({})
   const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'budget-high' | 'budget-low'>('name-asc')
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'budget-high' | 'budget-low' | 'spent-high' | 'remaining-low'>('name-asc')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'over' | 'on-track' | 'no-budget'>('all')
   const [draftName, setDraftName] = useState('')
   const [draftBudget, setDraftBudget] = useState('')
+  const [draftEmoji, setDraftEmoji] = useState('🏷️')
   const [draftError, setDraftError] = useState('')
-  const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string } | null>(null)
+  const [pendingDraft, setPendingDraft] = useState<{ name: string; budget: string; emoji: string } | null>(null)
   const [categoriesPage, setCategoriesPage] = useState(1)
   const [categoriesViewportKey, setCategoriesViewportKey] = useState(0)
   const previousCategoryIds = React.useRef<string[]>([])
   const activeCategory = React.useMemo(() => sortedCategories.find((category) => category.id === pickerFor) ?? null, [sortedCategories, pickerFor])
   const pendingDeleteCategory = useMemo(() => sortedCategories.find((category) => category.id === pendingDeleteId) ?? null, [sortedCategories, pendingDeleteId])
+
+  // Spend-this-month per category id, from the shared byCategory rollup.
+  const spentByCategory = useMemo(() => {
+    const map = new Map<string, number>()
+    byCategory.forEach((row) => map.set(row.id, row.total))
+    return map
+  }, [byCategory])
+  const colorFor = (id: string) => colorForCategory(id, categoryColorMap, 'light')
 
   // ---- Autosave: persist to Supabase shortly after any local change ----
   useEffect(() => {
@@ -2930,34 +2941,48 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase()
-    if (!query) return sortedCategories
     return sortedCategories.filter((category) => {
-      return category.name.toLowerCase().includes(query)
+      const matchesQuery = !query
+        || category.name.toLowerCase().includes(query)
         || (category.emoji ?? '').includes(query)
+      if (!matchesQuery) return false
+      const budgetAmount = Number(category.budget_monthly || 0)
+      const spent = spentByCategory.get(category.id) ?? 0
+      if (statusFilter === 'no-budget') return budgetAmount <= 0
+      if (statusFilter === 'over') return budgetAmount > 0 && spent > budgetAmount
+      if (statusFilter === 'on-track') return budgetAmount > 0 && spent <= budgetAmount
+      return true
     })
-  }, [sortedCategories, search])
+  }, [sortedCategories, search, statusFilter, spentByCategory])
   const filteredAndSortedCategories = useMemo(() => {
     const list = [...filteredCategories]
     if (sortBy === 'name-asc') return list.sort((a, b) => a.name.localeCompare(b.name))
     if (sortBy === 'name-desc') return list.sort((a, b) => b.name.localeCompare(a.name))
     if (sortBy === 'budget-high') return list.sort((a, b) => Number(b.budget_monthly || 0) - Number(a.budget_monthly || 0))
-    return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
-  }, [filteredCategories, sortBy])
+    if (sortBy === 'budget-low') return list.sort((a, b) => Number(a.budget_monthly || 0) - Number(b.budget_monthly || 0))
+    if (sortBy === 'spent-high') return list.sort((a, b) => (spentByCategory.get(b.id) ?? 0) - (spentByCategory.get(a.id) ?? 0))
+    // remaining-low: least budget headroom first (over-budget categories surface at the top)
+    return list.sort((a, b) => {
+      const remA = Number(a.budget_monthly || 0) - (spentByCategory.get(a.id) ?? 0)
+      const remB = Number(b.budget_monthly || 0) - (spentByCategory.get(b.id) ?? 0)
+      return remA - remB
+    })
+  }, [filteredCategories, sortBy, spentByCategory])
   useEffect(() => {
     const onResize = () => setCategoriesViewportKey((prev) => prev + 1)
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
   const categoriesPageSize = useMemo(() => {
-    if (typeof window === 'undefined') return 7
-    return window.innerWidth <= 1450 ? 3 : 7
+    if (typeof window === 'undefined') return 4
+    return window.innerWidth <= 1450 ? 3 : 4
   }, [categoriesViewportKey])
   const categoriesPages = Math.max(1, Math.ceil(filteredAndSortedCategories.length / categoriesPageSize))
   const pagedCategories = useMemo(
     () => filteredAndSortedCategories.slice((categoriesPage - 1) * categoriesPageSize, categoriesPage * categoriesPageSize),
     [filteredAndSortedCategories, categoriesPage, categoriesPageSize]
   )
-  useEffect(() => setCategoriesPage(1), [search, sortBy])
+  useEffect(() => setCategoriesPage(1), [search, sortBy, statusFilter])
   useEffect(() => setCategoriesPage((prev) => Math.min(prev, categoriesPages)), [categoriesPages])
 
   const suggestions = useMemo(() => ['Rent', 'Groceries', 'Utilities', 'Savings', 'Insurance', 'Dining Out'], [])
@@ -2965,6 +2990,20 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     () => sortedCategories.reduce((sum, category) => sum + Number(category.budget_monthly || 0), 0),
     [sortedCategories]
   )
+  // Spend / remaining / over-budget rollups scoped to real categories (uncategorized
+  // is not a category on this page, so it never counts toward these totals).
+  const totalSpent = useMemo(
+    () => sortedCategories.reduce((sum, category) => sum + (spentByCategory.get(category.id) ?? 0), 0),
+    [sortedCategories, spentByCategory]
+  )
+  const overBudgetCount = useMemo(
+    () => sortedCategories.reduce((count, category) => {
+      const budgetAmount = Number(category.budget_monthly || 0)
+      return budgetAmount > 0 && (spentByCategory.get(category.id) ?? 0) > budgetAmount ? count + 1 : count
+    }, 0),
+    [sortedCategories, spentByCategory]
+  )
+  const remainingBudget = totalBudget - totalSpent
 
   const createCategoryWithDraft = () => {
     const name = draftName.trim()
@@ -2977,10 +3016,12 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     setPendingDraft({
       name,
       budget,
+      emoji: draftEmoji,
     })
     addCategory()
     setDraftName('')
     setDraftBudget('')
+    setDraftEmoji('🏷️')
   }
 
   useEffect(() => {
@@ -2997,6 +3038,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
     updateCategoryField(createdCategory.id, 'name', pendingDraft.name)
     if (pendingDraft.budget) updateCategoryField(createdCategory.id, 'budget_monthly', pendingDraft.budget)
+    if (pendingDraft.emoji && pendingDraft.emoji !== '🏷️') updateCategoryField(createdCategory.id, 'emoji', pendingDraft.emoji)
     setPendingDraft(null)
     previousCategoryIds.current = sortedCategories.map((category) => category.id)
   }, [sortedCategories, pendingDraft, updateCategoryField])
@@ -3015,8 +3057,54 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
     setEditingCategoryIds((current) => ({ ...current, [categoryId]: !current[categoryId] }))
   }
 
+  const budgetUsedPct = totalBudget > 0 ? Math.min(100, (totalSpent / totalBudget) * 100) : 0
+  const emojiPickerOpen = composerPickerOpen || (!!pickerFor && !!activeCategory)
+  const pickerCurrentEmoji = composerPickerOpen ? draftEmoji : (activeCategory?.emoji ?? '🏷️')
+  const pickerName = composerPickerOpen ? (draftName.trim() || 'New category') : (activeCategory?.name || 'New category')
+  const pickerBubbleColor = composerPickerOpen ? '#334155' : (activeCategory?.color ?? '#334155')
+  const closeEmojiPicker = () => { setComposerPickerOpen(false); setPickerFor(null) }
+  const selectPickerEmoji = (emoji: string) => {
+    if (composerPickerOpen) {
+      setDraftEmoji(emoji)
+    } else if (activeCategory) {
+      updateCategoryField(activeCategory.id, 'emoji', emoji)
+    }
+    closeEmojiPicker()
+  }
+  const statusFilters: { key: typeof statusFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'on-track', label: 'On track' },
+    { key: 'over', label: 'Over budget' },
+    { key: 'no-budget', label: 'No budget' },
+  ]
+
   return (
     <div className="card mobileSectionCard dataPageCard categoriesPageCard">
+      <div className="categoriesStatStrip">
+        <div className="kpi categoriesStat">
+          <span>Categories</span>
+          <strong>{sortedCategories.length}</strong>
+        </div>
+        <div className="kpi categoriesStat">
+          <span>Monthly budget</span>
+          <strong>{helpers.fmtMoney(totalBudget, data.currency)}</strong>
+        </div>
+        <div className="kpi categoriesStat">
+          <span>Spent this month</span>
+          <strong>{helpers.fmtMoney(totalSpent, data.currency)}</strong>
+          <div className="categoriesStatBar" aria-hidden="true">
+            <div className="categoriesStatBarFill" style={{ width: `${budgetUsedPct}%`, background: budgetStatusColor(totalBudget > 0 ? totalSpent / totalBudget : 0) }} />
+          </div>
+        </div>
+        <div className={`kpi categoriesStat ${remainingBudget < 0 ? 'over' : ''}`}>
+          <span>{remainingBudget < 0 ? 'Over budget' : 'Remaining'}</span>
+          <strong>{helpers.fmtMoney(Math.abs(remainingBudget), data.currency)}</strong>
+          {overBudgetCount > 0 ? (
+            <small className="categoriesStatFlag"><AlertTriangle size={12} /> {overBudgetCount} categor{overBudgetCount === 1 ? 'y' : 'ies'} over</small>
+          ) : null}
+        </div>
+      </div>
+
       <div className="categoriesLayout">
         <section className="categoriesComposer card">
           <div className="categoriesSectionHead">
@@ -3026,8 +3114,19 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
 
           <div className="categoriesComposerForm">
             <div className="categoriesComposerEmojiRow">
-              <span className="categoriesIconTile">🏷️</span>
-              <span className="muted">New category</span>
+              <button
+                type="button"
+                className="categoriesIconTile categoriesIconTileButton"
+                onClick={() => { setPickerFor(null); setComposerPickerOpen(true) }}
+                title="Choose an emoji"
+                aria-label="Choose an emoji for the new category"
+              >
+                {draftEmoji}
+              </button>
+              <div className="categoriesComposerEmojiCopy">
+                <span>New category</span>
+                <small className="muted">Tap the icon to pick an emoji</small>
+              </div>
             </div>
             <input
               className="input"
@@ -3037,6 +3136,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                 if (draftError) setDraftError('')
               }}
               placeholder="Enter category name"
+              onKeyDown={(event) => { if (event.key === 'Enter') createCategoryWithDraft() }}
             />
             <div className="categoriesComposerBudgetRow">
               <input
@@ -3048,6 +3148,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
                   if (draftError) setDraftError('')
                 }}
                 placeholder={`${data.currency} Enter monthly budget`}
+                onKeyDown={(event) => { if (event.key === 'Enter') createCategoryWithDraft() }}
               />
               <button className="btn primary" onClick={createCategoryWithDraft}>
                 <Plus size={16} /> Add
@@ -3074,7 +3175,7 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
         <section className="categoriesManage card">
           <div className="categoriesSectionHead">
             <h2>Manage Categories</h2>
-            <p className="muted">Search and fine-tune budgets, names, and icons.</p>
+            <p className="muted">Track spend against budget, then fine-tune names, icons, and amounts.</p>
           </div>
 
           <div className="categoriesToolbarRow">
@@ -3098,56 +3199,100 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               <option value="name-desc">Sort: Name Z–A</option>
               <option value="budget-high">Sort: Budget high-low</option>
               <option value="budget-low">Sort: Budget low-high</option>
+              <option value="spent-high">Sort: Spent high-low</option>
+              <option value="remaining-low">Sort: Least left first</option>
             </select>
           </div>
 
+          <div className="categoriesFilterRow" role="group" aria-label="Filter categories">
+            {statusFilters.map((filter) => (
+              <button
+                key={filter.key}
+                type="button"
+                className={`categoriesFilterChip ${statusFilter === filter.key ? 'active' : ''}`}
+                onClick={() => setStatusFilter(filter.key)}
+                aria-pressed={statusFilter === filter.key}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
           <div className="categoriesList">
-            <div className="categoriesListHeader">
-              <span>Emoji</span>
-              <span>Name</span>
-              <span>Budget</span>
-              <span className="categoriesListHeaderActions">Actions</span>
-            </div>
             {filteredAndSortedCategories.length === 0 ? (
               <div className="muted mobileEmptyCard">
                 {sortedCategories.length === 0 ? 'Create your first category here.' : 'No matching categories.'}
               </div>
             ) : pagedCategories.map((category: Category) => {
               const isEditing = !!editingCategoryIds[category.id]
+              const budgetAmount = Number(category.budget_monthly || 0)
+              const spent = spentByCategory.get(category.id) ?? 0
+              const ratio = budgetAmount > 0 ? spent / budgetAmount : 0
+              const pct = budgetAmount > 0 ? Math.min(100, ratio * 100) : 0
+              const overBudget = budgetAmount > 0 && spent > budgetAmount
+              const catColor = colorFor(category.id)
+              const fillColor = budgetAmount > 0 ? budgetStatusColor(ratio) : catColor
+              const statusLabel = budgetAmount <= 0
+                ? 'No budget set'
+                : overBudget
+                  ? `${helpers.fmtMoney(spent - budgetAmount, data.currency)} over`
+                  : `${helpers.fmtMoney(budgetAmount - spent, data.currency)} left`
               return (
-                <article key={category.id} className="categoriesListItem">
-                  <button className="emojiChip categoriesRowEmoji" onClick={() => setPickerFor(category.id)} title="Choose emoji" disabled={!isEditing}>
-                    <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
-                  </button>
-                  <div className="categoriesListNameCell">
-                    <input
-                      className="input"
-                      value={category.name}
-                      onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)}
+                <article key={category.id} className={`categoriesListItem ${isEditing ? 'editing' : ''}`}>
+                  <div className="categoriesRowHead">
+                    <button
+                      className="emojiChip categoriesRowEmoji"
+                      onClick={() => { setComposerPickerOpen(false); setPickerFor(category.id) }}
+                      title="Choose emoji"
                       disabled={!isEditing}
-                    />
+                      style={{ background: `${catColor}1f`, borderColor: `${catColor}55` }}
+                    >
+                      <span className="emojiChipIcon">{category.emoji ?? '🏷️'}</span>
+                    </button>
+                    <div className="categoriesRowNameCell">
+                      <input
+                        className="input"
+                        value={category.name}
+                        onChange={(event) => updateCategoryField(category.id, 'name', event.target.value)}
+                        disabled={!isEditing}
+                        aria-label="Category name"
+                      />
+                    </div>
+                    <div className="categoriesRowActions">
+                      <button
+                        className={`icon ${isEditing ? 'primary' : ''}`}
+                        onClick={() => toggleCategoryEditing(category.id)}
+                        title={isEditing ? 'Done editing' : 'Edit'}
+                        aria-label={isEditing ? 'Done editing' : 'Edit category'}
+                      >
+                        {isEditing ? <Check size={16} /> : <Pencil size={16} />}
+                      </button>
+                      <button className="icon danger" onClick={() => setPendingDeleteId(category.id)} title="Delete" aria-label="Delete category">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="categoriesListBudgetCell">
+                  <div className="categoriesRowProgress">
+                    <div className="progress" title={overBudget ? 'Over budget' : 'Spent this month'} style={{ background: `${catColor}1f`, borderColor: `${catColor}33` }}>
+                      <div className="budgetFill" style={{ width: `${pct}%`, background: fillColor }} />
+                    </div>
+                    <div className="categoriesRowMeta">
+                      <span className="categoriesRowSpent">{helpers.fmtMoney(spent, data.currency)} spent</span>
+                      <span className={`categoriesRowStatus ${overBudget ? 'over' : budgetAmount <= 0 ? 'muted' : 'ok'}`}>{statusLabel}</span>
+                    </div>
+                  </div>
+
+                  <div className="categoriesRowBudgetEdit">
+                    <label className="categoriesRowBudgetLabel">Monthly budget</label>
                     <input
                       className="input categoriesBudgetInput"
                       inputMode="decimal"
                       value={String(category.budget_monthly ?? 0)}
                       onChange={(event) => updateCategoryField(category.id, 'budget_monthly', event.target.value)}
                       disabled={!isEditing}
+                      aria-label="Monthly budget"
                     />
-                  </div>
-                  <div className="categoriesListActions">
-                    <button
-                      className={`icon ${isEditing ? 'primary' : ''}`}
-                      onClick={() => toggleCategoryEditing(category.id)}
-                      title={isEditing ? 'Stop editing' : 'Edit'}
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button className="icon danger" onClick={() => setPendingDeleteId(category.id)} title="Delete">
-                      <Trash2 size={16} />
-                    </button>
                   </div>
                 </article>
               )
@@ -3162,20 +3307,20 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
         </section>
       </div>
 
-      {pickerFor && activeCategory ? (
-        <div className="emojiPickerOverlay" onClick={() => setPickerFor(null)}>
+      {emojiPickerOpen ? (
+        <div className="emojiPickerOverlay" onClick={closeEmojiPicker}>
           <div className="emojiPickerModal" onClick={(event) => event.stopPropagation()}>
             <div className="row between" style={{ marginBottom: 10 }}>
               <div>
                 <div className="h1" style={{ fontSize: 18, marginBottom: 4 }}>Choose category emoji</div>
-                <small>{activeCategory.name || 'New Category'}</small>
+                <small>{pickerName}</small>
               </div>
-              <button className="btn ghost" onClick={() => setPickerFor(null)}>Close</button>
+              <button className="btn ghost" onClick={closeEmojiPicker}>Close</button>
             </div>
             <div className="emojiPreview">
-              <span className="emojiPreviewBubble" style={{ background: activeCategory.color ?? '#334155' }}>{activeCategory.emoji ?? '🏷️'}</span>
+              <span className="emojiPreviewBubble" style={{ background: pickerBubbleColor }}>{pickerCurrentEmoji}</span>
               <div>
-                <strong>{activeCategory.name || 'New Category'}</strong>
+                <strong>{pickerName}</strong>
                 <div className="muted">This emoji will appear in categories, transactions, and the dashboard pie chart.</div>
               </div>
             </div>
@@ -3183,11 +3328,8 @@ export function CategoriesView({ budget }: Pick<SharedProps, 'budget'>) {
               {CATEGORY_EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
-                  className={`emojiOption ${activeCategory.emoji === emoji ? 'selected' : ''}`}
-                  onClick={() => {
-                    updateCategoryField(activeCategory.id, 'emoji', emoji)
-                    setPickerFor(null)
-                  }}
+                  className={`emojiOption ${pickerCurrentEmoji === emoji ? 'selected' : ''}`}
+                  onClick={() => selectPickerEmoji(emoji)}
                   title={emoji}
                 >
                   {emoji}
