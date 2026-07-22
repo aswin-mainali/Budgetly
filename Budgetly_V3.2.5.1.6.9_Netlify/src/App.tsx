@@ -807,7 +807,7 @@ export default function App() {
           <header className="mobileTopBar">
             <button className="mobileIconBtn" onClick={() => setCollapsed(false)} aria-label="Open menu"><Menu size={22} /></button>
             <div className="mobileWordmark">
-              <strong>Hi, {profileName} 👋</strong><small>{timeGreeting}</small>
+              <strong>Hi, {profileName} <span className="mobileWave" aria-hidden="true">👋</span></strong><small>{timeGreeting}</small>
             </div>
             <button className="mobileIconBtn mobileSearchBtn" onClick={() => setUniversalSearchOpen(true)} aria-label="Open search">
               <Search size={20} />
