@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase'
 import { deleteProfileImage, loadProfileFromTable, readCachedUserProfile, saveProfileToTable, uploadProfileImage } from '../lib/userProfile'
 import { clearReadNotifications, generateAllNotifications, getNotificationPreferences, getNotifications, markAllNotificationsAsRead, markNotificationAsRead, meetsPriorityThreshold, muteNotification, snoozeNotification, type BudgetlyNotification, type NotificationPriority, updateNotificationPreferences } from '../services/notificationService'
 import { disablePush, enablePush, getPushPermission, isPushEnabled, pushSupported } from '../services/pushNotifications'
+import { DataBackupSettings } from './DataBackupSettings'
 
 const INCOME_CATEGORY_OPTIONS = [
   { id: 'income:salary', name: 'Salary', emoji: '💵' },
@@ -7145,28 +7146,34 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
             <div className="row between" style={{ gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
               <div>
                 <div className="h1">Data & backup</div>
-                <small>Export your workspace data or import a previous JSON backup.</small>
+                <small>Generate a complete, restorable backup of your account, schedule automatic backups, or restore from a previous backup.</small>
               </div>
-              <span className="badge">Portable data tools</span>
+              <span className="badge">Full backup &amp; restore</span>
             </div>
-            <div className="row gap wrap">
-              <button className="btn" onClick={exportCSV}><Download size={16} /> Export CSV</button>
-              <button className="btn" onClick={exportJSON}><Download size={16} /> Export JSON</button>
-              <label className="btn">
-                <Upload size={16} /> Import JSON
-                <input
-                  type="file"
-                  accept="application/json"
-                  style={{ display: 'none' }}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0]
-                    if (!file) return
-                    void importJSON(file).catch((error) => alert(error?.message ?? 'Import failed.'))
-                    event.currentTarget.value = ''
-                  }}
-                />
-              </label>
-            </div>
+
+            {userId ? <DataBackupSettings userId={userId} /> : null}
+
+            <details className="bkLegacyExport">
+              <summary>Legacy quick exports (CSV / JSON)</summary>
+              <div className="row gap wrap" style={{ marginTop: 12 }}>
+                <button className="btn" onClick={exportCSV}><Download size={16} /> Export CSV</button>
+                <button className="btn" onClick={exportJSON}><Download size={16} /> Export JSON</button>
+                <label className="btn">
+                  <Upload size={16} /> Import JSON
+                  <input
+                    type="file"
+                    accept="application/json"
+                    style={{ display: 'none' }}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0]
+                      if (!file) return
+                      void importJSON(file).catch((error) => alert(error?.message ?? 'Import failed.'))
+                      event.currentTarget.value = ''
+                    }}
+                  />
+                </label>
+              </div>
+            </details>
           </div>
         ) : null}
 
