@@ -9843,6 +9843,18 @@ body.light .authInstallHelpClose{color:#1d4ed8}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab{transform:translateY(-18px);width:60px;height:60px;border-radius:999px;background:linear-gradient(150deg,#4f8dfd,#2f6ff1 55%,#2258d6);color:#fff;justify-self:center;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px -6px rgba(47,111,241,.65), inset 0 1px 0 rgba(255,255,255,.35);transition:transform .16s ease}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab:active{transform:translateY(-18px) scale(.94)}
   body.mobile-app .mobileTabBarPlus .mobilePlusTab span{display:block;font-size:11px;position:absolute;bottom:-20px;color:var(--muted)}
+  body.mobile-app .mainMobile::after{
+    content:"";
+    position:fixed;
+    left:0;right:0;bottom:0;
+    height:calc(env(safe-area-inset-bottom, 0px) + 108px);
+    background:linear-gradient(180deg, rgba(6,16,35,0), #061023 30%);
+    pointer-events:none;
+    z-index:39;
+  }
+  body.mobile-app.light .mainMobile::after{
+    background:linear-gradient(180deg, rgba(238,243,250,0), #eef3fa 30%);
+  }
   body.mobile-app.light .mobileDashTitle{color:#0f254f}
   body.mobile-app.light .mobileDashSubtitle{color:#6b7a93}
   body.mobile-app.light .mobileDashMonth{background:#fff;border-color:#dbe7f7;color:#0f172a}
