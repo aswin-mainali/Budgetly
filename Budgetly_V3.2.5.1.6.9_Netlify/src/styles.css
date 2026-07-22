@@ -3246,11 +3246,15 @@ body.light .cropEditorModal h3{color:#1f2937}
 .settingsSwitch.on .settingsSwitchKnob{transform:translateX(20px)}
 
 /* Keep the label text and its toggle/button on one row; the text block shrinks
-   and wraps internally instead of pushing the control onto a new line. */
-.settingsToggleRow{flex-wrap:nowrap;align-items:center;gap:12px}
+   and wraps internally instead of pushing the control onto a new line. The
+   doubled/compound selectors raise specificity above the mobile rules
+   .row.between{align-items:stretch} and .row > .btn{width:100%}. */
+.row.between.settingsToggleRow{flex-wrap:nowrap;align-items:center;gap:12px}
 .settingsToggleRow > div:first-child{min-width:0;flex:1 1 auto}
-.settingsToggleRow > .settingsSwitch,
-.settingsToggleRow > .btn{flex:0 0 auto;width:auto}
+/* The control keeps its natural size and stays vertically centered instead of
+   stretching to the height of the wrapped description text. */
+.settingsToggleRow > .settingsSwitch{flex:0 0 auto;align-self:center}
+.settingsToggleRow > .btn{flex:0 0 auto;width:auto;align-self:center}
 
 /* Appearance toggle: sun / moon icons inside the switch */
 .settingsSwitchTheme{position:relative;width:56px}
