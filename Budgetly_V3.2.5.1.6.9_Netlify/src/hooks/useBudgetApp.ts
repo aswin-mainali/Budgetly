@@ -35,6 +35,7 @@ const defaultSeed = (_userId: string): DataState => ({
   categories: [],
   settings: {
     allowTxnInFutureDate: false,
+    showCustomizeInDashboard: true,
   },
   recurring: [],
   goals: [],
@@ -160,7 +161,7 @@ const throwIfResultError = (result: unknown) => {
 
 export function useBudgetApp(userId: string | null) {
   const [sync, setSync] = useState<SyncState>(navigator.onLine ? 'synced' : 'offline')
-  const [data, setData] = useState<DataState>({ currency: 'CAD', categories: [], transactions: [], recurring: [], goals: [], goalContributions: [], settings: { allowTxnInFutureDate: false } })
+  const [data, setData] = useState<DataState>({ currency: 'CAD', categories: [], transactions: [], recurring: [], goals: [], goalContributions: [], settings: { allowTxnInFutureDate: false, showCustomizeInDashboard: true } })
   const [txDraft, setTxDraft] = useState<TransactionDraft>({
     date: todayIso(),
     type: 'expense',
@@ -250,6 +251,7 @@ export function useBudgetApp(userId: string | null) {
           goalContributions: Array.isArray((parsed as Partial<DataState>).goalContributions) ? (parsed as Partial<DataState>).goalContributions as GoalContribution[] : [],
           settings: {
             allowTxnInFutureDate: Boolean(parsed.settings?.allowTxnInFutureDate),
+            showCustomizeInDashboard: parsed.settings?.showCustomizeInDashboard ?? true,
           },
         })
         return
@@ -307,7 +309,7 @@ export function useBudgetApp(userId: string | null) {
           recurring: cloudRecurring,
           goals: cloudGoals,
           goalContributions: cloudGoalContributions,
-          settings: current.settings ?? { allowTxnInFutureDate: false },
+          settings: current.settings ?? { allowTxnInFutureDate: false, showCustomizeInDashboard: true },
         }))
         setCategoryDirty(false)
         setTransactionDirty(false)
@@ -860,6 +862,17 @@ export function useBudgetApp(userId: string | null) {
     notify(value ? 'Future dates enabled' : 'Future dates disabled')
   }
 
+  const setShowCustomizeInDashboard = (value: boolean) => {
+    persistLocal((current) => ({
+      ...current,
+      settings: {
+        ...(current.settings ?? { allowTxnInFutureDate: false, showCustomizeInDashboard: true }),
+        showCustomizeInDashboard: value,
+      },
+    }))
+    notify(value ? 'Dashboard customize button shown' : 'Dashboard customize button hidden')
+  }
+
   const exportJSON = () => {
     download(`budgetly_${activeMonth}.json`, JSON.stringify(data, null, 2), 'application/json')
   }
@@ -912,6 +925,7 @@ export function useBudgetApp(userId: string | null) {
       goalContributions: Array.isArray((parsed as Partial<DataState>).goalContributions) ? ((parsed as Partial<DataState>).goalContributions as GoalContribution[]).map((contribution) => ({ ...contribution, user_id: userId, id: contribution.id || crypto.randomUUID() })) : data.goalContributions,
       settings: {
         allowTxnInFutureDate: Boolean((parsed as Partial<DataState>).settings?.allowTxnInFutureDate ?? data.settings.allowTxnInFutureDate),
+        showCustomizeInDashboard: (parsed as Partial<DataState>).settings?.showCustomizeInDashboard ?? data.settings.showCustomizeInDashboard ?? true,
       },
     }
 
@@ -1426,6 +1440,7 @@ export function useBudgetApp(userId: string | null) {
     importJSON,
     setCurrency: (currency: string) => { persistLocal((current) => ({ ...current, currency })); notify('Currency updated') },
     setAllowTxnInFutureDate,
+    setShowCustomizeInDashboard,
     helpers: { fmtMoney, monthLabel },
   }
 }

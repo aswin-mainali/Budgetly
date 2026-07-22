@@ -71,6 +71,7 @@ export type SyncState = 'offline' | 'pending' | 'syncing' | 'synced' | 'error'
 
 export type LocalSettings = {
   allowTxnInFutureDate: boolean
+  showCustomizeInDashboard: boolean
 }
 
 

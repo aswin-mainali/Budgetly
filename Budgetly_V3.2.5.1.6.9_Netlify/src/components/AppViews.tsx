@@ -1165,7 +1165,7 @@ import {
   RadialBarChart, RadialBar, PolarAngleAxis,
 } from 'recharts'
 import type { LucideIcon } from 'lucide-react'
-import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Wallet, PieChart as PieChartIcon, RotateCcw, Database, User, History } from 'lucide-react'
+import { Plus, Trash2, Pencil, Download, Upload, Search, CalendarDays, ChevronDown, ChevronUp, ShieldCheck, Users, ToggleLeft, ToggleRight, RefreshCw, Lock, Eye, EyeOff, ExternalLink, ArrowUpDown, ArrowDown, ArrowUp, ArrowUpRight, ArrowDownRight, Minus, TrendingUp, TrendingDown, ArrowLeftRight, Star, Plus as PlusIcon, ChevronLeft, ChevronRight, MoreHorizontal, FileText, Calendar, BarChart3, Repeat2, CircleArrowUp, CircleArrowDown, DownloadIcon, ReceiptText, UserCircle2, LogOut, Maximize2, ShoppingCart, Utensils, Car, Home, Zap, HeartPulse, Plane, Gift, Film, Wifi, Smartphone, GraduationCap, Dumbbell, PawPrint, Shirt, Fuel, Bus, Coffee, Baby, Wrench, Briefcase, PiggyBank, CreditCard, Music, Gamepad2, BookOpen, Tag as TagIcon, DollarSign, Building2, Sparkles, X as CloseIcon, Activity, Check, Copy, KeyRound, SlidersHorizontal, UserX, ZoomIn, ZoomOut, Move, Bug, CheckCircle2, Loader2, ImageIcon, Trash, Info, Send, Wallet, PieChart as PieChartIcon, RotateCcw, Database, User, History, Sun, Moon } from 'lucide-react'
 
 function DeleteConfirmModal({ open, itemLabel, onConfirm, onCancel }: { open: boolean; itemLabel: string; onConfirm: () => void; onCancel: () => void }) {
   if (!open) return null
@@ -2514,14 +2514,16 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
               <select className="mobileDashMonth" value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
                 {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
               </select>
-              {dashEditing ? (
-                <>
-                  <button type="button" className="mobileDashCustomize" onClick={resetSlots} aria-label="Reset dashboard"><RotateCcw size={18} /></button>
-                  <button type="button" className="mobileDashCustomize active" onClick={toggleDashEditing} aria-label="Done customizing"><Check size={18} /></button>
-                </>
-              ) : (
-                <button type="button" className="mobileDashCustomize" onClick={toggleDashEditing} aria-label="Customize dashboard"><SlidersHorizontal size={18} /></button>
-              )}
+              {data.settings.showCustomizeInDashboard ? (
+                dashEditing ? (
+                  <>
+                    <button type="button" className="mobileDashCustomize" onClick={resetSlots} aria-label="Reset dashboard"><RotateCcw size={18} /></button>
+                    <button type="button" className="mobileDashCustomize active" onClick={toggleDashEditing} aria-label="Done customizing"><Check size={18} /></button>
+                  </>
+                ) : (
+                  <button type="button" className="mobileDashCustomize" onClick={toggleDashEditing} aria-label="Customize dashboard"><SlidersHorizontal size={18} /></button>
+                )
+              ) : null}
             </div>
           </div>
           <div className="mobileDashSubtitle">Here’s your financial overview</div>
@@ -2599,14 +2601,16 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
             <select className={`select ${isPhone ? 'mobileMonthSelect' : ''}`} style={{ maxWidth: isPhone ? undefined : 220 }} value={activeMonth} onChange={(event) => setActiveMonth(event.target.value)}>
               {dashboardMonths.map((month) => <option key={month} value={month}>{helpers.monthLabel(month)}</option>)}
             </select>
-            {dashEditing ? (
-              <>
-                <button type="button" className="btn ghost dashCustomizeBtn" onClick={resetSlots}><RotateCcw size={15} /> Reset</button>
-                <button type="button" className="btn dashCustomizeBtn dashCustomizeDone" onClick={toggleDashEditing}><Check size={15} /> Done</button>
-              </>
-            ) : (
-              <button type="button" className="btn ghost dashCustomizeBtn" onClick={toggleDashEditing}><SlidersHorizontal size={16} /> Customize</button>
-            )}
+            {data.settings.showCustomizeInDashboard ? (
+              dashEditing ? (
+                <>
+                  <button type="button" className="btn ghost dashCustomizeBtn" onClick={resetSlots}><RotateCcw size={15} /> Reset</button>
+                  <button type="button" className="btn dashCustomizeBtn dashCustomizeDone" onClick={toggleDashEditing}><Check size={15} /> Done</button>
+                </>
+              ) : (
+                <button type="button" className="btn ghost dashCustomizeBtn" onClick={toggleDashEditing}><SlidersHorizontal size={16} /> Customize</button>
+              )
+            ) : null}
             <button ref={bellRef} className="notifBellBtn" onClick={() => setNotifOpen((v) => !v)}><Bell size={20} />{unreadCount > 0 ? <span className="notifBellBadge">{unreadCount > 99 ? '99+' : unreadCount}</span> : null}</button>
             {notifOpen ? renderNotificationPanel() : null}
           </div>
@@ -6384,11 +6388,30 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
 export function SettingsView({ budget, theme, email, userId, onThemeToggle, admin, onSignOut }: SharedProps) {
   const UNIVERSAL_SHORTCUT_STORAGE_KEY = 'budgetly_universal_search_shortcut'
   const UNIVERSAL_SHORTCUT_DEFAULT = 'Ctrl + Shift + Space'
-  const { data, setCurrency, setAllowTxnInFutureDate, exportCSV, exportJSON, importJSON } = budget
+  const { data, setCurrency, setAllowTxnInFutureDate, setShowCustomizeInDashboard, exportCSV, exportJSON, importJSON } = budget
   const [settingsSection, setSettingsSection] = useState<'general' | 'data' | 'account' | 'admin' | 'audit' | 'bugs'>('general')
   const [settingsNavOpen, setSettingsNavOpen] = useState(false)
   const settingsNavRef = useRef<HTMLDivElement | null>(null)
   const isSuperAdmin = !!admin?.isSuperAdmin
+
+  // Hard refresh for mobile / installed PWA: purge cached assets and the service
+  // worker so the next load pulls the latest build, then force a full reload.
+  const handleSystemRefresh = async () => {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((key) => caches.delete(key)))
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        await Promise.all(registrations.map((registration) => registration.unregister()))
+      }
+    } catch (error) {
+      console.error('System refresh cleanup failed:', error)
+    } finally {
+      window.location.reload()
+    }
+  }
 
   const initialProfile = useMemo(() => ({ firstName: '', lastName: '', image: '' }), [])
 
@@ -6837,48 +6860,79 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
               </label>
 
               <div className="settingsFieldCard">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+                <div className="row between settingsToggleRow">
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>AllowTxnInFutureDate</div>
                     <small>Turn on to allow transactions dated after today.</small>
                   </div>
                   <button
-                    className={`btn ${data.settings.allowTxnInFutureDate ? 'primary' : ''}`}
+                    type="button"
+                    className={`settingsSwitch ${data.settings.allowTxnInFutureDate ? 'on' : ''}`}
+                    role="switch"
+                    aria-checked={data.settings.allowTxnInFutureDate}
+                    aria-label="Toggle future-dated transactions"
                     onClick={() => setAllowTxnInFutureDate(!data.settings.allowTxnInFutureDate)}
-                    aria-pressed={data.settings.allowTxnInFutureDate}
-                    title="Toggle future-dated transactions"
                   >
-                    {data.settings.allowTxnInFutureDate ? 'On' : 'Off'}
+                    <span className="settingsSwitchKnob" />
                   </button>
                 </div>
               </div>
 
-              <div className="settingsFieldCard settingsFieldCardWide">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+              <div className="settingsFieldCard">
+                <div className="row between settingsToggleRow">
                   <div>
                     <div className="h1" style={{ fontSize: 16, margin: 0 }}>Appearance</div>
                     <small>Switch between the current dark mode and light mode.</small>
                   </div>
-                  <button className="btn primary" onClick={onThemeToggle} title="Toggle dark/light mode">
-                    {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+                  <button
+                    type="button"
+                    className={`settingsSwitch settingsSwitchTheme ${theme === 'light' ? 'on' : ''}`}
+                    role="switch"
+                    aria-checked={theme === 'light'}
+                    aria-label="Toggle light mode"
+                    onClick={onThemeToggle}
+                  >
+                    <span className="settingsSwitchGhost settingsSwitchGhostMoon"><Moon size={12} /></span>
+                    <span className="settingsSwitchGhost settingsSwitchGhostSun"><Sun size={12} /></span>
+                    <span className="settingsSwitchKnob settingsSwitchKnobIcon">
+                      {theme === 'light' ? <Sun size={13} color="#f59e0b" /> : <Moon size={13} color="#475569" />}
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {/* Temporary dev-only control: the month-end summary normally pops up on
-                  the last day of a month; this lets us preview it on any day. */}
-              <div className="settingsFieldCard settingsFieldCardWide">
-                <div className="row between" style={{ alignItems: 'center', gap: 12 }}>
+              <div className="settingsFieldCard">
+                <div className="row between settingsToggleRow">
                   <div>
-                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>Month-end summary <span className="badge">Dev</span></div>
-                    <small>Preview the end-of-month recap popup without waiting for the last day of the month.</small>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>ShowCustomizeInDashboard</div>
+                    <small>Show the Customize button on the dashboard so you can rearrange widgets.</small>
                   </div>
                   <button
-                    className="btn"
-                    onClick={() => window.dispatchEvent(new Event('budgetly:show-month-summary'))}
-                    title="Preview the month-end summary"
+                    type="button"
+                    className={`settingsSwitch ${data.settings.showCustomizeInDashboard ? 'on' : ''}`}
+                    role="switch"
+                    aria-checked={data.settings.showCustomizeInDashboard}
+                    aria-label="Toggle dashboard customize button"
+                    onClick={() => setShowCustomizeInDashboard(!data.settings.showCustomizeInDashboard)}
                   >
-                    Preview
+                    <span className="settingsSwitchKnob" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="settingsFieldCard">
+                <div className="row between settingsToggleRow">
+                  <div>
+                    <div className="h1" style={{ fontSize: 16, margin: 0 }}>System Refresh</div>
+                    <small>Clear cached files and hard refresh the app. Useful on mobile and the installed PWA when an update isn't showing.</small>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={() => void handleSystemRefresh()}
+                    title="Hard refresh the app"
+                  >
+                    <RotateCcw size={16} /> Refresh
                   </button>
                 </div>
               </div>

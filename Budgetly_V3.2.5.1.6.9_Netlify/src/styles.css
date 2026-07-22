@@ -809,21 +809,9 @@ body.light .kpi.expenses{ background: rgba(239,68,68,.10); }
 body.light .kpi.net{ background: rgba(59,130,246,.10); }
 
 
-/* Subtle background image on app pages (not just login) */
+/* Subtle ambient glow on app pages (background image removed) */
 .appWrap{
   position: relative;
-}
-.appWrap::before{
-  content:"";
-  position: fixed;
-  inset: 0;
-  background-image: url("./assets/login-bg.jpeg");
-  background-size: cover;
-  background-position: center;
-  opacity: 0.05; /* very subtle so charts stay readable */
-  filter: saturate(1.05) contrast(1.05);
-  z-index: 0;
-  pointer-events: none;
 }
 .appWrap::after{
   content:"";
@@ -3256,6 +3244,27 @@ body.light .cropEditorModal h3{color:#1f2937}
 .settingsSwitch:focus-visible{outline:2px solid rgba(59,130,246,.75);outline-offset:2px}
 .settingsSwitchKnob{width:22px;height:22px;border-radius:999px;background:#fff;transition:transform .2s}
 .settingsSwitch.on .settingsSwitchKnob{transform:translateX(20px)}
+
+/* Keep the label text and its toggle/button on one row; the text block shrinks
+   and wraps internally instead of pushing the control onto a new line. The
+   doubled/compound selectors raise specificity above the mobile rules
+   .row.between{align-items:stretch} and .row > .btn{width:100%}. */
+.row.between.settingsToggleRow{flex-wrap:nowrap;align-items:center;gap:12px}
+.settingsToggleRow > div:first-child{min-width:0;flex:1 1 auto}
+/* The control keeps its natural size and stays vertically centered instead of
+   stretching to the height of the wrapped description text. */
+.settingsToggleRow > .settingsSwitch{flex:0 0 auto;align-self:center}
+.settingsToggleRow > .btn{flex:0 0 auto;width:auto;align-self:center}
+
+/* Appearance toggle: sun / moon icons inside the switch */
+.settingsSwitchTheme{position:relative;width:56px}
+.settingsSwitchTheme.on .settingsSwitchKnob{transform:translateX(30px)}
+.settingsSwitchKnobIcon{display:inline-flex;align-items:center;justify-content:center;position:relative;z-index:2}
+.settingsSwitchGhost{position:absolute;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;color:rgba(255,255,255,.7);pointer-events:none;z-index:1;transition:opacity .2s}
+.settingsSwitchGhostMoon{left:8px;opacity:0}
+.settingsSwitchGhostSun{right:8px;opacity:.75}
+.settingsSwitchTheme.on .settingsSwitchGhostMoon{opacity:.75}
+.settingsSwitchTheme.on .settingsSwitchGhostSun{opacity:0}
 .settingsAccountCard{border:1px solid rgba(148,163,184,.14);border-radius:18px;padding:16px;background:rgba(10,18,36,.38)}
 .settingsAccountGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:stretch}
 .settingsAccountGrid > .card{height:100%}
