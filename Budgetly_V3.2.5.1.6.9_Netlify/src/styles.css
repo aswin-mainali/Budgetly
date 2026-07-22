@@ -3250,7 +3250,7 @@ body.light .cropEditorModal h3{color:#1f2937}
 .settingsToggleRow{flex-wrap:nowrap;align-items:center;gap:12px}
 .settingsToggleRow > div:first-child{min-width:0;flex:1 1 auto}
 .settingsToggleRow > .settingsSwitch,
-.settingsToggleRow > .btn{flex:0 0 auto}
+.settingsToggleRow > .btn{flex:0 0 auto;width:auto}
 
 /* Appearance toggle: sun / moon icons inside the switch */
 .settingsSwitchTheme{position:relative;width:56px}
