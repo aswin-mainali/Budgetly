@@ -17,9 +17,11 @@
   animation: dvFade .35s ease;
   box-sizing: border-box;
   min-width: 0;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 .dvPage *, .dvPage *::before, .dvPage *::after { box-sizing: border-box; }
+/* Nothing inside the vault may exceed the viewport width. */
+.dvPage > * { max-width: 100%; }
 @keyframes dvFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 .dvSpin { animation: dvSpin 1s linear infinite; }
@@ -185,7 +187,7 @@ body.light .dvBtnAi { color: #7c3aed; }
   background: var(--panel); border: 1px solid var(--border); border-radius: 12px; color: var(--muted);
 }
 .dvSearch:focus-within { border-color: var(--dv-indigo); }
-.dvSearch input { flex: 1; background: none; border: none; outline: none; color: var(--text); font: 400 14px inherit; }
+.dvSearch input { flex: 1; min-width: 0; background: none; border: none; outline: none; color: var(--text); font: 400 14px inherit; }
 .dvSearch input::placeholder { color: var(--muted); }
 .dvSearchClear { background: none; border: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
 
@@ -331,63 +333,90 @@ body.light .dvInput[type="date"] { color-scheme: light; }
 
 /* ============================================================================
    Responsive
-   The app toggles `body.mobile-app` at ≤768px, so mobile rules are keyed to
-   BOTH that class and a width media query — whichever matches first wins, and
-   the layout can never fall back to the cramped desktop grid on a phone.
+   The app toggles `body.mobile-app` at ≤768px. Mobile rules are keyed to BOTH
+   that class and a width media query, and every top-level block is hard-capped
+   to the viewport width so the layout can never bleed off-screen on a phone.
    ============================================================================ */
 @media (max-width: 1000px) {
   .dvStatRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* ── Tablet / large phone ──────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .dvHeroTop { flex-direction: column; align-items: stretch; }
-  .dvHeroActions { flex-direction: row; width: 100%; }
-  .dvHeroActions .dvBtn { flex: 1; }
-  .dvFieldRow { grid-template-columns: 1fr; }
-}
-
-/* ── Mobile app chrome (class-based, most reliable) ────────────────────────── */
-body.mobile-app .dvPage { max-width: 100%; padding: 2px 0 24px; }
-body.mobile-app .dvHero { padding: 18px 16px; border-radius: 18px; }
-body.mobile-app .dvHeroLead h1 { font-size: 21px; }
-body.mobile-app .dvHeroLead p { font-size: 13.5px; }
-body.mobile-app .dvHeroTop { flex-direction: column; align-items: stretch; }
+/* ── Mobile app chrome (class-based — applies whenever the app is in mobile
+   mode at ≤768px, independent of exact CSS pixel width) ─────────────────────── */
+/* The app turns the mobile main area into a CSS grid with an implicit `auto`
+   column, which expands to the widest content's max-content size (long titles)
+   and would push the whole page off-screen. Cap the flow container to a
+   definite, viewport-based width so the vault can never exceed the screen. */
+body.mobile-app .toolsShellFlow,
+body.mobile-app .toolsPageBodyFlow { max-width: calc(100vw - 24px); min-width: 0; overflow-x: hidden; }
+body.mobile-app .dvPage { max-width: 100%; padding: 2px 0 20px; }
+body.mobile-app .dvHeroLead p { max-width: 100%; }
+body.mobile-app .dvHero { padding: 18px 15px; border-radius: 18px; }
+body.mobile-app .dvHeroGlow { display: none; }
+body.mobile-app .dvHeroLead h1 { font-size: 20px; }
+body.mobile-app .dvHeroLead p { font-size: 13px; }
+body.mobile-app .dvHeroTop { flex-direction: column; align-items: stretch; gap: 14px; }
+/* In the column hero the 260px flex-basis would become a forced height — reset
+   so the lead block is sized by its content, not stretched with a big gap. */
+body.mobile-app .dvHeroLead { flex: 0 0 auto; }
 body.mobile-app .dvHeroActions { flex-direction: row; width: 100%; }
-body.mobile-app .dvHeroActions .dvBtn { flex: 1; }
-body.mobile-app .dvStatRow { grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
-body.mobile-app .dvStat { padding: 12px; gap: 10px; }
-body.mobile-app .dvStat strong { font-size: 19px; }
-body.mobile-app .dvStatIcon { width: 36px; height: 36px; }
+body.mobile-app .dvHeroActions .dvBtn { flex: 1; padding: 11px 12px; }
+body.mobile-app .dvStatRow { grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+body.mobile-app .dvStat { padding: 11px 12px; gap: 10px; }
+body.mobile-app .dvStat strong { font-size: 18px; }
+body.mobile-app .dvStat small { font-size: 11px; }
+body.mobile-app .dvStatIcon { width: 34px; height: 34px; }
+body.mobile-app .dvNextExpiry { font-size: 12px; }
 body.mobile-app .dvGrid { grid-template-columns: 1fr; gap: 12px; }
 body.mobile-app .dvControls { gap: 10px; }
-body.mobile-app .dvCardMenu { opacity: 1; } /* no hover on touch — always show actions */
+body.mobile-app .dvCardMenu { opacity: 1; } /* no hover on touch — always show */
 body.mobile-app .dvFieldRow { grid-template-columns: 1fr; }
-
-/* Bottom-sheet modals on phones */
 body.mobile-app .dvModalBackdrop { padding: 0; align-items: flex-end; }
-body.mobile-app .dvModal { max-width: 100%; max-height: 92vh; max-height: 92dvh; border-radius: 20px 20px 0 0; }
-body.mobile-app .dvConfirm { max-width: 100%; border-radius: 20px 20px 0 0; }
+body.mobile-app .dvModal { max-width: 100%; max-height: 90dvh; border-radius: 20px 20px 0 0; }
+body.mobile-app .dvConfirm { max-width: 100%; align-self: flex-end; border-radius: 20px 20px 0 0; }
 
-/* PIN gate fills the screen nicely instead of a narrow desktop card */
-body.mobile-app .dvGateShell { max-width: 100%; margin-top: 4px; border-radius: 20px; padding: 26px 20px 24px; }
-body.mobile-app .dvKeypad { max-width: 320px; gap: 14px; }
-body.mobile-app .dvPinSubmit { max-width: 320px; }
+/* ── PIN gate: fit the whole thing in one screen, no scrolling ──────────────── */
+body.mobile-app .dvGatePage { min-height: 0; align-items: stretch; }
+body.mobile-app .dvGateShell { max-width: 100%; margin-top: 0; border-radius: 20px; padding: 20px 18px 18px; }
+body.mobile-app .dvGateGlow { display: none; }
+body.mobile-app .dvGateBrand { margin-bottom: 14px; }
+body.mobile-app .dvGateBadge { font-size: 10.5px; padding: 4px 10px; }
+body.mobile-app .dvGateBrand h1 { font-size: 20px; margin: 9px 0 5px; }
+body.mobile-app .dvGateBrand p { font-size: 12.5px; line-height: 1.45; }
+body.mobile-app .dvPinStageHint { margin-bottom: 6px; }
+body.mobile-app .dvPinDots { gap: 10px; margin: 2px 0; }
+body.mobile-app .dvPinDot { width: 11px; height: 11px; }
+body.mobile-app .dvPinMsg { margin: 6px 0 0; min-height: 15px; }
+/* Short, wide keys so all four rows + the submit button fit above the nav. */
+body.mobile-app .dvKeypad { max-width: 300px; gap: 8px; margin: 6px 0 2px; }
+body.mobile-app .dvKey { aspect-ratio: auto; height: clamp(40px, 6.6vh, 56px); border-radius: 13px; font-size: 20px; }
+body.mobile-app .dvPinSubmit { max-width: 300px; margin-top: 9px; padding: 12px; }
+body.mobile-app .dvGateLink { margin-top: 9px; }
 body.mobile-app .dvForgotActions { flex-wrap: wrap; }
 
-/* ── Width fallbacks (in case the class isn't present, e.g. embedded) ───────── */
+/* ── Width fallbacks (embedded / non-app contexts) ─────────────────────────── */
 @media (max-width: 560px) {
-  .dvPage { padding: 2px 0 24px; }
-  .dvHero { padding: 18px 16px; border-radius: 18px; }
-  .dvGrid { grid-template-columns: 1fr; }
+  .dvPage { max-width: 100%; padding: 2px 0 20px; }
+  .dvHero { padding: 18px 15px; border-radius: 18px; }
+  .dvHeroGlow { display: none; }
+  .dvHeroTop { flex-direction: column; align-items: stretch; gap: 14px; }
+  .dvHeroLead { flex: 0 0 auto; }
+  .dvHeroActions { flex-direction: row; width: 100%; }
+  .dvHeroActions .dvBtn { flex: 1; }
   .dvStatRow { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dvGrid { grid-template-columns: 1fr; }
   .dvCardMenu { opacity: 1; }
+  .dvFieldRow { grid-template-columns: 1fr; }
   .dvModalBackdrop { padding: 0; align-items: flex-end; }
-  .dvModal { max-width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; }
-  .dvConfirm { max-width: 100%; border-radius: 20px 20px 0 0; }
-  .dvGateShell { max-width: 100%; border-radius: 20px; }
+  .dvModal { max-width: 100%; max-height: 90dvh; border-radius: 20px 20px 0 0; }
+  .dvConfirm { max-width: 100%; align-self: flex-end; border-radius: 20px 20px 0 0; }
+  .dvGatePage { min-height: 0; align-items: stretch; }
+  .dvGateShell { max-width: 100%; margin-top: 0; border-radius: 20px; padding: 20px 18px 18px; }
+  .dvGateGlow { display: none; }
+  .dvKeypad { max-width: 300px; gap: 8px; }
+  .dvKey { aspect-ratio: auto; height: clamp(42px, 7.4vh, 58px); font-size: 20px; }
+  .dvPinSubmit { max-width: 300px; }
 }
 @media (max-width: 360px) {
   .dvStatRow { grid-template-columns: 1fr; }
-  .dvKeypad { max-width: 100%; }
 }
