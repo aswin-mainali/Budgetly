@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  AlertTriangle, ArrowRight, CalendarClock, CheckCircle2, ChevronLeft, Clock,
-  Delete, Download, FileText, FileCheck2, KeyRound, Loader2, Lock,
-  Mail, Pencil, Plus, RefreshCw, Search, Shield, ShieldCheck, ShieldAlert,
-  Sparkles, Trash2, Upload, X,
+  AlertTriangle, ArrowRight, Building2, CalendarClock, CalendarDays, CheckCircle2,
+  ChevronLeft, Clock, Delete, ExternalLink, Eye, FileText, FileCheck2,
+  Hash, KeyRound, Loader2, Lock, Mail, Pencil, Plus, RefreshCw, Search, Shield,
+  ShieldCheck, ShieldAlert, Sparkles, StickyNote, Trash2, Upload, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import '../styles/documentVault.css'
@@ -159,6 +159,25 @@ const expiryLabel = (iso: string | null): string => {
   if (d === 1) return 'Expires tomorrow'
   if (d <= EXPIRY_SOON_DAYS) return `Expires in ${d} days`
   return `Expires ${formatDate(iso)}`
+}
+
+// Short status word + relative time, used by the table rows and details modal.
+const STATUS_META: Record<ExpiryStatus, { label: string; icon: React.ComponentType<{ size?: number | string }> }> = {
+  expired: { label: 'Expired', icon: AlertTriangle },
+  soon: { label: 'Expiring soon', icon: CalendarClock },
+  active: { label: 'Active', icon: CheckCircle2 },
+  none: { label: 'No expiry', icon: Clock },
+}
+const relativeExpiry = (iso: string | null): string => {
+  const d = daysUntil(iso)
+  if (d == null) return '—'
+  if (d < 0) return `${Math.abs(d)} day${Math.abs(d) === 1 ? '' : 's'} ago`
+  if (d === 0) return 'today'
+  if (d === 1) return 'tomorrow'
+  if (d < 45) return `in ${d} days`
+  if (d < 365) return `in ${Math.round(d / 30)} months`
+  const years = d / 365
+  return `in ${years < 1.5 ? '1 year' : `${Math.round(years)} years`}`
 }
 
 const fileExt = (name: string) => {
@@ -637,6 +656,16 @@ function VaultBoard({
   const [toDelete, setToDelete] = useState<VaultDoc | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
   const [opening, setOpening] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<VaultDoc | null>(null)
+  // Desktop shows a table/list; mobile keeps the card grid (a wide table won't fit).
+  const [isDesktop, setIsDesktop] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(min-width: 769px)').matches : true))
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 769px)')
+    const on = () => setIsDesktop(mq.matches)
+    on()
+    if (mq.addEventListener) { mq.addEventListener('change', on); return () => mq.removeEventListener('change', on) }
+    mq.addListener(on); return () => mq.removeListener(on)
+  }, [])
 
   const notify = (msg: string) => {
     setFlash(msg)
@@ -766,6 +795,7 @@ function VaultBoard({
       await supabase.storage.from(BUCKET).remove([doc.storagePath]).catch(() => {})
       setDocs((cur) => cur.filter((d) => d.id !== doc.id))
       setToDelete(null)
+      setViewing((cur) => (cur && cur.id === doc.id ? null : cur))
       notify('Document removed')
     } catch {
       notify('Could not remove the document.')
@@ -884,20 +914,37 @@ function VaultBoard({
           <p>No documents match your search or filter.</p>
           <button className="dvBtn dvBtnGhost" onClick={() => { setFilter('all'); setQuery('') }}>Clear filters</button>
         </div>
+      ) : isDesktop ? (
+        <DocTable
+          docs={filtered}
+          onView={(doc) => setViewing(doc)}
+          onEdit={(doc) => { setEditing(doc); setAddOpen(true) }}
+          onDelete={(doc) => setToDelete(doc)}
+        />
       ) : (
         <div className="dvGrid">
           {filtered.map((doc) => (
             <DocCard
               key={doc.id}
               doc={doc}
-              opening={opening === doc.id}
-              onOpen={() => void openDoc(doc)}
+              onView={() => setViewing(doc)}
               onEdit={() => { setEditing(doc); setAddOpen(true) }}
               onDelete={() => setToDelete(doc)}
             />
           ))}
         </div>
       )}
+
+      {viewing ? (
+        <DocDetailsModal
+          doc={viewing}
+          opening={opening === viewing.id}
+          onOpenFile={() => void openDoc(viewing)}
+          onEdit={() => { setEditing(viewing); setViewing(null); setAddOpen(true) }}
+          onDelete={() => { const d = viewing; setViewing(null); setToDelete(d) }}
+          onClose={() => setViewing(null)}
+        />
+      ) : null}
 
       {addOpen ? (
         <AddDocumentModal
@@ -924,13 +971,12 @@ function VaultBoard({
   )
 }
 
-/* ── Document card ──────────────────────────────────────────────────────────── */
+/* ── Document card (mobile) ─────────────────────────────────────────────────── */
 function DocCard({
-  doc, opening, onOpen, onEdit, onDelete,
+  doc, onView, onEdit, onDelete,
 }: {
   doc: VaultDoc
-  opening: boolean
-  onOpen: () => void
+  onView: () => void
   onEdit: () => void
   onDelete: () => void
 }) {
@@ -967,13 +1013,158 @@ function DocCard({
           {status === 'expired' ? <AlertTriangle size={12} /> : status === 'soon' ? <CalendarClock size={12} /> : status === 'active' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
           {expiryLabel(doc.expirationDate)}
         </span>
-        <button className="dvCardOpen" onClick={onOpen} disabled={opening}>
-          {opening ? <Loader2 size={14} className="dvSpin" /> : <Download size={14} />} Open
+        <button className="dvCardOpen" onClick={onView}>
+          <Eye size={14} /> View
         </button>
       </div>
 
       {doc.aiExtracted ? <span className="dvAiTag" title={doc.aiConfidence != null ? `AI confidence ${(doc.aiConfidence * 100).toFixed(0)}%` : 'Auto-filled by AI'}><Sparkles size={11} /> AI</span> : null}
     </article>
+  )
+}
+
+/* ── Document table (desktop list view) ─────────────────────────────────────── */
+function DocTable({
+  docs, onView, onEdit, onDelete,
+}: {
+  docs: VaultDoc[]
+  onView: (doc: VaultDoc) => void
+  onEdit: (doc: VaultDoc) => void
+  onDelete: (doc: VaultDoc) => void
+}) {
+  return (
+    <div className="dvTableCard">
+      <div className="dvTableScroll">
+        <div className="dvTable" role="table" aria-label="Documents">
+          <div className="dvTableHead" role="row">
+            <span role="columnheader">Type</span>
+            <span role="columnheader">Document</span>
+            <span role="columnheader">Agreement</span>
+            <span role="columnheader">Expiration</span>
+            <span role="columnheader">Status</span>
+            <span role="columnheader" className="dvColRight">Actions</span>
+          </div>
+          {docs.map((doc) => {
+            const meta = DOC_TYPE_META[doc.docType]
+            const status = expiryStatus(doc.expirationDate)
+            const sMeta = STATUS_META[status]
+            const StatusIcon = sMeta.icon
+            return (
+              <div key={doc.id} className="dvRow" role="row" onClick={() => onView(doc)} tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter') onView(doc) }}>
+                <span role="cell">
+                  <span className="dvRowType" style={{ background: `${meta.accent}1e`, color: meta.accent }}><FileText size={13} /> {meta.label}</span>
+                </span>
+                <div className="dvRowDoc" role="cell">
+                  <div className="dvRowTitle" title={doc.title}>
+                    <span className="dvRowTitleText">{doc.title}</span>
+                    {doc.aiExtracted ? <span className="dvAiPill" title={doc.aiConfidence != null ? `AI confidence ${(doc.aiConfidence * 100).toFixed(0)}%` : 'Auto-filled by AI'}><Sparkles size={10} /> AI</span> : null}
+                  </div>
+                  {doc.issuer ? <div className="dvRowIssuer" title={doc.issuer}>{doc.issuer}</div> : null}
+                </div>
+                <div className="dvRowDate" role="cell">{formatDate(doc.agreementDate)}</div>
+                <div className="dvRowDate" role="cell">
+                  {formatDate(doc.expirationDate)}
+                  {doc.expirationDate ? <small>{relativeExpiry(doc.expirationDate)}</small> : null}
+                </div>
+                <span role="cell"><span className={`dvExpiryBadge ${status}`}><StatusIcon size={12} /> {sMeta.label}</span></span>
+                <div className="dvRowActions" role="cell" onClick={(e) => e.stopPropagation()}>
+                  <button className="dvViewBtn" onClick={() => onView(doc)}><Eye size={15} /> View</button>
+                  <button className="dvIconBtn" aria-label="Edit" title="Edit" onClick={() => onEdit(doc)}><Pencil size={15} /></button>
+                  <button className="dvIconBtn danger" aria-label="Remove" title="Remove" onClick={() => onDelete(doc)}><Trash2 size={15} /></button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Document details modal (opened by "View") ──────────────────────────────── */
+function DocDetailsModal({
+  doc, opening, onOpenFile, onEdit, onDelete, onClose,
+}: {
+  doc: VaultDoc
+  opening: boolean
+  onOpenFile: () => void
+  onEdit: () => void
+  onDelete: () => void
+  onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    document.body.classList.add('txp-drawer-lock')
+    return () => { window.removeEventListener('keydown', onKey); document.body.classList.remove('txp-drawer-lock') }
+  }, [onClose])
+
+  const meta = DOC_TYPE_META[doc.docType]
+  const status = expiryStatus(doc.expirationDate)
+  const sMeta = STATUS_META[status]
+  const StatusIcon = sMeta.icon
+
+  const rows: Array<{ icon: React.ComponentType<{ size?: number | string }>; label: string; value: React.ReactNode }> = [
+    { icon: Building2, label: 'Issuer', value: doc.issuer || '—' },
+    { icon: Hash, label: 'Reference #', value: doc.referenceNumber || '—' },
+    { icon: CalendarDays, label: 'Agreement date', value: formatDate(doc.agreementDate) },
+    { icon: CalendarClock, label: 'Expiration date', value: doc.expirationDate ? `${formatDate(doc.expirationDate)} · ${relativeExpiry(doc.expirationDate)}` : '—' },
+    { icon: FileText, label: 'File', value: `${doc.fileName}${doc.fileSize ? ` · ${formatBytes(doc.fileSize)}` : ''}` },
+  ]
+
+  return createPortal(
+    <div className="dvModalBackdrop" onClick={onClose}>
+      <div className="dvModal dvDetails" role="dialog" aria-modal="true" aria-label={doc.title} onClick={(e) => e.stopPropagation()}>
+        <div className="dvModalHead">
+          <div className="dvDetailsHeadMain">
+            <span className="dvModalTag" style={{ color: meta.accent }}><FileText size={13} /> {meta.label}</span>
+            <h3>{doc.title}</h3>
+            <span className={`dvExpiryBadge ${status} dvDetailsStatus`}><StatusIcon size={12} /> {sMeta.label}{doc.expirationDate ? ` · ${expiryLabel(doc.expirationDate)}` : ''}</span>
+          </div>
+          <button className="dvModalClose" aria-label="Close" onClick={onClose}><X size={18} /></button>
+        </div>
+
+        <div className="dvModalBody">
+          <div className="dvDetailsGrid">
+            {rows.map((r) => {
+              const Icon = r.icon
+              return (
+                <div className="dvDetailsField" key={r.label}>
+                  <span className="dvDetailsLabel"><Icon size={13} /> {r.label}</span>
+                  <span className="dvDetailsValue">{r.value}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {doc.aiSummary ? (
+            <div className="dvDetailsSummary">
+              <span className="dvDetailsSummaryTag"><Sparkles size={12} /> AI summary</span>
+              <p>{doc.aiSummary}</p>
+            </div>
+          ) : null}
+
+          {doc.notes ? (
+            <div className="dvDetailsNotes">
+              <span className="dvDetailsLabel"><StickyNote size={13} /> Notes</span>
+              <p>{doc.notes}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="dvModalFooter dvDetailsFooter">
+          <button className="dvBtn dvBtnGhost" onClick={onDelete}><Trash2 size={15} /> Delete</button>
+          <div className="dvDetailsFooterRight">
+            <button className="dvBtn dvBtnGhost" onClick={onEdit}><Pencil size={15} /> Edit</button>
+            <button className="dvBtn dvBtnPrimary" onClick={onOpenFile} disabled={opening}>
+              {opening ? <><Loader2 size={15} className="dvSpin" /> Opening…</> : <><ExternalLink size={15} /> Open file</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
   )
 }
 

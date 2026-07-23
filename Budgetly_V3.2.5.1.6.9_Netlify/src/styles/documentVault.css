@@ -248,6 +248,61 @@ body.light .dvBtnAi { color: #7c3aed; }
 .dvAiTag { position: absolute; right: 14px; bottom: 62px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; background: rgba(139, 92, 246, .16); color: #a78bfa; font: 700 9.5px inherit; letter-spacing: .3px; }
 body.light .dvAiTag { color: #7c3aed; }
 
+/* ── Table / list view (desktop) ───────────────────────────────────────────── */
+.dvTableCard { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); overflow: hidden; }
+.dvTableScroll { overflow-x: auto; }
+.dvTable { min-width: 820px; }
+.dvTableHead, .dvRow {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) 128px 152px 158px 150px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+}
+.dvTableHead {
+  height: 44px; background: var(--panel-soft);
+  font: 700 11px inherit; letter-spacing: .5px; text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.dvColRight { text-align: right; }
+.dvRow { min-height: 66px; padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .14s ease; outline: none; }
+.dvRow:last-child { border-bottom: none; }
+.dvRow:hover { background: var(--panel-soft); }
+.dvRow:focus-visible { background: var(--panel-soft); box-shadow: inset 3px 0 0 var(--dv-indigo); }
+.dvRowType { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font: 700 11.5px inherit; width: max-content; max-width: 100%; }
+.dvRowDoc { min-width: 0; }
+.dvRowTitle { display: flex; align-items: center; gap: 7px; min-width: 0; font-weight: 700; font-size: 14px; color: var(--text); }
+.dvRowTitleText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dvRowIssuer { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.dvAiPill { flex: none; display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; background: rgba(139, 92, 246, .16); color: #a78bfa; font: 700 9px inherit; letter-spacing: .3px; }
+body.light .dvAiPill { color: #7c3aed; }
+.dvRowDate { font-size: 13px; color: var(--text); font-weight: 600; min-width: 0; }
+.dvRowDate small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 1px; }
+.dvRowActions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.dvViewBtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); font: 600 12.5px inherit; cursor: pointer; transition: border-color .14s ease, color .14s ease; }
+.dvViewBtn:hover { border-color: var(--dv-indigo); color: var(--dv-indigo-2); }
+.dvIconBtn { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--muted); display: grid; place-items: center; cursor: pointer; transition: border-color .14s ease, color .14s ease; }
+.dvIconBtn:hover { color: var(--text); border-color: var(--dv-indigo); }
+.dvIconBtn.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Details modal (opened by "View") ──────────────────────────────────────── */
+.dvDetails { max-width: 580px; }
+.dvDetailsHeadMain { min-width: 0; }
+.dvDetailsHeadMain h3 { margin: 8px 0 0; font-size: 20px; font-weight: 800; line-height: 1.25; }
+.dvDetailsStatus { margin-top: 12px; }
+.dvDetailsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+.dvDetailsField { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dvDetailsLabel { display: inline-flex; align-items: center; gap: 6px; font: 700 11px inherit; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+.dvDetailsValue { font-size: 14px; color: var(--text); font-weight: 600; word-break: break-word; }
+.dvDetailsSummary { margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(139, 92, 246, .09); border: 1px solid rgba(139, 92, 246, .22); }
+.dvDetailsSummaryTag { display: inline-flex; align-items: center; gap: 5px; font: 700 11px inherit; letter-spacing: .3px; text-transform: uppercase; color: #a78bfa; }
+body.light .dvDetailsSummaryTag { color: #7c3aed; }
+.dvDetailsSummary p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--text); }
+.dvDetailsNotes { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.dvDetailsNotes p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text); white-space: pre-wrap; }
+.dvDetailsFooter { justify-content: space-between; }
+.dvDetailsFooterRight { display: flex; gap: 10px; }
+
 /* ── Empty / error states ──────────────────────────────────────────────────── */
 .dvEmpty { text-align: center; padding: 56px 24px; max-width: 520px; margin: 0 auto; }
 .dvEmpty.small { padding: 44px 24px; }
@@ -374,6 +429,11 @@ body.mobile-app .dvFieldRow { grid-template-columns: 1fr; }
 body.mobile-app .dvModalBackdrop { padding: 0; align-items: flex-end; }
 body.mobile-app .dvModal { max-width: 100%; max-height: 90dvh; border-radius: 20px 20px 0 0; }
 body.mobile-app .dvConfirm { max-width: 100%; align-self: flex-end; border-radius: 20px 20px 0 0; }
+body.mobile-app .dvDetailsGrid { grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+body.mobile-app .dvDetailsFooter { flex-direction: column; gap: 10px; }
+body.mobile-app .dvDetailsFooter > .dvBtn { width: 100%; order: 2; }
+body.mobile-app .dvDetailsFooterRight { width: 100%; order: 1; }
+body.mobile-app .dvDetailsFooterRight .dvBtn { flex: 1; }
 
 /* ── PIN gate: fit the whole thing in one screen, no scrolling ──────────────── */
 body.mobile-app .dvGatePage { min-height: 0; align-items: stretch; }
