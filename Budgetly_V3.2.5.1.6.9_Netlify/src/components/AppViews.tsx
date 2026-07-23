@@ -2331,6 +2331,7 @@ export function DashboardView({ budget, theme, onOpenTransactionsByType, onNavig
     if (key.includes('goal')) return { icon: Target, className: 'notifIcon goals' }
     if (key.includes('budget') && (key.includes('100') || key.includes('exceeded') || key.includes('forecast') || key.includes('warning') || key.includes('threshold'))) return { icon: AlertTriangle, className: 'notifIcon budget' }
     if (key.includes('net_worth')) return { icon: LineChartIcon, className: 'notifIcon networth' }
+    if (key.includes('document')) return { icon: FileText, className: 'notifIcon report' }
     if (key.includes('investment')) return { icon: TrendingUp, className: 'notifIcon investments' }
     if (key.includes('monthly_report') || key.includes('report')) return { icon: FileText, className: 'notifIcon report' }
     if (key.includes('system')) return { icon: Settings, className: 'notifIcon system' }
@@ -6434,7 +6435,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
   const [shortcutListening, setShortcutListening] = useState(false)
   const [shortcutError, setShortcutError] = useState('')
   const profileImageInputRef = useRef<HTMLInputElement | null>(null)
-  const [notificationPrefs, setNotificationPrefs] = useState({ bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true })
+  const [notificationPrefs, setNotificationPrefs] = useState({ bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, documents: true, monthly_reports: true, system_updates: true })
   const [notificationsExpanded, setNotificationsExpanded] = useState(false)
   const [notifDelivery, setNotifDelivery] = useState({ channel_push: false, channel_email: false, quiet_hours_enabled: false, quiet_hours_start: 22, quiet_hours_end: 7, email_digest_frequency: 'weekly' as 'off' | 'daily' | 'weekly', min_priority: 'low' as NotificationPriority })
   const [pushBusy, setPushBusy] = useState(false)
@@ -6473,6 +6474,7 @@ export function SettingsView({ budget, theme, email, userId, onThemeToggle, admi
     { key: 'goals', label: 'Goals', description: 'Goal progress and milestone updates.' },
     { key: 'investments', label: 'Investments', description: 'Portfolio changes, refresh reminders, and investment insights.' },
     { key: 'net_worth', label: 'Net Worth', description: 'Net worth changes and milestone updates.' },
+    { key: 'documents', label: 'Document Vault', description: 'Reminders before your stored documents expire.' },
     { key: 'monthly_reports', label: 'Monthly Reports', description: 'Monthly report reminders and closeout updates.' },
     { key: 'system_updates', label: 'System Updates', description: 'Sync, settings, and product update messages.' },
   ]

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut, Scale } from 'lucide-react'
+import { BarChart3, ListChecks, Tags, Settings, Menu, Cloud, Repeat, Headset, Wrench, Sparkles, ChevronDown, ChevronRight, Target, ArrowLeftRight, Moon, Sun, LogOut, Scale, ShieldCheck } from 'lucide-react'
 import { FeatureAccess, SyncState } from '../types'
 import { readCachedUserProfile } from '../lib/userProfile'
 
@@ -21,8 +21,8 @@ export default function Sidebar(props: {
   setCollapsed: (v: boolean) => void
   view: ViewKey
   setView: (v: ViewKey) => void
-  toolsSection: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth'
-  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth') => void
+  toolsSection: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth' | 'documents'
+  setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth' | 'documents') => void
   sync: SyncState
   email?: string | null
   features: FeatureAccess
@@ -229,6 +229,7 @@ export default function Sidebar(props: {
                       <button className={toolsSection === 'investments' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('investments'); setToolsExpanded(false) }}><BarChart3 size={16} /> <span className='navLabel'>Investments</span></button>
                     ) : null}
                     <button className={toolsSection === 'networth' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('networth'); setToolsExpanded(false) }}><Scale size={16} /> <span className='navLabel'>Net Worth Tracker</span></button>
+                    <button className={toolsSection === 'documents' ? 'active' : ''} onClick={() => { setView('tools'); setToolsSection('documents'); setToolsExpanded(false) }}><ShieldCheck size={16} /> <span className='navLabel'>Document Vault</span></button>
                   </div>,
                   document.body
                 ) : null}
