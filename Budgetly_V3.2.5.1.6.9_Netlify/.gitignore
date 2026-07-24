@@ -1,2 +1,14 @@
 node_modules/
 dist/
+
+# Local env files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Netlify
+.netlify/
+
+# Editor / OS
+*.tsbuildinfo
+.DS_Store
