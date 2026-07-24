@@ -138,7 +138,7 @@ export async function verifyChecksum(domains: Domains, manifest: Manifest): Prom
 // Edge-function helpers
 // ---------------------------------------------------------------------------
 async function invoke<T>(fn: string, body: unknown): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(fn, { body })
+  const { data, error } = await supabase.functions.invoke(fn, { body: body as Record<string, unknown> })
   if (error) {
     // Surface the server's JSON message when present.
     let message = error.message
@@ -218,7 +218,9 @@ export async function readBackupZip(file: File | Blob, password?: string): Promi
   }
 
   const readText = async (name: string): Promise<string | null> => {
-    const entry = entries.find((e) => e.filename === name)
+    const entry = entries.find((e) => e.filename === name) as
+      | { getData?: (writer: TextWriter) => Promise<string> }
+      | undefined
     if (!entry || !entry.getData) return null
     return entry.getData(new TextWriter())
   }

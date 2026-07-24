@@ -67,5 +67,9 @@ export function usePwaInstall() {
     return false
   }, [promptEvent])
 
-  return { canInstall, showInstallButton, install, installed, isIosSafari }
+  const dismiss = useCallback(() => {
+    setPromptEvent(null)
+  }, [])
+
+  return { canInstall, showInstallButton, install, dismiss, installed, isIosSafari }
 }

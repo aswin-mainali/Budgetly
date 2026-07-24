@@ -154,8 +154,12 @@ export default function App() {
       return () => mediaQuery.removeEventListener('change', onChange)
     }
 
-    mediaQuery.addListener(onChange)
-    return () => mediaQuery.removeListener(onChange)
+    const legacy = mediaQuery as MediaQueryList & {
+      addListener?: (listener: () => void) => void
+      removeListener?: (listener: () => void) => void
+    }
+    legacy.addListener?.(onChange)
+    return () => legacy.removeListener?.(onChange)
   }, [])
 
   useEffect(() => {

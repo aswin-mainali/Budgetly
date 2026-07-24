@@ -19,7 +19,7 @@ const NAV_ITEMS: Array<{ key: Exclude<ViewKey, 'super_admin'>; label: string; ic
 export default function Sidebar(props: {
   collapsed: boolean
   setCollapsed: (v: boolean) => void
-  view: ViewKey
+  view: ViewKey | 'utilities_hub'
   setView: (v: ViewKey) => void
   toolsSection: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth' | 'documents'
   setToolsSection: (v: 'goals' | 'reports' | 'converter' | 'debt' | 'investments' | 'networth' | 'documents') => void

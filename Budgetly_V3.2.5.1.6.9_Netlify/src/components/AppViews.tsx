@@ -353,7 +353,7 @@ const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
     if (current) ctx.fillText(current, x, yy)
   }
 
-  const divider = (x1: number, y1: number, x2: number, y2: number, color = colors.border, width = 1) => {
+  const divider = (x1: number, y1: number, x2: number, y2: number, color: string = colors.border, width = 1) => {
     ctx.beginPath()
     ctx.moveTo(x1, y1)
     ctx.lineTo(x2, y2)
@@ -362,7 +362,7 @@ const createLegacyReportCanvas = async (options: ReportCanvasOptions) => {
     ctx.stroke()
   }
 
-  const panel = (x: number, y: number, w: number, h: number, r = 18, fill = colors.panel, stroke = colors.border) => {
+  const panel = (x: number, y: number, w: number, h: number, r = 18, fill: string = colors.panel, stroke: string = colors.border) => {
     fillRoundedRect(ctx, x, y, w, h, r, fill)
     strokeRoundedRect(ctx, x, y, w, h, r, stroke, 1)
   }
@@ -787,7 +787,7 @@ const createMonthlyFinancialReportPdf = async (options: ReportCanvasOptions & { 
     ctx.font = `${weight} ${size}px Inter, "Helvetica Neue", Arial, sans-serif`
     return ctx.measureText(value).width
   }
-  const line = (x1: number, y1: number, x2: number, y2: number, color = c.line, w = 1) => {
+  const line = (x1: number, y1: number, x2: number, y2: number, color: string = c.line, w = 1) => {
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke()
   }
   const card = (x: number, y: number, w: number, h: number, o?: { r?: number; fill?: string; stroke?: string; shadow?: boolean }) => {
@@ -1677,8 +1677,12 @@ function useMediaQuery(query: string) {
       mediaQuery.addEventListener('change', onChange)
       return () => mediaQuery.removeEventListener('change', onChange)
     }
-    mediaQuery.addListener(onChange)
-    return () => mediaQuery.removeListener(onChange)
+    const legacy = mediaQuery as MediaQueryList & {
+      addListener?: (listener: () => void) => void
+      removeListener?: (listener: () => void) => void
+    }
+    legacy.addListener?.(onChange)
+    return () => legacy.removeListener?.(onChange)
   }, [query])
 
   return matches
@@ -4873,14 +4877,14 @@ export function RecurringView({ budget }: Pick<SharedProps, 'budget'>) {
 
 
 export function ReportsView({ budget, email }: Pick<SharedProps, 'budget' | 'email'>) {
-  const { data, months, activeMonth, categories, recurring, upcomingRecurringThisMonth, helpers } = budget
+  const { data, months, activeMonth, categories, sortedRecurring, upcomingRecurringThisMonth, helpers } = budget
   const isPhone = useIsPhone()
   const isCompactLaptop = useIsCompactLaptop()
   const useCompactDashboard = !isPhone && isCompactLaptop
 
   const safeMonths = Array.isArray(months) ? months.filter((month): month is string => typeof month === 'string' && month.length >= 7) : []
   const safeCategories = Array.isArray(categories) ? categories : []
-  const safeRecurring = Array.isArray(recurring) ? recurring : []
+  const safeRecurring = Array.isArray(sortedRecurring) ? sortedRecurring : []
   const safeTransactions = Array.isArray(data?.transactions) ? data.transactions : []
 
   const currentMonth = new Date().toISOString().slice(0, 7)
@@ -6074,7 +6078,7 @@ export function AdviceView({ budget, userId, onNavigate }: Pick<SharedProps, 'bu
       const items = upcomingRecurringThisMonth.slice(0, 4)
       if (!items.length) return { text: 'You have no recurring items coming up in the next 7 days.', chips: ['Review recurring'] }
       const total = upcomingRecurringThisMonth.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-      return { text: `Upcoming recurring items total ${fmt(total)}. Next up: ${items.map((item) => `${item.emoji ?? '🔁'} ${item.name}`).join(', ')}.`, chips: ['Review recurring'] }
+      return { text: `Upcoming recurring items total ${fmt(total)}. Next up: ${items.map((item) => `${item.category?.emoji ?? '🔁'} ${item.name}`).join(', ')}.`, chips: ['Review recurring'] }
     }
     if (q.includes('budget')) {
       if (!health.categoriesWithBudget) return { text: 'You have not set monthly category budgets yet.', chips: ['Adjust budgets'] }
