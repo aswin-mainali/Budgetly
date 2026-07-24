@@ -208,6 +208,7 @@ type SecurityRow = {
   pin_salt: string | null
   failed_attempts: number | null
   locked_until: string | null
+  pin_length?: number | null
 }
 
 export function DocumentVault({
@@ -233,7 +234,7 @@ export function DocumentVault({
     setMissingTable(false)
     const { data, error } = await supabase
       .from('document_vault_security')
-      .select('pin_hash, pin_salt, failed_attempts, locked_until')
+      .select('*')
       .eq('user_id', uid)
       .maybeSingle()
     if (error && isMissingTableError(error)) {
@@ -350,11 +351,15 @@ function VaultGate({
     try {
       const salt = randomSalt()
       const pin_hash = await hashPin(pin, salt)
-      const { error: upErr } = await supabase
-        .from('document_vault_security')
-        .upsert({ user_id: userId, pin_hash, pin_salt: salt, failed_attempts: 0, locked_until: null, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      const payload: Record<string, unknown> = { user_id: userId, pin_hash, pin_salt: salt, pin_length: pin.length, failed_attempts: 0, locked_until: null, updated_at: new Date().toISOString() }
+      let { error: upErr } = await supabase.from('document_vault_security').upsert(payload, { onConflict: 'user_id' })
+      // Gracefully handle databases where the pin_length column hasn't been added yet.
+      if (upErr && /pin_length/.test(upErr.message || '')) {
+        delete payload.pin_length
+        ;({ error: upErr } = await supabase.from('document_vault_security').upsert(payload, { onConflict: 'user_id' }))
+      }
       if (upErr) throw upErr
-      onSecurityChanged({ pin_hash, pin_salt: salt, failed_attempts: 0, locked_until: null })
+      onSecurityChanged({ pin_hash, pin_salt: salt, pin_length: pin.length, failed_attempts: 0, locked_until: null })
       onUnlocked()
     } catch (e) {
       setError(isMissingTableError(e) ? 'Vault tables aren’t set up yet.' : 'Could not set your PIN. Please try again.')
@@ -428,6 +433,7 @@ function VaultGate({
             mode={mode}
             busy={busy}
             error={error}
+            pinLength={security?.pin_length ?? undefined}
             onSubmit={mode === 'setup' ? handleSetup : handleUnlock}
             onForgot={mode === 'unlock' ? () => { setMode('forgot'); setError('') } : undefined}
           />
@@ -439,11 +445,12 @@ function VaultGate({
 
 /* ── PIN entry pad (used for both setup and unlock) ─────────────────────────── */
 function PinPad({
-  mode, busy, error, onSubmit, onForgot,
+  mode, busy, error, pinLength, onSubmit, onForgot,
 }: {
   mode: GateMode
   busy: boolean
   error: string
+  pinLength?: number
   onSubmit: (pin: string) => void
   onForgot?: () => void
 }) {
@@ -453,6 +460,10 @@ function PinPad({
   const [localError, setLocalError] = useState('')
   const MAX = 6
   const MIN = 4
+  // On the unlock screen, show exactly as many dots as the stored PIN length
+  // (falling back to the max when the length is unknown, e.g. legacy PINs).
+  const dotCount = mode === 'unlock' && pinLength && pinLength >= MIN && pinLength <= MAX ? pinLength : MAX
+  const capLen = mode === 'unlock' ? dotCount : MAX
 
   const active = stage === 'enter' ? pin : confirm
   const setActive = stage === 'enter' ? setPin : setConfirm
@@ -462,7 +473,7 @@ function PinPad({
   const press = (digit: string) => {
     if (busy) return
     setLocalError('')
-    setActive((cur) => (cur.length >= MAX ? cur : cur + digit))
+    setActive((cur) => (cur.length >= capLen ? cur : cur + digit))
   }
   const backspace = () => { if (busy) return; setActive((cur) => cur.slice(0, -1)) }
 
@@ -492,6 +503,18 @@ function PinPad({
     return () => window.removeEventListener('keydown', onKey)
   }, [submit]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-submit once the unlock PIN reaches its known length.
+  useEffect(() => {
+    if (mode !== 'unlock' || busy) return
+    if (pin.length === dotCount && pin.length >= MIN) onSubmit(pin)
+  }, [pin, dotCount, mode, busy]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear the pad when the parent reports an error (e.g. a wrong PIN), so the
+  // user can retry cleanly instead of the dots staying full.
+  useEffect(() => {
+    if (error) { setPin(''); setConfirm('') }
+  }, [error])
+
   const canAdvance = active.length >= MIN
   const shownError = localError || error
 
@@ -502,7 +525,7 @@ function PinPad({
       ) : null}
 
       <div className={`dvPinDots ${shownError ? 'err' : ''}`} aria-hidden="true">
-        {Array.from({ length: MAX }).map((_, i) => (
+        {Array.from({ length: mode === 'setup' ? MAX : dotCount }).map((_, i) => (
           <span key={i} className={`dvPinDot ${i < active.length ? 'filled' : ''}`} />
         ))}
       </div>
@@ -571,12 +594,12 @@ function ForgotPin({
       const salt = randomSalt()
       const pin_hash = await hashPin(pin, salt)
       const { data, error: fnErr } = await supabase.functions.invoke('document-vault-pin-reset', {
-        body: { action: 'verify', code, pin_hash, pin_salt: salt },
+        body: { action: 'verify', code, pin_hash, pin_salt: salt, pin_length: pin.length },
       })
       if (fnErr) throw fnErr
       const res = data as { ok?: boolean; error?: string; message?: string }
       if (!res?.ok) { setError(res?.message || 'That code didn’t work. Try again.'); setBusy(false); return }
-      onReset({ pin_hash, pin_salt: salt, failed_attempts: 0, locked_until: null })
+      onReset({ pin_hash, pin_salt: salt, pin_length: pin.length, failed_attempts: 0, locked_until: null })
     } catch {
       setError('Couldn’t reset your PIN. Please try again.')
     } finally {

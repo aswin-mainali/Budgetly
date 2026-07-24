@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
     const code = String(body.code || '').trim()
     const pinHash = String(body.pin_hash || '').trim()
     const pinSalt = String(body.pin_salt || '').trim()
+    const pinLength = Number(body.pin_length)
     if (!/^\d{6}$/.test(code)) return json({ error: 'invalid_code', message: 'Enter the 6-digit code from your email.' }, 400)
     if (!/^[a-f0-9]{64}$/i.test(pinHash) || !pinSalt) return json({ error: 'invalid_pin' }, 400)
 
@@ -154,18 +155,23 @@ Deno.serve(async (req) => {
       return json({ error: 'mismatch', message: 'That code is incorrect. Check the email and try again.' }, 400)
     }
 
-    const { error: setErr } = await db
-      .from('document_vault_security')
-      .update({
-        pin_hash: pinHash,
-        pin_salt: pinSalt,
-        failed_attempts: 0,
-        locked_until: null,
-        reset_code_hash: null,
-        reset_expires_at: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id)
+    const updatePayload: Record<string, unknown> = {
+      pin_hash: pinHash,
+      pin_salt: pinSalt,
+      failed_attempts: 0,
+      locked_until: null,
+      reset_code_hash: null,
+      reset_expires_at: null,
+      updated_at: new Date().toISOString(),
+    }
+    if (Number.isInteger(pinLength) && pinLength >= 4 && pinLength <= 6) updatePayload.pin_length = pinLength
+
+    let { error: setErr } = await db.from('document_vault_security').update(updatePayload).eq('user_id', user.id)
+    // Gracefully handle databases where the pin_length column hasn't been added yet.
+    if (setErr && /pin_length/.test(setErr.message || '')) {
+      delete updatePayload.pin_length
+      ;({ error: setErr } = await db.from('document_vault_security').update(updatePayload).eq('user_id', user.id))
+    }
     if (setErr) {
       console.error('pin-reset verify update failed', setErr)
       return json({ error: 'Could not set new PIN' }, 500)

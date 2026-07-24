@@ -51,6 +51,7 @@ create table if not exists public.document_vault_security (
   user_id uuid primary key default auth.uid() references auth.users(id) on delete cascade,
   pin_hash text,
   pin_salt text,
+  pin_length integer,             -- how many dots to show on the unlock screen
   failed_attempts integer not null default 0,
   locked_until timestamptz,
   reset_code_hash text,
@@ -58,6 +59,10 @@ create table if not exists public.document_vault_security (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- For projects created before pin_length existed.
+alter table if exists public.document_vault_security
+  add column if not exists pin_length integer;
 
 alter table public.document_vault_security enable row level security;
 
