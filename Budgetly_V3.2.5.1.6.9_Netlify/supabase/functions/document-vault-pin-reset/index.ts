@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
   const user = userRes?.user
   if (!user) return json({ error: 'Unauthorized' }, 401)
 
-  let body: { action?: string; code?: string; pin_hash?: string; pin_salt?: string } = {}
+  let body: { action?: string; code?: string; pin_hash?: string; pin_salt?: string; pin_length?: number } = {}
   try { body = await req.json() } catch { /* empty body */ }
 
   const db = createClient(url, serviceKey)

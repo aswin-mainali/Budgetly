@@ -191,6 +191,28 @@ const sha256Hex = async (value: string) => toHex(await crypto.subtle.digest('SHA
 const randomSalt = () => toHex(crypto.getRandomValues(new Uint8Array(16)).buffer)
 const hashPin = (pin: string, salt: string) => sha256Hex(`${salt}:${pin}`)
 
+// Turn a Supabase Edge Function error into a friendly, specific message. On a
+// non-2xx response the JSON body (with `error`/`message`) lives on err.context.
+const describeFnError = async (err: unknown, verb: 'send' | 'reset'): Promise<string> => {
+  const name = (err as { name?: string })?.name || ''
+  const ctx = (err as { context?: Response }).context
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const body = await ctx.json() as { error?: string; message?: string }
+      const code = body?.error || ''
+      if (/RESEND_API_KEY/i.test(code)) return 'Email isn’t set up on the server yet, so codes can’t be sent. Contact support.'
+      if (body?.message) return body.message
+      if (code === 'Email send failed') return 'The email couldn’t be sent right now. Please try again shortly.'
+      if (code === 'No email on account') return 'Your account has no email address to send a code to.'
+      if (code === 'Unauthorized') return 'Your session expired. Sign in again and retry.'
+    } catch { /* body wasn't JSON (e.g. function not deployed) */ }
+  }
+  if (name === 'FunctionsFetchError' || name === 'FunctionsRelayError') {
+    return 'The PIN reset service isn’t available yet. Please try again later.'
+  }
+  return verb === 'send' ? 'Couldn’t send the code. Please try again.' : 'Couldn’t reset your PIN. Please try again.'
+}
+
 const fileToBase64 = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -575,11 +597,11 @@ function ForgotPin({
     setBusy(true); setError('')
     try {
       const { data, error: fnErr } = await supabase.functions.invoke('document-vault-pin-reset', { body: { action: 'request' } })
-      if (fnErr) throw fnErr
+      if (fnErr) { setError(await describeFnError(fnErr, 'send')); setBusy(false); return }
       setHint((data as { email_hint?: string })?.email_hint || email || '')
       setStep('verify')
     } catch {
-      setError('Couldn’t send the code. Check your connection and try again.')
+      setError('Couldn’t reach the reset service. Check your connection and try again.')
     } finally {
       setBusy(false)
     }
@@ -596,7 +618,7 @@ function ForgotPin({
       const { data, error: fnErr } = await supabase.functions.invoke('document-vault-pin-reset', {
         body: { action: 'verify', code, pin_hash, pin_salt: salt, pin_length: pin.length },
       })
-      if (fnErr) throw fnErr
+      if (fnErr) { setError(await describeFnError(fnErr, 'reset')); setBusy(false); return }
       const res = data as { ok?: boolean; error?: string; message?: string }
       if (!res?.ok) { setError(res?.message || 'That code didn’t work. Try again.'); setBusy(false); return }
       onReset({ pin_hash, pin_salt: salt, pin_length: pin.length, failed_attempts: 0, locked_until: null })
