@@ -1,0 +1,482 @@
+/* ============================================================================
+   Document Vault — polished, responsive styling.
+   Uses the app's theme variables (--panel, --border, --text, …) so it adapts
+   to light/dark automatically. Namespaced under .dv* to avoid collisions.
+   ============================================================================ */
+
+.dvPage {
+  --dv-radius: 20px;
+  --dv-indigo: #6366f1;
+  --dv-indigo-2: #818cf8;
+  position: relative;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 4px 2px 40px;
+  color: var(--text);
+  animation: dvFade .35s ease;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow-x: hidden;
+}
+.dvPage *, .dvPage *::before, .dvPage *::after { box-sizing: border-box; }
+/* Nothing inside the vault may exceed the viewport width. */
+.dvPage > * { max-width: 100%; }
+@keyframes dvFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.dvSpin { animation: dvSpin 1s linear infinite; }
+@keyframes dvSpin { to { transform: rotate(360deg); } }
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+.dvBtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid transparent; border-radius: 12px;
+  padding: 10px 16px; font: 600 14px/1 inherit; cursor: pointer;
+  transition: transform .12s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, opacity .18s ease;
+  white-space: nowrap; user-select: none;
+}
+.dvBtn:disabled { opacity: .55; cursor: not-allowed; }
+.dvBtn:not(:disabled):active { transform: translateY(1px) scale(.99); }
+.dvBtnPrimary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff; box-shadow: 0 10px 26px -12px rgba(99, 102, 241, .8);
+}
+.dvBtnPrimary:not(:disabled):hover { box-shadow: 0 14px 30px -10px rgba(99, 102, 241, .9); transform: translateY(-1px); }
+.dvBtnGhost { background: var(--panel-soft); border-color: var(--border); color: var(--text); }
+.dvBtnGhost:not(:disabled):hover { border-color: var(--border-strong, var(--border)); background: var(--panel-elevated); }
+.dvBtnDanger { background: var(--danger); color: #fff; }
+.dvBtnDanger:not(:disabled):hover { filter: brightness(1.06); }
+.dvBtnAi {
+  background: linear-gradient(135deg, rgba(139, 92, 246, .16), rgba(14, 165, 233, .16));
+  border: 1px solid rgba(139, 92, 246, .4); color: #a78bfa;
+}
+body.light .dvBtnAi { color: #7c3aed; }
+.dvBtnAi:not(:disabled):hover { border-color: rgba(139, 92, 246, .7); }
+
+/* ============================================================================
+   PIN gate
+   ============================================================================ */
+.dvGatePage { display: flex; align-items: flex-start; justify-content: center; min-height: 60vh; }
+.dvGateGlow {
+  position: absolute; inset: -10% 10% auto 10%; height: 320px; pointer-events: none;
+  background: radial-gradient(60% 100% at 50% 0%, rgba(99, 102, 241, .22), transparent 70%);
+  filter: blur(20px); z-index: 0;
+}
+.dvGateShell {
+  position: relative; z-index: 1; width: 100%; max-width: 420px; margin-top: 18px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 24px;
+  padding: 30px 26px 28px; box-shadow: 0 30px 70px -40px rgba(0, 0, 0, .7);
+  backdrop-filter: blur(12px);
+}
+.dvGateBrand { text-align: center; margin-bottom: 20px; }
+.dvGateBadge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px; font: 700 11px/1 inherit; letter-spacing: .4px; text-transform: uppercase;
+  background: rgba(99, 102, 241, .16); color: var(--dv-indigo-2);
+}
+.dvGateBrand h1 { margin: 14px 0 6px; font-size: 24px; font-weight: 800; letter-spacing: -.02em; }
+.dvGateBrand p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+
+.dvGateCard, .dvGateLoading, .dvLockOut { text-align: center; padding: 40px 22px; color: var(--muted); }
+.dvGateLoading { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.dvGateCard { max-width: 460px; margin: 30px auto; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; }
+.dvGateCard h2 { color: var(--text); margin: 14px 0 8px; font-size: 20px; }
+.dvGateCard p { line-height: 1.55; margin: 0 0 18px; }
+.dvGateCard code { background: var(--panel-soft); padding: 2px 6px; border-radius: 6px; font-size: 12.5px; }
+.dvGateIcon {
+  width: 60px; height: 60px; margin: 0 auto; border-radius: 18px;
+  display: grid; place-items: center; background: rgba(99, 102, 241, .14); color: var(--dv-indigo-2);
+}
+.dvGateIcon.warn { background: rgba(245, 158, 11, .14); color: var(--warn); }
+
+.dvPinArea { display: flex; flex-direction: column; align-items: center; }
+.dvPinStageHint { font: 600 12px inherit; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+.dvPinDots { display: flex; gap: 12px; margin: 4px 0 2px; }
+.dvPinDots.err { animation: dvShake .4s ease; }
+@keyframes dvShake { 0%,100% { transform: none; } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
+.dvPinDot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border-strong, var(--border)); background: transparent; transition: all .18s ease; }
+.dvPinDot.filled { background: var(--dv-indigo); border-color: var(--dv-indigo); box-shadow: 0 0 0 4px rgba(99, 102, 241, .16); }
+.dvPinMsg { min-height: 20px; margin: 10px 0 2px; font-size: 12.5px; }
+.dvPinErr { display: inline-flex; align-items: center; gap: 5px; color: var(--danger); font-weight: 500; }
+.dvPinErr.center { justify-content: center; margin-top: 4px; }
+
+.dvKeypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 280px; margin: 12px 0 6px; }
+.dvKey {
+  aspect-ratio: 1 / 1; border-radius: 16px; border: 1px solid var(--border);
+  background: var(--panel-soft); color: var(--text); font: 600 22px inherit; cursor: pointer;
+  display: grid; place-items: center; transition: transform .1s ease, background .16s ease, border-color .16s ease;
+}
+.dvKey:not(:disabled):hover { background: var(--panel-elevated); border-color: var(--dv-indigo); }
+.dvKey:not(:disabled):active { transform: scale(.94); background: rgba(99, 102, 241, .16); }
+.dvKeyGhost { font-size: 15px; color: var(--muted); background: transparent; }
+.dvPinSubmit { margin-top: 14px; width: 100%; max-width: 280px; padding: 13px; }
+.dvGateLink { margin-top: 14px; background: none; border: none; color: var(--dv-indigo-2); font: 600 13px inherit; cursor: pointer; }
+.dvGateLink:hover { text-decoration: underline; }
+
+.dvLockOut h3 { color: var(--text); margin: 14px 0 6px; }
+.dvLockOut p { margin: 0 0 14px; }
+
+/* ── Forgot PIN ──────────────────────────────────────────────────────────── */
+.dvForgot { display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.dvForgotLead { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.dvForgotActions { display: flex; gap: 10px; width: 100%; }
+.dvForgotActions .dvBtn { flex: 1; }
+.dvCodeInput { text-align: center; letter-spacing: 10px; font: 700 22px ui-monospace, monospace; }
+
+/* ============================================================================
+   Board
+   ============================================================================ */
+.dvFlash {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 1200;
+  background: #0f172a; color: #fff; padding: 11px 20px; border-radius: 12px;
+  font: 600 13.5px inherit; box-shadow: 0 16px 40px -16px rgba(0, 0, 0, .8);
+  animation: dvToast .3s ease;
+}
+@keyframes dvToast { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ── Hero ──────────────────────────────────────────────────────────────────── */
+.dvHero {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--border); border-radius: var(--dv-radius);
+  background:
+    linear-gradient(135deg, rgba(99, 102, 241, .14), rgba(139, 92, 246, .06) 45%, transparent 70%),
+    var(--panel);
+  padding: 24px 26px; margin-bottom: 18px;
+}
+.dvHeroGlow {
+  position: absolute; top: -60%; right: -10%; width: 380px; height: 380px; pointer-events: none;
+  background: radial-gradient(circle, rgba(99, 102, 241, .3), transparent 65%); filter: blur(24px);
+}
+.dvHeroTop { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.dvHeroLead { flex: 1 1 260px; min-width: 0; }
+.dvEyebrow {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px;
+  background: rgba(99, 102, 241, .16); color: var(--dv-indigo-2);
+  font: 700 11px/1 inherit; letter-spacing: .5px; text-transform: uppercase;
+}
+.dvHeroLead h1 { margin: 12px 0 8px; font-size: clamp(20px, 3vw, 27px); font-weight: 800; letter-spacing: -.025em; line-height: 1.15; }
+.dvHeroLead p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; max-width: 560px; }
+.dvHeroActions { display: flex; flex-direction: column; gap: 10px; }
+.dvLockBtn { padding: 9px 14px; }
+
+.dvStatRow { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 22px; }
+.dvStat {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; min-width: 0;
+  background: var(--panel-soft); border: 1px solid var(--border); border-radius: 14px;
+}
+.dvStat > div { min-width: 0; }
+.dvStatIcon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+.dvStat strong { display: block; font-size: 22px; font-weight: 800; line-height: 1; }
+.dvStat small { display: block; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+
+.dvNextExpiry {
+  position: relative; display: flex; align-items: center; gap: 10px; margin-top: 16px;
+  padding: 11px 14px; border-radius: 12px; font-size: 13px; color: var(--text);
+  background: var(--panel-soft); border: 1px solid var(--border);
+}
+.dvNextExpiry.warn { background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .35); color: var(--text); }
+.dvNextExpiry > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dvNextExpiry svg { color: var(--warn); flex-shrink: 0; }
+.dvNextExpiry button { background: none; border: none; color: var(--dv-indigo-2); font: 700 13px inherit; cursor: pointer; flex-shrink: 0; }
+.dvNextExpiry button:hover { text-decoration: underline; }
+
+/* ── Controls ──────────────────────────────────────────────────────────────── */
+.dvControls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.dvSearch {
+  display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 44px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px; color: var(--muted);
+}
+.dvSearch:focus-within { border-color: var(--dv-indigo); }
+.dvSearch input { flex: 1; min-width: 0; background: none; border: none; outline: none; color: var(--text); font: 400 14px inherit; }
+.dvSearch input::placeholder { color: var(--muted); }
+.dvSearchClear { background: none; border: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+
+.dvFilters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.dvFilters::-webkit-scrollbar { display: none; }
+.dvChip {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 8px 13px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--panel-soft); color: var(--muted); font: 600 12.5px inherit; cursor: pointer;
+  transition: all .15s ease;
+}
+.dvChip span { background: var(--panel-elevated); color: var(--text); border-radius: 999px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+.dvChip:hover { border-color: var(--dv-indigo); color: var(--text); }
+.dvChip.active { background: var(--dv-indigo); border-color: var(--dv-indigo); color: #fff; }
+.dvChip.active span { background: rgba(255, 255, 255, .25); color: #fff; }
+.dvChip.warn.active { background: var(--warn); border-color: var(--warn); }
+.dvChip.danger.active { background: var(--danger); border-color: var(--danger); }
+
+/* ── Grid + cards ──────────────────────────────────────────────────────────── */
+.dvGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 16px; }
+.dvCard {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+  padding: 16px 16px 14px; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.dvCard:hover { transform: translateY(-3px); border-color: var(--border-strong, var(--border)); box-shadow: 0 22px 44px -28px rgba(0, 0, 0, .7); }
+.dvCardAccent { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+.dvCard.status-expired { border-color: rgba(239, 68, 68, .32); }
+.dvCard.status-soon { border-color: rgba(245, 158, 11, .32); }
+
+.dvCardHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.dvCardType { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font: 700 11px/1 inherit; letter-spacing: .3px; }
+.dvCardMenu { display: flex; gap: 4px; opacity: 0; transition: opacity .15s ease; }
+.dvCard:hover .dvCardMenu, .dvCard:focus-within .dvCardMenu { opacity: 1; }
+.dvCardMenu button {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel-soft); color: var(--muted); cursor: pointer; display: grid; place-items: center;
+}
+.dvCardMenu button:hover { color: var(--text); border-color: var(--dv-indigo); }
+.dvCardMenu button.danger:hover { color: var(--danger); border-color: var(--danger); }
+.dvCardTitle { margin: 0 0 3px; font-size: 15.5px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dvCardIssuer { color: var(--muted); font-size: 12.5px; font-weight: 600; margin-bottom: 8px; }
+.dvCardSummary { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin: 0 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.dvCardDates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 11px 0; margin-top: auto; border-top: 1px dashed var(--border); }
+.dvCardDates small { display: block; color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+.dvCardDates span { font-size: 13px; font-weight: 600; }
+
+.dvCardFoot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 11px; border-top: 1px solid var(--border); }
+.dvExpiryBadge { display: inline-flex; align-items: center; gap: 5px; font: 600 11.5px inherit; padding: 4px 9px; border-radius: 999px; }
+.dvExpiryBadge.none { background: var(--panel-soft); color: var(--muted); }
+.dvExpiryBadge.active { background: rgba(34, 197, 94, .14); color: #22c55e; }
+.dvExpiryBadge.soon { background: rgba(245, 158, 11, .16); color: var(--warn); }
+.dvExpiryBadge.expired { background: rgba(239, 68, 68, .16); color: var(--danger); }
+.dvCardOpen { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-soft); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 6px 12px; font: 600 12.5px inherit; cursor: pointer; }
+.dvCardOpen:not(:disabled):hover { border-color: var(--dv-indigo); }
+.dvAiTag { position: absolute; right: 14px; bottom: 62px; display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px; border-radius: 999px; background: rgba(139, 92, 246, .16); color: #a78bfa; font: 700 9.5px inherit; letter-spacing: .3px; }
+body.light .dvAiTag { color: #7c3aed; }
+
+/* ── Table / list view (desktop) ───────────────────────────────────────────── */
+.dvTableCard { border: 1px solid var(--border); border-radius: 16px; background: var(--panel); overflow: hidden; }
+.dvTableScroll { overflow-x: auto; }
+.dvTable { min-width: 820px; }
+.dvTableHead, .dvRow {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr) 128px 152px 158px 150px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+}
+.dvTableHead {
+  height: 44px; background: var(--panel-soft);
+  font: 700 11px inherit; letter-spacing: .5px; text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.dvColRight { text-align: right; }
+.dvRow { min-height: 66px; padding-top: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .14s ease; outline: none; }
+.dvRow:last-child { border-bottom: none; }
+.dvRow:hover { background: var(--panel-soft); }
+.dvRow:focus-visible { background: var(--panel-soft); box-shadow: inset 3px 0 0 var(--dv-indigo); }
+.dvRowType { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font: 700 11.5px inherit; width: max-content; max-width: 100%; }
+.dvRowDoc { min-width: 0; }
+.dvRowTitle { display: flex; align-items: center; gap: 7px; min-width: 0; font-weight: 700; font-size: 14px; color: var(--text); }
+.dvRowTitleText { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dvRowIssuer { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.dvAiPill { flex: none; display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px; border-radius: 999px; background: rgba(139, 92, 246, .16); color: #a78bfa; font: 700 9px inherit; letter-spacing: .3px; }
+body.light .dvAiPill { color: #7c3aed; }
+.dvRowDate { font-size: 13px; color: var(--text); font-weight: 600; min-width: 0; }
+.dvRowDate small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; margin-top: 1px; }
+.dvRowActions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.dvViewBtn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); font: 600 12.5px inherit; cursor: pointer; transition: border-color .14s ease, color .14s ease; }
+.dvViewBtn:hover { border-color: var(--dv-indigo); color: var(--dv-indigo-2); }
+.dvIconBtn { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--muted); display: grid; place-items: center; cursor: pointer; transition: border-color .14s ease, color .14s ease; }
+.dvIconBtn:hover { color: var(--text); border-color: var(--dv-indigo); }
+.dvIconBtn.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+/* ── Details modal (opened by "View") ──────────────────────────────────────── */
+.dvDetails { max-width: 580px; }
+.dvDetailsHeadMain { min-width: 0; }
+.dvDetailsHeadMain h3 { margin: 8px 0 0; font-size: 20px; font-weight: 800; line-height: 1.25; }
+.dvDetailsStatus { margin-top: 12px; }
+.dvDetailsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+.dvDetailsField { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dvDetailsLabel { display: inline-flex; align-items: center; gap: 6px; font: 700 11px inherit; letter-spacing: .4px; text-transform: uppercase; color: var(--muted); }
+.dvDetailsValue { font-size: 14px; color: var(--text); font-weight: 600; word-break: break-word; }
+.dvDetailsSummary { margin-top: 16px; padding: 14px; border-radius: 12px; background: rgba(139, 92, 246, .09); border: 1px solid rgba(139, 92, 246, .22); }
+.dvDetailsSummaryTag { display: inline-flex; align-items: center; gap: 5px; font: 700 11px inherit; letter-spacing: .3px; text-transform: uppercase; color: #a78bfa; }
+body.light .dvDetailsSummaryTag { color: #7c3aed; }
+.dvDetailsSummary p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.55; color: var(--text); }
+.dvDetailsNotes { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.dvDetailsNotes p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--text); white-space: pre-wrap; }
+.dvDetailsFooter { justify-content: space-between; }
+.dvDetailsFooterRight { display: flex; gap: 10px; }
+
+/* ── Empty / error states ──────────────────────────────────────────────────── */
+.dvEmpty { text-align: center; padding: 56px 24px; max-width: 520px; margin: 0 auto; }
+.dvEmpty.small { padding: 44px 24px; }
+.dvEmptyIllus { width: 78px; height: 78px; margin: 0 auto 18px; border-radius: 22px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(99, 102, 241, .16), rgba(139, 92, 246, .1)); color: var(--dv-indigo-2); }
+.dvEmpty h2 { font-size: 21px; font-weight: 800; margin: 0 0 8px; }
+.dvEmpty p { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 20px; }
+.dvEmptyChips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 20px; }
+.dvSeedChip { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px; background: var(--panel-soft); border: 1px solid var(--border); font: 600 12px inherit; }
+
+/* ============================================================================
+   Modal
+   ============================================================================ */
+.dvModalBackdrop {
+  position: fixed; inset: 0; z-index: 1300; display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 10, 22, .62); backdrop-filter: blur(4px); padding: 18px; animation: dvFade .2s ease;
+}
+.dvModal {
+  width: 100%; max-width: 560px; max-height: 92vh; display: flex; flex-direction: column;
+  background: var(--panel-strong); border: 1px solid var(--border); border-radius: 20px;
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, .8); overflow: hidden;
+}
+.dvModalHead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 22px 14px; border-bottom: 1px solid var(--border); }
+.dvModalTag { display: inline-flex; align-items: center; gap: 5px; font: 700 11px/1 inherit; letter-spacing: .4px; text-transform: uppercase; color: var(--dv-indigo-2); }
+.dvModalHead h3 { margin: 8px 0 0; font-size: 19px; font-weight: 800; }
+.dvModalClose { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--muted); cursor: pointer; display: grid; place-items: center; flex-shrink: 0; }
+.dvModalClose:hover { color: var(--text); }
+.dvModalBody { padding: 18px 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.dvModalFooter { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--border); background: var(--panel); }
+
+.dvField { display: flex; flex-direction: column; gap: 6px; }
+.dvField > span { font: 600 12.5px inherit; color: var(--text); }
+.dvField em { color: var(--muted); font-style: normal; font-weight: 400; }
+.dvFieldRow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.dvInput {
+  width: 100%; background: var(--panel-soft); border: 1px solid var(--border); border-radius: 11px;
+  padding: 11px 13px; color: var(--text); font: 400 14px inherit; outline: none; transition: border-color .15s ease;
+}
+.dvInput:focus { border-color: var(--dv-indigo); }
+.dvInput::placeholder { color: var(--muted); }
+.dvTextarea { resize: vertical; min-height: 52px; }
+.dvInput[type="date"] { color-scheme: dark; }
+body.light .dvInput[type="date"] { color-scheme: light; }
+
+.dvTypeChips { display: flex; flex-wrap: wrap; gap: 7px; }
+.dvTypeChip { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--muted); font: 600 12.5px inherit; cursor: pointer; transition: all .14s ease; }
+.dvTypeChip:hover { color: var(--text); }
+
+/* Upload zone */
+.dvUploadZone { display: flex; flex-direction: column; gap: 12px; }
+.dvDrop {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 26px 20px; border: 1.5px dashed var(--border-strong, var(--border)); border-radius: 14px;
+  background: var(--panel-soft); color: var(--text); cursor: pointer; transition: all .16s ease;
+}
+.dvDrop:hover { border-color: var(--dv-indigo); background: rgba(99, 102, 241, .06); }
+.dvDropIcon { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; background: rgba(99, 102, 241, .14); color: var(--dv-indigo-2); margin-bottom: 4px; }
+.dvDrop strong { font-size: 14.5px; }
+.dvDrop span { color: var(--muted); font-size: 12.5px; }
+.dvFilePicked { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel-soft); }
+.dvFileIcon { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; background: rgba(99, 102, 241, .14); color: var(--dv-indigo-2); flex-shrink: 0; }
+.dvFileMeta { flex: 1; min-width: 0; }
+.dvFileMeta strong { display: block; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dvFileMeta small { color: var(--muted); font-size: 11.5px; }
+.dvFileSwap { background: none; border: 1px solid var(--border); border-radius: 9px; padding: 6px 12px; color: var(--text); font: 600 12px inherit; cursor: pointer; flex-shrink: 0; }
+.dvFileSwap:hover { border-color: var(--dv-indigo); }
+
+.dvAiRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.dvAiScanning { display: inline-flex; align-items: center; gap: 8px; color: #a78bfa; font: 600 13px inherit; }
+.dvAiOk { display: inline-flex; align-items: center; gap: 5px; color: #22c55e; font: 600 12.5px inherit; }
+.dvAiErr { display: inline-flex; align-items: center; gap: 5px; color: var(--warn); font: 500 12.5px inherit; }
+.dvAiHint { color: var(--muted); font-size: 12px; }
+.dvEditFileNote { display: flex; align-items: center; gap: 8px; padding: 10px 13px; border-radius: 11px; background: var(--panel-soft); border: 1px solid var(--border); color: var(--text); font-size: 13px; }
+.dvEditFileNote small { color: var(--muted); }
+.dvEditFileNote span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Confirm dialog ────────────────────────────────────────────────────────── */
+.dvConfirm { width: 100%; max-width: 400px; text-align: center; padding: 26px 24px; background: var(--panel-strong); border: 1px solid var(--border); border-radius: 18px; }
+.dvConfirmIcon { width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 15px; display: grid; place-items: center; background: rgba(239, 68, 68, .14); color: var(--danger); }
+.dvConfirm h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+.dvConfirm p { color: var(--muted); font-size: 13.5px; line-height: 1.55; margin: 0 0 20px; }
+.dvConfirmActions { display: flex; gap: 10px; }
+.dvConfirmActions .dvBtn { flex: 1; }
+
+/* ============================================================================
+   Responsive
+   The app toggles `body.mobile-app` at ≤768px. Mobile rules are keyed to BOTH
+   that class and a width media query, and every top-level block is hard-capped
+   to the viewport width so the layout can never bleed off-screen on a phone.
+   ============================================================================ */
+@media (max-width: 1000px) {
+  .dvStatRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ── Mobile app chrome (class-based — applies whenever the app is in mobile
+   mode at ≤768px, independent of exact CSS pixel width) ─────────────────────── */
+/* The app turns the mobile main area into a CSS grid with an implicit `auto`
+   column, which expands to the widest content's max-content size (long titles)
+   and would push the whole page off-screen. Cap the flow container to a
+   definite, viewport-based width so the vault can never exceed the screen. */
+body.mobile-app .toolsShellFlow,
+body.mobile-app .toolsPageBodyFlow { max-width: calc(100vw - 24px); min-width: 0; overflow-x: hidden; }
+body.mobile-app .dvPage { max-width: 100%; padding: 2px 0 20px; }
+body.mobile-app .dvHeroLead p { max-width: 100%; }
+body.mobile-app .dvHero { padding: 18px 15px; border-radius: 18px; }
+body.mobile-app .dvHeroGlow { display: none; }
+body.mobile-app .dvHeroLead h1 { font-size: 20px; }
+body.mobile-app .dvHeroLead p { font-size: 13px; }
+body.mobile-app .dvHeroTop { flex-direction: column; align-items: stretch; gap: 14px; }
+/* In the column hero the 260px flex-basis would become a forced height — reset
+   so the lead block is sized by its content, not stretched with a big gap. */
+body.mobile-app .dvHeroLead { flex: 0 0 auto; }
+body.mobile-app .dvHeroActions { flex-direction: row; width: 100%; }
+body.mobile-app .dvHeroActions .dvBtn { flex: 1; padding: 11px 12px; }
+body.mobile-app .dvStatRow { grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+body.mobile-app .dvStat { padding: 11px 12px; gap: 10px; }
+body.mobile-app .dvStat strong { font-size: 18px; }
+body.mobile-app .dvStat small { font-size: 11px; }
+body.mobile-app .dvStatIcon { width: 34px; height: 34px; }
+body.mobile-app .dvNextExpiry { font-size: 12px; }
+body.mobile-app .dvGrid { grid-template-columns: 1fr; gap: 12px; }
+body.mobile-app .dvControls { gap: 10px; }
+body.mobile-app .dvCardMenu { opacity: 1; } /* no hover on touch — always show */
+body.mobile-app .dvFieldRow { grid-template-columns: 1fr; }
+body.mobile-app .dvModalBackdrop { padding: 0; align-items: flex-end; }
+body.mobile-app .dvModal { max-width: 100%; max-height: 90dvh; border-radius: 20px 20px 0 0; }
+body.mobile-app .dvConfirm { max-width: 100%; align-self: flex-end; border-radius: 20px 20px 0 0; }
+body.mobile-app .dvDetailsGrid { grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+body.mobile-app .dvDetailsFooter { flex-direction: column; gap: 10px; }
+body.mobile-app .dvDetailsFooter > .dvBtn { width: 100%; order: 2; }
+body.mobile-app .dvDetailsFooterRight { width: 100%; order: 1; }
+body.mobile-app .dvDetailsFooterRight .dvBtn { flex: 1; }
+
+/* ── PIN gate: fit the whole thing in one screen, no scrolling ──────────────── */
+body.mobile-app .dvGatePage { min-height: 0; align-items: stretch; }
+body.mobile-app .dvGateShell { max-width: 100%; margin-top: 0; border-radius: 20px; padding: 20px 18px 18px; }
+body.mobile-app .dvGateGlow { display: none; }
+body.mobile-app .dvGateBrand { margin-bottom: 14px; }
+body.mobile-app .dvGateBadge { font-size: 10.5px; padding: 4px 10px; }
+body.mobile-app .dvGateBrand h1 { font-size: 20px; margin: 9px 0 5px; }
+body.mobile-app .dvGateBrand p { font-size: 12.5px; line-height: 1.45; }
+body.mobile-app .dvPinStageHint { margin-bottom: 6px; }
+body.mobile-app .dvPinDots { gap: 10px; margin: 2px 0; }
+body.mobile-app .dvPinDot { width: 11px; height: 11px; }
+body.mobile-app .dvPinMsg { margin: 6px 0 0; min-height: 15px; }
+/* Short, wide keys so all four rows + the submit button fit above the nav. */
+body.mobile-app .dvKeypad { max-width: 300px; gap: 8px; margin: 6px 0 2px; }
+body.mobile-app .dvKey { aspect-ratio: auto; height: clamp(40px, 6.6vh, 56px); border-radius: 13px; font-size: 20px; }
+body.mobile-app .dvPinSubmit { max-width: 300px; margin-top: 9px; padding: 12px; }
+body.mobile-app .dvGateLink { margin-top: 9px; }
+body.mobile-app .dvForgotActions { flex-wrap: wrap; }
+
+/* ── Width fallbacks (embedded / non-app contexts) ─────────────────────────── */
+@media (max-width: 560px) {
+  .dvPage { max-width: 100%; padding: 2px 0 20px; }
+  .dvHero { padding: 18px 15px; border-radius: 18px; }
+  .dvHeroGlow { display: none; }
+  .dvHeroTop { flex-direction: column; align-items: stretch; gap: 14px; }
+  .dvHeroLead { flex: 0 0 auto; }
+  .dvHeroActions { flex-direction: row; width: 100%; }
+  .dvHeroActions .dvBtn { flex: 1; }
+  .dvStatRow { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dvGrid { grid-template-columns: 1fr; }
+  .dvCardMenu { opacity: 1; }
+  .dvFieldRow { grid-template-columns: 1fr; }
+  .dvModalBackdrop { padding: 0; align-items: flex-end; }
+  .dvModal { max-width: 100%; max-height: 90dvh; border-radius: 20px 20px 0 0; }
+  .dvConfirm { max-width: 100%; align-self: flex-end; border-radius: 20px 20px 0 0; }
+  .dvGatePage { min-height: 0; align-items: stretch; }
+  .dvGateShell { max-width: 100%; margin-top: 0; border-radius: 20px; padding: 20px 18px 18px; }
+  .dvGateGlow { display: none; }
+  .dvKeypad { max-width: 300px; gap: 8px; }
+  .dvKey { aspect-ratio: auto; height: clamp(42px, 7.4vh, 58px); font-size: 20px; }
+  .dvPinSubmit { max-width: 300px; }
+}
+@media (max-width: 360px) {
+  .dvStatRow { grid-template-columns: 1fr; }
+}

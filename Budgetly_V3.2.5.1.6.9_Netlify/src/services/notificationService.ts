@@ -7,7 +7,7 @@ type Preferences = Record<NotificationCategory, boolean> & NotificationSettings
 export type NotificationSection = 'action_needed' | 'upcoming' | 'insights' | 'system'
 export type NotificationStatus = 'unread' | 'read'
 export type NotificationPriority = 'critical' | 'high' | 'normal' | 'low'
-export type NotificationCategory = 'bills_recurring' | 'budgets' | 'subscriptions' | 'goals' | 'investments' | 'net_worth' | 'monthly_reports' | 'system_updates'
+export type NotificationCategory = 'bills_recurring' | 'budgets' | 'subscriptions' | 'goals' | 'investments' | 'net_worth' | 'monthly_reports' | 'system_updates' | 'documents'
 export type MuteScope = 'dedupe' | 'group' | 'category' | 'type'
 
 export type NotificationSettings = {
@@ -51,8 +51,9 @@ type GoalRow = { id: string; name: string; emoji?: string | null; target_amount:
 type HoldingRow = { id: string; symbol: string; company_name: string; quantity: number; average_cost: number; current_price: number; previous_close?: number | null; currency?: string | null; last_price_updated_at?: string | null }
 type SnapshotRow = { date_key: string; total_value: number }
 type TxRow = { id: string; category_id: string | null; amount: number; type: string; date: string; note?: string | null }
+type VaultDocRow = { id: string; title: string | null; doc_type: string | null; issuer: string | null; expiration_date: string | null }
 
-const DEFAULT_CATEGORY_PREFS: Record<NotificationCategory, boolean> = { bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true }
+const DEFAULT_CATEGORY_PREFS: Record<NotificationCategory, boolean> = { bills_recurring: true, budgets: true, subscriptions: true, goals: true, investments: true, net_worth: true, monthly_reports: true, system_updates: true, documents: true }
 const DEFAULT_SETTINGS: NotificationSettings = { channel_in_app: true, channel_push: false, channel_email: false, quiet_hours_enabled: false, quiet_hours_start: 22, quiet_hours_end: 7, email_digest_frequency: 'weekly', min_priority: 'low', timezone: typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC' : 'UTC' }
 export const DEFAULT_PREFERENCES: Preferences = { ...DEFAULT_CATEGORY_PREFS, ...DEFAULT_SETTINGS }
 
@@ -433,6 +434,53 @@ const genMonthlyReport = async (ctx: GenContext) => {
   })
 }
 
+// Document Vault: remind the user before (and when) a stored document expires.
+// Escalating reminder buckets keep it from spamming — each bucket fires once as
+// the deadline approaches. Missing tables are ignored (feature not set up yet).
+const genDocuments = async (ctx: GenContext) => {
+  const { data, error } = await supabase
+    .from('document_vault_files')
+    .select('id,title,doc_type,issuer,expiration_date')
+    .eq('user_id', ctx.userId)
+    .not('expiration_date', 'is', null)
+  if (error) return // table not provisioned yet, or transient — skip quietly
+  const today = startOfDay(ctx.now)
+  const BANDS = [0, 1, 3, 7, 14, 30]
+  for (const doc of ((data ?? []) as VaultDocRow[])) {
+    if (!doc.expiration_date) continue
+    const exp = startOfDay(new Date(`${doc.expiration_date}T00:00:00`))
+    if (Number.isNaN(exp.getTime())) continue
+    const days = Math.round((exp.getTime() - today.getTime()) / 86400000)
+    const name = (doc.title || '').trim() || 'A document'
+    const typeLabel = (doc.doc_type || 'document').replace(/_/g, ' ')
+
+    if (days < 0) {
+      await insertIfMissing(ctx, {
+        user_id: ctx.userId, category: 'documents', section: 'action_needed',
+        title: `${name} has expired`,
+        message: `Your ${typeLabel}${doc.issuer ? ` from ${doc.issuer}` : ''} expired on ${doc.expiration_date}. Renew it and update your vault.`,
+        type: 'document_expired', priority: 'high', group_key: `document-${doc.id}`,
+        action_label: 'Open vault', action_target: 'utilities/documents',
+        metadata: { dedupe_key: `docvault-${doc.id}-expired-${doc.expiration_date}`, document_id: doc.id, expiration_date: doc.expiration_date },
+      })
+      continue
+    }
+
+    const band = BANDS.find((b) => days <= b)
+    if (band === undefined) continue // more than 30 days out — no reminder yet
+    const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`
+    const urgent = band <= 7
+    await insertIfMissing(ctx, {
+      user_id: ctx.userId, category: 'documents', section: urgent ? 'action_needed' : 'upcoming',
+      title: `${name} expires ${when}`,
+      message: `Your ${typeLabel}${doc.issuer ? ` from ${doc.issuer}` : ''} expires on ${doc.expiration_date}${days === 0 ? '' : ` — ${when}`}.`,
+      type: 'document_expiring', priority: band <= 1 ? 'high' : urgent ? 'normal' : 'low', group_key: `document-${doc.id}`,
+      action_label: 'Open vault', action_target: 'utilities/documents',
+      metadata: { dedupe_key: `docvault-${doc.id}-expiry-${band}`, document_id: doc.id, expiration_date: doc.expiration_date, days_left: days },
+    })
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Orchestrator — throttled, preference-aware, single entry point for the client.
 // ---------------------------------------------------------------------------
@@ -451,6 +499,7 @@ export const generateAllNotifications = async (userId: string, options: { force?
     if (prefs.goals) await genGoals(ctx)
     if (prefs.investments) await genInvestments(ctx)
     if (prefs.net_worth) await genNetWorth(ctx)
+    if (prefs.documents) await genDocuments(ctx)
     if (prefs.monthly_reports) await genMonthlyReport(ctx)
   } finally {
     await supabase.from('notification_preferences').update({ last_generated_at: new Date().toISOString() }).eq('user_id', userId)
@@ -466,3 +515,4 @@ export const generateGoalNotifications = async (userId: string) => genGoals(awai
 export const generateNetWorthNotifications = async (userId: string) => genNetWorth(await buildContext(userId))
 export const generateAnomalyNotifications = async (userId: string) => genAnomalies(await buildContext(userId))
 export const generateMonthlyReportNotifications = async (userId: string) => genMonthlyReport(await buildContext(userId))
+export const generateDocumentNotifications = async (userId: string) => genDocuments(await buildContext(userId))

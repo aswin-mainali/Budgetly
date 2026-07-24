@@ -41,18 +41,33 @@ npm run preview
 - Add these environment variables in Netlify:
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
-  - `ANTHROPIC_API_KEY` — required for AI Receipt Capture (the `receipt-scan` Netlify function calls the Claude API server-side). Optional: `RECEIPT_SCAN_MODEL` to override the vision model (defaults to `claude-opus-4-8`).
+  - `ANTHROPIC_API_KEY` — required for AI Receipt Capture and the Document Vault's AI extraction (the `receipt-scan` and `document-extract` Netlify functions call the Claude API server-side). Optional: `RECEIPT_SCAN_MODEL` / `DOCUMENT_EXTRACT_MODEL` to override the models (both default to `claude-opus-4-8`).
 - Build command: `npm run build`
 - Publish directory: `dist`
 
 ## AI Receipt Capture
 On the Transactions page, **Scan Receipt** opens the camera (or lets you upload a photo), sends the image to the `receipt-scan` serverless function which calls the Claude vision API, and pre-fills the Add Transaction form with the merchant, amount, date, and best-matching category. The captured receipt is stored with the transaction and can be re-opened later from the row's actions menu (**View receipt**). Requires `ANTHROPIC_API_KEY` to be set.
 
+## Document Vault
+Utilities → **Document Vault** is a PIN-protected store for important documents (agreements, insurance policies, contracts, warranties, leases…). Uploads go to a **private** Supabase storage bucket and are opened through short-lived signed URLs. When you add a PDF or image, the `document-extract` Netlify function reads it with the Claude API and auto-fills the title, type, issuer, reference number, and — most importantly — the **agreement and expiration dates**. Budgetly then raises escalating in-app notifications (30/14/7/3/1 days out, on the day, and once expired).
+
+- **PIN gate** — the vault asks for a PIN every time you open it (and re-locks when the tab is hidden). The PIN is hashed on the device (SHA-256 + per-user salt) and only the hash is stored, so it works across devices without exposing the PIN.
+- **Forgot PIN** — emails a one-time code (via Resend) that the `document-vault-pin-reset` edge function verifies before setting a new PIN.
+
+Setup:
+```bash
+# 1. Tables, private bucket + RLS, and the notification toggle column
+#    (run supabase/add_document_vault.sql in the SQL editor or `supabase db push`)
+# 2. Forgot-PIN email (reuses the same RESEND_API_KEY / DIGEST_FROM as bug emails)
+supabase functions deploy document-vault-pin-reset
+```
+`ANTHROPIC_API_KEY` (already needed for Receipt Capture) powers the AI extraction.
+
 ## Supabase setup
 Run the SQL files in the `supabase/` folder as needed, starting with:
 - `supabase/schema.sql`
 
-Additional migrations are included for goals, recurring items, category emojis, receipt capture (`add_receipt_capture.sql`), super admin setup, and full data backup & restore (`add_backup_restore.sql`).
+Additional migrations are included for goals, recurring items, category emojis, receipt capture (`add_receipt_capture.sql`), the Document Vault (`add_document_vault.sql`), super admin setup, and full data backup & restore (`add_backup_restore.sql`).
 
 ## Data backup & restore
 Settings → **Data & backup** provides a complete, restorable backup system (replacing the old CSV/JSON export):

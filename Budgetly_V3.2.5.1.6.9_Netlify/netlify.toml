@@ -27,6 +27,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/document-extract"
+  to = "/.netlify/functions/document-extract"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
