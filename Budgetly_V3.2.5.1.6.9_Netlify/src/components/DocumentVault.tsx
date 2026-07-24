@@ -859,7 +859,6 @@ function VaultBoard({
           <div className={`dvNextExpiry ${nextExpiry.days <= EXPIRY_SOON_DAYS ? 'warn' : ''}`}>
             <Clock size={15} />
             <span><strong>{nextExpiry.d.title}</strong> — {expiryLabel(nextExpiry.d.expirationDate)}</span>
-            <button onClick={() => { setFilter('all'); setQuery(nextExpiry.d.title) }}>Review</button>
           </div>
         ) : null}
       </header>
