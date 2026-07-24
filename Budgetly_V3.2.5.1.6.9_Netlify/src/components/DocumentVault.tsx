@@ -699,14 +699,6 @@ function VaultBoard({
     return { total: docs.length, expiring, expired, active }
   }, [docs])
 
-  const nextExpiry = useMemo(() => {
-    const upcoming = docs
-      .map((d) => ({ d, days: daysUntil(d.expirationDate) }))
-      .filter((x) => x.days != null && x.days >= 0)
-      .sort((a, b) => (a.days! - b.days!))
-    return upcoming[0] || null
-  }, [docs])
-
   const typeCounts = useMemo(() => {
     const m = new Map<DocType, number>()
     for (const d of docs) m.set(d.docType, (m.get(d.docType) || 0) + 1)
@@ -854,13 +846,6 @@ function VaultBoard({
             <div><strong>{stats.active}</strong><small>Active</small></div>
           </div>
         </div>
-
-        {nextExpiry && nextExpiry.days != null ? (
-          <div className={`dvNextExpiry ${nextExpiry.days <= EXPIRY_SOON_DAYS ? 'warn' : ''}`}>
-            <Clock size={15} />
-            <span><strong>{nextExpiry.d.title}</strong> — {expiryLabel(nextExpiry.d.expirationDate)}</span>
-          </div>
-        ) : null}
       </header>
 
       {/* ── Controls ──────────────────────────────────────────────────────── */}
